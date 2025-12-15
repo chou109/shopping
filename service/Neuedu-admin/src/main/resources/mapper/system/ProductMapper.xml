@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.neuedu.system.mapper.ProductMapper">
+    
+    <resultMap type="Product" id="ProductResult">
+        <result property="id"    column="id"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="createUser"    column="create_user"    />
+        <result property="updateUser"    column="update_user"    />
+        <result property="deleteFlag"    column="delete_flag"    />
+        <result property="productId"    column="product_id"    />
+        <result property="categoryId"    column="category_id"    />
+        <result property="name"    column="name"    />
+        <result property="subTitle"    column="sub_title"    />
+        <result property="mainImage"    column="main_image"    />
+        <result property="subImages"    column="sub_images"    />
+        <result property="activityId"    column="activity_id"    />
+        <result property="status"    column="status"    />
+        <result property="price"    column="price"    />
+        <result property="stock"    column="stock"    />
+        <result property="hotFlag"    column="hot_flag"    />
+
+        <!-- 关联分类信息 -->
+        <association property="category" javaType="Category">
+            <id property="id" column="category_id" />
+            <result property="name" column="c_name" />
+            <result property="status" column="c_status" />
+            <result property="sortOrder" column="sort_order" />
+        </association>
+
+        <!-- 关联活动信息 -->
+        <association property="activity" javaType="Activity">
+            <id property="id" column="activity_id" />
+            <result property="name" column="a_name" />
+            <result property="status" column="a_status" />
+            <result property="mainImage" column="a_main_image" />
+            <result property="startTime" column="start_time" />
+            <result property="endTime" column="end_time" />
+        </association>
+    </resultMap>
+
+    <sql id="selectProductVo">
+        select
+        p.id,
+        p.create_time,
+        p.update_time,
+        p.create_user,
+        p.update_user,
+        p.delete_flag,
+        p.product_id,
+        p.category_id,
+        p.name,
+        p.sub_title,
+        p.main_image,
+        p.sub_images,
+        p.activity_id,
+        p.status,
+        p.price,
+        p.stock,
+        p.hot_flag,
+        <!-- 分类信息 -->
+        c.name as c_name,
+        c.status as c_status,
+        c.sort_order,
+        <!-- 活动信息 -->
+        a.name as a_name,
+        a.status as a_status,
+        a.main_image as a_main_image,
+        a.start_time,
+        a.end_time
+        from product p
+        left join category c on p.category_id = c.id and c.delete_flag = 0
+        left join activity a on p.activity_id = a.activity_id and a.delete_flag = 0
+    </sql>
+
+    <sql id="baseWhereClause">
+        where p.delete_flag = 0
+        <if test="createUser != null "> and p.create_user = #{createUser}</if>
+        <if test="updateUser != null "> and p.update_user = #{updateUser}</if>
+        <if test="productId != null "> and p.product_id = #{productId}</if>
+        <if test="categoryId != null "> and p.category_id = #{categoryId}</if>
+        <if test="name != null  and name != ''"> and p.name like concat('%', #{name}, '%')</if>
+        <if test="subTitle != null  and subTitle != ''"> and p.sub_title = #{subTitle}</if>
+        <if test="mainImage != null  and mainImage != ''"> and p.main_image = #{mainImage}</if>
+        <if test="subImages != null  and subImages != ''"> and p.sub_images = #{subImages}</if>
+        <if test="activityId != null "> and p.activity_id = #{activityId}</if>
+        <if test="status != null "> and p.status = #{status}</if>
+        <if test="price != null "> and p.price = #{price}</if>
+        <if test="stock != null "> and p.stock = #{stock}</if>
+        <if test="hotFlag != null "> and p.hot_flag = #{hotFlag}</if>
+    </sql>
+
+    <select id="selectProductList" parameterType="Product" resultMap="ProductResult">
+        <include refid="selectProductVo"/>
+        <include refid="baseWhereClause"/>
+        order by p.create_time desc
+    </select>
+    
+    <select id="selectProductById" parameterType="Long" resultMap="ProductResult">
+        <include refid="selectProductVo"/>
+        where product.id = #{id} and p.delete_flag = 0
+    </select>
+
+    <!-- 查询热门商品列表 -->
+    <select id="selectHotProductList" parameterType="Integer" resultMap="ProductResult">
+        <include refid="selectProductVo"/>
+        where p.delete_flag = 0 and p.hot_flag = 1 and p.status = 1
+        order by p.update_time desc
+        <if test="limit != null">limit #{limit}</if>
+    </select>
+
+    <!-- 根据分类ID查询商品列表 -->
+    <select id="selectProductByCategoryId" parameterType="Long" resultMap="ProductResult">
+        <include refid="selectProductVo"/>
+        where p.delete_flag = 0 and p.status = 1 and p.category_id = #{categoryId}
+        order by p.create_time desc
+    </select>
+
+    <!-- 根据活动ID查询商品列表 -->
+    <select id="selectProductByActivityId" parameterType="Long" resultMap="ProductResult">
+        <include refid="selectProductVo"/>
+        where p.delete_flag = 0 and p.status = 1 and p.activity_id = #{activityId}
+        order by p.create_time desc
+    </select>
+
+    <!-- 根据商品名称搜索商品 -->
+    <select id="searchProductByName" parameterType="String" resultMap="ProductResult">
+        <include refid="selectProductVo"/>
+        where p.delete_flag = 0 and p.status = 1
+        and (p.name like concat('%', #{keyword}, '%') or p.sub_title like concat('%', #{keyword}, '%'))
+        order by p.create_time desc
+    </select>
+
+    <insert id="insertProduct" parameterType="Product" useGeneratedKeys="true" keyProperty="id">
+        insert into product
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="createTime != null">create_time,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="createUser != null">create_user,</if>
+            <if test="updateUser != null">update_user,</if>
+            <if test="deleteFlag != null">delete_flag,</if>
+            <if test="productId != null">product_id,</if>
+            <if test="categoryId != null">category_id,</if>
+            <if test="name != null">name,</if>
+            <if test="subTitle != null">sub_title,</if>
+            <if test="mainImage != null">main_image,</if>
+            <if test="subImages != null">sub_images,</if>
+            <if test="activityId != null">activity_id,</if>
+            <if test="status != null">status,</if>
+            <if test="price != null">price,</if>
+            <if test="stock != null">stock,</if>
+            <if test="hotFlag != null">hot_flag,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="createUser != null">#{createUser},</if>
+            <if test="updateUser != null">#{updateUser},</if>
+            <if test="deleteFlag != null">#{deleteFlag},</if>
+            <if test="productId != null">#{productId},</if>
+            <if test="categoryId != null">#{categoryId},</if>
+            <if test="name != null">#{name},</if>
+            <if test="subTitle != null">#{subTitle},</if>
+            <if test="mainImage != null">#{mainImage},</if>
+            <if test="subImages != null">#{subImages},</if>
+            <if test="activityId != null">#{activityId},</if>
+            <if test="status != null">#{status},</if>
+            <if test="price != null">#{price},</if>
+            <if test="stock != null">#{stock},</if>
+            <if test="hotFlag != null">#{hotFlag},</if>
+         </trim>
+    </insert>
+
+    <update id="updateProduct" parameterType="Product">
+        update product
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="createUser != null">create_user = #{createUser},</if>
+            <if test="updateUser != null">update_user = #{updateUser},</if>
+            <if test="deleteFlag != null">delete_flag = #{deleteFlag},</if>
+            <if test="productId != null">product_id = #{productId},</if>
+            <if test="categoryId != null">category_id = #{categoryId},</if>
+            <if test="name != null">name = #{name},</if>
+            <if test="subTitle != null">sub_title = #{subTitle},</if>
+            <if test="mainImage != null">main_image = #{mainImage},</if>
+            <if test="subImages != null">sub_images = #{subImages},</if>
+            <if test="activityId != null">activity_id = #{activityId},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="price != null">price = #{price},</if>
+            <if test="stock != null">stock = #{stock},</if>
+            <if test="hotFlag != null">hot_flag = #{hotFlag},</if>
+        </trim>
+        where product.id = #{id}
+    </update>
+
+
+    <!-- 更新商品库存 -->
+    <update id="updateProductStock">
+        update product set stock = stock + #{quantity}, update_time = now()
+        where product_id = #{productId} and delete_flag = 0
+    </update>
+
+    <!-- 更新商品热门状态 -->
+    <update id="updateProductHotFlag">
+        update product set hot_flag = #{hotFlag}, update_time = now()
+        where product_id = #{productId} and delete_flag = 0
+    </update>
+
+    <delete id="deleteProductById" parameterType="Long">
+        update product set delete_flag = 1 where id = #{id}
+    </delete>
+
+    <delete id="deleteProductByIds" parameterType="String">
+        update product set delete_flag = 1 where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

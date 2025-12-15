@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.neuedu.system.mapper.BannerInfoMapper">
+    
+    <resultMap type="BannerInfo" id="BannerInfoResult">
+        <result property="id"    column="id"    />
+        <result property="image"    column="image"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="title"    column="title"    />
+    </resultMap>
+
+    <sql id="selectBannerInfoVo">
+        select id, image, create_time, update_time, title from banner_info
+    </sql>
+
+    <select id="selectBannerInfoList" parameterType="BannerInfo" resultMap="BannerInfoResult">
+        <include refid="selectBannerInfoVo"/>
+        <where>  
+            <if test="image != null  and image != ''"> and image = #{image}</if>
+            <if test="title != null  and title != ''"> and title = #{title}</if>
+        </where>
+    </select>
+    
+    <select id="selectBannerInfoById" parameterType="Long" resultMap="BannerInfoResult">
+        <include refid="selectBannerInfoVo"/>
+        where banner_info.id = #{id}
+    </select>
+        
+    <insert id="insertBannerInfo" parameterType="BannerInfo" useGeneratedKeys="true" keyProperty="id">
+        insert into banner_info
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="image != null">image,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="title != null">title,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="image != null">#{image},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="title != null">#{title},</if>
+         </trim>
+    </insert>
+
+    <update id="updateBannerInfo" parameterType="BannerInfo">
+        update banner_info
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="image != null">image = #{image},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="title != null">title = #{title},</if>
+        </trim>
+        where banner_info.id = #{id}
+    </update>
+
+    <delete id="deleteBannerInfoById" parameterType="Long">
+        delete from banner_info where id = #{id}
+    </delete>
+
+    <delete id="deleteBannerInfoByIds" parameterType="String">
+        delete from banner_info where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

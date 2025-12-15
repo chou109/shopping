@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.neuedu.system.mapper.ProductDetailMapper">
+    
+    <resultMap type="ProductDetail" id="ProductDetailResult">
+        <result property="id"    column="id"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="createUser"    column="create_user"    />
+        <result property="updateUser"    column="update_user"    />
+        <result property="deleteFlag"    column="delete_flag"    />
+        <result property="productId"    column="product_id"    />
+        <result property="detail"    column="detail"    />
+        <result property="param"    column="param"    />
+        <result property="rotation"    column="rotation"    />
+    </resultMap>
+
+    <sql id="selectProductDetailVo">
+        select id, create_time, update_time, create_user, update_user, delete_flag, product_id, detail, param, rotation from product_detail
+    </sql>
+
+    <select id="selectProductDetailList" parameterType="ProductDetail" resultMap="ProductDetailResult">
+        <include refid="selectProductDetailVo"/>
+        <where>  
+            <if test="createUser != null "> and create_user = #{createUser}</if>
+            <if test="updateUser != null "> and update_user = #{updateUser}</if>
+            <if test="deleteFlag != null "> and delete_flag = #{deleteFlag}</if>
+            <if test="productId != null "> and product_id = #{productId}</if>
+            <if test="detail != null  and detail != ''"> and detail = #{detail}</if>
+            <if test="param != null  and param != ''"> and param = #{param}</if>
+            <if test="rotation != null  and rotation != ''"> and rotation = #{rotation}</if>
+        </where>
+    </select>
+    
+    <select id="selectProductDetailById" parameterType="Long" resultMap="ProductDetailResult">
+        <include refid="selectProductDetailVo"/>
+        where product_detail.id = #{id}
+    </select>
+        
+    <insert id="insertProductDetail" parameterType="ProductDetail" useGeneratedKeys="true" keyProperty="id">
+        insert into product_detail
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="createTime != null">create_time,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="createUser != null">create_user,</if>
+            <if test="updateUser != null">update_user,</if>
+            <if test="deleteFlag != null">delete_flag,</if>
+            <if test="productId != null">product_id,</if>
+            <if test="detail != null">detail,</if>
+            <if test="param != null">param,</if>
+            <if test="rotation != null">rotation,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="createUser != null">#{createUser},</if>
+            <if test="updateUser != null">#{updateUser},</if>
+            <if test="deleteFlag != null">#{deleteFlag},</if>
+            <if test="productId != null">#{productId},</if>
+            <if test="detail != null">#{detail},</if>
+            <if test="param != null">#{param},</if>
+            <if test="rotation != null">#{rotation},</if>
+         </trim>
+    </insert>
+
+    <update id="updateProductDetail" parameterType="ProductDetail">
+        update product_detail
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="createUser != null">create_user = #{createUser},</if>
+            <if test="updateUser != null">update_user = #{updateUser},</if>
+            <if test="deleteFlag != null">delete_flag = #{deleteFlag},</if>
+            <if test="productId != null">product_id = #{productId},</if>
+            <if test="detail != null">detail = #{detail},</if>
+            <if test="param != null">param = #{param},</if>
+            <if test="rotation != null">rotation = #{rotation},</if>
+        </trim>
+        where product_detail.id = #{id}
+    </update>
+
+    <delete id="deleteProductDetailById" parameterType="Long">
+        delete from product_detail where id = #{id}
+    </delete>
+
+    <delete id="deleteProductDetailByIds" parameterType="String">
+        delete from product_detail where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

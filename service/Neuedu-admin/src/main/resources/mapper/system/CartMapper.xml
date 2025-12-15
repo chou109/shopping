@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.neuedu.system.mapper.CartMapper">
+    
+    <resultMap type="Cart" id="CartResult">
+        <result property="id"    column="id"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="createUser"    column="create_user"    />
+        <result property="updateUser"    column="update_user"    />
+        <result property="deleteFlag"    column="delete_flag"    />
+        <result property="userId"    column="user_id"    />
+        <result property="activityId"    column="activity_id"    />
+        <result property="activityName"    column="activity_name"    />
+        <result property="productId"    column="product_id"    />
+        <result property="productName"    column="product_name"    />
+        <result property="productSubtitle"    column="product_subtitle"    />
+        <result property="productMainImage"    column="product_main_image"    />
+        <result property="quantity"    column="quantity"    />
+        <result property="productUnitPrice"    column="product_unit_price"    />
+        <result property="selected"    column="selected"    />
+        <result property="productTotalPrice"    column="product_total_price"    />
+
+        <!-- 关联用户信息 -->
+        <association property="user" javaType="User">
+            <id property="id" column="user_id" />
+            <result property="userName" column="user_name" />
+            <result property="nickname" column="nickname" />
+            <result property="phone" column="phone" />
+            <result property="email" column="email" />
+        </association>
+
+        <!-- 关联商品信息 -->
+        <association property="product" javaType="Product">
+            <id property="id" column="product_id" />
+            <result property="name" column="p_name" />
+            <result property="subTitle" column="p_sub_title" />
+            <result property="mainImage" column="p_main_image" />
+            <result property="price" column="p_price" />
+            <result property="stock" column="p_stock" />
+            <result property="status" column="p_status" />
+        </association>
+
+        <!-- 关联活动信息 -->
+        <association property="activity" javaType="Activity">
+            <id property="id" column="activity_id" />
+            <result property="name" column="a_name" />
+            <result property="status" column="a_status" />
+            <result property="mainImage" column="a_main_image" />
+            <result property="startTime" column="start_time" />
+            <result property="endTime" column="end_time" />
+        </association>
+    </resultMap>
+
+
+
+
+<!--    <sql id="selectCartVo">-->
+<!--        select id, create_time, update_time, create_user, update_user, delete_flag, user_id, activity_id, activity_name, product_id, product_name, product_subtitle, product_main_image, quantity, product_unit_price, selected, product_total_price from cart-->
+<!--    </sql>-->
+    <sql id="selectCartVo">
+        select
+        c.id,
+        c.create_time,
+        c.update_time,
+        c.create_user,
+        c.update_user,
+        c.delete_flag,
+        c.user_id,
+        c.activity_id,
+        c.activity_name,
+        c.product_id,
+        c.product_name,
+        c.product_subtitle,
+        c.product_main_image,
+        c.quantity,
+        c.product_unit_price,
+        c.selected,
+        c.product_total_price,
+        <!-- 用户信息 -->
+        u.user_name,
+        u.nickname,
+        u.phone,
+        u.email,
+        <!-- 商品信息 -->
+        p.name as p_name,
+        p.sub_title as p_sub_title,
+        p.main_image as p_main_image,
+        p.price as p_price,
+        p.stock as p_stock,
+        p.status as p_status,
+        <!-- 活动信息 -->
+        a.name as a_name,
+        a.status as a_status,
+        a.main_image as a_main_image,
+        a.start_time,
+        a.end_time
+        from cart c
+        left join user u on c.user_id = u.id and u.delete_flag = 0
+        left join product p on c.product_id = p.product_id and p.delete_flag = 0
+        left join activity a on c.activity_id = a.activity_id and a.delete_flag = 0
+    </sql>
+
+    <select id="selectCartList" parameterType="Cart" resultMap="CartResult">
+        <include refid="selectCartVo"/>
+        <where>
+            c.delete_flag = 0  <!-- 只查询未删除的 -->
+            <if test="userId != null "> and c.user_id = #{userId}</if>
+            <if test="createUser != null "> and c.create_user = #{createUser}</if>
+            <if test="updateUser != null "> and c.update_user = #{updateUser}</if>
+            <if test="activityId != null "> and c.activity_id = #{activityId}</if>
+            <if test="activityName != null  and activityName != ''"> and c.activity_name like concat('%', #{activityName}, '%')</if>
+            <if test="productId != null "> and c.product_id = #{productId}</if>
+            <if test="productName != null  and productName != ''"> and c.product_name like concat('%', #{productName}, '%')</if>
+            <if test="selected != null "> and c.selected = #{selected}</if>
+        </where>
+        order by c.create_time desc
+    </select>
+
+    <select id="selectCartById" parameterType="Long" resultMap="CartResult">
+        <include refid="selectCartVo"/>
+        where c.id = #{id} and c.delete_flag = 0
+    </select>
+
+    <select id="selectCartByUserIdAndProductId" resultMap="CartResult">
+        <include refid="selectCartVo"/>
+        where c.user_id = #{userId} and c.product_id = #{productId} and c.delete_flag = 0
+        limit 1
+    </select>
+
+
+    <insert id="insertCart" parameterType="Cart" useGeneratedKeys="true" keyProperty="id">
+        insert into cart
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="createTime != null">create_time,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="createUser != null">create_user,</if>
+            <if test="updateUser != null">update_user,</if>
+            <if test="deleteFlag != null">delete_flag,</if>
+            <if test="userId != null">user_id,</if>
+            <if test="activityId != null">activity_id,</if>
+            <if test="activityName != null">activity_name,</if>
+            <if test="productId != null">product_id,</if>
+            <if test="productName != null and productName != ''">product_name,</if>
+            <if test="productSubtitle != null">product_subtitle,</if>
+            <if test="productMainImage != null">product_main_image,</if>
+            <if test="quantity != null">quantity,</if>
+            <if test="productUnitPrice != null">product_unit_price,</if>
+            <if test="selected != null">selected,</if>
+            <if test="productTotalPrice != null">product_total_price,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="createUser != null">#{createUser},</if>
+            <if test="updateUser != null">#{updateUser},</if>
+            <if test="deleteFlag != null">#{deleteFlag},</if>
+            <if test="userId != null">#{userId},</if>
+            <if test="activityId != null">#{activityId},</if>
+            <if test="activityName != null">#{activityName},</if>
+            <if test="productId != null">#{productId},</if>
+            <if test="productName != null and productName != ''">#{productName},</if>
+            <if test="productSubtitle != null">#{productSubtitle},</if>
+            <if test="productMainImage != null">#{productMainImage},</if>
+            <if test="quantity != null">#{quantity},</if>
+            <if test="productUnitPrice != null">#{productUnitPrice},</if>
+            <if test="selected != null">#{selected},</if>
+            <if test="productTotalPrice != null">#{productTotalPrice},</if>
+         </trim>
+    </insert>
+
+    <update id="updateCart" parameterType="Cart">
+        update cart
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="createUser != null">create_user = #{createUser},</if>
+            <if test="updateUser != null">update_user = #{updateUser},</if>
+            <if test="deleteFlag != null">delete_flag = #{deleteFlag},</if>
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="activityId != null">activity_id = #{activityId},</if>
+            <if test="activityName != null">activity_name = #{activityName},</if>
+            <if test="productId != null">product_id = #{productId},</if>
+            <if test="productName != null and productName != ''">product_name = #{productName},</if>
+            <if test="productSubtitle != null">product_subtitle = #{productSubtitle},</if>
+            <if test="productMainImage != null">product_main_image = #{productMainImage},</if>
+            <if test="quantity != null">quantity = #{quantity},</if>
+            <if test="productUnitPrice != null">product_unit_price = #{productUnitPrice},</if>
+            <if test="selected != null">selected = #{selected},</if>
+            <if test="productTotalPrice != null">product_total_price = #{productTotalPrice},</if>
+        </trim>
+        where cart.id = #{id} and delete_flag = 0
+    </update>
+
+    <!-- 软删除 -->
+    <update id="deleteCartById" parameterType="Long">
+        update cart set delete_flag = 1 where id = #{id}
+    </update>
+
+    <update id="deleteCartByIds" parameterType="Long[]">
+        update cart set delete_flag = 1 where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <!-- 根据用户ID查询购物车 -->
+    <select id="selectCartByUserId" parameterType="Long" resultMap="CartResult">
+        <include refid="selectCartVo"/>
+        where c.user_id = #{userId} and c.delete_flag = 0
+        order by c.create_time desc
+    </select>
+</mapper>

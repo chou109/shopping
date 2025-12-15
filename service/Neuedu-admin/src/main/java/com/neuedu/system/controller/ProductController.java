@@ -1,0 +1,191 @@
+package com.neuedu.system.controller;
+
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import javax.servlet.http.HttpServletResponse;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+import com.neuedu.common.annotation.Log;
+import com.neuedu.common.core.controller.BaseController;
+import com.neuedu.common.core.domain.AjaxResult;
+import com.neuedu.common.enums.BusinessType;
+import com.neuedu.system.domain.Product;
+import com.neuedu.system.service.IProductService;
+import com.neuedu.common.utils.poi.ExcelUtil;
+import com.neuedu.common.core.page.TableDataInfo;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+
+/**
+ * 商品Controller
+ * 
+ * @author ruoyi
+ * @date 2025-12-13
+ */
+@RestController
+@RequestMapping("/system/product")
+@Tag(name = "【商品】管理")
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+public class ProductController extends BaseController
+{
+    private final IProductService productService;
+
+    /**
+     * 查询商品列表
+     */
+    @Operation(summary = "查询商品列表")
+    @PreAuthorize("@ss.hasPermi('system:product:list')")
+    @GetMapping("/list")
+    public TableDataInfo list(Product product)
+    {
+        startPage();
+        List<Product> list = productService.selectProductList(product);
+        return getDataTable(list);
+    }
+
+    /**
+     * 导出商品列表
+     */
+    @Operation(summary = "导出商品列表")
+    @PreAuthorize("@ss.hasPermi('system:product:export')")
+    @Log(title = "商品", businessType = BusinessType.EXPORT)
+    @PostMapping("/export")
+    public void export(HttpServletResponse response, Product product)
+    {
+        List<Product> list = productService.selectProductList(product);
+        ExcelUtil<Product> util = new ExcelUtil<Product>(Product.class);
+        util.exportExcel(response, list, "商品数据");
+    }
+
+    /**
+     * 查询热门商品列表
+     */
+    @Operation(summary = "查询热门商品列表")
+    @GetMapping("/hot")
+    public AjaxResult hot(@RequestParam(value = "limit", defaultValue = "10") Integer limit)
+    {
+        List<Product> list = productService.selectHotProductList(limit);
+        return success(list);
+    }
+
+    /**
+     * 根据分类ID查询商品列表
+     */
+    @Operation(summary = "根据分类ID查询商品")
+    @GetMapping("/category/{categoryId}")
+    public AjaxResult byCategory(@PathVariable Long categoryId)
+    {
+        List<Product> list = productService.selectProductByCategoryId(categoryId);
+        return success(list);
+    }
+
+    /**
+     * 根据活动ID查询商品列表
+     */
+    @Operation(summary = "根据活动ID查询商品")
+    @GetMapping("/activity/{activityId}")
+    public AjaxResult byActivity(@PathVariable Long activityId)
+    {
+        List<Product> list = productService.selectProductByActivityId(activityId);
+        return success(list);
+    }
+
+    /**
+     * 搜索商品
+     */
+    @Operation(summary = "搜索商品")
+    @GetMapping("/search")
+    public AjaxResult search(@RequestParam String keyword)
+    {
+        List<Product> list = productService.searchProductByName(keyword);
+        return success(list);
+    }
+
+
+    /**
+     * 获取商品详细信息
+     */
+    @Operation(summary = "获取商品详细信息")
+    @PreAuthorize("@ss.hasPermi('system:product:query')")
+    @GetMapping(value = "/{id}")
+    public AjaxResult getInfo(@PathVariable("id") Long id)
+    {
+        return success(productService.selectProductById(id));
+    }
+
+    /**
+     * 新增商品
+     */
+    @Operation(summary = "新增商品")
+    @PreAuthorize("@ss.hasPermi('system:product:add')")
+    @Log(title = "商品", businessType = BusinessType.INSERT)
+    @PostMapping
+    public AjaxResult add(@RequestBody Product product)
+    {
+        return toAjax(productService.insertProduct(product));
+    }
+
+    /**
+     * 修改商品
+     */
+    @Operation(summary = "修改商品")
+    @PreAuthorize("@ss.hasPermi('system:product:edit')")
+    @Log(title = "商品", businessType = BusinessType.UPDATE)
+    @PutMapping
+    public AjaxResult edit(@RequestBody Product product)
+    {
+        return toAjax(productService.updateProduct(product));
+    }
+
+    /**
+     * 删除商品
+     */
+    @Operation(summary = "删除商品")
+    @PreAuthorize("@ss.hasPermi('system:product:remove')")
+    @Log(title = "商品", businessType = BusinessType.DELETE)
+	@DeleteMapping("/{ids}")
+    public AjaxResult remove(@PathVariable( name = "ids" ) Long[] ids) 
+    {
+        return toAjax(productService.deleteProductByIds(ids));
+    }
+
+    /**
+     * 设置商品热门状态
+     */
+    @Operation(summary = "设置商品热门状态")
+    @PreAuthorize("@ss.hasPermi('system:product:edit')")
+    @Log(title = "商品", businessType = BusinessType.UPDATE)
+    @PutMapping("/{productId}/hot")
+    public AjaxResult setHot(@PathVariable Long productId, @RequestParam Integer hotFlag)
+    {
+        return toAjax(productService.updateProductHotFlag(productId, hotFlag));
+    }
+
+    /**
+     * 更新商品库存
+     */
+    @Operation(summary = "更新商品库存")
+    @PreAuthorize("@ss.hasPermi('system:product:edit')")
+    @Log(title = "商品", businessType = BusinessType.UPDATE)
+    @PutMapping("/{productId}/stock")
+    public AjaxResult updateStock(@PathVariable Long productId, @RequestParam Long quantity)
+    {
+        return toAjax(productService.updateProductStock(productId, quantity));
+    }
+
+    /**
+     * 上架/下架商品
+     */
+    @Operation(summary = "上架/下架商品")
+    @PreAuthorize("@ss.hasPermi('system:product:edit')")
+    @Log(title = "商品", businessType = BusinessType.UPDATE)
+    @PutMapping("/{productId}/status")
+    public AjaxResult updateStatus(@PathVariable Long productId, @RequestParam Integer status)
+    {
+        Product product = new Product();
+        product.setId(productId);
+        product.setStatus(status);
+        return toAjax(productService.updateProduct(product));
+    }
+}

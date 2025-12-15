@@ -1,0 +1,13 @@
+@media print {
+  :has(.print-element) > :not(.print-element):not(:has(.print-element)) {
+    display: none;
+  }
+
+  @page {
+    margin: 0;
+  }
+
+  body {
+    height: auto !important;
+  }
+}

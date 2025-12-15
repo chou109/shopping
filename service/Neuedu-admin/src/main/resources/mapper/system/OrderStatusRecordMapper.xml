@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.neuedu.system.mapper.OrderStatusRecordMapper">
+    
+    <resultMap type="OrderStatusRecord" id="OrderStatusRecordResult">
+        <result property="id"    column="id"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="orderNo"    column="order_no"    />
+        <result property="orderDetailNo"    column="order_detail_no"    />
+        <result property="productId"    column="product_id"    />
+        <result property="productName"    column="product_name"    />
+        <result property="status"    column="status"    />
+        <result property="statusDesc"    column="status_desc"    />
+    </resultMap>
+
+    <sql id="selectOrderStatusRecordVo">
+        select id, create_time, order_no, order_detail_no, product_id, product_name, status, status_desc from order_status_record
+    </sql>
+
+    <select id="selectOrderStatusRecordList" parameterType="OrderStatusRecord" resultMap="OrderStatusRecordResult">
+        <include refid="selectOrderStatusRecordVo"/>
+        <where>  
+            <if test="orderNo != null  and orderNo != ''"> and order_no = #{orderNo}</if>
+            <if test="orderDetailNo != null  and orderDetailNo != ''"> and order_detail_no = #{orderDetailNo}</if>
+            <if test="productId != null "> and product_id = #{productId}</if>
+            <if test="productName != null  and productName != ''"> and product_name like concat('%', #{productName}, '%')</if>
+            <if test="status != null "> and status = #{status}</if>
+            <if test="statusDesc != null  and statusDesc != ''"> and status_desc = #{statusDesc}</if>
+        </where>
+    </select>
+    
+    <select id="selectOrderStatusRecordById" parameterType="Long" resultMap="OrderStatusRecordResult">
+        <include refid="selectOrderStatusRecordVo"/>
+        where order_status_record.id = #{id}
+    </select>
+        
+    <insert id="insertOrderStatusRecord" parameterType="OrderStatusRecord" useGeneratedKeys="true" keyProperty="id">
+        insert into order_status_record
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="createTime != null">create_time,</if>
+            <if test="orderNo != null and orderNo != ''">order_no,</if>
+            <if test="orderDetailNo != null and orderDetailNo != ''">order_detail_no,</if>
+            <if test="productId != null">product_id,</if>
+            <if test="productName != null">product_name,</if>
+            <if test="status != null">status,</if>
+            <if test="statusDesc != null">status_desc,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="createTime != null">#{createTime},</if>
+            <if test="orderNo != null and orderNo != ''">#{orderNo},</if>
+            <if test="orderDetailNo != null and orderDetailNo != ''">#{orderDetailNo},</if>
+            <if test="productId != null">#{productId},</if>
+            <if test="productName != null">#{productName},</if>
+            <if test="status != null">#{status},</if>
+            <if test="statusDesc != null">#{statusDesc},</if>
+         </trim>
+    </insert>
+
+    <update id="updateOrderStatusRecord" parameterType="OrderStatusRecord">
+        update order_status_record
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="orderNo != null and orderNo != ''">order_no = #{orderNo},</if>
+            <if test="orderDetailNo != null and orderDetailNo != ''">order_detail_no = #{orderDetailNo},</if>
+            <if test="productId != null">product_id = #{productId},</if>
+            <if test="productName != null">product_name = #{productName},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="statusDesc != null">status_desc = #{statusDesc},</if>
+        </trim>
+        where order_status_record.id = #{id}
+    </update>
+
+    <delete id="deleteOrderStatusRecordById" parameterType="Long">
+        delete from order_status_record where id = #{id}
+    </delete>
+
+    <delete id="deleteOrderStatusRecordByIds" parameterType="String">
+        delete from order_status_record where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

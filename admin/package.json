@@ -1,0 +1,50 @@
+{
+  "name": "neuedu",
+  "version": "3.8.4",
+  "description": "网购商城管理系统",
+  "author": "国润科技",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite",
+    "build:prod": "vite build",
+    "build:stage": "vite build --mode staging",
+    "preview": "vite preview"
+  },
+  "engines": {
+    "node": "^18.0.0 || >=20.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://gitee.com/geek-xd/ruo-yi-vue3-geek.git"
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "2.3.1",
+    "@vueuse/core": "10.8.0",
+    "axios": "0.27.2",
+    "echarts": "5.4.0",
+    "element-plus": "2.6.0",
+    "file-saver": "2.0.5",
+    "fuse.js": "6.6.2",
+    "js-cookie": "3.0.1",
+    "jsencrypt": "3.3.1",
+    "minimatch": "^9.0.3",
+    "nprogress": "0.2.0",
+    "pinia": "2.1.7",
+    "quill": "^1.3.7",
+    "vform3-builds": "^3.0.10",
+    "vue": "3.4.21",
+    "vue-cropper": "1.1.1",
+    "vue-router": "4.3.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "5.0.4",
+    "@vue/compiler-sfc": "3.4.19",
+    "sass": "1.56.1",
+    "tslib": "^2.6.2",
+    "unplugin-auto-import": "0.17.5",
+    "vite": "5.1.4",
+    "vite-plugin-compression": "0.5.1",
+    "vite-plugin-svg-icons": "2.0.1",
+    "vite-plugin-vue-setup-extend": "0.4.0"
+  }
+}
