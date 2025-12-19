@@ -54,7 +54,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </association>
     </resultMap>
 
-
+    <!-- 清空用户购物车中选中的商品 -->
+    <delete id="deleteSelectedCartItems">
+        update cart set delete_flag = 1
+        where user_id = #{userId}
+          and selected = 1
+          and delete_flag = 0
+    </delete>
 
 
 <!--    <sql id="selectCartVo">-->

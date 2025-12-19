@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.neuedu.system.mapper.RefundRecordMapper">
+    
+    <resultMap type="RefundRecord" id="RefundRecordResult">
+        <result property="id"    column="id"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="createUser"    column="create_user"    />
+        <result property="updateUser"    column="update_user"    />
+        <result property="deleteFlag"    column="delete_flag"    />
+        <result property="refundNo"    column="refund_no"    />
+        <result property="orderNo"    column="order_no"    />
+        <result property="userId"    column="user_id"    />
+        <result property="refundAmount"    column="refund_amount"    />
+        <result property="refundStatus"    column="refund_status"    />
+        <result property="refundStatusDesc"    column="refund_status_desc"    />
+        <result property="refundReason"    column="refund_reason"    />
+        <result property="auditOpinion"    column="audit_opinion"    />
+        <result property="refundType"    column="refund_type"    />
+        <result property="refundTime"    column="refund_time"    />
+    </resultMap>
+
+    <sql id="selectRefundRecordVo">
+        select id, create_time, update_time, create_user, update_user, delete_flag, refund_no, order_no, user_id, refund_amount, refund_status, refund_status_desc, refund_reason, audit_opinion, refund_type, refund_time from refund_record
+    </sql>
+
+<!--    <select id="selectRefundRecordList" parameterType="RefundRecord" resultMap="RefundRecordResult">-->
+<!--        <include refid="selectRefundRecordVo"/>-->
+<!--        <where>  -->
+<!--            <if test="createUser != null "> and create_user = #{createUser}</if>-->
+<!--            <if test="updateUser != null "> and update_user = #{updateUser}</if>-->
+<!--            <if test="deleteFlag != null "> and delete_flag = #{deleteFlag}</if>-->
+<!--            <if test="refundNo != null  and refundNo != ''"> and refund_no = #{refundNo}</if>-->
+<!--            <if test="orderNo != null  and orderNo != ''"> and order_no = #{orderNo}</if>-->
+<!--            <if test="userId != null "> and user_id = #{userId}</if>-->
+<!--            <if test="refundAmount != null "> and refund_amount = #{refundAmount}</if>-->
+<!--            <if test="refundStatus != null "> and refund_status = #{refundStatus}</if>-->
+<!--            <if test="refundStatusDesc != null  and refundStatusDesc != ''"> and refund_status_desc = #{refundStatusDesc}</if>-->
+<!--            <if test="refundReason != null  and refundReason != ''"> and refund_reason = #{refundReason}</if>-->
+<!--            <if test="auditOpinion != null  and auditOpinion != ''"> and audit_opinion = #{auditOpinion}</if>-->
+<!--            <if test="refundType != null "> and refund_type = #{refundType}</if>-->
+<!--            <if test="refundTime != null "> and refund_time = #{refundTime}</if>-->
+<!--        </where>-->
+<!--    </select>-->
+
+
+    <select id="selectRefundRecordList" parameterType="com.neuedu.system.domain.RefundRecord" resultMap="RefundRecordResult">
+        <include refid="selectRefundRecordVo"/>
+        <where>
+            delete_flag = 0
+            <if test="refundNo != null and refundNo != ''"> and refund_no = #{refundNo}</if>
+            <if test="orderNo != null and orderNo != ''"> and order_no = #{orderNo}</if>
+            <if test="userId != null"> and user_id = #{userId}</if>
+            <if test="refundStatus != null"> and refund_status = #{refundStatus}</if>
+            <if test="refundReason != null and refundReason != ''"> and refund_reason like concat('%', #{refundReason}, '%')</if>
+        </where>
+        order by create_time desc
+    </select>
+    
+    <select id="selectRefundRecordById" parameterType="Long" resultMap="RefundRecordResult">
+        <include refid="selectRefundRecordVo"/>
+        where refund_record.id = #{id}
+    </select>
+
+    <select id="selectRefundRecordByRefundNo" parameterType="String" resultMap="RefundRecordResult">
+        <include refid="selectRefundRecordVo"/>
+        where refund_no = #{refundNo} and delete_flag = 0
+    </select>
+        
+    <insert id="insertRefundRecord" parameterType="RefundRecord" useGeneratedKeys="true" keyProperty="id">
+        insert into refund_record
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="createTime != null">create_time,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="createUser != null">create_user,</if>
+            <if test="updateUser != null">update_user,</if>
+            <if test="deleteFlag != null">delete_flag,</if>
+            <if test="refundNo != null and refundNo != ''">refund_no,</if>
+            <if test="orderNo != null and orderNo != ''">order_no,</if>
+            <if test="userId != null">user_id,</if>
+            <if test="refundAmount != null">refund_amount,</if>
+            <if test="refundStatus != null">refund_status,</if>
+            <if test="refundStatusDesc != null and refundStatusDesc != ''">refund_status_desc,</if>
+            <if test="refundReason != null">refund_reason,</if>
+            <if test="auditOpinion != null">audit_opinion,</if>
+            <if test="refundType != null">refund_type,</if>
+            <if test="refundTime != null">refund_time,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="createUser != null">#{createUser},</if>
+            <if test="updateUser != null">#{updateUser},</if>
+            <if test="deleteFlag != null">#{deleteFlag},</if>
+            <if test="refundNo != null and refundNo != ''">#{refundNo},</if>
+            <if test="orderNo != null and orderNo != ''">#{orderNo},</if>
+            <if test="userId != null">#{userId},</if>
+            <if test="refundAmount != null">#{refundAmount},</if>
+            <if test="refundStatus != null">#{refundStatus},</if>
+            <if test="refundStatusDesc != null and refundStatusDesc != ''">#{refundStatusDesc},</if>
+            <if test="refundReason != null">#{refundReason},</if>
+            <if test="auditOpinion != null">#{auditOpinion},</if>
+            <if test="refundType != null">#{refundType},</if>
+            <if test="refundTime != null">#{refundTime},</if>
+         </trim>
+    </insert>
+
+    <update id="updateRefundRecord" parameterType="RefundRecord">
+        update refund_record
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="createUser != null">create_user = #{createUser},</if>
+            <if test="updateUser != null">update_user = #{updateUser},</if>
+            <if test="deleteFlag != null">delete_flag = #{deleteFlag},</if>
+            <if test="refundNo != null and refundNo != ''">refund_no = #{refundNo},</if>
+            <if test="orderNo != null and orderNo != ''">order_no = #{orderNo},</if>
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="refundAmount != null">refund_amount = #{refundAmount},</if>
+            <if test="refundStatus != null">refund_status = #{refundStatus},</if>
+            <if test="refundStatusDesc != null and refundStatusDesc != ''">refund_status_desc = #{refundStatusDesc},</if>
+            <if test="refundReason != null">refund_reason = #{refundReason},</if>
+            <if test="auditOpinion != null">audit_opinion = #{auditOpinion},</if>
+            <if test="refundType != null">refund_type = #{refundType},</if>
+            <if test="refundTime != null">refund_time = #{refundTime},</if>
+        </trim>
+        where refund_record.id = #{id}
+    </update>
+
+    <delete id="deleteRefundRecordById" parameterType="Long">
+        delete from refund_record where id = #{id}
+    </delete>
+
+    <delete id="deleteRefundRecordByIds" parameterType="String">
+        delete from refund_record where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

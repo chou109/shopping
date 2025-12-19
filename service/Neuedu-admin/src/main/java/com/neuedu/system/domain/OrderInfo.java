@@ -2,7 +2,11 @@ package com.neuedu.system.domain;
 
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.neuedu.system.constants.OrderStatusConstants;
+import com.neuedu.system.util.OrderStatusUtil;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -134,4 +138,80 @@ public class OrderInfo extends BaseEntity
     @Schema(title = "购买人id")
     @Excel(name = "购买人id")
     private Long userId;
+    /** 订单超时时间（用于自动取消） */
+    @Schema(title = "订单超时时间")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @Excel(name = "订单超时时间", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
+    private Date expireTime;  // 确保这个字段存在
+
+    /** 发货时间 */
+    @Schema(title = "发货时间")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @Excel(name = "发货时间", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
+    private Date shipTime;
+
+    /** 确认收货时间 */
+    @Schema(title = "确认收货时间")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @Excel(name = "确认收货时间", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
+    private Date receiveTime;
+
+    /** 取消时间 */
+    @Schema(title = "取消时间")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @Excel(name = "取消时间", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
+    private Date cancelTime;
+
+    /** 取消原因 */
+    @Schema(title = "取消原因")
+    @Excel(name = "取消原因")
+    private String cancelReason;
+
+    /** 退款金额 */
+    @Schema(title = "退款金额")
+    @Excel(name = "退款金额")
+    private BigDecimal refundAmount;
+
+    /** 退款时间 */
+    @Schema(title = "退款时间")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @Excel(name = "退款时间", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
+    private Date refundTime;
+
+    /** 退款原因 */
+    @Schema(title = "退款原因")
+    @Excel(name = "退款原因")
+    private String refundReason;
+
+    /** 关联用户信息（非数据库字段） */
+    @Schema(title = "关联用户信息")
+    @TableField(exist = false)
+    private User user;
+
+    /** 关联地址信息（非数据库字段） */
+    @Schema(title = "关联地址信息")
+    @TableField(exist = false)
+    private UserAddress address;
+
+    /** 关联订单明细列表（非数据库字段） */
+    @Schema(title = "关联订单明细列表")
+    @TableField(exist = false)
+    private List<OrderDetail> orderDetails;
+
+    /**
+     * 设置状态并自动设置状态描述
+     */
+    public void setStatus(Integer status) {
+        this.status = status;
+        this.statusDesc = OrderStatusConstants.getOrderStatusDesc(status);
+    }
+
+    /**
+     * 设置支付类型并自动设置描述
+     */
+    public void setPaymentType(Integer paymentType) {
+        this.paymentType = paymentType;
+        this.paymentTypeDesc = OrderStatusConstants.getPaymentTypeDesc(paymentType);
+    }
+
 }

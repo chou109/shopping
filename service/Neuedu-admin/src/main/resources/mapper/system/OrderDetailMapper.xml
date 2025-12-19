@@ -29,44 +29,130 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="cancelReason"    column="cancel_reason"    />
         <result property="sendTime"    column="send_time"    />
         <result property="receiveTime"    column="receive_time"    />
+
+
+        <!-- 关联商品信息 -->
+        <association property="product" javaType="Product">
+            <id property="id" column="product_id" />
+            <result property="name" column="p_name" />
+            <result property="subTitle" column="p_sub_title" />
+            <result property="mainImage" column="p_main_image" />
+            <result property="price" column="p_price" />
+            <result property="stock" column="p_stock" />
+        </association>
+
+        <!-- 关联活动信息 -->
+        <association property="activity" javaType="Activity">
+            <id property="id" column="activity_id" />
+            <result property="name" column="a_name" />
+            <result property="mainImage" column="a_main_image" />
+        </association>
     </resultMap>
 
+    <!-- 基础查询SQL，添加关联查询 -->
     <sql id="selectOrderDetailVo">
-        select id, create_time, update_time, create_user, update_user, delete_flag, order_no, order_detail_no, activity_id, activity_name, activity_main_image, product_id, product_name, product_main_image, current_unit_price, quantity, total_price, user_id, status, status_desc, cancel_time, cancel_reason, send_time, receive_time from order_detail
+        select
+        od.id,
+        od.create_time,
+        od.update_time,
+        od.create_user,
+        od.update_user,
+        od.delete_flag,
+        od.order_no,
+        od.order_detail_no,
+        od.activity_id,
+        od.activity_name,
+        od.activity_main_image,
+        od.product_id,
+        od.product_name,
+        od.product_main_image,
+        od.current_unit_price,
+        od.quantity,
+        od.total_price,
+        od.user_id,
+        od.status,
+        od.status_desc,
+        od.cancel_time,
+        od.cancel_reason,
+        od.send_time,
+        od.receive_time,
+        <!-- 商品信息 -->
+        p.name as p_name,
+        p.sub_title as p_sub_title,
+        p.main_image as p_main_image,
+        p.price as p_price,
+        p.stock as p_stock,
+        <!-- 活动信息 -->
+        a.name as a_name,
+        a.main_image as a_main_image
+        from order_detail od
+        left join product p on od.product_id = p.product_id and p.delete_flag = 0
+        left join activity a on od.activity_id = a.activity_id and a.delete_flag = 0
     </sql>
+
+<!--    <select id="selectOrderDetailList" parameterType="OrderDetail" resultMap="OrderDetailResult">-->
+<!--        <include refid="selectOrderDetailVo"/>-->
+<!--        <where>  -->
+<!--            <if test="createUser != null "> and create_user = #{createUser}</if>-->
+<!--            <if test="updateUser != null "> and update_user = #{updateUser}</if>-->
+<!--            <if test="deleteFlag != null "> and delete_flag = #{deleteFlag}</if>-->
+<!--            <if test="orderNo != null  and orderNo != ''"> and order_no = #{orderNo}</if>-->
+<!--            <if test="orderDetailNo != null  and orderDetailNo != ''"> and order_detail_no = #{orderDetailNo}</if>-->
+<!--            <if test="activityId != null "> and activity_id = #{activityId}</if>-->
+<!--            <if test="activityName != null  and activityName != ''"> and activity_name like concat('%', #{activityName}, '%')</if>-->
+<!--            <if test="activityMainImage != null  and activityMainImage != ''"> and activity_main_image = #{activityMainImage}</if>-->
+<!--            <if test="productId != null "> and product_id = #{productId}</if>-->
+<!--            <if test="productName != null  and productName != ''"> and product_name like concat('%', #{productName}, '%')</if>-->
+<!--            <if test="productMainImage != null  and productMainImage != ''"> and product_main_image = #{productMainImage}</if>-->
+<!--            <if test="currentUnitPrice != null "> and current_unit_price = #{currentUnitPrice}</if>-->
+<!--            <if test="quantity != null "> and quantity = #{quantity}</if>-->
+<!--            <if test="totalPrice != null "> and total_price = #{totalPrice}</if>-->
+<!--            <if test="userId != null "> and user_id = #{userId}</if>-->
+<!--            <if test="status != null "> and status = #{status}</if>-->
+<!--            <if test="statusDesc != null  and statusDesc != ''"> and status_desc = #{statusDesc}</if>-->
+<!--            <if test="cancelTime != null "> and cancel_time = #{cancelTime}</if>-->
+<!--            <if test="cancelReason != null "> and cancel_reason = #{cancelReason}</if>-->
+<!--            <if test="sendTime != null "> and send_time = #{sendTime}</if>-->
+<!--            <if test="receiveTime != null "> and receive_time = #{receiveTime}</if>-->
+<!--        </where>-->
+<!--    </select>-->
+
 
     <select id="selectOrderDetailList" parameterType="OrderDetail" resultMap="OrderDetailResult">
         <include refid="selectOrderDetailVo"/>
-        <where>  
-            <if test="createUser != null "> and create_user = #{createUser}</if>
-            <if test="updateUser != null "> and update_user = #{updateUser}</if>
-            <if test="deleteFlag != null "> and delete_flag = #{deleteFlag}</if>
-            <if test="orderNo != null  and orderNo != ''"> and order_no = #{orderNo}</if>
-            <if test="orderDetailNo != null  and orderDetailNo != ''"> and order_detail_no = #{orderDetailNo}</if>
-            <if test="activityId != null "> and activity_id = #{activityId}</if>
-            <if test="activityName != null  and activityName != ''"> and activity_name like concat('%', #{activityName}, '%')</if>
-            <if test="activityMainImage != null  and activityMainImage != ''"> and activity_main_image = #{activityMainImage}</if>
-            <if test="productId != null "> and product_id = #{productId}</if>
-            <if test="productName != null  and productName != ''"> and product_name like concat('%', #{productName}, '%')</if>
-            <if test="productMainImage != null  and productMainImage != ''"> and product_main_image = #{productMainImage}</if>
-            <if test="currentUnitPrice != null "> and current_unit_price = #{currentUnitPrice}</if>
-            <if test="quantity != null "> and quantity = #{quantity}</if>
-            <if test="totalPrice != null "> and total_price = #{totalPrice}</if>
-            <if test="userId != null "> and user_id = #{userId}</if>
-            <if test="status != null "> and status = #{status}</if>
-            <if test="statusDesc != null  and statusDesc != ''"> and status_desc = #{statusDesc}</if>
-            <if test="cancelTime != null "> and cancel_time = #{cancelTime}</if>
-            <if test="cancelReason != null "> and cancel_reason = #{cancelReason}</if>
-            <if test="sendTime != null "> and send_time = #{sendTime}</if>
-            <if test="receiveTime != null "> and receive_time = #{receiveTime}</if>
+        <where>
+            od.delete_flag = 0
+            <if test="orderNo != null  and orderNo != ''"> and od.order_no = #{orderNo}</if>
+            <if test="orderDetailNo != null  and orderDetailNo != ''"> and od.order_detail_no = #{orderDetailNo}</if>
+            <if test="userId != null "> and od.user_id = #{userId}</if>
+            <if test="productId != null "> and od.product_id = #{productId}</if>
+            <if test="activityId != null "> and od.activity_id = #{activityId}</if>
+            <if test="status != null "> and od.status = #{status}</if>
+            <if test="productName != null  and productName != ''"> and od.product_name like concat('%', #{productName}, '%')</if>
         </where>
+        order by od.create_time desc
     </select>
-    
+
+
     <select id="selectOrderDetailById" parameterType="Long" resultMap="OrderDetailResult">
         <include refid="selectOrderDetailVo"/>
-        where order_detail.id = #{id}
+        where order_detail.id = #{id} and od.delete_flag = 0
     </select>
-        
+
+    <!-- 根据订单编号查询订单明细 -->
+    <select id="selectOrderDetailByOrderNo" parameterType="String" resultMap="OrderDetailResult">
+        <include refid="selectOrderDetailVo"/>
+        where od.order_no = #{orderNo} and od.delete_flag = 0
+        order by od.create_time
+    </select>
+
+    <!-- 根据用户ID查询订单明细 -->
+    <select id="selectOrderDetailByUserId" parameterType="Long" resultMap="OrderDetailResult">
+        <include refid="selectOrderDetailVo"/>
+        where od.user_id = #{userId} and od.delete_flag = 0
+        order by od.create_time desc
+    </select>
+
     <insert id="insertOrderDetail" parameterType="OrderDetail" useGeneratedKeys="true" keyProperty="id">
         insert into order_detail
         <trim prefix="(" suffix=")" suffixOverrides=",">
@@ -121,6 +207,25 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
          </trim>
     </insert>
 
+
+    <!-- 批量插入订单明细 -->
+    <insert id="batchInsertOrderDetail" parameterType="java.util.List">
+        insert into order_detail (
+        create_time, create_user, delete_flag,
+        order_no, order_detail_no, activity_id, activity_name, activity_main_image,
+        product_id, product_name, product_main_image, current_unit_price,
+        quantity, total_price, user_id, status, status_desc
+        ) values
+        <foreach collection="list" item="item" separator=",">
+            (
+            #{item.createTime}, #{item.createUser}, #{item.deleteFlag},
+            #{item.orderNo}, #{item.orderDetailNo}, #{item.activityId}, #{item.activityName}, #{item.activityMainImage},
+            #{item.productId}, #{item.productName}, #{item.productMainImage}, #{item.currentUnitPrice},
+            #{item.quantity}, #{item.totalPrice}, #{item.userId}, #{item.status}, #{item.statusDesc}
+            )
+        </foreach>
+    </insert>
+
     <update id="updateOrderDetail" parameterType="OrderDetail">
         update order_detail
         <trim prefix="SET" suffixOverrides=",">
@@ -161,4 +266,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             #{id}
         </foreach>
     </delete>
+
+
+    <!-- 软删除 -->
+    <update id="deleteOrderDetailById" parameterType="Long">
+        update order_detail set delete_flag = 1 where id = #{id}
+    </update>
+
+    <!-- 更新订单明细状态 -->
+    <update id="updateOrderDetailStatus">
+        update order_detail
+        set status = #{status},
+            status_desc = #{statusDesc},
+            update_time = now()
+        where order_detail_no = #{orderDetailNo} and delete_flag = 0
+    </update>
 </mapper>

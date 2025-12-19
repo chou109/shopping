@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import com.neuedu.system.mapper.OrderDetailMapper;
 import com.neuedu.system.domain.OrderDetail;
 import com.neuedu.system.service.IOrderDetailService;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 订单明细Service业务层处理
@@ -31,6 +32,53 @@ public class OrderDetailServiceImpl extends ServiceImpl<OrderDetailMapper, Order
     public OrderDetail selectOrderDetailById(Long id)
     {
         return orderDetailMapper.selectOrderDetailById(id);
+    }
+
+    /**
+     * 根据订单编号查询订单明细
+     *
+     * @param orderNo 订单编号
+     * @return 订单明细列表
+     */
+    @Override
+    public List<OrderDetail> selectOrderDetailByOrderNo(String orderNo)
+    {
+        return orderDetailMapper.selectOrderDetailByOrderNo(orderNo);
+    }
+
+    /**
+     * 根据用户ID查询订单明细
+     *
+     * @param userId 用户ID
+     * @return 订单明细列表
+     */
+    @Override
+    public List<OrderDetail> selectOrderDetailByUserId(Long userId)
+    {
+        return orderDetailMapper.selectOrderDetailByUserId(userId);
+    }
+
+    /**
+     * 批量插入订单明细
+     *
+     * @param orderDetails 订单明细列表
+     * @return 结果
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int batchInsertOrderDetail(List<OrderDetail> orderDetails)
+    {
+        if (orderDetails == null || orderDetails.isEmpty()) {
+            return 0;
+        }
+
+        int count = 0;
+        // 循环插入（如果需要更高效，可以使用真正的批量插入）
+        for (OrderDetail orderDetail : orderDetails) {
+            orderDetail.setCreateTime(DateUtils.getNowDate());
+            count += orderDetailMapper.insertOrderDetail(orderDetail);
+        }
+        return count;
     }
 
     /**

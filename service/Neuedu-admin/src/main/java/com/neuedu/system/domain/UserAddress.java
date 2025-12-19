@@ -1,5 +1,6 @@
 package com.neuedu.system.domain;
 
+import com.neuedu.system.constants.AddressConstants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -110,4 +111,36 @@ public class UserAddress extends BaseEntity
     @Schema(title = "地址标签")
     @Excel(name = "地址标签")
     private Integer addressLabel;
+
+    /** 用户ID */
+    @Schema(title = "用户ID")
+    private Long userId;
+    // ================ 扩展字段 ================
+    /** 地址标签名称 */
+    @TableField(exist = false)
+    private String addressLabelName;
+
+    /** 完整地址 */
+    @TableField(exist = false)
+    private String fullAddress;
+
+    /**
+     * 获取地址标签名称
+     */
+    public String getAddressLabelName() {
+        return AddressConstants.getLabelName(this.addressLabel);
+    }
+
+    /**
+     * 获取完整地址
+     */
+    public String getFullAddress() {
+        StringBuilder sb = new StringBuilder();
+        if (province != null) sb.append(province);
+        if (city != null) sb.append(city);
+        if (area != null) sb.append(area);
+        if (street != null) sb.append(street);
+        return sb.toString();
+    }
+
 }

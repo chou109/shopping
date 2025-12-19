@@ -141,4 +141,17 @@ public class OrderDetail extends BaseEntity
     @JsonFormat(pattern = "yyyy-MM-dd")
     @Excel(name = "签收时间", width = 30, dateFormat = "yyyy-MM-dd")
     private Date receiveTime;
+
+
+    /** 关联商品信息（非数据库字段） */
+    @Schema(title = "关联商品信息")
+    @TableField(exist = false)
+    private Product product;
+
+    /** 关联活动信息（非数据库字段） */
+    @Schema(title = "关联活动信息")
+    @TableField(exist = false)
+    private Activity activity;
+
+
 }
