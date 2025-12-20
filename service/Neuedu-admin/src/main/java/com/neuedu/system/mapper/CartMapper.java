@@ -23,11 +23,21 @@ public interface CartMapper extends BaseMapper<Cart>
     public Cart selectCartById(Long id);
 
     /**
+     * 清空用户购物车中选中的商品
+     *
+     * @param userId 用户ID
+     * @return 结果
+     */
+    public int deleteSelectedCartItems(@Param("userId") Long userId);
+
+
+    /**
      * 查询购物车列表
      * 
      * @param cart 购物车
      * @return 购物车集合
      */
+    public List<Cart> selectCartList(Cart cart);
 
     /**
      * 根据用户ID查询购物车列表
@@ -38,7 +48,7 @@ public interface CartMapper extends BaseMapper<Cart>
     public List<Cart> selectCartByUserId(Long userId);
 
 
-    public List<Cart> selectCartList(Cart cart);
+
 
     /**
      * 根据用户ID和商品ID查询购物车

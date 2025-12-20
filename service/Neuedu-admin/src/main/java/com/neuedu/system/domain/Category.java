@@ -12,6 +12,9 @@ import com.neuedu.common.core.domain.BaseEntity;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * 类目对象 category
  * 
@@ -70,4 +73,13 @@ public class Category extends BaseEntity
     @Schema(title = "热门")
     @Excel(name = "热门")
     private Integer hotFlag;
+
+    // ================ 树形结构相关字段（非数据库字段） ================
+    /** 父类目名称 */
+    @TableField(exist = false)
+    private String parentName;
+
+    /** 子类目列表 */
+    @TableField(exist = false)
+    private List<Category> children = new ArrayList<>();
 }

@@ -3,6 +3,8 @@ import lombok.RequiredArgsConstructor;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.stream.Collectors;
+
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.neuedu.common.utils.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,6 +61,35 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements IC
     {
         return cartMapper.selectCartByUserId(userId);
     }
+
+    /**
+     * 根据用户ID和商品ID查询购物车
+     *
+     * @param userId 用户ID
+     * @param productId 商品ID
+     * @return 购物车
+     */
+    @Override
+    public Cart selectCartByUserIdAndProductId(Long userId, Long productId)
+    {
+        return cartMapper.selectCartByUserIdAndProductId(userId, productId);
+    }
+
+    /**
+     * 获取用户选中的购物车商品
+     *
+     * @param userId 用户ID
+     * @return 购物车集合
+     */
+    @Override
+    public List<Cart> getSelectedCartItems(Long userId)
+    {
+        List<Cart> userCarts = cartMapper.selectCartByUserId(userId);
+        return userCarts.stream()
+                .filter(cart -> cart.getSelected() != null && cart.getSelected() == 1)
+                .collect(Collectors.toList());
+    }
+
 
 
     /**
@@ -196,6 +227,35 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements IC
                 .map(Cart::getId)
                 .toArray(Long[]::new);
 
+        return deleteCartByIds(ids);
+    }
+
+    /**
+     * 清空用户选中的购物车商品
+     *
+     * @param userId 用户ID
+     * @return 结果
+     */
+    @Override
+    @Transactional
+    public int clearSelectedCartItems(Long userId)
+    {
+        List<Cart> cartList = cartMapper.selectCartByUserId(userId);
+        if (cartList.isEmpty()) {
+            return 0;
+        }
+
+        // 获取选中的购物车商品ID
+        List<Long> selectedIds = cartList.stream()
+                .filter(cart -> cart.getSelected() != null && cart.getSelected() == 1)
+                .map(Cart::getId)
+                .collect(Collectors.toList());
+
+        if (selectedIds.isEmpty()) {
+            return 0;
+        }
+
+        Long[] ids = selectedIds.toArray(new Long[0]);
         return deleteCartByIds(ids);
     }
 }

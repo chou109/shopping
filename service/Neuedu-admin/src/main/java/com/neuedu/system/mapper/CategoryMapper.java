@@ -4,6 +4,8 @@ import java.util.List;
 import com.neuedu.system.domain.Category;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
 /**
  * 类目Mapper接口
  * 
@@ -60,4 +62,25 @@ public interface CategoryMapper extends BaseMapper<Category>
      * @return 结果
      */
     public int deleteCategoryByIds(Long[] ids);
+
+
+    // ================ 新增查询方法 ================
+
+    /**
+     * 查询子分类列表
+     */
+    List<Category> selectChildrenByParentId(@Param("parentId") Long parentId);
+
+    /**
+     * 查询分类树节点列表
+     */
+    List<Category> selectCategoryTreeNodes(@Param("statusEnabled") Integer statusEnabled,
+                                           @Param("deleteFlagNo") Integer deleteFlagNo);
+
+    /**
+     * 统计分类下的商品数量
+     */
+    int countProductsByCategoryId(@Param("categoryId") Long categoryId,
+                                  @Param("statusEnabled") Integer statusEnabled,
+                                  @Param("deleteFlagNo") Integer deleteFlagNo);
 }

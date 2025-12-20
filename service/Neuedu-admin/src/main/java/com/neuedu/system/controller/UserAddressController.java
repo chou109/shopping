@@ -1,18 +1,14 @@
 package com.neuedu.system.controller;
 
 import java.util.List;
+
+import com.neuedu.common.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
 import com.neuedu.common.annotation.Log;
 import com.neuedu.common.core.controller.BaseController;
 import com.neuedu.common.core.domain.AjaxResult;
@@ -52,6 +48,26 @@ public class UserAddressController extends BaseController
     }
 
     /**
+     * 根据用户ID查询地址列表
+     */
+    @Operation(summary = "根据用户ID查询地址列表")
+    @GetMapping("/user/{userId}")
+    public AjaxResult listByUserId(@PathVariable Long userId) {
+        List<UserAddress> list = userAddressService.selectUserAddressListByUserId(userId);
+        return success(list);
+    }
+
+    /**
+     * 获取用户的默认地址
+     */
+    @Operation(summary = "获取用户的默认地址")
+    @GetMapping("/user/{userId}/default")
+    public AjaxResult getDefaultAddress(@PathVariable Long userId) {
+        UserAddress address = userAddressService.selectDefaultAddressByUserId(userId);
+        return success(address);
+    }
+
+    /**
      * 导出用户地址列表
      */
     @Operation(summary = "导出用户地址列表")
@@ -83,8 +99,19 @@ public class UserAddressController extends BaseController
     @PreAuthorize("@ss.hasPermi('system:address:add')")
     @Log(title = "用户地址", businessType = BusinessType.INSERT)
     @PostMapping
-    public AjaxResult add(@RequestBody UserAddress userAddress)
+    public AjaxResult add(@Validated @RequestBody UserAddress userAddress)
     {
+        // 验证地址信息
+        if (!userAddressService.validateAddress(userAddress)) {
+            return error("地址信息不完整，请填写所有必填项");
+        }
+        // 设置当前用户ID（如果未设置）
+        if (userAddress.getUserId() == null) {
+            // 这里应该从当前登录用户获取，根据你的认证系统调整
+             userAddress.setUserId(getUserId());
+// 获取当前登录用户ID
+// Long userId = SecurityUtils.getUserId();
+        }
         return toAjax(userAddressService.insertUserAddress(userAddress));
     }
 
@@ -95,8 +122,12 @@ public class UserAddressController extends BaseController
     @PreAuthorize("@ss.hasPermi('system:address:edit')")
     @Log(title = "用户地址", businessType = BusinessType.UPDATE)
     @PutMapping
-    public AjaxResult edit(@RequestBody UserAddress userAddress)
+    public AjaxResult edit(@Validated @RequestBody UserAddress userAddress)
     {
+        // 验证地址信息
+        if (!userAddressService.validateAddress(userAddress)) {
+            return error("地址信息不完整，请填写所有必填项");
+        }
         return toAjax(userAddressService.updateUserAddress(userAddress));
     }
 
@@ -111,4 +142,31 @@ public class UserAddressController extends BaseController
     {
         return toAjax(userAddressService.deleteUserAddressByIds(ids));
     }
+
+    /**
+     * 设置默认地址
+     */
+    @Operation(summary = "设置默认地址")
+    @PostMapping("/setDefault")
+    public AjaxResult setDefault(@RequestParam Long addressId,
+                                 @RequestParam Long userId) {
+        return toAjax(userAddressService.setDefaultAddress(addressId, userId));
+    }
+
+    /**
+     * 验证地址信息
+     */
+    @Operation(summary = "验证地址信息")
+    @PostMapping("/validate")
+    public AjaxResult validate(@RequestBody UserAddress userAddress) {
+        boolean isValid = userAddressService.validateAddress(userAddress);
+        if (isValid) {
+            return success("地址信息有效");
+        } else {
+            return error("地址信息不完整或格式不正确");
+        }
+    }
+
+
+
 }

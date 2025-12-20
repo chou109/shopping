@@ -1,6 +1,8 @@
 package com.neuedu.system.controller;
 
 import java.util.List;
+
+import com.neuedu.system.domain.CategoryTreeNode;
 import lombok.RequiredArgsConstructor;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -52,6 +54,26 @@ public class CategoryController extends BaseController
     }
 
     /**
+     * 获取分类树形结构
+     */
+    @Operation(summary = "获取分类树形结构")
+    @GetMapping("/tree")
+    public AjaxResult tree() {
+        List<CategoryTreeNode> tree = categoryService.buildCategoryTree();
+        return success(tree);
+    }
+
+    /**
+     * 获取父分类下拉树列表
+     */
+    @Operation(summary = "获取父分类下拉树列表")
+    @GetMapping("/treeselect")
+    public AjaxResult treeselect() {
+        List<CategoryTreeNode> tree = categoryService.buildCategoryTree();
+        return success(tree);
+    }
+
+    /**
      * 导出类目列表
      */
     @Operation(summary = "导出类目列表")
@@ -85,6 +107,10 @@ public class CategoryController extends BaseController
     @PostMapping
     public AjaxResult add(@RequestBody Category category)
     {
+        // 验证分类名称是否唯一
+        if (!categoryService.checkCategoryNameUnique(category)) {
+            return error("新增分类'" + category.getName() + "'失败，分类名称已存在");
+        }
         return toAjax(categoryService.insertCategory(category));
     }
 
@@ -97,6 +123,15 @@ public class CategoryController extends BaseController
     @PutMapping
     public AjaxResult edit(@RequestBody Category category)
     {
+
+        // 验证分类名称是否唯一
+        if (!categoryService.checkCategoryNameUnique(category)) {
+            return error("修改分类'" + category.getName() + "'失败，分类名称已存在");
+        }
+        // 检查是否设置了自身为父分类
+        if (category.getId().equals(category.getParentId())) {
+            return error("不能将自身设置为父分类");
+        }
         return toAjax(categoryService.updateCategory(category));
     }
 
@@ -110,5 +145,59 @@ public class CategoryController extends BaseController
     public AjaxResult remove(@PathVariable( name = "ids" ) Long[] ids) 
     {
         return toAjax(categoryService.deleteCategoryByIds(ids));
+    }
+
+    /**
+     * 启用/禁用分类
+     */
+    @Operation(summary = "启用/禁用分类")
+    @PreAuthorize("@ss.hasPermi('system:category:edit')")
+    @Log(title = "分类状态", businessType = BusinessType.UPDATE)
+    @PutMapping("/changeStatus")
+    public AjaxResult changeStatus(@RequestBody Category category) {
+        return toAjax(categoryService.changeStatus(category.getId(), category.getStatus()));
+    }
+
+    /**
+     * 设置/取消热门分类
+     */
+    @Operation(summary = "设置/取消热门分类")
+    @PreAuthorize("@ss.hasPermi('system:category:edit')")
+    @Log(title = "热门分类", businessType = BusinessType.UPDATE)
+    @PutMapping("/changeHotFlag")
+    public AjaxResult changeHotFlag(@RequestBody Category category) {
+        return toAjax(categoryService.changeHotFlag(category.getId(), category.getHotFlag()));
+    }
+
+    // ================ 前台接口（无需权限） ================
+
+    /**
+     * 获取启用状态的分类列表（前台接口）
+     */
+    @Operation(summary = "获取启用状态的分类列表")
+    @GetMapping("/enabled/list")
+    public AjaxResult getEnabledCategories() {
+        List<Category> list = categoryService.selectEnabledCategoryList();
+        return success(list);
+    }
+
+    /**
+     * 获取热门分类列表（前台接口）
+     */
+    @Operation(summary = "获取热门分类列表")
+    @GetMapping("/hot/list")
+    public AjaxResult getHotCategories() {
+        List<Category> list = categoryService.selectHotCategoryList();
+        return success(list);
+    }
+
+    /**
+     * 获取分类树（前台接口）
+     */
+    @Operation(summary = "获取分类树")
+    @GetMapping("/front/tree")
+    public AjaxResult getFrontCategoryTree() {
+        List<CategoryTreeNode> tree = categoryService.buildCategoryTree();
+        return success(tree);
     }
 }

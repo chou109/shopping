@@ -60,4 +60,8 @@ public class OrderStatusRecord extends BaseEntity
     @Schema(title = "状态描述")
     @Excel(name = "状态描述")
     private String statusDesc;
+
+    /** 备注 */
+    @Schema(title = "备注")
+    private String remark;
 }

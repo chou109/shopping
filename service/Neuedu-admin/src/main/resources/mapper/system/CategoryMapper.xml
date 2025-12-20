@@ -86,14 +86,36 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where category.id = #{id}
     </update>
 
-    <delete id="deleteCategoryById" parameterType="Long">
-        delete from category where id = #{id}
-    </delete>
+    <!-- 修改删除方法为软删除 -->
+    <update id="deleteCategoryById" parameterType="Long">
+        update category set delete_flag = 1, update_time = now() where id = #{id}
+    </update>
 
-    <delete id="deleteCategoryByIds" parameterType="String">
-        delete from category where id in 
+    <update id="deleteCategoryByIds" parameterType="String">
+        update category set delete_flag = 1, update_time = now() where id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>
-    </delete>
+    </update>
+
+
+    <!-- 新增查询方法 -->
+    <select id="selectChildrenByParentId" parameterType="Long" resultMap="CategoryResult">
+        <include refid="selectCategoryVo"/>
+        where parent_id = #{parentId} and delete_flag = 0
+        order by sort_order asc
+    </select>
+
+    <select id="selectCategoryTreeNodes" resultMap="CategoryResult">
+        <include refid="selectCategoryVo"/>
+        where delete_flag = #{deleteFlagNo} and status = #{statusEnabled}
+        order by parent_id asc, sort_order asc
+    </select>
+
+    <select id="countProductsByCategoryId" parameterType="Long" resultType="int">
+        select count(*) from product
+        where category_id = #{categoryId}
+          and delete_flag = #{deleteFlagNo}
+          and status = #{statusEnabled}
+    </select>
 </mapper>

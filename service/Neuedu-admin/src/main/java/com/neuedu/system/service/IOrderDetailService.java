@@ -29,12 +29,40 @@ public interface IOrderDetailService extends IService<OrderDetail>
     public List<OrderDetail> selectOrderDetailList(OrderDetail orderDetail);
 
     /**
+     * 根据订单编号查询订单明细
+     *
+     * @param orderNo 订单编号
+     * @return 订单明细列表
+     */
+    public List<OrderDetail> selectOrderDetailByOrderNo(String orderNo);
+
+
+    /**
+     * 根据用户ID查询订单明细
+     *
+     * @param userId 用户ID
+     * @return 订单明细列表
+     */
+    public List<OrderDetail> selectOrderDetailByUserId(Long userId);
+
+
+
+
+    /**
      * 新增订单明细
      * 
      * @param orderDetail 订单明细
      * @return 结果
      */
     public int insertOrderDetail(OrderDetail orderDetail);
+
+    /**
+     * 批量插入订单明细
+     *
+     * @param orderDetails 订单明细列表
+     * @return 结果
+     */
+    public int batchInsertOrderDetail(List<OrderDetail> orderDetails);
 
     /**
      * 修改订单明细

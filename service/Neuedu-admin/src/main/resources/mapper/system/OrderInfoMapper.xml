@@ -28,43 +28,142 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="street"    column="street"    />
         <result property="postalCode"    column="postal_code"    />
         <result property="userId"    column="user_id"    />
+        <result property="expireTime"    column="expire_time"    />
+        <result property="shipTime"    column="ship_time"    />
+        <result property="receiveTime"    column="receive_time"    />
+        <result property="cancelTime"    column="cancel_time"    />
+        <result property="cancelReason"    column="cancel_reason"    />
+        <result property="refundAmount"    column="refund_amount"    />
+        <result property="refundTime"    column="refund_time"    />
+        <result property="refundReason"    column="refund_reason"    />
+        <!-- 关联用户信息 -->
+        <association property="user" javaType="User">
+            <id property="id" column="user_id" />
+            <result property="userName" column="user_name" />
+            <result property="nickname" column="nickname" />
+            <result property="phone" column="phone" />
+            <result property="email" column="email" />
+        </association>
+
+        <!-- 关联地址信息 -->
+        <association property="address" javaType="UserAddress">
+            <id property="id" column="address_id" />
+            <result property="receiveName" column="ua_receive_name" />
+            <result property="receivePhone" column="ua_receive_phone" />
+            <result property="province" column="ua_province" />
+            <result property="city" column="ua_city" />
+            <result property="area" column="ua_area" />
+            <result property="street" column="ua_street" />
+            <result property="postalCode" column="ua_postal_code" />
+        </association>
+
     </resultMap>
 
+    <!-- 基础查询SQL，添加关联查询 -->
     <sql id="selectOrderInfoVo">
-        select id, create_time, update_time, create_user, update_user, delete_flag, order_no, payment, payment_type, payment_type_desc, postage, status, status_desc, payment_time, address_id, receive_name, receive_phone, province, city, area, street, postal_code, user_id from order_info
+        select
+        oi.id,
+        oi.create_time,
+        oi.update_time,
+        oi.create_user,
+        oi.update_user,
+        oi.delete_flag,
+        oi.order_no,
+        oi.payment,
+        oi.payment_type,
+        oi.payment_type_desc,
+        oi.postage,
+        oi.status,
+        oi.status_desc,
+        oi.payment_time,
+        oi.address_id,
+        oi.receive_name,
+        oi.receive_phone,
+        oi.province,
+        oi.city,
+        oi.area,
+        oi.street,
+        oi.postal_code,
+        oi.user_id,
+        oi.expire_time,
+        oi.ship_time,
+        oi.receive_time,
+        oi.cancel_time,
+        oi.cancel_reason,
+        oi.refund_amount,
+        oi.refund_time,
+        oi.refund_reason,
+        <!-- 用户信息 -->
+        u.user_name,
+        u.nickname,
+        u.phone,
+        u.email,
+        <!-- 地址信息 -->
+        ua.receive_name as ua_receive_name,
+        ua.receive_phone as ua_receive_phone,
+        ua.province as ua_province,
+        ua.city as ua_city,
+        ua.area as ua_area,
+        ua.street as ua_street,
+        ua.postal_code as ua_postal_code
+        from order_info oi
+        left join user u on oi.user_id = u.id and u.delete_flag = 0
+        left join user_address ua on oi.address_id = ua.address_id and ua.delete_flag = 0
     </sql>
+
+    <!-- 基础查询条件 -->
+    <sql id="baseWhereClause">
+        where oi.delete_flag = 0
+        <if test="orderNo != null  and orderNo != ''"> and oi.order_no = #{orderNo}</if>
+        <if test="userId != null "> and oi.user_id = #{userId}</if>
+        <if test="status != null "> and oi.status = #{status}</if>
+        <if test="paymentType != null "> and oi.payment_type = #{paymentType}</if>
+        <if test="receiveName != null  and receiveName != ''"> and oi.receive_name like concat('%', #{receiveName}, '%')</if>
+        <if test="receivePhone != null  and receivePhone != ''"> and oi.receive_phone = #{receivePhone}</if>
+        <if test="createTime != null "> and date(oi.create_time) = date(#{createTime})</if>
+    </sql>
+
+    <!-- 根据订单编号查询订单 -->
+    <select id="selectOrderInfoByOrderNo" parameterType="String" resultMap="OrderInfoResult">
+        <include refid="selectOrderInfoVo"/>
+        where oi.order_no = #{orderNo} and oi.delete_flag = 0
+    </select>
+
+    <!-- 查询用户订单列表 -->
+    <select id="selectOrderListByUserId" resultMap="OrderInfoResult">
+        <include refid="selectOrderInfoVo"/>
+        where oi.user_id = #{userId} and oi.delete_flag = 0
+        <if test="status != null"> and oi.status = #{status}</if>
+        order by oi.create_time desc
+    </select>
+
+    <!-- 查询超时未支付订单 -->
+    <select id="selectExpiredOrders" resultMap="OrderInfoResult">
+        <include refid="selectOrderInfoVo"/>
+        where oi.delete_flag = 0
+        and oi.status = 10  <!-- 待付款状态 -->
+        and oi.expire_time &lt; now()
+    </select>
+
+    <!-- 查询待确认收货订单（发货后7天未确认） -->
+    <select id="selectWaitConfirmOrders" resultMap="OrderInfoResult">
+        <include refid="selectOrderInfoVo"/>
+        where oi.delete_flag = 0
+        and oi.status = 40  <!-- 已发货状态 -->
+        and oi.ship_time &lt; date_sub(now(), interval 7 day)
+    </select>
 
     <select id="selectOrderInfoList" parameterType="OrderInfo" resultMap="OrderInfoResult">
         <include refid="selectOrderInfoVo"/>
-        <where>  
-            <if test="createUser != null "> and create_user = #{createUser}</if>
-            <if test="updateUser != null "> and update_user = #{updateUser}</if>
-            <if test="deleteFlag != null "> and delete_flag = #{deleteFlag}</if>
-            <if test="orderNo != null  and orderNo != ''"> and order_no = #{orderNo}</if>
-            <if test="payment != null "> and payment = #{payment}</if>
-            <if test="paymentType != null "> and payment_type = #{paymentType}</if>
-            <if test="paymentTypeDesc != null  and paymentTypeDesc != ''"> and payment_type_desc = #{paymentTypeDesc}</if>
-            <if test="postage != null "> and postage = #{postage}</if>
-            <if test="status != null "> and status = #{status}</if>
-            <if test="statusDesc != null  and statusDesc != ''"> and status_desc = #{statusDesc}</if>
-            <if test="paymentTime != null "> and payment_time = #{paymentTime}</if>
-            <if test="addressId != null "> and address_id = #{addressId}</if>
-            <if test="receiveName != null  and receiveName != ''"> and receive_name like concat('%', #{receiveName}, '%')</if>
-            <if test="receivePhone != null  and receivePhone != ''"> and receive_phone = #{receivePhone}</if>
-            <if test="province != null  and province != ''"> and province = #{province}</if>
-            <if test="city != null  and city != ''"> and city = #{city}</if>
-            <if test="area != null  and area != ''"> and area = #{area}</if>
-            <if test="street != null  and street != ''"> and street = #{street}</if>
-            <if test="postalCode != null  and postalCode != ''"> and postal_code = #{postalCode}</if>
-            <if test="userId != null "> and user_id = #{userId}</if>
-        </where>
+        <include refid="baseWhereClause"/>
+        order by oi.create_time desc
     </select>
     
     <select id="selectOrderInfoById" parameterType="Long" resultMap="OrderInfoResult">
         <include refid="selectOrderInfoVo"/>
         where order_info.id = #{id}
     </select>
-        
+
     <insert id="insertOrderInfo" parameterType="OrderInfo" useGeneratedKeys="true" keyProperty="id">
         insert into order_info
         <trim prefix="(" suffix=")" suffixOverrides=",">
@@ -90,7 +189,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="street != null">street,</if>
             <if test="postalCode != null">postal_code,</if>
             <if test="userId != null">user_id,</if>
-         </trim>
+            <if test="expireTime != null">expire_time,</if>
+            <if test="shipTime != null">ship_time,</if>
+            <if test="receiveTime != null">receive_time,</if>
+            <if test="cancelTime != null">cancel_time,</if>
+            <if test="cancelReason != null">cancel_reason,</if>
+            <if test="refundAmount != null">refund_amount,</if>
+            <if test="refundTime != null">refund_time,</if>
+            <if test="refundReason != null">refund_reason,</if>
+        </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="createTime != null">#{createTime},</if>
             <if test="updateTime != null">#{updateTime},</if>
@@ -114,37 +221,129 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="street != null">#{street},</if>
             <if test="postalCode != null">#{postalCode},</if>
             <if test="userId != null">#{userId},</if>
-         </trim>
+            <if test="expireTime != null">#{expireTime},</if>
+            <if test="shipTime != null">#{shipTime},</if>
+            <if test="receiveTime != null">#{receiveTime},</if>
+            <if test="cancelTime != null">#{cancelTime},</if>
+            <if test="cancelReason != null">#{cancelReason},</if>
+            <if test="refundAmount != null">#{refundAmount},</if>
+            <if test="refundTime != null">#{refundTime},</if>
+            <if test="refundReason != null">#{refundReason},</if>
+        </trim>
     </insert>
 
     <update id="updateOrderInfo" parameterType="OrderInfo">
         update order_info
         <trim prefix="SET" suffixOverrides=",">
-            <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
-            <if test="createUser != null">create_user = #{createUser},</if>
             <if test="updateUser != null">update_user = #{updateUser},</if>
-            <if test="deleteFlag != null">delete_flag = #{deleteFlag},</if>
-            <if test="orderNo != null and orderNo != ''">order_no = #{orderNo},</if>
             <if test="payment != null">payment = #{payment},</if>
             <if test="paymentType != null">payment_type = #{paymentType},</if>
             <if test="paymentTypeDesc != null">payment_type_desc = #{paymentTypeDesc},</if>
             <if test="postage != null">postage = #{postage},</if>
             <if test="status != null">status = #{status},</if>
-            <if test="statusDesc != null and statusDesc != ''">status_desc = #{statusDesc},</if>
+            <if test="statusDesc != null">status_desc = #{statusDesc},</if>
             <if test="paymentTime != null">payment_time = #{paymentTime},</if>
-            <if test="addressId != null">address_id = #{addressId},</if>
             <if test="receiveName != null">receive_name = #{receiveName},</if>
             <if test="receivePhone != null">receive_phone = #{receivePhone},</if>
-            <if test="province != null">province = #{province},</if>
-            <if test="city != null">city = #{city},</if>
-            <if test="area != null">area = #{area},</if>
-            <if test="street != null">street = #{street},</if>
-            <if test="postalCode != null">postal_code = #{postalCode},</if>
-            <if test="userId != null">user_id = #{userId},</if>
+            <if test="shipTime != null">ship_time = #{shipTime},</if>
+            <if test="receiveTime != null">receive_time = #{receiveTime},</if>
+            <if test="cancelTime != null">cancel_time = #{cancelTime},</if>
+            <if test="cancelReason != null">cancel_reason = #{cancelReason},</if>
+            <if test="refundAmount != null">refund_amount = #{refundAmount},</if>
+            <if test="refundTime != null">refund_time = #{refundTime},</if>
+            <if test="refundReason != null">refund_reason = #{refundReason},</if>
         </trim>
-        where order_info.id = #{id}
+        where id = #{id} and delete_flag = 0
     </update>
+
+    <!-- 更新订单状态 -->
+    <update id="updateOrderStatus">
+        update order_info
+        set status = #{status},
+            status_desc = #{statusDesc},
+            update_time = now()
+        where order_no = #{orderNo} and delete_flag = 0
+    </update>
+
+    <!-- 取消订单 -->
+    <update id="cancelOrder">
+        update order_info
+        set status = 70,
+            status_desc = '已取消',
+            cancel_time = now(),
+            cancel_reason = #{cancelReason},
+            update_time = now()
+        where order_no = #{orderNo} and delete_flag = 0 and status = 10
+    </update>
+
+    <!-- 支付订单 -->
+    <update id="payOrder">
+        update order_info
+        set status = 20,
+            status_desc = '已付款',
+            payment_time = now(),
+            payment_type = #{paymentType},
+            payment_type_desc = #{paymentTypeDesc},
+            update_time = now()
+        where order_no = #{orderNo} and delete_flag = 0 and status = 10
+    </update>
+
+    <!-- 软删除 -->
+    <update id="deleteOrderInfoById" parameterType="Long">
+        update order_info set delete_flag = 1 where id = #{id}
+    </update>
+
+    <update id="deleteOrderInfoByIds" parameterType="Long[]">
+        update order_info set delete_flag = 1 where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <!-- 订单统计查询 -->
+    <select id="selectOrderStatistics" resultType="java.util.Map">
+        select
+        count(*) as total_count,
+        sum(case when status = 10 then 1 else 0 end) as wait_pay_count,
+        sum(case when status = 20 then 1 else 0 end) as paid_count,
+        sum(case when status = 30 then 1 else 0 end) as wait_ship_count,
+        sum(case when status = 40 then 1 else 0 end) as shipped_count,
+        sum(case when status = 50 then 1 else 0 end) as wait_receive_count,
+        sum(case when status = 60 then 1 else 0 end) as completed_count,
+        sum(case when status = 70 then 1 else 0 end) as cancelled_count,
+        sum(payment) as total_amount,
+        sum(case when status in (20,30,40,50,60) then payment else 0 end) as valid_amount
+        from order_info
+        where delete_flag = 0
+        <if test="startTime != null and startTime != ''">
+            and create_time >= #{startTime}
+        </if>
+        <if test="endTime != null and endTime != ''">
+            and create_time &lt;= #{endTime}
+        </if>
+        <if test="userId != null">
+            and user_id = #{userId}
+        </if>
+    </select>
+
+    <!-- 每日订单统计 -->
+    <select id="selectDailyOrderStatistics" resultType="java.util.Map">
+        select
+        date(create_time) as date,
+        count(*) as order_count,
+        sum(payment) as order_amount
+        from order_info
+        where delete_flag = 0 and status != 70
+        <if test="startTime != null and startTime != ''">
+            and create_time >= #{startTime}
+        </if>
+        <if test="endTime != null and endTime != ''">
+            and create_time &lt;= #{endTime}
+        </if>
+        group by date(create_time)
+        order by date(create_time) desc
+    </select>
 
     <delete id="deleteOrderInfoById" parameterType="Long">
         delete from order_info where id = #{id}

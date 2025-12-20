@@ -37,6 +37,32 @@ public interface ICartService extends IService<Cart>
     List<Cart> selectCartByUserId(Long userId);
 
     /**
+     * 根据用户ID和商品ID查询购物车
+     *
+     * @param userId 用户ID
+     * @param productId 商品ID
+     * @return 购物车
+     */
+    public Cart selectCartByUserIdAndProductId(Long userId, Long productId);
+
+    /**
+     * 获取用户选中的购物车商品
+     *
+     * @param userId 用户ID
+     * @return 购物车集合
+     */
+    public List<Cart> getSelectedCartItems(Long userId);
+
+    /**
+     * 清空用户购物车中选中的商品
+     *
+     * @param userId 用户ID
+     * @return 结果
+     */
+    public int clearSelectedCartItems(Long userId);
+
+
+    /**
      * 新增购物车
      * 
      * @param cart 购物车

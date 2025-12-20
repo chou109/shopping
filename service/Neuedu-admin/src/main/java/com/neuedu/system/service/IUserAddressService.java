@@ -21,6 +21,14 @@ public interface IUserAddressService extends IService<UserAddress>
     public UserAddress selectUserAddressById(Long id);
 
     /**
+     * 根据地址ID查询地址
+     *
+     * @param addressId 地址ID
+     * @return 地址信息
+     */
+    UserAddress selectUserAddressByAddressId(Long addressId);
+
+    /**
      * 查询用户地址列表
      * 
      * @param userAddress 用户地址
@@ -29,12 +37,29 @@ public interface IUserAddressService extends IService<UserAddress>
     public List<UserAddress> selectUserAddressList(UserAddress userAddress);
 
     /**
+     * 查询用户的所有地址列表
+     *
+     * @param userId 用户ID
+     * @return 地址列表
+     */
+    List<UserAddress> selectUserAddressListByUserId(Long userId);
+
+
+    /**
      * 新增用户地址
      * 
      * @param userAddress 用户地址
      * @return 结果
      */
     public int insertUserAddress(UserAddress userAddress);
+
+    /**
+     * 查询用户的默认地址
+     *
+     * @param userId 用户ID
+     * @return 默认地址
+     */
+    UserAddress selectDefaultAddressByUserId(Long userId);
 
     /**
      * 修改用户地址
@@ -59,4 +84,31 @@ public interface IUserAddressService extends IService<UserAddress>
      * @return 结果
      */
     public int deleteUserAddressById(Long id);
+
+    /**
+     * 设置默认地址
+     *
+     * @param addressId 地址ID
+     * @param userId 用户ID
+     * @return 结果
+     */
+    int setDefaultAddress(Long addressId, Long userId);
+
+
+    /**
+     * 验证地址信息是否完整
+     *
+     * @param userAddress 地址信息
+     * @return 验证结果
+     */
+    boolean validateAddress(UserAddress userAddress);
+
+    /**
+     * 获取用户的地址数量
+     *
+     * @param userId 用户ID
+     * @return 地址数量
+     */
+    int countUserAddress(Long userId);
+
 }
