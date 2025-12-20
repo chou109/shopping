@@ -1,106 +1,179 @@
 <template>
-  <div class="main">
-    <el-image style="width: 100%" :src="mainUrl" fit="fill" />
-    <el-image style="width: 500px; margin: 25px 0" :src="newsUrl" fit="fill" />
-
-
+  <div class="home-container">
+    <div class="banner-section">
+      <IndexBanner />
+    </div>
+    
+    <div class="content-wrapper">
+      <!-- 侧边栏（在移动端放在主要内容之后） -->
+      <div class="main-content">
+        <!-- 热门商品 -->
+        <div class="hot-section">
+          <ProductHot />
+        </div>
+        
+        <!-- 使用静态分类数据 -->
+        <div class="phone-section">
+          <CategoryProducts :category-id="24" category-name="精品男装" />
+        </div>
+        
+        <div class="office-section">
+          <CategoryProducts :category-id="31" category-name="黄金首饰" />
+        </div>
+        
+        <!-- <div class="appliance-section">
+          <CategoryProducts :category-id="3" category-name="家用电器" />
+        </div>
+        
+        <div class="clothing-section">
+          <CategoryProducts :category-id="4" category-name="服装服饰" />
+        </div>
+        
+        <div class="beauty-section">
+          <CategoryProducts :category-id="5" category-name="美妆护肤" />
+        </div>
+        
+        其他分类，根据需要启用 -->
+        <!-- <div class="jewelry-section">
+          <CategoryProducts :category-id="6" category-name="珠宝饰品" />
+        </div>
+        
+        <div class="fresh-section">
+          <CategoryProducts :category-id="7" category-name="生鲜绿植" />
+        </div>
+        
+        <div class="communication-section">
+          <CategoryProducts :category-id="8" category-name="手机通讯" />
+        </div>  -->
+      </div>
+      
+      <div class="sidebar-section">
+        <IndexCate />
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { listCart, getCart, delCart, addCart, updateCart } from "@/api/system/cart";
-import { listUser } from "@/api/system/user";
-const { proxy } = getCurrentInstance();
-const router = useRouter();
+import { ref, onMounted } from 'vue'
+import IndexBanner from '@/views/index/IndexBanner.vue'
+import ProductHot from '@/views/index/ProductHot.vue'
+import IndexCate from '@/views/index/IndexCate.vue'
+import CategoryProducts from '@/views/index/CategoryProducts.vue'
 
-const list = ref([]);
-const params = {
-  pageNum: 1,
-  pageSize: 5
-};
+// 暂时使用静态分类数据，避免API错误
+const categories = ref([
+  { id: 1, name: '手机数码' },
+  { id: 2, name: '电脑办公' },
+  { id: 3, name: '家用电器' },
+  { id: 4, name: '服装服饰' },
+  { id: 5, name: '美妆护肤' }
+])
 
 onMounted(() => {
-  getList();
-});
-
-const getList = () => {
-  listCart(params.value).then((res) => {
-    console.log("list.value", res);
-  });
-  listUser(params.value).then((res) => {
-    console.log("listUser.value", res);
-  });
-};
-
-
-
-const handleDetail = (id = "") => {
-  router.push(`/news/detail?id=${id}`);
-};
+  console.log('首页加载完成')
+})
 </script>
 
-<style lang="scss" scoped>
-.main {
+<style scoped>
+/* 保持原有样式不变 */
+.home-container {
+  width: 100%;
+}
+
+.banner-section {
+  margin-bottom: 30px;
+}
+
+.content-wrapper {
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-bottom: 40px;
+}
 
-  .card-box {
-    width: 1150px;
-    display: flex;
-    justify-content: space-between;
-    flex-wrap: wrap;
+.main-content {
+  flex: 1;
+  min-width: 300px;
+}
 
-    .card {
-      width: 372px;
-      height: 100px;
-      border-radius: 10px;
-      margin-bottom: 20px;
-      cursor: pointer;
+.sidebar-section {
+  flex: 0 0 250px;
+}
 
-      &:hover {
-        border: 1px solid #01c3c9;
-        box-shadow: 0 0 4px #01c3c9;
-      }
+.hot-section,
+.phone-section,
+.office-section,
+.appliance-section,
+.clothing-section,
+.beauty-section,
+.jewelry-section,
+.fresh-section,
+.communication-section {
+  margin-bottom: 40px;
+}
 
-      .title {
-        font-size: 14px;
-        color: #3d3d3d;
-        font-weight: bold;
-        text-align: left;
-        display: -webkit-box;
-        overflow: hidden;
-        -webkit-box-orient: vertical;
-        line-clamp: 2;
-        -webkit-line-clamp: 2;
-
-        &:hover {
-          color: #01c3c9;
-        }
-      }
-
-      .footer {
-        display: flex;
-        justify-content: space-between;
-        font-size: 12px;
-        color: #8a9090;
-        margin-top: 10px;
-      }
-    }
-  }
-
-  .more {
-    width: 150px;
-    height: 34px;
-    margin: 20px;
-  }
-
-  :deep(.el-card__body) {
-    height: 100%;
-    padding: 15px 20px;
-    display: flex;
+/* 平板设备 */
+@media (max-width: 992px) {
+  .content-wrapper {
     flex-direction: column;
-    justify-content: space-between;
+  }
+  
+  .sidebar-section {
+    flex: 0 0 auto;
+    width: 100%;
+    order: -1;
+    margin-bottom: 20px;
+  }
+}
+
+/* 手机设备 */
+@media (max-width: 768px) {
+  .content-wrapper {
+    gap: 15px;
+  }
+  
+  .banner-section {
+    margin-bottom: 20px;
+  }
+  
+  .hot-section,
+  .phone-section,
+  .office-section,
+  .appliance-section,
+  .clothing-section,
+  .beauty-section,
+  .jewelry-section,
+  .fresh-section,
+  .communication-section {
+    margin-bottom: 30px;
+  }
+  
+  .sidebar-section {
+    width: 100%;
+  }
+}
+
+/* 小屏手机 */
+@media (max-width: 480px) {
+  .content-wrapper {
+    gap: 12px;
+  }
+  
+  .banner-section {
+    margin-bottom: 15px;
+  }
+  
+  .hot-section,
+  .phone-section,
+  .office-section,
+  .appliance-section,
+  .clothing-section,
+  .beauty-section,
+  .jewelry-section,
+  .fresh-section,
+  .communication-section {
+    margin-bottom: 25px;
   }
 }
 </style>

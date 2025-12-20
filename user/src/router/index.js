@@ -78,6 +78,11 @@ export const constantRoutes = [
             path: "/feedback/detail",
             component: () => import('@/views/feedback/detail.vue')
           },
+          {
+            path: '/products',
+            name: 'ProductsSearch',
+            component: () => import('@/views/products/Search.vue')
+          }
         ]
       }
     ]
