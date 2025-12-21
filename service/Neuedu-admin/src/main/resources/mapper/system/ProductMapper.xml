@@ -101,7 +101,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     
     <select id="selectProductById" parameterType="Long" resultMap="ProductResult">
         <include refid="selectProductVo"/>
-        where product.id = #{id} and p.delete_flag = 0
+        where p.id = #{id} and p.delete_flag = 0
     </select>
 
     <!-- 查询热门商品列表 -->

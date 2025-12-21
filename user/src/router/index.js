@@ -64,19 +64,29 @@ export const constantRoutes = [
           },
           {
             path: '/news/list',
-            component: () => import('@/views/news/list.vue')
+            component: () => import('@/views/news/list.vue')//新闻列表
           },
           {
             path: '/news/detail',
-            component: () => import('@/views/news/detail.vue')
+            component: () => import('@/views/news/detail.vue')//新闻详情
           },
           {
             path: '/feedback/list',
-            component: () => import('@/views/feedback/list.vue')
+            component: () => import('@/views/feedback/list.vue')//反馈列表
           },
           {
-            path: "/feedback/detail",
-            component: () => import('@/views/feedback/detail.vue')
+            path: '/feedback/detail',
+            component: () => import('@/views/feedback/detail.vue')//反馈详情
+          },
+          {
+            path: '/products',
+            name: 'ProductsSearch',
+            component: () => import('@/views/products/ProductsSearch.vue')//商品搜索结果
+          },
+          {
+            path: '/product/detail',
+            name: 'ProductDetail',
+            component: () => import('@/views/products/ProductDetail.vue')//商品详情
           },
         ]
       }
