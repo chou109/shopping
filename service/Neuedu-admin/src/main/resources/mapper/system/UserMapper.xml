@@ -27,26 +27,39 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectUserList" parameterType="User" resultMap="UserResult">
         <include refid="selectUserVo"/>
-        <where>  
-            <if test="createUser != null "> and create_user = #{createUser}</if>
-            <if test="updateUser != null "> and update_user = #{updateUser}</if>
-            <if test="deleteFlag != null "> and delete_flag = #{deleteFlag}</if>
-            <if test="status != null "> and status = #{status}</if>
-            <if test="userName != null  and userName != ''"> and user_name like concat('%', #{userName}, '%')</if>
-            <if test="email != null  and email != ''"> and email = #{email}</if>
-            <if test="phone != null  and phone != ''"> and phone = #{phone}</if>
-            <if test="password != null  and password != ''"> and password = #{password}</if>
-            <if test="type != null  and type != ''"> and type = #{type}</if>
-            <if test="nickname != null  and nickname != ''"> and nickname like concat('%', #{nickname}, '%')</if>
-            <if test="balance != null "> and balance = #{balance}</if>
+        <where>
+            delete_flag = 0
+            <if test="userName != null and userName != ''">
+                and user_name like concat('%', #{userName}, '%')
+            </if>
+            <if test="phone != null and phone != ''">
+                and phone like concat('%', #{phone}, '%')
+            </if>
+            <if test="email != null and email != ''">
+                and email like concat('%', #{email}, '%')
+            </if>
+            <if test="status != null">
+                and status = #{status}
+            </if>
+            <if test="type != null and type != ''">
+                and type = #{type}
+            </if>
         </where>
+        order by create_time desc
     </select>
     
     <select id="selectUserById" parameterType="Long" resultMap="UserResult">
         <include refid="selectUserVo"/>
         where user.id = #{id}
     </select>
-        
+
+    <update id="updateUserBalance" parameterType="User">
+        update user
+        set balance = #{balance},
+            update_time = now()
+        where id = #{id} and delete_flag = 0
+    </update>
+
     <insert id="insertUser" parameterType="User" useGeneratedKeys="true" keyProperty="id">
         insert into user
         <trim prefix="(" suffix=")" suffixOverrides=",">

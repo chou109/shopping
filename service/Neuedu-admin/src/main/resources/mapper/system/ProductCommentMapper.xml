@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.neuedu.system.mapper.ProductCommentMapper">
+    
+    <resultMap type="ProductComment" id="ProductCommentResult">
+        <result property="commentId"    column="comment_id"    />
+        <result property="productId"    column="product_id"    />
+        <result property="userId"    column="user_id"    />
+        <result property="orderId"    column="order_id"    />
+        <result property="parentId"    column="parent_id"    />
+        <result property="content"    column="content"    />
+        <result property="images"    column="images"    />
+        <result property="score"    column="score"    />
+        <result property="isAnonymous"    column="is_anonymous"    />
+        <result property="likeCount"    column="like_count"    />
+        <result property="replyCount"    column="reply_count"    />
+        <result property="status"    column="status"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="selectProductCommentVo">
+        select comment_id, product_id, user_id, order_id, parent_id, content, images, score, is_anonymous, like_count, reply_count, status, create_time, update_time from product_comment
+    </sql>
+
+    <select id="selectProductCommentList" parameterType="ProductComment" resultMap="ProductCommentResult">
+        <include refid="selectProductCommentVo"/>
+        <where>  
+            <if test="productId != null "> and product_id = #{productId}</if>
+            <if test="userId != null "> and user_id = #{userId}</if>
+            <if test="orderId != null "> and order_id = #{orderId}</if>
+            <if test="parentId != null "> and parent_id = #{parentId}</if>
+            <if test="content != null  and content != ''"> and content = #{content}</if>
+            <if test="images != null  and images != ''"> and images = #{images}</if>
+            <if test="score != null "> and score = #{score}</if>
+            <if test="isAnonymous != null "> and is_anonymous = #{isAnonymous}</if>
+            <if test="likeCount != null "> and like_count = #{likeCount}</if>
+            <if test="replyCount != null "> and reply_count = #{replyCount}</if>
+            <if test="status != null "> and status = #{status}</if>
+        </where>
+    </select>
+    
+    <select id="selectProductCommentByCommentId" parameterType="Long" resultMap="ProductCommentResult">
+        <include refid="selectProductCommentVo"/>
+        where product_comment.comment_id = #{commentId}
+    </select>
+        
+    <insert id="insertProductComment" parameterType="ProductComment" useGeneratedKeys="true" keyProperty="commentId">
+        insert into product_comment
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="productId != null">product_id,</if>
+            <if test="userId != null">user_id,</if>
+            <if test="orderId != null">order_id,</if>
+            <if test="parentId != null">parent_id,</if>
+            <if test="content != null and content != ''">content,</if>
+            <if test="images != null">images,</if>
+            <if test="score != null">score,</if>
+            <if test="isAnonymous != null">is_anonymous,</if>
+            <if test="likeCount != null">like_count,</if>
+            <if test="replyCount != null">reply_count,</if>
+            <if test="status != null">status,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateTime != null">update_time,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="productId != null">#{productId},</if>
+            <if test="userId != null">#{userId},</if>
+            <if test="orderId != null">#{orderId},</if>
+            <if test="parentId != null">#{parentId},</if>
+            <if test="content != null and content != ''">#{content},</if>
+            <if test="images != null">#{images},</if>
+            <if test="score != null">#{score},</if>
+            <if test="isAnonymous != null">#{isAnonymous},</if>
+            <if test="likeCount != null">#{likeCount},</if>
+            <if test="replyCount != null">#{replyCount},</if>
+            <if test="status != null">#{status},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+         </trim>
+    </insert>
+
+    <update id="updateProductComment" parameterType="ProductComment">
+        update product_comment
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="productId != null">product_id = #{productId},</if>
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="orderId != null">order_id = #{orderId},</if>
+            <if test="parentId != null">parent_id = #{parentId},</if>
+            <if test="content != null and content != ''">content = #{content},</if>
+            <if test="images != null">images = #{images},</if>
+            <if test="score != null">score = #{score},</if>
+            <if test="isAnonymous != null">is_anonymous = #{isAnonymous},</if>
+            <if test="likeCount != null">like_count = #{likeCount},</if>
+            <if test="replyCount != null">reply_count = #{replyCount},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where product_comment.comment_id = #{commentId}
+    </update>
+
+    <delete id="deleteProductCommentByCommentId" parameterType="Long">
+        delete from product_comment where comment_id = #{commentId}
+    </delete>
+
+    <delete id="deleteProductCommentByCommentIds" parameterType="String">
+        delete from product_comment where comment_id in 
+        <foreach item="commentId" collection="array" open="(" separator="," close=")">
+            #{commentId}
+        </foreach>
+    </delete>
+</mapper>

@@ -12,27 +12,107 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="balance"    column="balance"    />
         <result property="orderId"    column="order_id"    />
         <result property="orderNo"    column="order_no"    />
+        <result property="status" column="status" />
+        <result property="paymentType" column="payment_type" />
+        <result property="paymentTime" column="payment_time" />
+        <result property="paymentNo" column="payment_no" />
+        <result property="remark" column="remark" />
+        <!-- 关联用户信息 -->
+        <result property="userName" column="user_name" />
+        <result property="nickName" column="nick_name" />
     </resultMap>
 
     <sql id="selectRechargeInfoVo">
-        select id, create_time, update_time, user_id, balance, order_id, order_no from recharge_info
+        select
+            ri.id,
+            ri.create_time,
+            ri.update_time,
+            ri.user_id,
+            ri.balance,
+            ri.order_id,
+            ri.order_no,
+            ri.status,
+            ri.payment_type,
+            ri.payment_time,
+            ri.payment_no,
+            ri.remark,
+            u.user_name,
+            u.nick_name
+        from recharge_info ri
+                 left join sys_user u on ri.user_id = u.user_id
     </sql>
 
+<!--    <select id="selectRechargeInfoList" parameterType="RechargeInfo" resultMap="RechargeInfoResult">-->
+<!--        <include refid="selectRechargeInfoVo"/>-->
+<!--        <where>  -->
+<!--            <if test="userId != null "> and user_id = #{userId}</if>-->
+<!--            <if test="balance != null "> and balance = #{balance}</if>-->
+<!--            <if test="orderId != null "> and order_id = #{orderId}</if>-->
+<!--            <if test="orderNo != null  and orderNo != ''"> and order_no = #{orderNo}</if>-->
+<!--        </where>-->
+<!--    </select>-->
     <select id="selectRechargeInfoList" parameterType="RechargeInfo" resultMap="RechargeInfoResult">
         <include refid="selectRechargeInfoVo"/>
-        <where>  
-            <if test="userId != null "> and user_id = #{userId}</if>
-            <if test="balance != null "> and balance = #{balance}</if>
-            <if test="orderId != null "> and order_id = #{orderId}</if>
-            <if test="orderNo != null  and orderNo != ''"> and order_no = #{orderNo}</if>
+        <where>
+            <if test="userId != null"> and ri.user_id = #{userId}</if>
+            <if test="balance != null"> and ri.balance = #{balance}</if>
+            <if test="orderId != null"> and ri.order_id = #{orderId}</if>
+            <if test="orderNo != null and orderNo != ''">
+                and ri.order_no like concat('%', #{orderNo}, '%')
+            </if>
+            <if test="status != null"> and ri.status = #{status}</if>
+            <if test="paymentType != null"> and ri.payment_type = #{paymentType}</if>
+            <if test="paymentNo != null and paymentNo != ''">
+                and ri.payment_no like concat('%', #{paymentNo}, '%')
+            </if>
+            <if test="remark != null and remark != ''">
+                and ri.remark like concat('%', #{remark}, '%')
+            </if>
+            <!-- 按创建时间范围查询 -->
+            <if test="params.beginTime != null and params.beginTime != ''">
+                and date_format(ri.create_time,'%y%m%d') &gt;= date_format(#{params.beginTime},'%y%m%d')
+            </if>
+            <if test="params.endTime != null and params.endTime != ''">
+                and date_format(ri.create_time,'%y%m%d') &lt;= date_format(#{params.endTime},'%y%m%d')
+            </if>
+            <!-- 按支付时间范围查询 -->
+            <if test="params.beginPaymentTime != null and params.beginPaymentTime != ''">
+                and date_format(ri.payment_time,'%y%m%d') &gt;= date_format(#{params.beginPaymentTime},'%y%m%d')
+            </if>
+            <if test="params.endPaymentTime != null and params.endPaymentTime != ''">
+                and date_format(ri.payment_time,'%y%m%d') &lt;= date_format(#{params.endPaymentTime},'%y%m%d')
+            </if>
         </where>
+        order by ri.create_time desc
     </select>
-    
+
     <select id="selectRechargeInfoById" parameterType="Long" resultMap="RechargeInfoResult">
         <include refid="selectRechargeInfoVo"/>
-        where recharge_info.id = #{id}
+        where ri.id = #{id}
     </select>
-        
+
+    <select id="selectRechargeInfoByUserId" parameterType="Long" resultMap="RechargeInfoResult">
+        <include refid="selectRechargeInfoVo"/>
+        where ri.user_id = #{userId}
+        order by ri.create_time desc
+    </select>
+
+    <select id="selectRechargeInfoByOrderNo" parameterType="String" resultMap="RechargeInfoResult">
+        <include refid="selectRechargeInfoVo"/>
+        where ri.order_no = #{orderNo}
+    </select>
+
+    <select id="selectRechargeInfoByPaymentNo" parameterType="String" resultMap="RechargeInfoResult">
+        <include refid="selectRechargeInfoVo"/>
+        where ri.payment_no = #{paymentNo}
+    </select>
+
+    <select id="selectTotalRechargeByUserId" parameterType="Long" resultType="java.math.BigDecimal">
+        select ifnull(sum(balance), 0)
+        from recharge_info
+        where user_id = #{userId} and status = 2
+    </select>
+
     <insert id="insertRechargeInfo" parameterType="RechargeInfo" useGeneratedKeys="true" keyProperty="id">
         insert into recharge_info
         <trim prefix="(" suffix=")" suffixOverrides=",">
@@ -42,6 +122,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="balance != null">balance,</if>
             <if test="orderId != null">order_id,</if>
             <if test="orderNo != null">order_no,</if>
+            <if test="status != null">status,</if>
+            <if test="paymentType != null">payment_type,</if>
+            <if test="paymentTime != null">payment_time,</if>
+            <if test="paymentNo != null">payment_no,</if>
+            <if test="remark != null">remark,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="createTime != null">#{createTime},</if>
@@ -50,6 +135,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="balance != null">#{balance},</if>
             <if test="orderId != null">#{orderId},</if>
             <if test="orderNo != null">#{orderNo},</if>
+            <if test="status != null">#{status},</if>
+            <if test="paymentType != null">#{paymentType},</if>
+            <if test="paymentTime != null">#{paymentTime},</if>
+            <if test="paymentNo != null">#{paymentNo},</if>
+            <if test="remark != null">#{remark},</if>
          </trim>
     </insert>
 
@@ -62,8 +152,22 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="balance != null">balance = #{balance},</if>
             <if test="orderId != null">order_id = #{orderId},</if>
             <if test="orderNo != null">order_no = #{orderNo},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="paymentType != null">payment_type = #{paymentType},</if>
+            <if test="paymentTime != null">payment_time = #{paymentTime},</if>
+            <if test="paymentNo != null">payment_no = #{paymentNo},</if>
+            <if test="remark != null">remark = #{remark},</if>
         </trim>
-        where recharge_info.id = #{id}
+        where id = #{id}
+    </update>
+
+    <update id="updateRechargeStatus">
+        update recharge_info
+        set status = #{status},
+            payment_time = #{paymentTime},
+            payment_no = #{paymentNo},
+            update_time = now()
+        where id = #{id}
     </update>
 
     <delete id="deleteRechargeInfoById" parameterType="Long">

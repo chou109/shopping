@@ -60,4 +60,9 @@ public interface UserMapper extends BaseMapper<User>
      * @return 结果
      */
     public int deleteUserByIds(Long[] ids);
+
+    /**
+     * 更新用户余额
+     */
+    int updateUserBalance(User user);
 }

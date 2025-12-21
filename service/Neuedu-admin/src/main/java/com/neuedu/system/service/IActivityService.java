@@ -1,5 +1,6 @@
 package com.neuedu.system.service;
 
+import java.util.Date;
 import java.util.List;
 import com.neuedu.system.domain.Activity;
 import com.baomidou.mybatisplus.extension.service.IService;
@@ -27,6 +28,21 @@ public interface IActivityService extends IService<Activity>
      * @return 活动集合
      */
     public List<Activity> selectActivityList(Activity activity);
+
+    /**
+     * 查询有效的活动列表（前台展示）
+     */
+    List<Activity> selectValidActivityList();
+
+    /**
+     * 查询进行中的活动列表
+     */
+    List<Activity> selectOngoingActivityList();
+
+    /**
+     * 根据时间范围查询活动
+     */
+    List<Activity> selectActivityByTimeRange(Date startTime, Date endTime);
 
     /**
      * 新增活动
@@ -59,4 +75,31 @@ public interface IActivityService extends IService<Activity>
      * @return 结果
      */
     public int deleteActivityById(Long id);
+
+    /**
+     * 验证活动时间
+     */
+    boolean validateActivityTime(Date startTime, Date endTime);
+
+    /**
+     * 更新活动状态（根据时间自动更新）
+     */
+    int updateActivityStatus(Long id);
+
+    /**
+     * 批量更新活动状态
+     */
+    int batchUpdateActivityStatus();
+
+    /**
+     * 取消活动
+     */
+    int cancelActivity(Long id);
+
+    /**
+     * 获取活动下的商品数量
+     */
+    int countProductsInActivity(Long activityId);
+
+
 }

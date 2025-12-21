@@ -5,14 +5,7 @@ import lombok.RequiredArgsConstructor;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import com.neuedu.common.annotation.Log;
 import com.neuedu.common.core.controller.BaseController;
 import com.neuedu.common.core.domain.AjaxResult;
@@ -66,6 +59,40 @@ public class ActivityController extends BaseController
     }
 
     /**
+     * 查询有效的活动列表（前台展示）
+     */
+    @Operation(summary = "查询有效的活动列表")
+    @GetMapping("/valid/list")
+    public AjaxResult validList() {
+        List<Activity> list = activityService.selectValidActivityList();
+        return success(list);
+    }
+
+    /**
+     * 查询进行中的活动列表
+     */
+    @Operation(summary = "查询进行中的活动列表")
+    @GetMapping("/ongoing/list")
+    public AjaxResult ongoingList() {
+        List<Activity> list = activityService.selectOngoingActivityList();
+        return success(list);
+    }
+
+    /**
+     * 根据时间范围查询活动
+     */
+    @Operation(summary = "根据时间范围查询活动")
+    @GetMapping("/timeRange")
+    public AjaxResult getByTimeRange(@RequestParam String startTime,
+                                     @RequestParam String endTime) {
+        // 这里需要将字符串转换为Date，根据实际需求实现
+        // List<Activity> list = activityService.selectActivityByTimeRange(startDate, endDate);
+        // return success(list);
+        return success("功能待实现");
+    }
+
+
+    /**
      * 获取活动详细信息
      */
     @Operation(summary = "获取活动详细信息")
@@ -85,6 +112,10 @@ public class ActivityController extends BaseController
     @PostMapping
     public AjaxResult add(@RequestBody Activity activity)
     {
+        // 验证活动时间
+        if (!activityService.validateActivityTime(activity.getStartTime(), activity.getEndTime())) {
+            return error("活动开始时间不能晚于结束时间");
+        }
         return toAjax(activityService.insertActivity(activity));
     }
 
@@ -97,6 +128,11 @@ public class ActivityController extends BaseController
     @PutMapping
     public AjaxResult edit(@RequestBody Activity activity)
     {
+
+        // 验证活动时间
+        if (!activityService.validateActivityTime(activity.getStartTime(), activity.getEndTime())) {
+            return error("活动开始时间不能晚于结束时间");
+        }
         return toAjax(activityService.updateActivity(activity));
     }
 
@@ -110,5 +146,46 @@ public class ActivityController extends BaseController
     public AjaxResult remove(@PathVariable( name = "ids" ) Long[] ids) 
     {
         return toAjax(activityService.deleteActivityByIds(ids));
+    }
+
+    /**
+     * 更新活动状态
+     */
+    @Operation(summary = "更新活动状态")
+    @PostMapping("/{id}/updateStatus")
+    public AjaxResult updateStatus(@PathVariable Long id) {
+        return toAjax(activityService.updateActivityStatus(id));
+    }
+
+    /**
+     * 批量更新活动状态（定时任务调用）
+     */
+    @Operation(summary = "批量更新活动状态")
+    @PostMapping("/batchUpdateStatus")
+    public AjaxResult batchUpdateStatus() {
+        int updatedCount = activityService.batchUpdateActivityStatus();
+        return success("成功更新 " + updatedCount + " 个活动的状态");
+    }
+
+    /**
+     * 取消活动
+     */
+    @Operation(summary = "取消活动")
+    @PostMapping("/{id}/cancel")
+    public AjaxResult cancelActivity(@PathVariable Long id) {
+        return toAjax(activityService.cancelActivity(id));
+    }
+
+    /**
+     * 验证活动时间
+     */
+    @Operation(summary = "验证活动时间")
+    @PostMapping("/validateTime")
+    public AjaxResult validateTime(@RequestParam String startTime,
+                                   @RequestParam String endTime) {
+        // 这里需要将字符串转换为Date，根据实际需求实现
+        // boolean isValid = activityService.validateActivityTime(startDate, endDate);
+        // return isValid ? success("时间有效") : error("开始时间不能晚于结束时间");
+        return success("功能待实现");
     }
 }

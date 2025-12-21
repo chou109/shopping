@@ -36,11 +36,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="startTime != null "> and start_time = #{startTime}</if>
             <if test="endTime != null "> and end_time = #{endTime}</if>
         </where>
+        order by status asc, start_time asc
     </select>
     
     <select id="selectActivityById" parameterType="Long" resultMap="ActivityResult">
         <include refid="selectActivityVo"/>
-        where activity.id = #{id}
+        where activity.id = #{id} and delete_flag = 0
     </select>
         
     <insert id="insertActivity" parameterType="Activity" useGeneratedKeys="true" keyProperty="id">
@@ -91,14 +92,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where activity.id = #{id}
     </update>
 
-    <delete id="deleteActivityById" parameterType="Long">
-        delete from activity where id = #{id}
-    </delete>
+    <!-- 软删除 -->
+    <update id="deleteActivityById" parameterType="Long">
+        update activity set delete_flag = 1, update_time = now() where id = #{id}
+    </update>
 
-    <delete id="deleteActivityByIds" parameterType="String">
-        delete from activity where id in 
+    <!-- 批量软删除 -->
+    <update id="deleteActivityByIds" parameterType="Long[]">
+        update activity set delete_flag = 1, update_time = now() where id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>
-    </delete>
+    </update>
 </mapper>

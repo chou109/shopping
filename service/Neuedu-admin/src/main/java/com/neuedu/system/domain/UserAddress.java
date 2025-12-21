@@ -142,5 +142,12 @@ public class UserAddress extends BaseEntity
         if (street != null) sb.append(street);
         return sb.toString();
     }
+    /**
+     * 初始化扩展字段
+     */
+    public void initExtraFields() {
+        this.addressLabelName = getAddressLabelName();
+        this.fullAddress = getFullAddress();
+    }
 
 }

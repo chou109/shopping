@@ -294,9 +294,7 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
      * 丰富地址信息（添加扩展字段）
      */
     private void enrichAddressInfo(UserAddress address) {
-        // 自动设置地址标签名称
-        address.getAddressLabelName();
-        // 自动设置完整地址
-        address.getFullAddress();
+        // 调用初始化方法设置扩展字段
+        address.initExtraFields();
     }
 }

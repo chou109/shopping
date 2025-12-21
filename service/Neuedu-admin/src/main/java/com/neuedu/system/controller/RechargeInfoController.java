@@ -5,14 +5,7 @@ import lombok.RequiredArgsConstructor;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import com.neuedu.common.annotation.Log;
 import com.neuedu.common.core.controller.BaseController;
 import com.neuedu.common.core.domain.AjaxResult;
@@ -77,6 +70,94 @@ public class RechargeInfoController extends BaseController
     }
 
     /**
+     * 根据用户ID查询充值记录
+     */
+    @Operation(summary = "根据用户ID查询充值记录")
+    @PreAuthorize("@ss.hasPermi('system:rechargeInfo:list')")
+    @GetMapping("/user/{userId}")
+    public AjaxResult listByUserId(@PathVariable Long userId)
+    {
+        List<RechargeInfo> list = rechargeInfoService.selectRechargeInfoByUserId(userId);
+        return success(list);
+    }
+
+    /**
+     * 统计用户充值总额
+     */
+    @Operation(summary = "统计用户充值总额")
+    @PreAuthorize("@ss.hasPermi('system:rechargeInfo:query')")
+    @GetMapping("/user/{userId}/total")
+    public AjaxResult getTotalRecharge(@PathVariable Long userId)
+    {
+        return success(rechargeInfoService.selectTotalRechargeByUserId(userId));
+    }
+
+    /**
+     * 创建充值订单（前台接口）
+     */
+    @Operation(summary = "创建充值订单")
+    @PostMapping("/create")
+    public AjaxResult createRechargeOrder(@RequestBody RechargeInfo rechargeInfo)
+    {
+        Long rechargeId = rechargeInfoService.createRechargeOrder(rechargeInfo);
+        if (rechargeId != null) {
+            return success(rechargeInfoService.selectRechargeInfoById(rechargeId));
+        }
+        return error("充值订单创建失败");
+    }
+
+    /**
+     * 支付成功回调（外部支付系统调用）
+     */
+    @Operation(summary = "支付成功回调")
+    @PostMapping("/payment/success")
+    public AjaxResult paymentSuccess(
+            @RequestParam String orderNo,
+            @RequestParam String paymentNo,
+            @RequestParam(defaultValue = "1") Integer paymentType)
+    {
+        boolean result = rechargeInfoService.handlePaymentSuccess(orderNo, paymentNo, paymentType);
+        if (result) {
+            return success("支付成功处理完成");
+        }
+        return error("支付成功处理失败");
+    }
+
+    /**
+     * 支付失败回调
+     */
+    @Operation(summary = "支付失败回调")
+    @PostMapping("/payment/failed")
+    public AjaxResult paymentFailed(
+            @RequestParam String orderNo,
+            @RequestParam String paymentNo)
+    {
+        boolean result = rechargeInfoService.handlePaymentFailed(orderNo, paymentNo);
+        if (result) {
+            return success("支付失败处理完成");
+        }
+        return error("支付失败处理失败");
+    }
+
+    /**
+     * 退款处理
+     */
+    @Operation(summary = "退款处理")
+    @PreAuthorize("@ss.hasPermi('system:rechargeInfo:refund')")
+    @Log(title = "充值退款", businessType = BusinessType.UPDATE)
+    @PostMapping("/{id}/refund")
+    public AjaxResult refund(@PathVariable Long id)
+    {
+        boolean result = rechargeInfoService.handleRefund(id);
+        if (result) {
+            return success("退款处理成功");
+        }
+        return error("退款处理失败");
+    }
+
+
+
+    /**
      * 新增【请填写功能名称】
      */
     @Operation(summary = "新增【请填写功能名称】")
@@ -87,6 +168,22 @@ public class RechargeInfoController extends BaseController
     {
         return toAjax(rechargeInfoService.insertRechargeInfo(rechargeInfo));
     }
+
+    /**
+     * 更新充值状态
+     */
+    @Operation(summary = "更新充值状态")
+    @PreAuthorize("@ss.hasPermi('system:rechargeInfo:edit')")
+    @Log(title = "充值状态更新", businessType = BusinessType.UPDATE)
+    @PostMapping("/{id}/status")
+    public AjaxResult updateStatus(
+            @PathVariable Long id,
+            @RequestParam Integer status,
+            @RequestParam(required = false) String paymentNo)
+    {
+        return toAjax(rechargeInfoService.updateRechargeStatus(id, status, null, paymentNo));
+    }
+
 
     /**
      * 修改【请填写功能名称】
@@ -110,5 +207,20 @@ public class RechargeInfoController extends BaseController
     public AjaxResult remove(@PathVariable( name = "ids" ) Long[] ids) 
     {
         return toAjax(rechargeInfoService.deleteRechargeInfoByIds(ids));
+    }
+
+    /**
+     * 获取充值统计信息（后台报表）
+     */
+    @Operation(summary = "获取充值统计信息")
+    @PreAuthorize("@ss.hasPermi('system:rechargeInfo:statistic')")
+    @GetMapping("/statistics")
+    public AjaxResult getStatistics(
+            @RequestParam(required = false) String beginDate,
+            @RequestParam(required = false) String endDate)
+    {
+        // 这里可以调用统计服务，统计充值金额、成功数、失败数等
+        // 由于篇幅限制，这里只返回简单示例
+        return success("统计功能待实现，请根据实际需求开发");
     }
 }

@@ -2,6 +2,8 @@ package com.neuedu.system.domain;
 
 import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.neuedu.system.constants.ActivityConstants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -79,4 +81,82 @@ public class Activity extends BaseEntity
     @JsonFormat(pattern = "yyyy-MM-dd")
     @Excel(name = "结束时间", width = 30, dateFormat = "yyyy-MM-dd")
     private Date endTime;
+
+
+    // ================ 扩展字段（非数据库字段） ================
+
+    /** 状态名称 */
+    @TableField(exist = false)
+    @Schema(title = "状态名称")
+    private String statusName;
+
+    /** 剩余天数（用于前台展示） */
+    @TableField(exist = false)
+    @Schema(title = "剩余天数")
+    private Long remainingDays;
+
+    /** 关联商品数量 */
+    @TableField(exist = false)
+    @Schema(title = "关联商品数量")
+    private Integer productCount;
+
+    // ================ 业务方法 ================
+
+    /**
+     * 获取状态名称
+     */
+    public String getStatusName() {
+        return ActivityConstants.getStatusName(this.status);
+    }
+
+    /**
+     * 计算剩余天数
+     */
+    public Long getRemainingDays() {
+        if (endTime == null || status == null || status != ActivityConstants.STATUS_ONGOING) {
+            return null;
+        }
+
+        Date now = new Date();
+        if (now.after(endTime)) {
+            return 0L;
+        }
+
+        long diff = endTime.getTime() - now.getTime();
+        return diff / (1000 * 60 * 60 * 24);
+    }
+
+    /**
+     * 检查活动是否有效（未删除且未结束）
+     */
+    @JsonIgnore
+    public boolean isValid() {
+        if (deleteFlag != null && deleteFlag == ActivityConstants.DELETE_FLAG_YES) {
+            return false;
+        }
+
+        if (status == null || status == ActivityConstants.STATUS_ENDED || status == ActivityConstants.STATUS_CANCELLED) {
+            return false;
+        }
+
+        Date now = new Date();
+        if (startTime != null && now.before(startTime)) {
+            return false;
+        }
+
+        if (endTime != null && now.after(endTime)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * 初始化扩展字段
+     */
+    public void initExtraFields() {
+        this.statusName = getStatusName();
+        this.remainingDays = getRemainingDays();
+    }
+
 }

@@ -86,4 +86,19 @@ public class User extends BaseEntity
     @Schema(title = "余额")
     @Excel(name = "余额")
     private BigDecimal balance;
+
+    /**
+     * 设置默认值
+     */
+    public void setDefaultValues() {
+        if (this.status == null) {
+            this.status = 1;
+        }
+        if (this.balance == null) {
+            this.balance = BigDecimal.ZERO;
+        }
+        if (this.type == null) {
+            this.type = "user";
+        }
+    }
 }
