@@ -5,7 +5,7 @@ export function listDetail(query) {
   return request({
     url: '/system/productDetail/list',
     method: 'get',
-    params: query
+    params: querys
   })
 }
 

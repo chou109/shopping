@@ -1,72 +1,12 @@
-<template>
-  <div class="product-section">
-    <div class="section-header">
-      <div class="section-title-wrapper">
-        <h2 class="section-title">热门商品</h2>
-        <el-link type="primary" :underline="false" @click="$router.push('/products')" class="view-more">
-          查看更多 >
-        </el-link>
-      </div>
-    </div>
-    
-    <div v-loading="loading" class="product-list">
-      <div v-if="form.length > 0" class="product-grid">
-        <div class="product-item" v-for="item in form.slice(0, 8)" :key="item.id" 
-             @click="$router.push({ path: '/product/detail', query: { id: item.id } })">
-          <div class="product-card">
-            <div class="product-image">
-              <img 
-                :src="getImageUrl(item.mainImage)" 
-                :alt="item.name"
-                @error="handleImageError"
-              />
-            </div>
-            <div class="product-info">
-              <h3 class="product-name">{{ item.name }}</h3>
-              <div class="product-price">¥{{ item.price?.toFixed(2) || '0.00' }}</div>
-              <div class="product-desc">{{ getDescription(item) }}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div v-else class="empty-state">
-        <el-empty description="暂无热门商品" />
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { listProductHot } from "@/api/system/product";
+import { getProductImageUrl, handleImageError } from '@/utils/image';
 
 const router = useRouter()
 const form = ref([])
 const loading = ref(false)
-
-// 获取图片URL
-const getImageUrl = (imagePath) => {
-  if (!imagePath) return '/api/static/images/default-product.png'
-  
-  // 如果已经是完整的URL，直接返回
-  if (imagePath.startsWith('http') || imagePath.startsWith('//')) {
-    return imagePath
-  }
-  
-  // 如果是相对路径，添加基础URL
-  if (imagePath.startsWith('/')) {
-    return `/api${imagePath}`
-  }
-  
-  // 修正原来的错误路径
-  if (imagePath.includes('src/assets/images')) {
-    return imagePath.replace('src/assets/images', '/api/static/images')
-  }
-  
-  // 其他情况，直接拼接
-  return `/api/static/${imagePath}`
-}
 
 // 获取商品描述
 const getDescription = (item) => {
@@ -90,16 +30,48 @@ const load = function() {
     })
 }
 
-// 图片加载错误处理
-const handleImageError = (event) => {
-  console.log('图片加载失败:', event.target.src)
-  event.target.src = '/api/static/images/default-product.png'
-}
-
 onMounted(() => {
   load()
 })
 </script>
+
+<template>
+  <div class="product-section">
+    <div class="section-header">
+      <div class="section-title-wrapper">
+        <h2 class="section-title">热门商品</h2>
+        <el-link type="primary" :underline="false" @click="$router.push('/products')" class="view-more">
+          查看更多 >
+        </el-link>
+      </div>
+    </div>
+    
+    <div v-loading="loading" class="product-list">
+      <div v-if="form.length > 0" class="product-grid">
+        <div class="product-item" v-for="item in form.slice(0, 8)" :key="item.id" 
+             @click="$router.push({ path: '/product/detail', query: { id: item.id } })">
+          <div class="product-card">
+            <div class="product-image">
+              <img 
+                :src="getProductImageUrl(item.mainImage)" 
+                :alt="item.name"
+                @error="handleImageError"
+              />
+            </div>
+            <div class="product-info">
+              <h3 class="product-name">{{ item.name }}</h3>
+              <div class="product-price">¥{{ item.price?.toFixed(2) || '0.00' }}</div>
+              <div class="product-desc">{{ getDescription(item) }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div v-else class="empty-state">
+        <el-empty description="暂无热门商品" />
+      </div>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 .product-section {

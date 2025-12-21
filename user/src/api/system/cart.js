@@ -3,7 +3,7 @@ import request from '@/utils/request'
 // 获取当前用户购物车列表
 export function listCart() {
   return request({
-    url: '/api/cart',
+    url: '/system/cart/list',
     method: 'get'
   })
 }
@@ -11,7 +11,7 @@ export function listCart() {
 // 添加商品到购物车
 export function addCart(data) {
   return request({
-    url: '/api/cart',
+    url: '/system/cart',
     method: 'post',
     data: data
   })
@@ -20,7 +20,7 @@ export function addCart(data) {
 // 修改购物车商品数量
 export function updateCart(id, data) {
   return request({
-    url: `/api/cart/${id}`,
+    url: `/system/cart/${id}`,
     method: 'put',
     data: data
   })
@@ -29,7 +29,7 @@ export function updateCart(id, data) {
 // 删除购物车商品
 export function delCart(id) {
   return request({
-    url: `/api/cart/${id}`,
+    url: `/system/cart/${id}`,
     method: 'delete'
   })
 }
@@ -37,7 +37,7 @@ export function delCart(id) {
 // 批量删除购物车商品
 export function batchDelCart(ids) {
   return request({
-    url: '/api/cart/batch',
+    url: '/system/cart/batch',
     method: 'delete',
     data: ids
   })
@@ -46,7 +46,7 @@ export function batchDelCart(ids) {
 // 清空购物车
 export function clearCart() {
   return request({
-    url: '/api/cart/clear',
+    url: '/system/cart/clear',
     method: 'delete'
   })
 }
@@ -54,7 +54,7 @@ export function clearCart() {
 // 获取购物车统计信息
 export function getCartCount() {
   return request({
-    url: '/api/cart/count',
+    url: '/system/cart/count',
     method: 'get'
   })
 }

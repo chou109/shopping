@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { listProductByCategory } from '@/api/system/product'
+import { getProductImageUrl, handleImageError } from '@/utils/image'
 
 const props = defineProps({
   categoryId: {
@@ -24,12 +25,10 @@ const loadProducts = async () => {
   
   loading.value = true
   try {
-    console.log()
     name.value=props.categoryName
-    // 直接使用API获取数据
     const response = await listProductByCategory(props.categoryId)
     console.log(response)
-    // 根据实际API响应结构调整
+    
     if (response.code === 200) {
       products.value = response.data || []
     } else {
@@ -38,33 +37,10 @@ const loadProducts = async () => {
     }
   } catch (error) {
     console.error(`获取${props.categoryName}商品失败:`, error)
-    products.value = [] // API失败时显示空状态
+    products.value = []
   } finally {
     loading.value = false
   }
-}
-
-// 获取图片URL - 优化版
-const getImageUrl = (imagePath) => {
-  if (!imagePath) return '/api/static/images/default-product.png'
-  
-  // 如果已经是完整的URL，直接返回
-  if (imagePath.startsWith('http') || imagePath.startsWith('//')) {
-    return imagePath
-  }
-  
-  // 如果是相对路径，添加基础URL
-  if (imagePath.startsWith('/')) {
-    return `/api${imagePath}`
-  }
-  
-  // 修正原来的错误路径
-  if (imagePath.includes('src/assets/images')) {
-    return imagePath.replace('src/assets/images', '/api/static/images')
-  }
-  
-  // 其他情况，直接拼接
-  return `/api/static/${imagePath}`
 }
 
 // 格式化价格
@@ -84,24 +60,11 @@ const getDescription = (item) => {
   return '暂无描述'
 }
 
-// 跳转到商品详情
-const goToProductDetail = (productId) => {
-  router.push({ 
-    path: '/product/detail', 
-    query: { id: productId } 
-  })
-}
-
-// // 图片加载错误处理
-// const handleImageError = (event) => {
-//   console.log('图片加载失败:', event.target.src)
-//   event.target.src = '/api/static/images/default-product.png'
-// }
-
 onMounted(() => {
   loadProducts()
 })
 </script>
+
 <template>
 <div class="product-section">
     <div class="section-header">
@@ -120,21 +83,21 @@ onMounted(() => {
           <div class="product-card">
             <div class="product-image">
               <img 
-                :src="`src/assets/images`+item.mainImage" 
+                :src="getProductImageUrl(item.mainImage)" 
                 :alt="item.name"
                 @error="handleImageError"
               />
             </div>
             <div class="product-info">
               <h3 class="product-name">{{ item.name }}</h3>
-              <div class="product-price">¥{{ item.price?.toFixed(2) || '0.00' }}</div>
+              <div class="product-price">¥{{ formatPrice(item.price) }}</div>
               <div class="product-desc">{{ getDescription(item) }}</div>
             </div>
           </div>
         </div>
       </div>
       <div v-else class="empty-state">
-        <el-empty description="暂无热门商品" />
+        <el-empty description="暂无商品" />
       </div>
     </div>
   </div>

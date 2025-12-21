@@ -1,8 +1,175 @@
+<script setup>
+import { ref, onMounted, watch, computed } from 'vue'
+import { useRoute } from 'vue-router'
+import api from "@/utils/request.js"
+import { getCategory } from '@/api/system/category'
+import { getProductImageUrl, handleImageError } from '@/utils/image'
+
+const route = useRoute()
+const keyword = ref('')
+const categoryId = ref('')
+const categoryName = ref('')
+const products = ref([])
+const loading = ref(false)
+const total = ref(0)
+const currentPage = ref(1)
+const pageSize = ref(12)
+
+// 获取分类名称
+const loadCategoryName = async () => {
+  if (!categoryId.value) {
+    categoryName.value = ''
+    return
+  }
+  
+  try {
+    const response = await getCategory(categoryId.value)
+    console.log('分类详情响应:', response)
+    
+    if (response.code === 200 && response.data) {
+      categoryName.value = response.data.name || `ID: ${categoryId.value}`
+    } else {
+      categoryName.value = `ID: ${categoryId.value}`
+    }
+  } catch (error) {
+    console.error('获取分类名称失败:', error)
+    categoryName.value = `ID: ${categoryId.value}`
+  }
+}
+
+const loadSearchResults = () => {
+  loading.value = true
+  
+  if (categoryId.value) {
+    loadCategoryName()
+  } else {
+    categoryName.value = ''
+  }
+  
+  if (categoryId.value) {
+    api({
+      url: `/system/product/category/${categoryId.value}`,
+      method: 'get'
+    })
+      .then((res) => {
+        console.log('分类查询响应:', res)
+        
+        if (res.code === 200) {
+          products.value = res.data || []
+          total.value = products.value.length
+        } else {
+          products.value = []
+          total.value = 0
+        }
+      })
+      .catch(() => {
+        products.value = []
+        total.value = 0
+      })
+      .finally(() => {
+        loading.value = false
+      })
+  }
+  else if (keyword.value) {
+    api({
+      url: '/system/product/search',
+      method: 'get',
+      params: {
+        keyword: keyword.value
+      }
+    })
+      .then((res) => {
+        console.log('关键词搜索响应:', res)
+        
+        if (res.code === 200) {
+          products.value = res.data || []
+          total.value = products.value.length
+        } else {
+          products.value = []
+          total.value = 0
+        }
+      })
+      .catch(() => {
+        products.value = []
+        total.value = 0
+      })
+      .finally(() => {
+        loading.value = false
+      })
+  } else {
+    loading.value = false
+    products.value = []
+    total.value = 0
+  }
+}
+
+const handlePageChange = (page) => {
+  currentPage.value = page
+  loadSearchResults()
+}
+
+// 计算显示标题
+const pageTitle = computed(() => {
+  if (keyword.value) {
+    return `搜索关键词: "${keyword.value}"`
+  } else if (categoryName.value) {
+    return `分类: ${categoryName.value}`
+  } else if (categoryId.value) {
+    return `分类ID: ${categoryId.value}`
+  } else {
+    return '请输入搜索条件'
+  }
+})
+
+// 计算空状态描述
+const emptyDescription = computed(() => {
+  if (keyword.value) {
+    return `没有找到与'${keyword.value}'相关的商品`
+  } else if (categoryName.value) {
+    return `分类【${categoryName.value}】下暂无商品`
+  } else if (categoryId.value) {
+    return `分类ID ${categoryId.value} 下暂无商品`
+  } else {
+    return '请输入搜索条件'
+  }
+})
+
+onMounted(() => {
+  keyword.value = route.query.keyword || ''
+  categoryId.value = route.query.categoryId || ''
+  
+  console.log('页面加载，参数:', {
+    keyword: keyword.value,
+    categoryId: categoryId.value
+  })
+  
+  if (keyword.value || categoryId.value) {
+    loadSearchResults()
+  }
+})
+
+watch(() => route.query, (newQuery) => {
+  keyword.value = newQuery.keyword || ''
+  categoryId.value = newQuery.categoryId || ''
+  currentPage.value = 1
+  categoryName.value = ''
+  
+  console.log('路由参数变化:', newQuery)
+  
+  if (keyword.value || categoryId.value) {
+    loadSearchResults()
+  } else {
+    products.value = []
+    total.value = 0
+  }
+})
+</script>
+
 <template>
   <div class="search-container">
     <div class="search-header">
       <h2>搜索结果</h2>
-      <p v-if="keyword">搜索关键词: "{{ keyword }}"</p>
+      <p>{{ pageTitle }}</p>
     </div>
     
     <div v-loading="loading" class="product-list">
@@ -16,13 +183,13 @@
                @click="$router.push({ path: '/product/detail', query: { id: item.id } })">
             <div class="product-card">
               <div class="product-image">
-                <img :src="getImageUrl(item.mainImage)" :alt="item.name" @error="handleImageError" />
+                <img :src="getProductImageUrl(item.mainImage)" :alt="item.name" @error="handleImageError" />
               </div>
               <div class="product-info">
                 <h3 class="product-name">{{ item.name }}</h3>
                 <div class="product-price">¥{{ item.price?.toFixed(2) || '0.00' }}</div>
                 <div class="product-desc">{{ item.subTitle }}</div>
-                <div class="product-category">分类: {{ item.categoryName }}</div>
+                <div class="product-category">分类: {{ item.categoryName || item.category?.name || '未分类' }}</div>
               </div>
             </div>
           </div>
@@ -39,7 +206,7 @@
         />
       </div>
       <div v-else class="empty-state">
-        <el-empty :description="`没有找到与'${keyword}'相关的商品`" />
+        <el-empty :description="emptyDescription" />
         <div class="suggestions">
           <p>建议：</p>
           <ul>
@@ -52,74 +219,6 @@
     </div>
   </div>
 </template>
-
-<script setup>
-import { ref, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import api from "@/utils/request.js"
-
-const route = useRoute()
-const keyword = ref('')
-const products = ref([])
-const loading = ref(false)
-const total = ref(0)
-const currentPage = ref(1)
-const pageSize = ref(12)
-
-const loadSearchResults = () => {
-  loading.value = true
-  api({
-    url: '/api/products/search',
-    method: 'get',
-    params: {
-      keyword: keyword.value,
-      page: currentPage.value,
-      size: pageSize.value
-    }
-  })
-    .then((res) => {
-      products.value = res.data?.rows || res.data || []
-      total.value = res.data?.total || 0
-    })
-    .catch(() => {
-      products.value = []
-      total.value = 0
-    })
-    .finally(() => {
-      loading.value = false
-    })
-}
-
-const handlePageChange = (page) => {
-  currentPage.value = page
-  loadSearchResults()
-}
-
-const getImageUrl = (imagePath) => {
-  if (!imagePath) return ''
-  if (imagePath.startsWith('http')) return imagePath
-  return `/api/${imagePath}`
-}
-
-const handleImageError = (event) => {
-  event.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiIGZpbGw9IiNlZWVlZWUiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSIjYWFhIj5ObyBJbWFnZTwvdGV4dD48L3N2Zz4='
-}
-
-onMounted(() => {
-  keyword.value = route.query.keyword || ''
-  if (keyword.value) {
-    loadSearchResults()
-  }
-})
-
-watch(() => route.query.keyword, (newKeyword) => {
-  keyword.value = newKeyword || ''
-  currentPage.value = 1
-  if (keyword.value) {
-    loadSearchResults()
-  }
-})
-</script>
 
 <style scoped>
 .search-container {
@@ -218,17 +317,18 @@ watch(() => route.query.keyword, (newKeyword) => {
   flex-direction: column;
 }
 
-.product-desc {
-  color: #666;
-  font-size: 13px;
-  line-height: 1.5;
-  margin-bottom: 8px;
-  height: 40px;
+.product-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 12px 0;
+  line-height: 1.4;
+  height: 42px;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
+  line-clamp: 2;
   -webkit-line-clamp: 2;
-  line-clamp: 2; /* 标准写法 */
   -webkit-box-orient: vertical;
 }
 
@@ -249,7 +349,7 @@ watch(() => route.query.keyword, (newKeyword) => {
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 2;
-  line-clamp: 2; /* 标准写法 */
+  line-clamp: 2;
   -webkit-box-orient: vertical;
 }
 
