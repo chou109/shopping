@@ -3,18 +3,18 @@ import store from './store'
 // import {Message} from 'element-ui'
 import NProgress from 'nprogress'
 import 'nprogress/nprogress.css'
-import {getToken} from '@/utils/auth'
+import { getToken } from '@/utils/auth'
 
-NProgress.configure({showSpinner: false})
+NProgress.configure({ showSpinner: false })
 
-const whiteList = ['/', '/login', '/index', '/auth-redirect']
+const whiteList = ['/', '/login', '/index', '/auth-redirect', '/register']
 
 router.beforeEach((to, from, next) => {
   NProgress.start()
   if (getToken()) {
     /* has token*/
     if (to.path === '/login') {
-      next({path: '/index'})
+      next({ path: '/index' })
       NProgress.done()
     } else {
       if (store.getters.roles.length === 0) {
@@ -22,15 +22,15 @@ router.beforeEach((to, from, next) => {
         store.dispatch('GetInfo').then(res => {
           // 拉取user_info
           const roles = res.roles
-          store.dispatch('GenerateRoutes', {roles}).then(accessRoutes => {
+          store.dispatch('GenerateRoutes', { roles }).then(accessRoutes => {
             // 根据roles权限生成可访问的路由表
             router.addRoute(accessRoutes) // 动态添加可访问路由表
-            next({...to, replace: true}) // hack方法 确保addRoutes已完成
+            next({ ...to, replace: true }) // hack方法 确保addRoutes已完成
           })
         }).catch(err => {
           store.dispatch('LogOut').then(() => {
             // Message.error(err)
-            next({path: '/index'})
+            next({ path: '/index' })
           })
         })
       } else {

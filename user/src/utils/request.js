@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { ElNotification , ElMessageBox, ElMessage, ElLoading } from 'element-plus'
+import { ElNotification, ElMessageBox, ElMessage, ElLoading } from 'element-plus'
 import { getToken } from '@/utils/auth'
 import errorCode from '@/utils/errorCode'
 import { tansParams, blobValidate } from '@/utils/ruoyi'
@@ -26,6 +26,17 @@ service.interceptors.request.use(config => {
   const isToken = (config.headers || {}).isToken === false
   // 是否需要防止数据重复提交
   const isRepeatSubmit = (config.headers || {}).repeatSubmit === false
+
+  const port = window.location.port || '80';
+  const clientType = port === '18183' ? 'user' : 'admin';
+
+  // 添加到请求头（修改这里）
+  config.headers = {
+    ...config.headers,
+    'X-Client-Type': clientType,
+    'X-Client-Port': port
+  };
+
   if (getToken() && !isToken) {
     config.headers['Authorization'] = 'Bearer ' + getToken() // 让每个请求携带自定义token 请根据实际情况自行修改
   }
@@ -67,47 +78,47 @@ service.interceptors.request.use(config => {
   }
   return config
 }, error => {
-    console.log(error)
-    Promise.reject(error)
+  console.log(error)
+  Promise.reject(error)
 })
 
 // 响应拦截器
 service.interceptors.response.use(res => {
-    // 未设置状态码则默认成功状态
-    const code = res.data.code || 200;
-    // 获取错误信息
-    const msg = errorCode[code] || res.data.msg || errorCode['default']
-    // 二进制数据则直接返回
-    if (res.request.responseType ===  'blob' || res.request.responseType ===  'arraybuffer') {
-      return res.data
-    }
-    if (code === 401) {
-      if (!isRelogin.show) {
-        isRelogin.show = true;
-        ElMessageBox.confirm('登录状态已过期，您可以继续留在该页面，或者重新登录', '系统提示', { confirmButtonText: '重新登录', cancelButtonText: '取消', type: 'warning' }).then(() => {
-          isRelogin.show = false;
-          // useUserStore().logOut().then(() => {
-          //   location.href = '/index';
-          // })
-          location.href = '/login';
+  // 未设置状态码则默认成功状态
+  const code = res.data.code || 200;
+  // 获取错误信息
+  const msg = errorCode[code] || res.data.msg || errorCode['default']
+  // 二进制数据则直接返回
+  if (res.request.responseType === 'blob' || res.request.responseType === 'arraybuffer') {
+    return res.data
+  }
+  if (code === 401) {
+    if (!isRelogin.show) {
+      isRelogin.show = true;
+      ElMessageBox.confirm('登录状态已过期，您可以继续留在该页面，或者重新登录', '系统提示', { confirmButtonText: '重新登录', cancelButtonText: '取消', type: 'warning' }).then(() => {
+        isRelogin.show = false;
+        // useUserStore().logOut().then(() => {
+        //   location.href = '/index';
+        // })
+        location.href = '/login';
       }).catch(() => {
         isRelogin.show = false;
       });
     }
-      return Promise.reject('无效的会话，或者会话已过期，请重新登录。')
-    } else if (code === 500) {
-      ElMessage({ message: msg, type: 'error' })
-      return Promise.reject(new Error(msg))
-    } else if (code === 601) {
-      ElMessage({ message: msg, type: 'warning' })
-      return Promise.reject(new Error(msg))
-    } else if (code !== 200) {
-      ElNotification.error({ title: msg })
-      return Promise.reject('error')
-    } else {
-      return  Promise.resolve(res.data)
-    }
-  },
+    return Promise.reject('无效的会话，或者会话已过期，请重新登录。')
+  } else if (code === 500) {
+    ElMessage({ message: msg, type: 'error' })
+    return Promise.reject(new Error(msg))
+  } else if (code === 601) {
+    ElMessage({ message: msg, type: 'warning' })
+    return Promise.reject(new Error(msg))
+  } else if (code !== 200) {
+    ElNotification.error({ title: msg })
+    return Promise.reject('error')
+  } else {
+    return Promise.resolve(res.data)
+  }
+},
   error => {
     console.log('err' + error)
     let { message } = error;

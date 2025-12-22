@@ -35,35 +35,39 @@ const updateCarouselHeight = () => {
 const loadBanners = function() {
   loading.value = true
   
-  // 添加4张轮播图
+  // 修改：为每个banner添加对应的商品ID
   banners.value = [
     { 
       id: 1, 
       imageUrl: banner1,
-      title: '薄无止境',
-      description: '时尚集成平板灯，芯片升级，纤薄SCM，品质提升',
-      link: '/products?category=1'
+      title: '小米(MI) L65M4-AQ电视',
+      description: '全高清屏，纤薄金属',
+      productId: 48,  // 添加商品ID
+      link: '/product/detail?id=48'  // 修改为商品详情页链接
     },
     { 
       id: 2, 
       imageUrl: banner2,
-      title: '欧式纯铜台灯',
-      description: '欧式经典复刻，岁月的痕迹',
-      link: '/products?category=2'
+      title: '培罗蒙(BAROMON) 西服套装',
+      description: '柔软舒适，质感档次',
+      productId: 103,
+      link: '/product/detail?id=103'
     },
     { 
       id: 3, 
       imageUrl: banner3,
-      title: '新品上市',
-      description: '最新科技产品，引领时尚潮流',
-      link: '/products?category=3'
+      title: '苹果(Apple) MacBook',
+      description: '纤薄，轻巧，强劲',
+      productId: 41,
+      link: '/product/detail?id=41'
     },
     { 
       id: 4, 
       imageUrl: banner4,
-      title: '限时特惠',
-      description: '精选商品，限时折扣，不容错过',
-      link: '/products?category=4'
+      title: '马克华菲(Mark Fairwhale) 韩版衬衫',
+      description: '光泽软和，时尚修身',
+      productId: 118,
+      link: '/product/detail?id=118'
     }
   ]
   
@@ -182,9 +186,13 @@ const handleSubCategoryClick = (subCategoryId) => {
   })
 }
 
+// 修改：处理轮播图点击，跳转到商品详情页
 const handleBannerClick = function(banner) {
   if (banner.link) {
     router.push(banner.link)
+  } else if (banner.productId) {
+    // 如果link不存在但有productId，也跳转到商品详情
+    router.push(`/product/detail?id=${banner.productId}`)
   }
 }
 
@@ -281,9 +289,14 @@ onUnmounted(() => {
 <style scoped>
 /* 页面主题色 */
 :root {
-  --primary-color: #409eff; /* Element Plus 主题蓝色 */
-  --hover-bg: rgba(64, 158, 255, 0.1);
-  --active-bg: rgba(64, 158, 255, 0.2);
+  --primary-color: #ff5500; /* 淘宝主题橙色 */
+  --hover-bg: rgba(255, 85, 0, 0.08);
+  --active-bg: rgba(255, 85, 0, 0.15);
+  --category-bg: #f8f8f8;
+  --category-hover: #fff5f0;
+  --category-border: #e0e0e0;
+  --text-primary: #333;
+  --text-secondary: #666;
 }
 
 .banner-container {
@@ -291,16 +304,21 @@ onUnmounted(() => {
   margin: 0 auto 20px auto;
   position: relative;
   min-height: 417px;
+  display: flex;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
 }
 
 .banner-wrapper {
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  border-radius: 0 12px 12px 0;
   overflow: hidden;
   position: relative;
   width: 1000px;
-  margin-left: 200px;
   height: 400px;
+  margin: 0;
+  flex: 1;
 }
 
 .banner-item {
@@ -348,39 +366,36 @@ onUnmounted(() => {
   line-height: 1.4;
 }
 
-/* 商品分类导航样式 - 固定在轮播图上方，不随轮播图轮播 */
+/* 商品分类导航样式 - 淘宝样式优化 */
 .home-category {
   width: 200px;
-  height: 417px;
-  background-color: #f5f5f5; /* 浅灰色背景 */
-  position: absolute;
-  left: 0;
-  top: 0;
+  height: 400px;
+  background-color: var(--category-bg);
+  position: relative;
   z-index: 3;
-  margin-bottom: 0;
-  border-radius: 12px 0 0 12px;
-  border: 1px solid #e0e0e0; /* 添加边框 */
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-right: 1px solid var(--category-border);
 }
 
 .menu {
-  list-style: none !important; /* 强制移除列表标记 */
+  list-style: none !important;
   padding: 0;
   margin: 0;
+  height: 100%;
 }
 
 .menu li {
   position: relative;
-  padding-left: 40px;
-  height: 55px;
-  line-height: 55px;
+  height: 40px;
+  line-height: 40px;
   transition: all 0.3s ease;
   cursor: pointer;
-  color: #333; /* 黑色文字 */
-  border-bottom: 1px solid #e8e8e8;
-  /* 彻底移除列表标记 */
-  list-style-type: none !important;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--category-border);
   list-style: none !important;
+  padding: 0 20px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
 }
 
 .menu li:last-child {
@@ -389,85 +404,94 @@ onUnmounted(() => {
 
 .menu li:hover,
 .menu li.active {
-  background-color: var(--primary-color); /* 主题色背景 */
-  color: rgb(91, 70, 193); /* 悬停时的文字颜色 */
+  background-color: var(--category-hover);
+  color: var(--primary-color);
+  font-weight: 500;
 }
 
-.menu li:hover .category-main,
-.menu li.active .category-main {
-  color: rgb(91, 70, 193); /* 确保悬停时文字的颜色 */
+/* 淘宝样式箭头 */
+.menu li:hover::after,
+.menu li.active::after {
+  content: "›";
+  position: absolute;
+  right: 15px;
+  color: var(--primary-color);
+  font-size: 16px;
+  font-weight: bold;
 }
 
 .category-main {
-  margin-left: -30px;
-  font-size: 16px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 400;
   transition: all 0.3s ease;
-  /* 移除列表标记的伪元素 */
-  &::before {
-    content: none !important;
-    display: none !important;
-  }
+  width: 100%;
 }
 
+/* 子分类层样式优化 */
 .layer {
-  width: 200px;
-  height: 417px;
-  background-color: #f8f8f8; /* 浅灰色背景 */
+  width: 800px;
+  height: 400px;
+  background-color: white;
   position: absolute;
   left: 200px;
   top: 0;
-  border-radius: 0 12px 12px 0;
   z-index: 4;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--category-border);
   border-left: none;
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.08);
+  border-radius: 0 12px 12px 0;
+  padding: 20px;
+  box-sizing: border-box;
 }
 
 .layer ul {
   display: flex;
   flex-wrap: wrap;
+  gap: 0;
   padding: 0;
   margin: 0;
-  list-style: none !important; /* 强制移除列表标记 */
+  list-style: none !important;
+  height: 100%;
+  align-content: flex-start;
 }
 
 .layer li {
-  width: 200px;
-  height: 52px;
-  line-height: 52px;
-  padding-left: 40px;
+  width: 25%; /* 每行显示4个子分类 */
+  height: 36px;
+  line-height: 36px;
   cursor: pointer;
   transition: all 0.3s ease;
-  color: #333; /* 黑色文字 */
-  border-bottom: 1px solid #e8e8e8;
-  /* 彻底移除列表标记 */
-  list-style-type: none !important;
-  list-style: none !important;
-}
-
-.layer li:last-child {
-  border-bottom: none;
+  color: var(--text-secondary);
+  padding: 0 15px;
+  box-sizing: border-box;
+  border: none;
+  text-align: left;
 }
 
 .layer li:hover {
-  background-color: var(--primary-color); /* 主题色背景 */
-  color: rgb(91, 70, 193); /* 悬停时的文字颜色 */
+  background-color: transparent;
+  color: var(--primary-color);
+  font-weight: 500;
 }
 
 .sub-category-item {
-  margin-left: -30px;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
 }
 
 .name {
-  font-size: 16px;
-  font-weight: 500;
+  font-size: 13px;
   margin: 0;
   transition: color 0.3s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .layer li:hover .name {
-  color: rgb(91, 70, 193); /* 确保悬停时文字的颜色 */
+  color: var(--primary-color);
 }
 
 .ellipsis-2 {
@@ -476,7 +500,7 @@ onUnmounted(() => {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
-  line-clamp: 2; /* 补充标准属性 */
+  line-clamp: 2;
 }
 
 /* 彻底移除所有列表标记 */
@@ -494,12 +518,7 @@ onUnmounted(() => {
   content: none !important;
 }
 
-/* 移除列表标记 */
-ul li::marker {
-  display: none;
-}
-
-/* 响应式调整 - 在较小屏幕上恢复自适应 */
+/* 响应式调整 */
 @media (max-width: 1240px) {
   .banner-container {
     width: 95%;
@@ -508,7 +527,10 @@ ul li::marker {
   
   .banner-wrapper {
     width: calc(100% - 200px);
-    margin-left: 200px;
+  }
+  
+  .layer {
+    width: calc(100% - 200px);
   }
 }
 
@@ -524,33 +546,32 @@ ul li::marker {
   }
   
   .layer {
-    width: 180px;
+    width: calc(100% - 180px);
     left: 180px;
     height: 320px;
   }
   
   .banner-wrapper {
     width: calc(100% - 180px);
-    margin-left: 180px;
     height: 320px;
   }
   
   .menu li {
-    padding-left: 30px;
-    height: 50px;
-    line-height: 50px;
-  }
-  
-  .category-main {
-    margin-left: -20px;
-    font-size: 15px;
+    height: 35px;
+    line-height: 35px;
+    padding: 0 15px;
+    font-size: 13px;
   }
   
   .layer li {
-    width: 180px;
-    height: 48px;
-    line-height: 48px;
-    padding-left: 30px;
+    width: 33.333%; /* 中屏每行显示3个 */
+    height: 32px;
+    line-height: 32px;
+    padding: 0 12px;
+  }
+  
+  .name {
+    font-size: 12px;
   }
   
   .banner-content {
@@ -570,41 +591,47 @@ ul li::marker {
   .banner-container {
     width: 95%;
     margin: 0 auto 20px auto;
+    flex-direction: column;
+    height: auto;
   }
   
   .home-category {
-    width: 160px;
-    height: 250px;
+    width: 100%;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--category-border);
   }
   
-  .layer {
-    width: 160px;
-    left: 160px;
-    height: 250px;
-  }
-  
-  .banner-wrapper {
-    width: calc(100% - 160px);
-    margin-left: 160px;
-    height: 250px;
+  .menu {
+    display: flex;
+    flex-wrap: wrap;
+    height: auto;
   }
   
   .menu li {
-    padding-left: 25px;
-    height: 45px;
-    line-height: 45px;
+    width: 33.333%;
+    height: 40px;
+    border-bottom: 1px solid var(--category-border);
+    border-right: 1px solid var(--category-border);
+    box-sizing: border-box;
   }
   
-  .category-main {
-    margin-left: -15px;
-    font-size: 14px;
+  .menu li:nth-child(3n) {
+    border-right: none;
   }
   
-  .layer li {
-    width: 160px;
-    height: 44px;
-    line-height: 44px;
-    padding-left: 25px;
+  .menu li:nth-last-child(-n+3) {
+    border-bottom: none;
+  }
+  
+  .layer {
+    display: none; /* 移动端隐藏子分类层 */
+  }
+  
+  .banner-wrapper {
+    width: 100%;
+    margin-left: 0;
+    height: 250px;
   }
   
   .banner-content {
@@ -625,17 +652,18 @@ ul li::marker {
   .banner-container {
     width: 100%;
     margin: 0 auto 20px auto;
-    padding: 0 10px;
+    padding: 0;
+    border-radius: 0;
   }
   
   .home-category {
-    display: none;
+    display: none; /* 超小屏隐藏分类导航 */
   }
   
   .banner-wrapper {
-    margin-left: 0;
     width: 100%;
     height: 180px;
+    border-radius: 0;
   }
   
   .banner-content {

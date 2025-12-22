@@ -112,6 +112,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="limit != null">limit #{limit}</if>
     </select>
 
+
     <!-- 根据分类ID查询商品列表 -->
     <select id="selectProductByCategoryId" parameterType="Long" resultMap="ProductResult">
         <include refid="selectProductVo"/>

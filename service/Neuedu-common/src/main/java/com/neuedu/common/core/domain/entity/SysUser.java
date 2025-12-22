@@ -89,6 +89,21 @@ public class SysUser extends BaseEntity
     /** 角色ID */
     private Long roleId;
 
+    /**
+     * 用户类型（0普通用户 1管理员 2超级管理员 3审核员 ...）
+     */
+    @Excel(name = "用户类型", readConverterExp = "0=普通用户,1=管理员,2=超级管理员,3=审核员,4=运营,5=客服")
+    private Integer userType;
+
+    public Integer getUserType() {
+        return userType;
+    }
+
+    public void setUserType(Integer userType) {
+        this.userType = userType;
+    }
+
+
     public SysUser()
     {
 
@@ -321,4 +336,6 @@ public class SysUser extends BaseEntity
             .append("dept", getDept())
             .toString();
     }
+
+    
 }
