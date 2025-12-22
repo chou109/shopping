@@ -167,6 +167,14 @@ watch(() => route.query, (newQuery) => {
 
 <template>
   <div class="search-container">
+    <!-- 添加的面包屑导航 -->
+    <div class="breadcrumb-nav">
+      <el-breadcrumb separator="/">
+        <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
+        <el-breadcrumb-item v-if="keyword">搜索"{{ keyword }}"</el-breadcrumb-item>
+        <el-breadcrumb-item v-else>商品列表</el-breadcrumb-item>
+      </el-breadcrumb>
+    </div>
     <div class="search-header">
       <h2>搜索结果</h2>
       <p>{{ pageTitle }}</p>
@@ -221,6 +229,16 @@ watch(() => route.query, (newQuery) => {
 </template>
 
 <style scoped>
+/* 添加面包屑导航样式 */
+.breadcrumb-nav {
+  margin-bottom: 20px;
+  padding: 0 10px;
+}
+
+.breadcrumb-nav .el-breadcrumb {
+  font-size: 14px;
+}
+
 .search-container {
   width: 100%;
   max-width: 1200px;
