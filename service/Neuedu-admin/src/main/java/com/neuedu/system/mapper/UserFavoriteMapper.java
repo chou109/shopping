@@ -4,6 +4,8 @@ import java.util.List;
 import com.neuedu.system.domain.UserFavorite;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
 /**
  * 用户收藏Mapper接口
  * 
@@ -60,4 +62,46 @@ public interface UserFavoriteMapper extends BaseMapper<UserFavorite>
      * @return 结果
      */
     public int deleteUserFavoriteByFavoriteIds(Long[] favoriteIds);
+
+
+    // ============ 新增的方法 ============
+
+    /**
+     * 根据用户ID和收藏目标查询收藏
+     */
+    UserFavorite selectByUserAndTarget(@Param("userId") Long userId,
+                                       @Param("targetType") Integer targetType,
+                                       @Param("targetId") Long targetId);
+
+    /**
+     * 查询用户的收藏列表（按类型）
+     */
+    List<UserFavorite> selectUserFavorites(@Param("userId") Long userId,
+                                           @Param("targetType") Integer targetType);
+
+    /**
+     * 检查用户是否已收藏
+     */
+    boolean existsFavorite(@Param("userId") Long userId,
+                           @Param("targetType") Integer targetType,
+                           @Param("targetId") Long targetId);
+
+    /**
+     * 删除用户的收藏
+     */
+    int deleteByUserAndTarget(@Param("userId") Long userId,
+                              @Param("targetType") Integer targetType,
+                              @Param("targetId") Long targetId);
+
+    /**
+     * 统计用户的收藏数量
+     */
+    Long countUserFavorites(@Param("userId") Long userId,
+                            @Param("targetType") Integer targetType);
+
+    /**
+     * 统计目标的被收藏数量
+     */
+    Long countTargetFavorites(@Param("targetType") Integer targetType,
+                              @Param("targetId") Long targetId);
 }

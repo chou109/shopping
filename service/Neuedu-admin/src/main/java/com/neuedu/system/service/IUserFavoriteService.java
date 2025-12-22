@@ -59,4 +59,42 @@ public interface IUserFavoriteService extends IService<UserFavorite>
      * @return 结果
      */
     public int deleteUserFavoriteByFavoriteId(Long favoriteId);
+
+
+    // ============ 新增的方法 ============
+
+    /**
+     * 添加收藏（商品或店铺）
+     */
+    boolean addFavorite(Integer targetType, Long targetId);
+
+    /**
+     * 取消收藏
+     */
+    boolean removeFavorite(Integer targetType, Long targetId);
+
+    /**
+     * 检查是否已收藏
+     */
+    boolean isFavorite(Integer targetType, Long targetId);
+
+    /**
+     * 获取用户的商品收藏列表
+     */
+    List<UserFavorite> getUserProductFavorites();
+
+    /**
+     * 获取用户的店铺收藏列表
+     */
+    List<UserFavorite> getUserShopFavorites();
+
+    /**
+     * 获取用户的收藏数量
+     */
+    Long getUserFavoriteCount(Integer targetType);
+
+    /**
+     * 获取目标被收藏数量
+     */
+    Long getTargetFavoriteCount(Integer targetType, Long targetId);
 }

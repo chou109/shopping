@@ -85,4 +85,70 @@ public class ProductComment extends BaseEntity
     @Schema(title = "状态（1-正常，2-审核中，3-已删除）")
     @Excel(name = "状态", readConverterExp = "1=-正常，2-审核中，3-已删除")
     private Integer status;
+
+
+    // ============ 新增的便捷方法 ============
+
+    /**
+     * 判断是否为根评论（非回复）
+     */
+    public boolean isRootComment() {
+        return parentId == null || parentId == 0;
+    }
+
+    /**
+     * 判断是否为回复
+     */
+    public boolean isReply() {
+        return parentId != null && parentId > 0;
+    }
+
+    /**
+     * 判断是否匿名
+     */
+    public boolean isAnonymous() {
+        return isAnonymous != null && isAnonymous == 1;
+    }
+
+    /**
+     * 判断评论是否正常显示
+     */
+    public boolean isNormal() {
+        return status != null && status == 1;
+    }
+
+    /**
+     * 判断评论是否在审核中
+     */
+    public boolean isPending() {
+        return status != null && status == 2;
+    }
+
+    /**
+     * 判断评论是否已删除
+     */
+    public boolean isDeleted() {
+        return status != null && status == 3;
+    }
+
+    /**
+     * 获取状态描述
+     */
+    public String getStatusDesc() {
+        if (status == null) return "未知";
+        switch (status) {
+            case 1: return "正常";
+            case 2: return "审核中";
+            case 3: return "已删除";
+            default: return "未知";
+        }
+    }
+
+    /**
+     * 获取评分描述
+     */
+    public String getScoreDesc() {
+        if (score == null) return "未评分";
+        return score + "星";
+    }
 }

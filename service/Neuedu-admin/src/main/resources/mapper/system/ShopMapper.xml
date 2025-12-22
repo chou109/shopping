@@ -171,11 +171,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <delete id="deleteShopById" parameterType="Long">
-        delete from shop where id = #{id}
+--         delete from shop where id = #{id}
+            UPDATE shop
+            SET delete_flag = 1,
+                update_time = NOW()
+            WHERE id = #{id}
     </delete>
 
     <delete id="deleteShopByIds" parameterType="String">
-        delete from shop where id in 
+        UPDATE shop
+        SET delete_flag = 1,
+        update_time = NOW()
+        WHERE id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>

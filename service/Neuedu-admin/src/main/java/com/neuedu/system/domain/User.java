@@ -87,6 +87,16 @@ public class User extends BaseEntity
     @Excel(name = "余额")
     private BigDecimal balance;
 
+    private String avatar;
+
+    public String getUserName() {
+        return userName;
+    }
+
+    public String getAvatar() {
+        return avatar;
+    }
+
     /**
      * 设置默认值
      */

@@ -46,7 +46,105 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="selectProductCommentVo"/>
         where product_comment.comment_id = #{commentId}
     </select>
-        
+
+
+    <!-- 新增：查询商品的根评论列表 -->
+    <select id="selectRootCommentsByProductId" resultMap="ProductCommentResult">
+        <include refid="selectProductCommentVo"/>
+        where product_id = #{productId}
+        and (parent_id is null or parent_id = 0)
+        <if test="status != null">
+            and status = #{status}
+        </if>
+        order by create_time desc
+    </select>
+
+    <!-- 新增：查询评论的回复列表 -->
+    <select id="selectRepliesByParentId" resultMap="ProductCommentResult">
+        <include refid="selectProductCommentVo"/>
+        where parent_id = #{parentId}
+        <if test="status != null">
+            and status = #{status}
+        </if>
+        order by create_time asc
+    </select>
+
+    <!-- 新增：统计商品评论数量 -->
+    <select id="countCommentsByProductId" resultType="Long">
+        SELECT COUNT(*) FROM product_comment
+        WHERE product_id = #{productId}
+        <if test="score != null">
+            AND score = #{score}
+        </if>
+        <if test="hasImages != null and hasImages == true">
+            AND images IS NOT NULL AND images != ''
+        </if>
+        <if test="status != null">
+            AND status = #{status}
+        </if>
+    </select>
+
+    <!-- 新增：统计商品的评分分布 -->
+    <select id="countScoreDistribution" resultType="java.util.HashMap">
+        SELECT
+            score,
+            COUNT(*) as count
+        FROM product_comment
+        WHERE product_id = #{productId}
+          AND score IS NOT NULL
+          AND status = 1
+        GROUP BY score
+        ORDER BY score DESC
+    </select>
+
+    <!-- 新增：计算商品平均评分 -->
+    <select id="calculateAverageScore" resultType="Double">
+        SELECT ROUND(AVG(score), 2)
+        FROM product_comment
+        WHERE product_id = #{productId}
+          AND score IS NOT NULL
+          AND status = 1
+    </select>
+    <!-- 新增：查询商品评论列表（带分页） -->
+    <select id="selectProductCommentPage" resultMap="ProductCommentResult">
+        <include refid="selectProductCommentVo"/>
+        <where>
+            <if test="productId != null">
+                and product_id = #{productId}
+            </if>
+            <if test="userId != null">
+                and user_id = #{userId}
+            </if>
+            <if test="score != null">
+                and score = #{score}
+            </if>
+            <if test="hasImages != null and hasImages == true">
+                and images is not null and images != ''
+            </if>
+            <if test="status != null">
+                and status = #{status}
+            </if>
+        </where>
+        order by
+        <choose>
+            <when test="score != null">score desc, </when>
+            <otherwise>like_count desc, </otherwise>
+        </choose>
+        create_time desc
+    </select>
+    <!-- 新增：查询用户对商品的评论 -->
+    <select id="selectUserCommentOnProduct" resultMap="ProductCommentResult">
+        <include refid="selectProductCommentVo"/>
+        WHERE user_id = #{userId}
+        AND product_id = #{productId}
+        <if test="orderId != null">
+            AND order_id = #{orderId}
+        </if>
+        AND status = 1
+        ORDER BY create_time DESC
+        LIMIT 1
+    </select>
+
     <insert id="insertProductComment" parameterType="ProductComment" useGeneratedKeys="true" keyProperty="commentId">
         insert into product_comment
         <trim prefix="(" suffix=")" suffixOverrides=",">
@@ -99,6 +197,46 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateTime != null">update_time = #{updateTime},</if>
         </trim>
         where product_comment.comment_id = #{commentId}
+    </update>
+
+    <!-- 新增：增加评论点赞数 -->
+    <update id="increaseLikeCount">
+        UPDATE product_comment
+        SET like_count = like_count + 1,
+            update_time = NOW()
+        WHERE comment_id = #{commentId}
+    </update>
+
+    <!-- 新增：减少评论点赞数 -->
+    <update id="decreaseLikeCount">
+        UPDATE product_comment
+        SET like_count = GREATEST(0, like_count - 1),
+            update_time = NOW()
+        WHERE comment_id = #{commentId}
+    </update>
+
+    <!-- 新增：增加评论回复数 -->
+    <update id="increaseReplyCount">
+        UPDATE product_comment
+        SET reply_count = reply_count + 1,
+            update_time = NOW()
+        WHERE comment_id = #{commentId}
+    </update>
+
+    <!-- 新增：减少评论回复数 -->
+    <update id="decreaseReplyCount">
+        UPDATE product_comment
+        SET reply_count = GREATEST(0, reply_count - 1),
+            update_time = NOW()
+        WHERE comment_id = #{commentId}
+    </update>
+
+    <!-- 新增：更新评论状态 -->
+    <update id="updateCommentStatus">
+        UPDATE product_comment
+        SET status = #{status},
+            update_time = NOW()
+        WHERE comment_id = #{commentId}
     </update>
 
     <delete id="deleteProductCommentByCommentId" parameterType="Long">

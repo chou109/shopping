@@ -45,4 +45,33 @@ public class UserFavorite extends BaseEntity
     @Schema(title = "目标ID(商品ID或店铺ID)")
     @Excel(name = "目标ID(商品ID或店铺ID)")
     private Long targetId;
+
+
+    // ============ 新增的便捷方法 ============
+
+    /**
+     * 判断是否为商品收藏
+     */
+    public boolean isProductFavorite() {
+        return targetType != null && targetType == 1;
+    }
+
+    /**
+     * 判断是否为店铺收藏
+     */
+    public boolean isShopFavorite() {
+        return targetType != null && targetType == 2;
+    }
+
+    /**
+     * 获取收藏类型描述
+     */
+    public String getTargetTypeDesc() {
+        if (targetType == null) return "未知";
+        switch (targetType) {
+            case 1: return "商品";
+            case 2: return "店铺";
+            default: return "未知";
+        }
+    }
 }

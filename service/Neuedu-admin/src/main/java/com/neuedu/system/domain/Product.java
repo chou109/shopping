@@ -113,4 +113,7 @@ public class Product extends BaseEntity
     @Schema(title = "关联活动信息")
     @TableField(exist = false)
     private Activity activity;
+
+
+    private Long shopId;
 }

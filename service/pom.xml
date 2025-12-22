@@ -10,7 +10,7 @@
 
     <name>Neuedu</name>
     <url>http://www.neuedu.vip</url>
-    <description>东软教育资源管理系统</description>
+    <description>网购管理系统</description>
 
     <properties>
         <neuedu.version>3.8.5</neuedu.version>

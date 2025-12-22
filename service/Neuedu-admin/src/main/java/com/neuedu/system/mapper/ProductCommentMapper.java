@@ -1,9 +1,13 @@
 package com.neuedu.system.mapper;
 
 import java.util.List;
+import java.util.Map;
+
 import com.neuedu.system.domain.ProductComment;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
 /**
  * 商品评论Mapper接口
  * 
@@ -60,4 +64,79 @@ public interface ProductCommentMapper extends BaseMapper<ProductComment>
      * @return 结果
      */
     public int deleteProductCommentByCommentIds(Long[] commentIds);
+
+
+    // ============ 新增的方法 ============
+
+    /**
+     * 查询商品评论列表（带分页）
+     */
+    List<ProductComment> selectProductCommentPage(@Param("productId") Long productId,
+                                                  @Param("userId") Long userId,
+                                                  @Param("score") Integer score,
+                                                  @Param("hasImages") Boolean hasImages,
+                                                  @Param("status") Integer status);
+
+    /**
+     * 查询商品的根评论列表
+     */
+    List<ProductComment> selectRootCommentsByProductId(@Param("productId") Long productId,
+                                                       @Param("status") Integer status);
+
+    /**
+     * 查询评论的回复列表
+     */
+    List<ProductComment> selectRepliesByParentId(@Param("parentId") Long parentId,
+                                                 @Param("status") Integer status);
+
+    /**
+     * 统计商品评论数量
+     */
+    Long countCommentsByProductId(@Param("productId") Long productId,
+                                  @Param("score") Integer score,
+                                  @Param("hasImages") Boolean hasImages,
+                                  @Param("status") Integer status);
+
+    /**
+     * 统计商品的评分分布
+     */
+    List<Map<String, Object>> countScoreDistribution(@Param("productId") Long productId);
+
+    /**
+     * 计算商品平均评分
+     */
+    Double calculateAverageScore(@Param("productId") Long productId);
+
+    /**
+     * 增加评论点赞数
+     */
+    int increaseLikeCount(@Param("commentId") Long commentId);
+
+    /**
+     * 减少评论点赞数
+     */
+    int decreaseLikeCount(@Param("commentId") Long commentId);
+
+    /**
+     * 增加评论回复数
+     */
+    int increaseReplyCount(@Param("commentId") Long commentId);
+
+    /**
+     * 减少评论回复数
+     */
+    int decreaseReplyCount(@Param("commentId") Long commentId);
+
+    /**
+     * 更新评论状态
+     */
+    int updateCommentStatus(@Param("commentId") Long commentId,
+                            @Param("status") Integer status);
+
+    /**
+     * 查询用户对商品的评论
+     */
+    ProductComment selectUserCommentOnProduct(@Param("userId") Long userId,
+                                              @Param("productId") Long productId,
+                                              @Param("orderId") Long orderId);
 }

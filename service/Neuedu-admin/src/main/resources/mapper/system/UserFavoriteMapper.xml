@@ -29,7 +29,54 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="selectUserFavoriteVo"/>
         where user_favorite.favorite_id = #{favoriteId}
     </select>
-        
+
+    <!-- 新增：根据用户ID和收藏目标查询收藏 -->
+    <select id="selectByUserAndTarget" resultMap="UserFavoriteResult">
+        <include refid="selectUserFavoriteVo"/>
+        where user_id = #{userId}
+        and target_type = #{targetType}
+        and target_id = #{targetId}
+        limit 1
+    </select>
+
+    <!-- 新增：查询用户的收藏列表（按类型） -->
+    <select id="selectUserFavorites" resultMap="UserFavoriteResult">
+        <include refid="selectUserFavoriteVo"/>
+        where user_id = #{userId}
+        <if test="targetType != null">
+            and target_type = #{targetType}
+        </if>
+        order by create_time desc
+    </select>
+
+    <!-- 新增：检查用户是否已收藏 -->
+    <select id="existsFavorite" resultType="boolean">
+        SELECT COUNT(*) > 0
+        FROM user_favorite
+        WHERE user_id = #{userId}
+          AND target_type = #{targetType}
+          AND target_id = #{targetId}
+    </select>
+
+    <!-- 新增：统计用户的收藏数量 -->
+    <select id="countUserFavorites" resultType="Long">
+        SELECT COUNT(*)
+        FROM user_favorite
+        WHERE user_id = #{userId}
+        <if test="targetType != null">
+            AND target_type = #{targetType}
+        </if>
+    </select>
+
+    <!-- 新增：统计目标的被收藏数量 -->
+    <select id="countTargetFavorites" resultType="Long">
+        SELECT COUNT(*)
+        FROM user_favorite
+        WHERE target_type = #{targetType}
+          AND target_id = #{targetId}
+    </select>
+
+
     <insert id="insertUserFavorite" parameterType="UserFavorite" useGeneratedKeys="true" keyProperty="favoriteId">
         insert into user_favorite
         <trim prefix="(" suffix=")" suffixOverrides=",">
@@ -59,6 +106,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <delete id="deleteUserFavoriteByFavoriteId" parameterType="Long">
         delete from user_favorite where favorite_id = #{favoriteId}
+    </delete>
+
+    <!-- 新增：删除用户的收藏 -->
+    <delete id="deleteByUserAndTarget">
+        delete from user_favorite
+        where user_id = #{userId}
+          and target_type = #{targetType}
+          and target_id = #{targetId}
     </delete>
 
     <delete id="deleteUserFavoriteByFavoriteIds" parameterType="String">
