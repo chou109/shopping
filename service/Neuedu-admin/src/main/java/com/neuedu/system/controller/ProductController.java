@@ -188,4 +188,17 @@ public class ProductController extends BaseController
         product.setStatus(status);
         return toAjax(productService.updateProduct(product));
     }
+
+    /**
+     * 查询商品列表（随机排序）
+     */
+    @Operation(summary = "查询商品列表（随机排序）")
+    @PreAuthorize("@ss.hasPermi('system:product:list')")
+    @GetMapping("/list/random")
+    public TableDataInfo listRandom(Product product)
+    {
+        startPage();
+        List<Product> list = productService.selectProductListRandom(product);
+        return getDataTable(list);
+    }
 }

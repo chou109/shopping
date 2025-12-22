@@ -112,4 +112,12 @@ public interface IProductService extends IService<Product>
      * @return 结果
      */
     public int updateProductHotFlag(Long productId, Integer hotFlag);
+
+    /**
+     * 查询商品列表（随机排序）
+     *
+     * @param product 商品
+     * @return 商品集合
+     */
+    public List<Product> selectProductListRandom(Product product);
 }

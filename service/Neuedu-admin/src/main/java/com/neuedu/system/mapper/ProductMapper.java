@@ -116,4 +116,7 @@ public interface ProductMapper extends BaseMapper<Product>
      * @return 结果
      */
     public int updateProductHotFlag(@Param("productId") Long productId, @Param("hotFlag") Integer hotFlag);
+
+
+
 }

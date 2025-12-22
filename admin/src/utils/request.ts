@@ -24,13 +24,26 @@ const service: RequestInstance = axios.create({
 
 // request拦截器
 service.interceptors.request.use((config: AxiosRequestConfig<RequestConfig>) => {
+  if (!config.headers) {
+    config.headers = {};
+  }
   // 是否需要设置 token
   const isToken = (config.headers || {}).isToken === false
   // 是否需要防止数据重复提交
   const isRepeatSubmit = (config.headers || {}).repeatSubmit === false
+
+  // 添加客户端标识
+  const port = window.location.port || '80';
+  const clientType = port === '18183' ? 'user' : 'admin';
+
+  // 添加到请求头（安全写法）
+  config.headers['X-Client-Type'] = clientType;
+  config.headers['X-Client-Port'] = port;
+
   if (getToken() && !isToken) {
     // 让每个请求携带自定义token 请根据实际情况自行修改
-    (<AxiosRequestHeaders>config.headers)['Authorization'] = 'Bearer ' + getToken()
+    // (<AxiosRequestHeaders>config.headers)['Authorization'] = 'Bearer ' + getToken()
+    config.headers.Authorization = 'Bearer ' + getToken();
   }
   // get请求映射params参数
   if (config.method === 'get' && config.params) {

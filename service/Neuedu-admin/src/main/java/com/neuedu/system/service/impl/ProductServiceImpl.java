@@ -1,5 +1,7 @@
 package com.neuedu.system.service.impl;
 import lombok.RequiredArgsConstructor;
+
+import java.util.Collections;
 import java.util.List;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.neuedu.common.utils.DateUtils;
@@ -198,5 +200,20 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
             throw new RuntimeException("热门状态值不正确，只能是0或1");
         }
         return productMapper.updateProductHotFlag(productId, hotFlag);
+    }
+
+    /**
+     * 查询商品列表（随机排序）
+     *
+     * @param product 商品
+     * @return 商品
+     */
+    @Override
+    public List<Product> selectProductListRandom(Product product)
+    {
+        List<Product> list = productMapper.selectProductList(product);
+        // 使用 Collections.shuffle 进行随机排序
+        Collections.shuffle(list);
+        return list;
     }
 }

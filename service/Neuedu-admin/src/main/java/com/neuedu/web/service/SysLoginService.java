@@ -1,7 +1,9 @@
 package com.neuedu.web.service;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
 
+import com.neuedu.common.constant.UserTypeConstants;
 import com.neuedu.web.manager.AsyncManager;
 import com.neuedu.web.manager.factory.AsyncFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +29,10 @@ import com.neuedu.common.utils.ip.IpUtils;
 import com.neuedu.framework.security.context.AuthenticationContextHolder;
 import com.neuedu.system.service.ISysConfigService;
 import com.neuedu.system.service.ISysUserService;
+
+import java.lang.reflect.Method;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * 登录校验方法
@@ -96,6 +102,51 @@ public class SysLoginService
         }
         AsyncManager.me().execute(AsyncFactory.recordLogininfor(username, Constants.LOGIN_SUCCESS, MessageUtils.message("user.login.success")));
         LoginUser loginUser = (LoginUser) authentication.getPrincipal();
+
+
+        // ============ 双向权限检查 ============
+        String clientType = ServletUtils.getRequest().getHeader("X-Client-Type");
+        SysUser user = loginUser.getUser();
+        Long userId = user.getUserId();
+
+        System.out.println("登录检查: 用户=" + username + ", clientType=" + clientType + ", userId=" + userId);
+
+        // 判断是否是管理员（userId=1 或 user_type=1）
+        boolean isAdmin = false;
+        if (userId != null && userId == 1L) {
+            isAdmin = true;
+        }
+        // 如果有user_type字段，也检查
+        try {
+            Method getUserTypeMethod = user.getClass().getMethod("getUserType");
+            Object userTypeObj = getUserTypeMethod.invoke(user);
+            if (userTypeObj instanceof Integer && (Integer)userTypeObj >= 1) {
+                isAdmin = true;
+            }
+        } catch (Exception e) {
+            // 没有user_type字段，继续
+        }
+
+        // 双向检查
+        if ("admin".equals(clientType)) {
+            // 管理端：只允许管理员登录
+            if (!isAdmin) {
+                AsyncManager.me().execute(AsyncFactory.recordLogininfor(
+                        username, Constants.LOGIN_FAIL, "非管理员账号尝试登录管理端"));
+                throw new ServiceException("该账号不是管理员，无法登录管理后台");
+            }
+            System.out.println("管理员登录管理端成功");
+        } else if ("user".equals(clientType)) {
+            // 用户端：只允许普通用户登录（不允许管理员）
+            if (isAdmin) {
+                AsyncManager.me().execute(AsyncFactory.recordLogininfor(
+                        username, Constants.LOGIN_FAIL, "管理员账号尝试登录用户端"));
+                throw new ServiceException("登录失败");
+            }
+            System.out.println("普通用户登录用户端成功");
+        }
+        // ============ 检查结束 ============
+
         recordLoginInfo(loginUser.getUserId());
         // 生成token
         return tokenService.createToken(loginUser);
