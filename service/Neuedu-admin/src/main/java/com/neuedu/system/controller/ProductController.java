@@ -35,7 +35,7 @@ public class ProductController extends BaseController
      * 查询商品列表
      */
     @Operation(summary = "查询商品列表")
-    @PreAuthorize("@ss.hasPermi('system:product:list')")
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/list")
     public TableDataInfo list(Product product)
     {
@@ -107,7 +107,7 @@ public class ProductController extends BaseController
      * 获取商品详细信息
      */
     @Operation(summary = "获取商品详细信息")
-    @PreAuthorize("@ss.hasPermi('system:product:query')")
+//    @PreAuthorize("@ss.hasPermi('system:product:query')")
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {

@@ -104,48 +104,71 @@ public class SysLoginService
         LoginUser loginUser = (LoginUser) authentication.getPrincipal();
 
 
-        // ============ 双向权限检查 ============
         String clientType = ServletUtils.getRequest().getHeader("X-Client-Type");
         SysUser user = loginUser.getUser();
-        Long userId = user.getUserId();
 
-        System.out.println("登录检查: 用户=" + username + ", clientType=" + clientType + ", userId=" + userId);
+        System.out.println("登录检查 - 客户端类型: " + clientType + ", 用户ID: " + user.getUserId());
 
-        // 判断是否是管理员（userId=1 或 user_type=1）
+        // ============ 检查是否是管理员 ============
         boolean isAdmin = false;
-        if (userId != null && userId == 1L) {
+
+        // 1. 首先检查 user_id == 1（超级管理员）
+        if (user.getUserId() != null && user.getUserId() == 1L) {
             isAdmin = true;
-        }
-        // 如果有user_type字段，也检查
-        try {
-            Method getUserTypeMethod = user.getClass().getMethod("getUserType");
-            Object userTypeObj = getUserTypeMethod.invoke(user);
-            if (userTypeObj instanceof Integer && (Integer)userTypeObj >= 1) {
-                isAdmin = true;
-            }
-        } catch (Exception e) {
-            // 没有user_type字段，继续
+            System.out.println("用户ID为1，判断为超级管理员");
         }
 
-        // 双向检查
+        // 2. 如果user_id不是1，再检查user_type字段
+        if (!isAdmin) {
+            try {
+                Method getUserTypeMethod = user.getClass().getMethod("getUserType");
+                Object userTypeObj = getUserTypeMethod.invoke(user);
+                if (userTypeObj instanceof Integer) {
+                    int userType = (Integer) userTypeObj;
+                    if (userType >= 1) {
+                        isAdmin = true;
+                        System.out.println("user_type=" + userType + "，判断为管理员");
+                    } else {
+                        System.out.println("user_type=" + userType + "，不是管理员");
+                    }
+                }
+            } catch (NoSuchMethodException e) {
+                // 如果没有getUserType方法，说明这个字段不存在
+                System.out.println("用户没有user_type字段");
+            } catch (Exception e) {
+                // 其他异常
+                System.out.println("检查user_type时出错: " + e.getMessage());
+            }
+        }
+
+        // 调试输出
+        System.out.println("最终判断结果 - 用户ID: " + user.getUserId() +
+                ", 用户名: " + user.getUserName() +
+                ", 是管理员: " + isAdmin);
+        // ========================================
+
         if ("admin".equals(clientType)) {
-            // 管理端：只允许管理员登录
+            // 管理端登录：必须是管理员
             if (!isAdmin) {
                 AsyncManager.me().execute(AsyncFactory.recordLogininfor(
                         username, Constants.LOGIN_FAIL, "非管理员账号尝试登录管理端"));
                 throw new ServiceException("该账号不是管理员，无法登录管理后台");
             }
             System.out.println("管理员登录管理端成功");
+
         } else if ("user".equals(clientType)) {
-            // 用户端：只允许普通用户登录（不允许管理员）
+            // 用户端登录，禁止管理员
             if (isAdmin) {
                 AsyncManager.me().execute(AsyncFactory.recordLogininfor(
                         username, Constants.LOGIN_FAIL, "管理员账号尝试登录用户端"));
                 throw new ServiceException("登录失败");
             }
-            System.out.println("普通用户登录用户端成功");
+            System.out.println("用户登录用户端成功，用户ID: " + user.getUserId());
+
+        } else {
+            // 没有客户端类型头，记录警告
+            System.out.println("警告：没有客户端类型头，默认允许登录");
         }
-        // ============ 检查结束 ============
 
         recordLoginInfo(loginUser.getUserId());
         // 生成token
