@@ -1,27 +1,18 @@
 <template>
   <div class="app-container">
     <!-- 基础查询条件 -->
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="80px" class="search-form">
+    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="80px"
+      class="search-form">
       <el-row :gutter="20">
         <!-- 第一行：基础查询条件 -->
         <el-col :span="6">
           <el-form-item label="商品名称" prop="name">
-            <el-input
-              v-model="queryParams.name"
-              placeholder="请输入商品名称"
-              clearable
-              @keyup.enter="handleQuery"
-            />
+            <el-input v-model="queryParams.name" placeholder="请输入商品名称" clearable @keyup.enter="handleQuery" />
           </el-form-item>
         </el-col>
         <el-col :span="6">
           <el-form-item label="商品状态" prop="status">
-            <el-select
-              v-model="queryParams.status"
-              placeholder="全部状态"
-              clearable
-              style="width: 200px"
-            >
+            <el-select v-model="queryParams.status" placeholder="全部状态" clearable style="width: 200px">
               <el-option label="全部" :value="null" />
               <el-option label="上架" :value="1" />
               <el-option label="下架" :value="0" />
@@ -30,12 +21,7 @@
         </el-col>
         <el-col :span="6">
           <el-form-item label="热门状态" prop="hotFlag">
-            <el-select
-              v-model="queryParams.hotFlag"
-              placeholder="全部"
-              clearable
-              style="width: 200px"
-            >
+            <el-select v-model="queryParams.hotFlag" placeholder="全部" clearable style="width: 200px">
               <el-option label="全部" :value="null" />
               <el-option label="热门" :value="1" />
               <el-option label="非热门" :value="0" />
@@ -57,108 +43,61 @@
       </el-row>
 
       <!-- 高级查询条件（折叠部分） -->
-      <div v-if="showAdvanced" class="advanced-search" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
+      <div v-if="showAdvanced" class="advanced-search"
+        style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
         <el-row :gutter="20">
           <el-col :span="6">
             <el-form-item label="商品ID" prop="productId">
-              <el-input
-                v-model="queryParams.productId"
-                placeholder="请输入商品编码"
-                clearable
-              />
+              <el-input v-model="queryParams.productId" placeholder="请输入商品编码" clearable />
             </el-form-item>
           </el-col>
           <el-col :span="6">
-  <el-form-item label="品类" prop="categoryId">
-    <el-select
-      v-model="queryParams.categoryId"
-      placeholder="输入品类名称搜索"
-      clearable
-      filterable
-      :filter-method="filterCategoryOptions"
-      style="width: 200px"
-    >
-      <el-option label="全部" :value="null" />
-      <el-option
-        v-for="item in filteredCategoryOptions"
-        :key="item.id"
-        :label="`${item.name} `"
-        :value="item.id"
-      />
-    </el-select>
-  </el-form-item>
-</el-col>
+            <el-form-item label="品类" prop="categoryId">
+              <el-select v-model="queryParams.categoryId" placeholder="输入品类名称搜索" clearable filterable
+                :filter-method="filterCategoryOptions" style="width: 200px">
+                <el-option label="全部" :value="null" />
+                <el-option v-for="item in filteredCategoryOptions" :key="item.id" :label="`${item.name} `"
+                  :value="item.id" />
+              </el-select>
+            </el-form-item>
+          </el-col>
         </el-row>
-        
+
         <el-row :gutter="20" style="margin-top: 10px;">
           <el-col :span="8">
             <el-form-item label="价格范围">
               <div style="display: flex; align-items: center;">
-                <el-input-number
-                  v-model="queryParams.minPrice"
-                  placeholder="最低价"
-                  :min="0"
-                  :precision="2"
-                  :controls="false"
-                  style="flex: 1"
-                />
+                <el-input-number v-model="queryParams.minPrice" placeholder="最低价" :min="0" :precision="2"
+                  :controls="false" style="flex: 1" />
                 <span style="margin: 0 10px; color: #ccc">-</span>
-                <el-input-number
-                  v-model="queryParams.maxPrice"
-                  placeholder="最高价"
-                  :min="0"
-                  :precision="2"
-                  :controls="false"
-                  style="flex: 1"
-                />
+                <el-input-number v-model="queryParams.maxPrice" placeholder="最高价" :min="0" :precision="2"
+                  :controls="false" style="flex: 1" />
               </div>
             </el-form-item>
           </el-col>
           <el-col :span="8">
             <el-form-item label="库存范围">
               <div style="display: flex; align-items: center;">
-                <el-input-number
-                  v-model="queryParams.minStock"
-                  placeholder="最小库存"
-                  :min="0"
-                  :controls="false"
-                  style="flex: 1"
-                />
+                <el-input-number v-model="queryParams.minStock" placeholder="最小库存" :min="0" :controls="false"
+                  style="flex: 1" />
                 <span style="margin: 0 10px; color: #ccc">-</span>
-                <el-input-number
-                  v-model="queryParams.maxStock"
-                  placeholder="最大库存"
-                  :min="0"
-                  :controls="false"
-                  style="flex: 1"
-                />
+                <el-input-number v-model="queryParams.maxStock" placeholder="最大库存" :min="0" :controls="false"
+                  style="flex: 1" />
               </div>
             </el-form-item>
           </el-col>
           <el-col :span="8">
             <el-form-item label="创建时间">
-              <el-date-picker
-                v-model="queryParams.createTime"
-                type="daterange"
-                range-separator="至"
-                start-placeholder="开始日期"
-                end-placeholder="结束日期"
-                value-format="YYYY-MM-DD"
-                style="width: 100%"
-              />
+              <el-date-picker v-model="queryParams.createTime" type="daterange" range-separator="至"
+                start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
             </el-form-item>
           </el-col>
         </el-row>
-        
+
         <el-row :gutter="20" style="margin-top: 10px;">
           <el-col :span="6">
             <el-form-item label="删除状态" prop="deleteFlag">
-              <el-select
-                v-model="queryParams.deleteFlag"
-                placeholder="全部"
-                clearable
-                style="width: 200px"
-              >
+              <el-select v-model="queryParams.deleteFlag" placeholder="全部" clearable style="width: 200px">
                 <el-option label="全部" :value="null" />
                 <el-option label="正常" :value="0" />
                 <el-option label="已删除" :value="1" />
@@ -172,42 +111,20 @@
     <!-- 操作按钮区域 -->
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button
-          type="primary"
-          plain
-          icon="Plus"
-          @click="handleAdd"
-          v-hasPermi="['system:product:add']"
-        >新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd"
+          v-hasPermi="['system:product:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-          type="success"
-          plain
-          icon="Edit"
-          :disabled="single"
-          @click="handleUpdate"
-          v-hasPermi="['system:product:edit']"
-        >修改</el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate"
+          v-hasPermi="['system:product:edit']">修改</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-          type="danger"
-          plain
-          icon="Delete"
-          :disabled="multiple"
-          @click="handleDelete"
-          v-hasPermi="['system:product:remove']"
-        >删除</el-button>
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete"
+          v-hasPermi="['system:product:remove']">删除</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-          type="warning"
-          plain
-          icon="Download"
-          @click="handleExport"
-          v-hasPermi="['system:product:export']"
-        >导出</el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport"
+          v-hasPermi="['system:product:export']">导出</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
@@ -218,7 +135,7 @@
       <el-table-column label="ID" align="center" prop="id" width="80" />
       <el-table-column label="商品图片" align="center" prop="mainImage" width="100">
         <template #default="scope">
-          <image-preview :src="scope.row.mainImage" :width="50" :height="50" v-if="scope.row.mainImage"/>
+          <image-preview :src="scope.row.mainImage" :width="50" :height="50" v-if="scope.row.mainImage" />
           <span v-else>-</span>
         </template>
       </el-table-column>
@@ -254,18 +171,28 @@
         </template>
       </el-table-column>
       <el-table-column label="热门" align="center" prop="hotFlag" width="80">
-  <template #default="scope">
-    <div v-if="scope.row.hotFlag === 1" style="color: #F56C6C; cursor: pointer;" @click="toggleHot(scope.row)">
-      <el-icon >
-        <el-icon v-if="scope.row.hotFlag === 1"size="13">
-          <svg t="1766388502966" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="10265" width="200" height="200"><path d="M843.292444 605.184c-112.782222-244.224-39.964444-322.531556-39.253333-323.441778a3.868444 3.868444 0 0 0 0.426667-4.864 3.868444 3.868444 0 0 0-4.664889-1.336889c-1.649778 0.625778-158.577778 65.962667-138.780445 210.972445-43.093333-38.741333-244.224-237.169778-121.173333-470.727111a3.982222 3.982222 0 0 0-0.625778-4.465778 3.527111 3.527111 0 0 0-4.238222-0.938667c-2.702222 1.024-65.450667 27.960889-115.370667 95.687111-46.08 62.464-89.059556 172.743111-31.288888 343.552 21.020444 80.384-18.631111 145.521778-39.879112 173.169778 5.290667-19.057778 11.804444-51.370667 10.666667-88.462222-1.649778-54.272-21.219556-129.251556-104.931555-177.720889a3.868444 3.868444 0 0 0-4.152889 0.199111 3.640889 3.640889 0 0 0-1.450667 4.039111c0.199111 1.450667 31.601778 144.184889-23.296 210.147556-47.331556 56.974222-93.838222 156.188444-68.664889 248.064 21.020444 76.856889 86.784 135.480889 195.555556 174.193778 27.847111 8.590222 54.584889 15.132444 83.996444 20.622222a3.640889 3.640889 0 0 0 4.352-2.588445c0.512-1.962667-0.312889-4.039111-2.161778-4.750222-55.836444-24.234667-113.408-74.581333-70.627555-177.009778 40.704-88.234667 33.450667-133.717333 25.258666-153.287111 21.020444 11.804444 62.862222 42.666667 52.394667 96.739556a3.925333 3.925333 0 0 0 1.763556 4.039111 3.754667 3.754667 0 0 0 4.352-0.312889c1.336889-1.024 127.089778-104.504889 69.916444-231.281778 28.16 16.270222 102.855111 73.130667 58.823111 203.406222-14.705778 56.149333 25.258667 96.426667 26.936889 98.076445 1.336889 1.251556 3.328 1.564444 4.864 0.426667 1.450667-0.938667 2.076444-2.901333 1.450667-4.551112-1.336889-3.527111-31.061333-83.797333 33.564444-128.113777-3.413333 20.622222-8.903111 71.566222 14.279111 99.328 20.821333 25.059556 40.817778 66.076444 34.702223 106.069333-4.238222 28.16-20.935111 51.882667-49.720889 70.542222a3.783111 3.783111 0 0 0-1.336889 4.977778c0.711111 1.763556 2.901333 2.588444 4.750222 1.962667 71.054222-22.983111 164.152889-69.603556 204.657778-158.577778 30.122667-65.564444 26.282667-144.184889-11.093334-233.784889z" fill="#d81e06" p-id="10266"></path></svg>
-      </el-icon>
-      </el-icon>
-    </div>
-    <el-icon v-else size="13">
-<svg t="1766388502966" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="10265" width="200" height="200"><path d="M843.292444 605.184c-112.782222-244.224-39.964444-322.531556-39.253333-323.441778a3.868444 3.868444 0 0 0 0.426667-4.864 3.868444 3.868444 0 0 0-4.664889-1.336889c-1.649778 0.625778-158.577778 65.962667-138.780445 210.972445-43.093333-38.741333-244.224-237.169778-121.173333-470.727111a3.982222 3.982222 0 0 0-0.625778-4.465778 3.527111 3.527111 0 0 0-4.238222-0.938667c-2.702222 1.024-65.450667 27.960889-115.370667 95.687111-46.08 62.464-89.059556 172.743111-31.288888 343.552 21.020444 80.384-18.631111 145.521778-39.879112 173.169778 5.290667-19.057778 11.804444-51.370667 10.666667-88.462222-1.649778-54.272-21.219556-129.251556-104.931555-177.720889a3.868444 3.868444 0 0 0-4.152889 0.199111 3.640889 3.640889 0 0 0-1.450667 4.039111c0.199111 1.450667 31.601778 144.184889-23.296 210.147556-47.331556 56.974222-93.838222 156.188444-68.664889 248.064 21.020444 76.856889 86.784 135.480889 195.555556 174.193778 27.847111 8.590222 54.584889 15.132444 83.996444 20.622222a3.640889 3.640889 0 0 0 4.352-2.588445c0.512-1.962667-0.312889-4.039111-2.161778-4.750222-55.836444-24.234667-113.408-74.581333-70.627555-177.009778 40.704-88.234667 33.450667-133.717333 25.258666-153.287111 21.020444 11.804444 62.862222 42.666667 52.394667 96.739556a3.925333 3.925333 0 0 0 1.763556 4.039111 3.754667 3.754667 0 0 0 4.352-0.312889c1.336889-1.024 127.089778-104.504889 69.916444-231.281778 28.16 16.270222 102.855111 73.130667 58.823111 203.406222-14.705778 56.149333 25.258667 96.426667 26.936889 98.076445 1.336889 1.251556 3.328 1.564444 4.864 0.426667 1.450667-0.938667 2.076444-2.901333 1.450667-4.551112-1.336889-3.527111-31.061333-83.797333 33.564444-128.113777-3.413333 20.622222-8.903111 71.566222 14.279111 99.328 20.821333 25.059556 40.817778 66.076444 34.702223 106.069333-4.238222 28.16-20.935111 51.882667-49.720889 70.542222a3.783111 3.783111 0 0 0-1.336889 4.977778c0.711111 1.763556 2.901333 2.588444 4.750222 1.962667 71.054222-22.983111 164.152889-69.603556 204.657778-158.577778 30.122667-65.564444 26.282667-144.184889-11.093334-233.784889z" fill="#8a8a8a" p-id="10266"></path></svg>      </el-icon>
-  </template>
-</el-table-column>
+        <template #default="scope">
+          <div v-if="scope.row.hotFlag === 1" style="color: #F56C6C; cursor: pointer;" @click="toggleHot(scope.row)">
+            <el-icon>
+              <el-icon v-if="scope.row.hotFlag === 1" size="13">
+                <svg t="1766388502966" class="icon" viewBox="0 0 1024 1024" version="1.1"
+                  xmlns="http://www.w3.org/2000/svg" p-id="10265" width="200" height="200">
+                  <path
+                    d="M843.292444 605.184c-112.782222-244.224-39.964444-322.531556-39.253333-323.441778a3.868444 3.868444 0 0 0 0.426667-4.864 3.868444 3.868444 0 0 0-4.664889-1.336889c-1.649778 0.625778-158.577778 65.962667-138.780445 210.972445-43.093333-38.741333-244.224-237.169778-121.173333-470.727111a3.982222 3.982222 0 0 0-0.625778-4.465778 3.527111 3.527111 0 0 0-4.238222-0.938667c-2.702222 1.024-65.450667 27.960889-115.370667 95.687111-46.08 62.464-89.059556 172.743111-31.288888 343.552 21.020444 80.384-18.631111 145.521778-39.879112 173.169778 5.290667-19.057778 11.804444-51.370667 10.666667-88.462222-1.649778-54.272-21.219556-129.251556-104.931555-177.720889a3.868444 3.868444 0 0 0-4.152889 0.199111 3.640889 3.640889 0 0 0-1.450667 4.039111c0.199111 1.450667 31.601778 144.184889-23.296 210.147556-47.331556 56.974222-93.838222 156.188444-68.664889 248.064 21.020444 76.856889 86.784 135.480889 195.555556 174.193778 27.847111 8.590222 54.584889 15.132444 83.996444 20.622222a3.640889 3.640889 0 0 0 4.352-2.588445c0.512-1.962667-0.312889-4.039111-2.161778-4.750222-55.836444-24.234667-113.408-74.581333-70.627555-177.009778 40.704-88.234667 33.450667-133.717333 25.258666-153.287111 21.020444 11.804444 62.862222 42.666667 52.394667 96.739556a3.925333 3.925333 0 0 0 1.763556 4.039111 3.754667 3.754667 0 0 0 4.352-0.312889c1.336889-1.024 127.089778-104.504889 69.916444-231.281778 28.16 16.270222 102.855111 73.130667 58.823111 203.406222-14.705778 56.149333 25.258667 96.426667 26.936889 98.076445 1.336889 1.251556 3.328 1.564444 4.864 0.426667 1.450667-0.938667 2.076444-2.901333 1.450667-4.551112-1.336889-3.527111-31.061333-83.797333 33.564444-128.113777-3.413333 20.622222-8.903111 71.566222 14.279111 99.328 20.821333 25.059556 40.817778 66.076444 34.702223 106.069333-4.238222 28.16-20.935111 51.882667-49.720889 70.542222a3.783111 3.783111 0 0 0-1.336889 4.977778c0.711111 1.763556 2.901333 2.588444 4.750222 1.962667 71.054222-22.983111 164.152889-69.603556 204.657778-158.577778 30.122667-65.564444 26.282667-144.184889-11.093334-233.784889z"
+                    fill="#d81e06" p-id="10266"></path>
+                </svg>
+              </el-icon>
+            </el-icon>
+          </div>
+          <el-icon v-else size="13">
+            <svg t="1766388502966" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg"
+              p-id="10265" width="200" height="200">
+              <path
+                d="M843.292444 605.184c-112.782222-244.224-39.964444-322.531556-39.253333-323.441778a3.868444 3.868444 0 0 0 0.426667-4.864 3.868444 3.868444 0 0 0-4.664889-1.336889c-1.649778 0.625778-158.577778 65.962667-138.780445 210.972445-43.093333-38.741333-244.224-237.169778-121.173333-470.727111a3.982222 3.982222 0 0 0-0.625778-4.465778 3.527111 3.527111 0 0 0-4.238222-0.938667c-2.702222 1.024-65.450667 27.960889-115.370667 95.687111-46.08 62.464-89.059556 172.743111-31.288888 343.552 21.020444 80.384-18.631111 145.521778-39.879112 173.169778 5.290667-19.057778 11.804444-51.370667 10.666667-88.462222-1.649778-54.272-21.219556-129.251556-104.931555-177.720889a3.868444 3.868444 0 0 0-4.152889 0.199111 3.640889 3.640889 0 0 0-1.450667 4.039111c0.199111 1.450667 31.601778 144.184889-23.296 210.147556-47.331556 56.974222-93.838222 156.188444-68.664889 248.064 21.020444 76.856889 86.784 135.480889 195.555556 174.193778 27.847111 8.590222 54.584889 15.132444 83.996444 20.622222a3.640889 3.640889 0 0 0 4.352-2.588445c0.512-1.962667-0.312889-4.039111-2.161778-4.750222-55.836444-24.234667-113.408-74.581333-70.627555-177.009778 40.704-88.234667 33.450667-133.717333 25.258666-153.287111 21.020444 11.804444 62.862222 42.666667 52.394667 96.739556a3.925333 3.925333 0 0 0 1.763556 4.039111 3.754667 3.754667 0 0 0 4.352-0.312889c1.336889-1.024 127.089778-104.504889 69.916444-231.281778 28.16 16.270222 102.855111 73.130667 58.823111 203.406222-14.705778 56.149333 25.258667 96.426667 26.936889 98.076445 1.336889 1.251556 3.328 1.564444 4.864 0.426667 1.450667-0.938667 2.076444-2.901333 1.450667-4.551112-1.336889-3.527111-31.061333-83.797333 33.564444-128.113777-3.413333 20.622222-8.903111 71.566222 14.279111 99.328 20.821333 25.059556 40.817778 66.076444 34.702223 106.069333-4.238222 28.16-20.935111 51.882667-49.720889 70.542222a3.783111 3.783111 0 0 0-1.336889 4.977778c0.711111 1.763556 2.901333 2.588444 4.750222 1.962667 71.054222-22.983111 164.152889-69.603556 204.657778-158.577778 30.122667-65.564444 26.282667-144.184889-11.093334-233.784889z"
+                fill="#8a8a8a" p-id="10266"></path>
+            </svg> </el-icon>
+        </template>
+      </el-table-column>
       <el-table-column label="创建时间" align="center" prop="createTime" width="180">
         <template #default="scope">
           <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d} {h}:{i}') }}</span>
@@ -274,43 +201,48 @@
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180">
         <template #default="scope">
           <el-tooltip content="修改" placement="top">
-            <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:product:edit']" />
+            <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)"
+              v-hasPermi="['system:product:edit']" />
           </el-tooltip>
           <el-tooltip content="删除" placement="top">
-            <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:product:remove']" />
+            <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)"
+              v-hasPermi="['system:product:remove']" />
           </el-tooltip>
           <el-tooltip :content="scope.row.status === 1 ? '下架' : '上架'" placement="top">
-            <el-button link :type="scope.row.status === 1 ? 'warning' : 'success'" 
-              :icon="scope.row.status === 1 ? 'Top' : 'Bottom'"
-              @click="toggleStatus(scope.row)"
+            <el-button link :type="scope.row.status === 1 ? 'warning' : 'success'"
+              :icon="scope.row.status === 1 ? 'Top' : 'Bottom'" @click="toggleStatus(scope.row)"
               v-hasPermi="['system:product:edit']" />
           </el-tooltip>
           <el-tooltip :content="scope.row.hotFlag === 1 ? '取消热门' : '设为热门'" placement="top">
-  <el-button link :type="scope.row.hotFlag === 1 ? 'danger' : 'info'"
-    @click="toggleHot(scope.row)"
-    v-hasPermi="['system:product:edit']">
-    <template #icon>
-      <el-icon v-if="scope.row.hotFlag === 1">
-        <svg t="1766222883576" class="icon" viewBox="0 0 1084 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="8408" width="200" height="200"><path d="M665.720098 546.181518c-103.16924-223.888351-36.452732-295.781822-35.889736-296.681815 0.899993-0.899993 1.34999-2.811979 0.449997-4.611966-0.899993-1.34999-2.812979-1.799987-4.162969-1.34999-1.34999 0.449997-145.133931 60.303556-127.133064 193.511575-39.602708-35.551738-223.439355-217.588398-110.595186-431.802821 0.449997-1.34999 0.449997-2.811979-0.449997-4.161969-0.899993-0.899993-2.811979-1.34999-4.161969-0.899993-2.249983 0.899993-59.854559 25.76381-105.532223 87.529355-42.415688 58.054573-81.567399 159.423826-29.026786 316.033673 19.350858 73.692457-17.100874 133.659016-36.452732 158.97283 4.612966-17.550871 10.575922-47.027654 9.675929-81.117403-1.34999-49.728634-19.350858-118.358128-95.856294-163.135799-1.34999-0.449997-2.812979-0.449997-3.712973 0-1.34999 0.899993-1.799987 2.249983-1.34999 3.712973 0 1.34999 29.026786 132.196027-21.150844 192.611581C57.05558 567.333363 14.639892 658.126694 37.704722 742.394074c19.350858 70.542481 79.204417 124.433084 178.773684 159.872822 25.313814 7.875942 49.728634 13.838898 76.955433 18.901861 1.799987 0.449997 3.711973-0.449997 4.16197-2.249983 0.449997-1.799987-0.449997-3.712973-1.799987-4.612966-51.189623-22.163837-103.619237-68.629495-64.466525-162.235806 37.352725-81.117403 30.376776-122.520098 23.06383-140.521965 19.351858 11.025919 57.603576 39.152712 47.928647 88.881346-0.449997 1.34999 0.449997 2.811979 1.799987 3.712972 1.34999 0.899993 2.812979 0.449997 4.162969-0.449996s116.107145-95.856294 64.016529-212.414436c25.76381 14.850891 93.943308 67.392504 53.890603 186.649625-13.387901 51.64062 23.06383 88.431349 24.863817 89.893338 1.34999 1.34999 3.262976 1.34999 4.612966 0.449997 1.34999-0.899993 1.799987-2.812979 1.34999-4.162969-1.34999-3.261976-28.57679-76.954433 30.939772-117.457135-3.262976 18.900861-8.325939 65.479518 12.938905 91.243328 18.899861 23.06383 37.351725 60.303556 31.839765 97.206284-4.163969 25.76381-19.351858 47.47765-45.565664 64.466525-1.34999 0.899993-1.799987 2.812979-1.34999 4.612966 0.899993 1.799987 2.811979 2.362983 4.161969 1.799987 64.916522-21.71384 150.196894-64.466525 187.099622-146.033925 26.439805-59.404563 22.839832-131.296033-11.362916-213.764426z m0 0" p-id="8409" fill="#d81e06"></path></svg>
-      </el-icon>
-      <el-icon v-else>
-<svg t="1766222802360" class="icon" viewBox="0 0 1084 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="8255" width="200" height="200"><path d="M665.720098 546.181518c-103.16924-223.888351-36.452732-295.781822-35.889736-296.681815 0.899993-0.899993 1.34999-2.811979 0.449997-4.611966-0.899993-1.34999-2.812979-1.799987-4.162969-1.34999-1.34999 0.449997-145.133931 60.303556-127.133064 193.511575-39.602708-35.551738-223.439355-217.588398-110.595186-431.802821 0.449997-1.34999 0.449997-2.811979-0.449997-4.161969-0.899993-0.899993-2.811979-1.34999-4.161969-0.899993-2.249983 0.899993-59.854559 25.76381-105.532223 87.529355-42.415688 58.054573-81.567399 159.423826-29.026786 316.033673 19.350858 73.692457-17.100874 133.659016-36.452732 158.97283 4.612966-17.550871 10.575922-47.027654 9.675929-81.117403-1.34999-49.728634-19.350858-118.358128-95.856294-163.135799-1.34999-0.449997-2.812979-0.449997-3.712973 0-1.34999 0.899993-1.799987 2.249983-1.34999 3.712973 0 1.34999 29.026786 132.196027-21.150844 192.611581C57.05558 567.333363 14.639892 658.126694 37.704722 742.394074c19.350858 70.542481 79.204417 124.433084 178.773684 159.872822 25.313814 7.875942 49.728634 13.838898 76.955433 18.901861 1.799987 0.449997 3.711973-0.449997 4.16197-2.249983 0.449997-1.799987-0.449997-3.712973-1.799987-4.612966-51.189623-22.163837-103.619237-68.629495-64.466525-162.235806 37.352725-81.117403 30.376776-122.520098 23.06383-140.521965 19.351858 11.025919 57.603576 39.152712 47.928647 88.881346-0.449997 1.34999 0.449997 2.811979 1.799987 3.712972 1.34999 0.899993 2.812979 0.449997 4.162969-0.449996s116.107145-95.856294 64.016529-212.414436c25.76381 14.850891 93.943308 67.392504 53.890603 186.649625-13.387901 51.64062 23.06383 88.431349 24.863817 89.893338 1.34999 1.34999 3.262976 1.34999 4.612966 0.449997 1.34999-0.899993 1.799987-2.812979 1.34999-4.162969-1.34999-3.261976-28.57679-76.954433 30.939772-117.457135-3.262976 18.900861-8.325939 65.479518 12.938905 91.243328 18.899861 23.06383 37.351725 60.303556 31.839765 97.206284-4.163969 25.76381-19.351858 47.47765-45.565664 64.466525-1.34999 0.899993-1.799987 2.812979-1.34999 4.612966 0.899993 1.799987 2.811979 2.362983 4.161969 1.799987 64.916522-21.71384 150.196894-64.466525 187.099622-146.033925 26.439805-59.404563 22.839832-131.296033-11.362916-213.764426z m0 0" p-id="8256"></path></svg>
-      </el-icon>
-    </template>
-  </el-button>
-</el-tooltip>
+            <el-button link :type="scope.row.hotFlag === 1 ? 'danger' : 'info'" @click="toggleHot(scope.row)"
+              v-hasPermi="['system:product:edit']">
+              <template #icon>
+                <el-icon v-if="scope.row.hotFlag === 1">
+                  <svg t="1766222883576" class="icon" viewBox="0 0 1084 1024" version="1.1"
+                    xmlns="http://www.w3.org/2000/svg" p-id="8408" width="200" height="200">
+                    <path
+                      d="M665.720098 546.181518c-103.16924-223.888351-36.452732-295.781822-35.889736-296.681815 0.899993-0.899993 1.34999-2.811979 0.449997-4.611966-0.899993-1.34999-2.812979-1.799987-4.162969-1.34999-1.34999 0.449997-145.133931 60.303556-127.133064 193.511575-39.602708-35.551738-223.439355-217.588398-110.595186-431.802821 0.449997-1.34999 0.449997-2.811979-0.449997-4.161969-0.899993-0.899993-2.811979-1.34999-4.161969-0.899993-2.249983 0.899993-59.854559 25.76381-105.532223 87.529355-42.415688 58.054573-81.567399 159.423826-29.026786 316.033673 19.350858 73.692457-17.100874 133.659016-36.452732 158.97283 4.612966-17.550871 10.575922-47.027654 9.675929-81.117403-1.34999-49.728634-19.350858-118.358128-95.856294-163.135799-1.34999-0.449997-2.812979-0.449997-3.712973 0-1.34999 0.899993-1.799987 2.249983-1.34999 3.712973 0 1.34999 29.026786 132.196027-21.150844 192.611581C57.05558 567.333363 14.639892 658.126694 37.704722 742.394074c19.350858 70.542481 79.204417 124.433084 178.773684 159.872822 25.313814 7.875942 49.728634 13.838898 76.955433 18.901861 1.799987 0.449997 3.711973-0.449997 4.16197-2.249983 0.449997-1.799987-0.449997-3.712973-1.799987-4.612966-51.189623-22.163837-103.619237-68.629495-64.466525-162.235806 37.352725-81.117403 30.376776-122.520098 23.06383-140.521965 19.351858 11.025919 57.603576 39.152712 47.928647 88.881346-0.449997 1.34999 0.449997 2.811979 1.799987 3.712972 1.34999 0.899993 2.812979 0.449997 4.162969-0.449996s116.107145-95.856294 64.016529-212.414436c25.76381 14.850891 93.943308 67.392504 53.890603 186.649625-13.387901 51.64062 23.06383 88.431349 24.863817 89.893338 1.34999 1.34999 3.262976 1.34999 4.612966 0.449997 1.34999-0.899993 1.799987-2.812979 1.34999-4.162969-1.34999-3.261976-28.57679-76.954433 30.939772-117.457135-3.262976 18.900861-8.325939 65.479518 12.938905 91.243328 18.899861 23.06383 37.351725 60.303556 31.839765 97.206284-4.163969 25.76381-19.351858 47.47765-45.565664 64.466525-1.34999 0.899993-1.799987 2.812979-1.34999 4.612966 0.899993 1.799987 2.811979 2.362983 4.161969 1.799987 64.916522-21.71384 150.196894-64.466525 187.099622-146.033925 26.439805-59.404563 22.839832-131.296033-11.362916-213.764426z m0 0"
+                      p-id="8409" fill="#d81e06"></path>
+                  </svg>
+                </el-icon>
+                <el-icon v-else>
+                  <svg t="1766222802360" class="icon" viewBox="0 0 1084 1024" version="1.1"
+                    xmlns="http://www.w3.org/2000/svg" p-id="8255" width="200" height="200">
+                    <path
+                      d="M665.720098 546.181518c-103.16924-223.888351-36.452732-295.781822-35.889736-296.681815 0.899993-0.899993 1.34999-2.811979 0.449997-4.611966-0.899993-1.34999-2.812979-1.799987-4.162969-1.34999-1.34999 0.449997-145.133931 60.303556-127.133064 193.511575-39.602708-35.551738-223.439355-217.588398-110.595186-431.802821 0.449997-1.34999 0.449997-2.811979-0.449997-4.161969-0.899993-0.899993-2.811979-1.34999-4.161969-0.899993-2.249983 0.899993-59.854559 25.76381-105.532223 87.529355-42.415688 58.054573-81.567399 159.423826-29.026786 316.033673 19.350858 73.692457-17.100874 133.659016-36.452732 158.97283 4.612966-17.550871 10.575922-47.027654 9.675929-81.117403-1.34999-49.728634-19.350858-118.358128-95.856294-163.135799-1.34999-0.449997-2.812979-0.449997-3.712973 0-1.34999 0.899993-1.799987 2.249983-1.34999 3.712973 0 1.34999 29.026786 132.196027-21.150844 192.611581C57.05558 567.333363 14.639892 658.126694 37.704722 742.394074c19.350858 70.542481 79.204417 124.433084 178.773684 159.872822 25.313814 7.875942 49.728634 13.838898 76.955433 18.901861 1.799987 0.449997 3.711973-0.449997 4.16197-2.249983 0.449997-1.799987-0.449997-3.712973-1.799987-4.612966-51.189623-22.163837-103.619237-68.629495-64.466525-162.235806 37.352725-81.117403 30.376776-122.520098 23.06383-140.521965 19.351858 11.025919 57.603576 39.152712 47.928647 88.881346-0.449997 1.34999 0.449997 2.811979 1.799987 3.712972 1.34999 0.899993 2.812979 0.449997 4.162969-0.449996s116.107145-95.856294 64.016529-212.414436c25.76381 14.850891 93.943308 67.392504 53.890603 186.649625-13.387901 51.64062 23.06383 88.431349 24.863817 89.893338 1.34999 1.34999 3.262976 1.34999 4.612966 0.449997 1.34999-0.899993 1.799987-2.812979 1.34999-4.162969-1.34999-3.261976-28.57679-76.954433 30.939772-117.457135-3.262976 18.900861-8.325939 65.479518 12.938905 91.243328 18.899861 23.06383 37.351725 60.303556 31.839765 97.206284-4.163969 25.76381-19.351858 47.47765-45.565664 64.466525-1.34999 0.899993-1.799987 2.812979-1.34999 4.612966 0.899993 1.799987 2.811979 2.362983 4.161969 1.799987 64.916522-21.71384 150.196894-64.466525 187.099622-146.033925 26.439805-59.404563 22.839832-131.296033-11.362916-213.764426z m0 0"
+                      p-id="8256"></path>
+                  </svg>
+                </el-icon>
+              </template>
+            </el-button>
+          </el-tooltip>
         </template>
       </el-table-column>
     </el-table>
-    
+
     <!-- 分页组件 -->
-    <pagination
-      v-show="total>0"
-      :total="total"
-      v-model:page="queryParams.pageNum"
-      v-model:limit="queryParams.pageSize"
-      @pagination="getList"
-    />
+    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize"
+      @pagination="getList" />
 
     <!-- 添加或修改商品对话框 -->
     <el-dialog :title="title" v-model="open" width="800px" append-to-body>
@@ -327,7 +259,7 @@
             </el-form-item>
           </el-col>
         </el-row>
-        
+
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="品类ID" prop="categoryId">
@@ -340,31 +272,20 @@
             </el-form-item>
           </el-col>
         </el-row>
-        
+
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="商品单价" prop="price">
-              <el-input-number 
-                v-model="form.price" 
-                placeholder="请输入商品单价" 
-                :min="0" 
-                :precision="2" 
-                style="width: 100%"
-              />
+              <el-input-number v-model="form.price" placeholder="请输入商品单价" :min="0" :precision="2" style="width: 100%" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="库存数" prop="stock">
-              <el-input-number 
-                v-model="form.stock" 
-                placeholder="请输入库存数" 
-                :min="0" 
-                style="width: 100%"
-              />
+              <el-input-number v-model="form.stock" placeholder="请输入库存数" :min="0" style="width: 100%" />
             </el-form-item>
           </el-col>
         </el-row>
-        
+
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="商品状态" prop="status">
@@ -383,7 +304,7 @@
             </el-form-item>
           </el-col>
         </el-row>
-        
+
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="主图" prop="mainImage">
@@ -396,7 +317,7 @@
             </el-form-item>
           </el-col>
         </el-row>
-        
+
         <el-row>
           <el-col :span="24">
             <el-form-item label="删除标志" prop="deleteFlag" v-if="form.id">
@@ -419,9 +340,9 @@
 </template>
 
 <script setup name="Product">
-  const LOCAL_CATEGORY_MAP = Object.freeze({
+const LOCAL_CATEGORY_MAP = Object.freeze({
   7: '手机通讯',
-  8: '手机配件', 
+  8: '手机配件',
   15: '电脑整机',
   18: '家具电器',
   23: '特色女装',
@@ -503,43 +424,43 @@ const { queryParams, form, rules } = toRefs(data);
 /** 查询商品列表 */
 function getList() {
   function filterCategoryOptions(query) {
-  if (query && query.trim()) {
-    const searchText = query.trim().toLowerCase();
-    filteredCategoryOptions.value = LOCAL_CATEGORY_OPTIONS.filter(item =>
-      item.name.toLowerCase().includes(searchText) || 
-      item.id.toString().includes(searchText)
-    );
-  } else {
-    // 没有搜索词时显示全部
-    filteredCategoryOptions.value = [...LOCAL_CATEGORY_OPTIONS];
+    if (query && query.trim()) {
+      const searchText = query.trim().toLowerCase();
+      filteredCategoryOptions.value = LOCAL_CATEGORY_OPTIONS.filter(item =>
+        item.name.toLowerCase().includes(searchText) ||
+        item.id.toString().includes(searchText)
+      );
+    } else {
+      // 没有搜索词时显示全部
+      filteredCategoryOptions.value = [...LOCAL_CATEGORY_OPTIONS];
+    }
   }
-}
 
-/** 清空品类搜索（用于重置时） */
-function clearCategoryFilter() {
-  filteredCategoryOptions.value = [...LOCAL_CATEGORY_OPTIONS];
-  queryParams.value.categoryId = null;
-}
+  /** 清空品类搜索（用于重置时） */
+  function clearCategoryFilter() {
+    filteredCategoryOptions.value = [...LOCAL_CATEGORY_OPTIONS];
+    queryParams.value.categoryId = null;
+  }
 
   loading.value = true;
-  
+
   // 构建查询参数
   const params = { ...queryParams.value };
-  
+
   // 处理时间范围
   if (params.createTime && params.createTime.length === 2) {
     params.beginCreateTime = params.createTime[0];
     params.endCreateTime = params.createTime[1];
     delete params.createTime;
   }
-  
+
   // 移除空值参数
   Object.keys(params).forEach(key => {
     if (params[key] === '' || params[key] === null || params[key] === undefined) {
       delete params[key];
     }
   });
-  
+
   listProduct(params).then(response => {
     productList.value = response.rows;
     total.value = response.total;
@@ -584,14 +505,14 @@ function reset() {
   proxy.resetForm("productRef");
 
   function resetQuery() {
-  proxy.resetForm("queryRef");
-  queryParams.value = {
-    // ... 所有其他参数重置
-  };
-  // 新增这一行 ↓
-  clearCategoryFilter(); // 重置品类搜索状态
-  handleQuery();
-}
+    proxy.resetForm("queryRef");
+    queryParams.value = {
+      // ... 所有其他参数重置
+    };
+    // 新增这一行 ↓
+    clearCategoryFilter(); // 重置品类搜索状态
+    handleQuery();
+  }
 }
 
 
@@ -686,12 +607,12 @@ function submitForm() {
 /** 删除按钮操作 */
 function handleDelete(row) {
   const _ids = row.id ? [row.id] : ids.value;
-  proxy.$modal.confirm('是否确认删除商品编号为"' + _ids.join(',') + '"的数据项？').then(function() {
+  proxy.$modal.confirm('是否确认删除商品编号为"' + _ids.join(',') + '"的数据项？').then(function () {
     return delProduct(_ids);
   }).then(() => {
     getList();
     proxy.$modal.msgSuccess("删除成功");
-  }).catch(() => {});
+  }).catch(() => { });
 }
 
 /** 导出按钮操作 */
@@ -703,7 +624,7 @@ function handleExport() {
     params.endCreateTime = params.createTime[1];
     delete params.createTime;
   }
-  
+
   proxy.download('system/product/export', params, `product_${new Date().getTime()}.xlsx`);
 }
 
@@ -711,26 +632,26 @@ function handleExport() {
 function toggleStatus(row) {
   const newStatus = row.status === 1 ? 0 : 1;
   const statusText = newStatus === 1 ? '上架' : '下架';
-  
+
   proxy.$modal.confirm(`确认要${statusText}商品"${row.name}"吗？`).then(() => {
     return updateProductStatus(row.id, newStatus);
   }).then(response => {
     proxy.$modal.msgSuccess(`${statusText}成功`);
     getList();
-  }).catch(() => {});
+  }).catch(() => { });
 }
 
 /** 切换热门状态 */
 function toggleHot(row) {
   const newHotFlag = row.hotFlag === 1 ? 0 : 1;
   const hotText = newHotFlag === 1 ? '设为热门' : '取消热门';
-  
+
   proxy.$modal.confirm(`确认要${hotText}商品"${row.name}"吗？`).then(() => {
     return updateProductHotFlag(row.id, newHotFlag);
   }).then(response => {
     proxy.$modal.msgSuccess(`${hotText}成功`);
     getList();
-  }).catch(() => {});
+  }).catch(() => { });
 }
 
 // 组件挂载时加载数据

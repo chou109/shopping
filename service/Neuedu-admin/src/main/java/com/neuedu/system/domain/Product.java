@@ -1,6 +1,10 @@
 package com.neuedu.system.domain;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -12,6 +16,7 @@ import lombok.EqualsAndHashCode;
 import com.neuedu.common.core.domain.BaseEntity;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import org.springframework.format.annotation.DateTimeFormat;
 
 /**
  * 商品对象 product
@@ -116,4 +121,41 @@ public class Product extends BaseEntity
 
 
     private Long shopId;
+
+    // ============ 查询参数字段（非数据库字段） ============
+
+    /** 最小价格（查询参数） */
+    @Schema(title = "最小价格")
+    @TableField(exist = false)
+    private BigDecimal minPrice;
+
+    /** 最大价格（查询参数） */
+    @Schema(title = "最大价格")
+    @TableField(exist = false)
+    private BigDecimal maxPrice;
+
+    /** 最小库存（查询参数） */
+    @Schema(title = "最小库存")
+    @TableField(exist = false)
+    private Long minStock;
+
+    /** 最大库存（查询参数） */
+    @Schema(title = "最大库存")
+    @TableField(exist = false)
+    private Long maxStock;
+
+    /** 开始创建时间（查询参数） */
+    @Schema(title = "开始创建时间")
+    @TableField(exist = false)
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    @DateTimeFormat(pattern = "yyyy-MM-dd")
+    private LocalDate beginCreateTime;
+
+    /** 结束创建时间（查询参数） */
+    @Schema(title = "结束创建时间")
+    @TableField(exist = false)
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    @DateTimeFormat(pattern = "yyyy-MM-dd")
+    private LocalDate endCreateTime;
+
 }

@@ -90,7 +90,23 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="status != null "> and p.status = #{status}</if>
         <if test="price != null "> and p.price = #{price}</if>
         <if test="stock != null "> and p.stock = #{stock}</if>
+        <!-- 价格范围查询 -->
+        <if test="minPrice != null"> and p.price >= #{minPrice}</if>
+        <if test="maxPrice != null"> and p.price &lt;= #{maxPrice}</if>
+
+        <!-- 库存范围查询 -->
+        <if test="minStock != null"> and p.stock >= #{minStock}</if>
+        <if test="maxStock != null"> and p.stock &lt;= #{maxStock}</if>
+
+        <!-- 创建时间范围查询 -->
+        <if test="beginCreateTime != null">
+            and DATE(p.create_time) >= #{beginCreateTime}
+        </if>
+        <if test="endCreateTime != null">
+            and DATE(p.create_time) &lt;= #{endCreateTime}
+        </if>
         <if test="hotFlag != null "> and p.hot_flag = #{hotFlag}</if>
+        <if test="deleteFlag != null  and deleteFlag != ''"> and p.delete_flag = #{deleteFlag}</if>
     </sql>
 
     <select id="selectProductList" parameterType="Product" resultMap="ProductResult">
