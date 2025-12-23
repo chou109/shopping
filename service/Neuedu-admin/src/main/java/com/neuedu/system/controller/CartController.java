@@ -20,6 +20,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 购物车Controller
@@ -191,5 +192,28 @@ public class CartController extends BaseController
             put("totalAmount", totalAmount);
         }});
     }
+    /**
+     * 批量选择/取消选择商品
+     */
+    @Operation(summary = "批量选择商品")
+    @PreAuthorize("@ss.hasPermi('system:cart:edit')")
+    @Log(title = "购物车", businessType = BusinessType.UPDATE)
+    @PutMapping("/batch-select")
+    public AjaxResult batchSelect(@RequestBody Map<String, Object> params) {
+        Long userId = SecurityUtils.getUserId();
+        if (userId == null) {
+            return error("用户未登录");
+        }
 
+        Integer selected = (Integer) params.get("selected");
+        List<Cart> userCarts = cartService.selectCartByUserId(userId);
+
+        for (Cart cart : userCarts) {
+            cart.setSelected(selected);
+            cart.setUpdateUser(userId);
+            cartService.updateCart(cart);
+        }
+
+        return success();
+    }
 }

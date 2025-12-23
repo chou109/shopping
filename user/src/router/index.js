@@ -1,30 +1,7 @@
+// router/index.js
 import { createWebHistory, createRouter } from 'vue-router'
-/* Layout */
 import Layout from '@/layout'
-import EnterpriseMain from '@/layout/components/EnterpriseMain.vue'
 import { AppMain } from '@/layout/components'
-
-/**
- * Note: 路由配置项
- *
- * hidden: true                     // 当设置 true 的时候该路由不会再侧边栏出现 如401，login等页面，或者如一些编辑页面/edit/1
- * alwaysShow: true                 // 当你一个路由下面的 children 声明的路由大于1个时，自动会变成嵌套的模式--如组件页面
- *                                  // 只有一个时，会将那个子路由当做根路由显示在侧边栏--如引导页面
- *                                  // 若你想不管路由下面的 children 声明的个数都显示你的根路由
- *                                  // 你可以设置 alwaysShow: true，这样它就会忽略之前定义的规则，一直显示根路由
- * redirect: noRedirect             // 当设置 noRedirect 的时候该路由在面包屑导航中不可被点击
- * name:'router-name'               // 设定路由的名字，一定要填写不然使用<keep-alive>时会出现各种问题
- * query: '{"id": 1, "name": "ry"}' // 访问路由的默认传递参数
- * roles: ['admin', 'common']       // 访问路由的角色权限
- * permissions: ['a:a:a', 'b:b:b']  // 访问路由的菜单权限
- * meta : {
-    noCache: true                   // 如果设置为true，则不会被 <keep-alive> 缓存(默认 false)
-    title: 'title'                  // 设置该路由在侧边栏和面包屑中展示的名字
-    icon: 'svg-name'                // 设置该路由的图标，对应路径src/assets/icons/svg
-    breadcrumb: false               // 如果设置为false，则不会在breadcrumb面包屑中显示
-    activeMenu: '/system/user'      // 当路由设置了该属性，则会高亮相对应的侧边栏。
-  }
- */
 
 // 公共路由
 export const constantRoutes = [
@@ -55,71 +32,78 @@ export const constantRoutes = [
     hidden: true
   },
   {
-    path: '',
-    component: Layout,
-    children: [
-      {
-        path: '/',
-        component: AppMain,
-        children: [
-          {
-            path: '/index',
-            component: () => import('@/views/index'),
-            meta: { title: '主页', icon: 'dashboard', noCache: true, affix: true }
-          },
-          {
-            path: '/news/list',
-            component: () => import('@/views/news/list.vue')//新闻列表
-          },
-          {
-            path: '/news/detail',
-            component: () => import('@/views/news/detail.vue')//新闻详情
-          },
-          {
-            path: '/feedback/list',
-            component: () => import('@/views/feedback/list.vue')//反馈列表
-          },
-          {
-            path: '/feedback/detail',
-            component: () => import('@/views/feedback/detail.vue')//反馈详情
-          },
-          {
-            path: '/products',
-            name: 'ProductsSearch',
-            component: () => import('@/views/products/ProductsSearch.vue')//商品搜索结果
-          },
-          {
-            path: '/product/detail',
-            name: 'ProductDetail',
-            component: () => import('@/views/products/ProductDetail.vue')//商品详情
-          },
-        ]
-      }
-    ]
-  },
-  {
     path: '/401',
     component: () => import('@/views/error/401'),
     hidden: true
   },
-  // {
-  //   path: '',
-  //   component: Layout,
-  //   redirect: '/index',
-  //   children: [
-  //     {
-  //       path: '/index',
-  //       component: () => import('@/views/index'),
-  //       name: 'Index',
-  //       meta: { title: '首页', icon: 'dashboard', affix: true }
-  //     }
-  //   ]
-  // }
-]
-
-// 动态路由，基于用户权限动态去加载
-export const dynamicRoutes = [
-
+  {
+    path: '',
+    component: Layout,
+    redirect: '/index',
+    children: [
+      {
+        path: '/index',
+        component: () => import('@/views/index'),
+        name: 'Index',
+        meta: { title: '首页', icon: 'dashboard', affix: true }
+      }
+    ]
+  },
+  // 用户中心统一路由 - 使用动态参数
+  {
+    path: '/user/:page?',
+    component: Layout,
+    meta: { requiresAuth: true },
+    props: (route) => ({ 
+      page: route.params.page || 'profile',
+      query: route.query 
+    }),
+    children: [
+      {
+        path: '',
+        name: 'UserCenter',
+        component: () => import('@/views/user/UserCenter.vue'),
+        meta: { 
+          title: '用户中心',
+          // 映射路由参数到页面标题
+          pageTitles: {
+            profile: '个人中心',
+            orders: '我的订单',
+            cart: '购物车',
+            footprint: '我的足迹',
+            'favorite/shop': '收藏店铺',
+            'favorite/product': '收藏商品',
+            review: '我的评价'
+          }
+        }
+      }
+    ]
+  },
+  // 商品相关路由保持不变
+  {
+    path: '/products',
+    name: 'ProductsSearch',
+    component: Layout,
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/products/ProductsSearch.vue'),
+        meta: { title: '商品搜索' }
+      }
+    ]
+  },
+  {
+    path: '/product/detail',
+    name: 'ProductDetail',
+    component: Layout,
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/products/ProductDetail.vue'),
+        meta: { title: '商品详情' }
+      }
+    ]
+  }
 ]
 
 const router = createRouter({
@@ -132,6 +116,12 @@ const router = createRouter({
       return { top: 0 }
     }
   },
-});
+})
 
-export default router;
+// 添加路由守卫进行调试
+router.beforeEach((to, from, next) => {
+  console.log('路由跳转:', from.path, '->', to.path, to.params)
+  next()
+})
+
+export default router

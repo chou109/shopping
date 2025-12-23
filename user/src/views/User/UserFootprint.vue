@@ -1,0 +1,746 @@
+<template>
+  <div class="user-footprint">
+    <!-- 页面标题和操作 -->
+    <div class="page-header">
+      <h2 class="page-title">我的足迹</h2>
+      <div class="page-actions">
+        <el-button 
+          type="danger" 
+          plain 
+          :disabled="!footprints || footprints.length === 0"
+          @click="handleClearAll"
+        >
+          清空全部足迹
+        </el-button>
+      </div>
+    </div>
+
+    <!-- 分类筛选选项卡 -->
+    <div class="filter-tabs">
+      <el-radio-group v-model="activeFilter" @change="handleFilterChange">
+        <el-radio-button label="all">全部</el-radio-button>
+        <el-radio-button label="shop">店铺</el-radio-button>
+        <el-radio-button label="product">商品</el-radio-button>
+      </el-radio-group>
+      
+      <!-- 统计信息 -->
+      <div class="filter-stats">
+        <span class="stat-item">共 {{ totalCount }} 条记录</span>
+        <span class="stat-item" v-if="activeFilter === 'shop'">店铺: {{ filteredFootprints.length }} 个</span>
+        <span class="stat-item" v-if="activeFilter === 'product'">商品: {{ filteredFootprints.length }} 个</span>
+      </div>
+    </div>
+
+    <!-- 足迹列表 -->
+    <div class="footprint-list" v-loading="loading">
+      <!-- 先检查 footprints 是否存在且有数据 -->
+      <div v-if="filteredFootprints && filteredFootprints.length > 0" class="footprint-container">
+        <!-- 再检查 groupedFootprints 是否存在且有数据 -->
+        <template v-if="groupedFootprints && Object.keys(groupedFootprints).length > 0">
+          <div v-for="(group, date) in groupedFootprints" :key="date" class="footprint-group">
+            <div class="group-header">
+              <div class="group-date">{{ formatDate(date) }}</div>
+              <div class="group-count">共 {{ group.length }} 条记录</div>
+            </div>
+            <div class="footprint-items">
+              <div 
+                v-for="item in group" 
+                :key="item.id"
+                class="footprint-item"
+                :class="{'shop-item': item.targetType === 2, 'product-item': item.targetType === 1}"
+              >
+                <!-- 图片区域 -->
+                <div class="item-image" @click="handleItemClick(item)">
+                  <img :src="getProductImageUrl(item.targetImage)" alt="">
+                  <!-- 类型标签 -->
+                  <div class="type-badge" :class="getTypeBadgeClass(item.targetType)">
+                    {{ getTypeText(item.targetType) }}
+                  </div>
+                </div>
+                
+                <!-- 信息区域 -->
+                <div class="item-info">
+                  <h3 class="item-title" @click="handleItemClick(item)">
+                    {{ item.targetName }}
+                  </h3>
+                  <div class="item-meta">
+                    <span class="item-time">{{ formatTime(item.lastBrowseTime) }}</span>
+                    <span class="item-count">浏览 {{ item.browseCount }} 次</span>
+                  </div>
+                  <div v-if="item.price && item.targetType === 1" class="item-price">
+                    ¥{{ formatPrice(item.price) }}
+                  </div>
+                  <div v-if="item.targetType === 2" class="shop-info">
+                    <span class="shop-tag">店铺</span>
+                    <span class="follower-count" v-if="item.followerCount">粉丝: {{ item.followerCount }}</span>
+                  </div>
+                </div>
+                
+                <!-- 操作区域 -->
+                <div class="item-actions">
+                  <el-button 
+                    type="danger" 
+                    text 
+                    size="small"
+                    @click="handleDelete(item.id)"
+                  >
+                    删除
+                  </el-button>
+                  <el-button 
+                    v-if="item.targetType === 1"
+                    type="primary" 
+                    text 
+                    size="small"
+                    @click="handleAddToCart(item)"
+                  >
+                    加入购物车
+                  </el-button>
+                  <el-button 
+                    v-if="item.targetType === 2"
+                    type="success" 
+                    text 
+                    size="small"
+                    @click="handleFollowShop(item)"
+                  >
+                    关注店铺
+                  </el-button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
+        <div v-else class="no-data">
+          <p>暂无分组数据</p>
+        </div>
+      </div>
+      
+      <!-- 空状态 -->
+      <div v-else class="empty-state">
+        <el-empty :description="getEmptyDescription()">
+          <el-button type="primary" @click="handleEmptyAction">
+            {{ getEmptyButtonText() }}
+          </el-button>
+        </el-empty>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted, computed, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import { useStore } from 'vuex'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { getProductImageUrl, handleImageError } from '@/utils/image'
+import { listFootprintByUser, deleteFootprint, clearFootprint } from '@/api/system/footprint'
+import { addCart } from '@/api/system/cart'
+
+const router = useRouter()
+const store = useStore()
+const loading = ref(false)
+const footprints = ref([])
+const activeFilter = ref('all') // 当前激活的筛选类型：all, shop, product
+
+// 处理商品点击
+const handleProductClick = (productId) => {
+  router.push({
+    path: '/product/detail',
+    query: { id: productId }
+  })
+}
+
+// 处理足迹项点击
+const handleItemClick = (item) => {
+  if (item.targetType === 1) { // 商品
+    router.push({
+      path: '/product/detail',
+      query: { id: item.targetId }
+    })
+  } else if (item.targetType === 2) { // 店铺
+    router.push({
+      path: '/shop',
+      query: { id: item.targetId }
+    })
+  }
+}
+
+// 筛选后的足迹数据
+const filteredFootprints = computed(() => {
+  if (!footprints.value || footprints.value.length === 0) {
+    return []
+  }
+  
+  switch (activeFilter.value) {
+    case 'shop':
+      return footprints.value.filter(item => item.targetType === 2)
+    case 'product':
+      return footprints.value.filter(item => item.targetType === 1)
+    case 'all':
+    default:
+      return footprints.value
+  }
+})
+
+// 总记录数
+const totalCount = computed(() => {
+  return footprints.value ? footprints.value.length : 0
+})
+
+// 按日期分组
+const groupedFootprints = computed(() => {
+  console.log('计算 groupedFootprints，过滤后数据:', filteredFootprints.value)
+  
+  if (!filteredFootprints.value || filteredFootprints.value.length === 0) {
+    return {}
+  }
+  
+  const groups = {}
+  
+  filteredFootprints.value.forEach(item => {
+    if (!item || !item.lastBrowseTime) {
+      console.warn('足迹项数据不完整:', item)
+      return
+    }
+    
+    try {
+      const date = new Date(item.lastBrowseTime).toDateString()
+      
+      if (!groups[date]) {
+        groups[date] = []
+      }
+      groups[date].push(item)
+    } catch (error) {
+      console.error('处理足迹日期时出错:', error)
+    }
+  })
+  
+  console.log('分组结果:', groups)
+  return groups
+})
+
+// 处理筛选变化
+const handleFilterChange = (filterType) => {
+  console.log('筛选类型改变为:', filterType)
+  activeFilter.value = filterType
+}
+
+// 获取类型徽章样式
+const getTypeBadgeClass = (type) => {
+  const classMap = {
+    1: 'product-badge',
+    2: 'shop-badge',
+    3: 'activity-badge'
+  }
+  return classMap[type] || 'default-badge'
+}
+
+// 空状态描述
+const getEmptyDescription = () => {
+  const map = {
+    all: '暂无浏览足迹',
+    shop: '暂无店铺浏览记录',
+    product: '暂无商品浏览记录'
+  }
+  return map[activeFilter.value] || '暂无数据'
+}
+
+// 空状态按钮文字
+const getEmptyButtonText = () => {
+  const map = {
+    all: '去首页逛逛',
+    shop: '浏览热门店铺',
+    product: '发现热门商品'
+  }
+  return map[activeFilter.value] || '去首页逛逛'
+}
+
+// 空状态按钮动作
+const handleEmptyAction = () => {
+  if (activeFilter.value === 'shop') {
+    router.push('/shops')
+  } else if (activeFilter.value === 'product') {
+    router.push('/products')
+  } else {
+    router.push('/')
+  }
+}
+
+// 加入购物车
+const handleAddToCart = async (item) => {
+  if (item.targetType !== 1) return
+  
+  try {
+    const cartData = {
+      productId: item.targetId,
+      productName: item.targetName,
+      productMainImage: item.targetImage,
+      quantity: 1,
+      productUnitPrice: item.price || 0,
+      selected: 1
+    }
+    
+    const response = await addCart(cartData)
+    if (response.code === 200) {
+      ElMessage.success('已加入购物车')
+    } else {
+      ElMessage.error(response.msg || '加入购物车失败')
+    }
+  } catch (error) {
+    console.error('加入购物车失败:', error)
+    ElMessage.error('加入购物车失败')
+  }
+}
+
+// 关注店铺
+const handleFollowShop = (item) => {
+  if (item.targetType !== 2) return
+  ElMessage.info('关注店铺功能开发中')
+}
+
+// 其他辅助函数保持不变
+const formatDate = (dateString) => {
+  try {
+    const date = new Date(dateString)
+    const today = new Date()
+    const yesterday = new Date(today)
+    yesterday.setDate(yesterday.getDate() - 1)
+    
+    if (date.toDateString() === today.toDateString()) {
+      return '今天'
+    } else if (date.toDateString() === yesterday.toDateString()) {
+      return '昨天'
+    } else {
+      return `${date.getMonth() + 1}月${date.getDate()}日`
+    }
+  } catch (error) {
+    console.error('格式化日期出错:', error)
+    return dateString
+  }
+}
+
+const formatTime = (timeString) => {
+  try {
+    const date = new Date(timeString)
+    return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
+  } catch (error) {
+    console.error('格式化时间出错:', error)
+    return timeString
+  }
+}
+
+const formatPrice = (price) => {
+  try {
+    return Number(price).toFixed(2)
+  } catch (error) {
+    console.error('格式化价格出错:', error)
+    return price
+  }
+}
+
+const getTypeText = (type) => {
+  const typeMap = {
+    1: '商品',
+    2: '店铺',
+    3: '活动'
+  }
+  return typeMap[type] || '未知'
+}
+
+// 加载足迹数据
+const loadFootprints = async () => {
+  const userId = store.state.user?.userId
+  console.log('当前用户ID:', userId)
+  
+  if (!userId) {
+    ElMessage.warning('请先登录')
+    router.push('/login')
+    return
+  }
+  
+  loading.value = true
+  try {
+    const response = await listFootprintByUser(userId)
+    if (response.code === 200) {
+      footprints.value = response.rows || []
+      // 按最后浏览时间倒序排列
+      footprints.value.sort((a, b) => new Date(b.lastBrowseTime) - new Date(a.lastBrowseTime))
+    } else {
+      ElMessage.error(response.msg || '获取足迹数据失败')
+      footprints.value = []
+    }
+  } catch (error) {
+    console.error('加载足迹数据失败:', error)
+    ElMessage.error('加载足迹数据失败')
+    footprints.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
+// 删除单个足迹
+const handleDelete = async (footprintId) => {
+  try {
+    await ElMessageBox.confirm('确定要删除这条足迹吗？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    
+    const response = await deleteFootprint(footprintId)
+    if (response.code === 200) {
+      ElMessage.success('删除成功')
+      // 重新加载数据
+      loadFootprints()
+    } else {
+      ElMessage.error(response.msg || '删除失败')
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('删除足迹失败:', error)
+      ElMessage.error('删除失败')
+    }
+  }
+}
+
+// 清空全部足迹
+const handleClearAll = async () => {
+  try {
+    await ElMessageBox.confirm('确定要清空所有足迹吗？此操作不可恢复', '警告', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    
+    const userId = store.state.user?.userId
+    if (!userId) {
+      ElMessage.warning('用户未登录')
+      return
+    }
+    
+    const response = await clearFootprint(userId)
+    if (response.code === 200) {
+      ElMessage.success('清空成功')
+      footprints.value = []
+    } else {
+      ElMessage.error(response.msg || '清空失败')
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('清空足迹失败:', error)
+      ElMessage.error('清空失败')
+    }
+  }
+}
+
+onMounted(() => {
+  loadFootprints()
+})
+</script>
+
+<style scoped>
+.user-footprint {
+  padding: 0;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.page-title {
+  margin: 0;
+  font-size: 20px;
+  color: #333;
+  font-weight: 600;
+}
+
+/* 筛选选项卡样式 */
+.filter-tabs {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.filter-stats {
+  display: flex;
+  gap: 20px;
+  font-size: 14px;
+  color: #666;
+}
+
+.stat-item {
+  padding: 4px 8px;
+  background: #fff;
+  border-radius: 4px;
+  border: 1px solid #e0e0e0;
+}
+
+.footprint-list {
+  min-height: 400px;
+}
+
+.footprint-container {
+  max-width: 100%;
+}
+
+.footprint-group {
+  margin-bottom: 30px;
+}
+
+.group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding: 0 10px;
+}
+
+.group-date {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  border-left: 3px solid #ff5500;
+  padding-left: 10px;
+}
+
+.group-count {
+  font-size: 14px;
+  color: #999;
+}
+
+.footprint-items {
+  background: #fafafa;
+  border-radius: 8px;
+  padding: 15px;
+}
+
+.footprint-item {
+  display: flex;
+  align-items: center;
+  padding: 15px;
+  background: white;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  border-left: 4px solid transparent;
+}
+
+.footprint-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.footprint-item:last-child {
+  margin-bottom: 0;
+}
+
+/* 商品和店铺的不同样式 */
+.product-item {
+  border-left-color: #409eff;
+}
+
+.shop-item {
+  border-left-color: #67c23a;
+}
+
+.item-image {
+  width: 80px;
+  height: 80px;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-right: 15px;
+  flex-shrink: 0;
+  cursor: pointer;
+  position: relative;
+}
+
+.item-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.item-image:hover img {
+  transform: scale(1.05);
+}
+
+/* 类型徽章 */
+.type-badge {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  color: white;
+  font-weight: bold;
+}
+
+.product-badge {
+  background: rgba(64, 158, 255, 0.9);
+}
+
+.shop-badge {
+  background: rgba(103, 194, 58, 0.9);
+}
+
+.activity-badge {
+  background: rgba(255, 153, 0, 0.9);
+}
+
+.default-badge {
+  background: rgba(102, 102, 102, 0.9);
+}
+
+.item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.item-title {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  color: #333;
+  cursor: pointer;
+  transition: color 0.3s ease;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.item-title:hover {
+  color: #ff5500;
+}
+
+.item-meta {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: #999;
+}
+
+.item-price {
+  font-size: 16px;
+  color: #ff5500;
+  font-weight: 600;
+  margin-top: 5px;
+}
+
+.shop-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 5px;
+}
+
+.shop-tag {
+  background: #67c23a;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 12px;
+}
+
+.follower-count {
+  font-size: 12px;
+  color: #666;
+}
+
+.item-actions {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.empty-state {
+  padding: 60px 0;
+  text-align: center;
+}
+
+.no-data {
+  text-align: center;
+  padding: 40px;
+  color: #999;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+  
+  .filter-tabs {
+    flex-direction: column;
+    gap: 15px;
+    align-items: flex-start;
+  }
+  
+  .filter-stats {
+    align-self: stretch;
+    justify-content: space-between;
+  }
+  
+  .footprint-item {
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+  }
+  
+  .item-image {
+    width: 100%;
+    height: 150px;
+    margin-right: 0;
+    margin-bottom: 10px;
+  }
+  
+  .item-info {
+    width: 100%;
+    margin-bottom: 10px;
+  }
+  
+  .item-meta {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .item-actions {
+    align-self: stretch;
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 480px) {
+  .filter-stats {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .stat-item {
+    align-self: flex-start;
+  }
+  
+  .item-actions {
+    flex-direction: column;
+  }
+  
+  .item-actions .el-button {
+    width: 100%;
+  }
+}
+</style>

@@ -31,7 +31,7 @@
                     <el-icon><List /></el-icon>
                     我的订单
                   </el-dropdown-item>
-                  <el-dropdown-item @click="$router.push('/user/footMark')">
+                  <el-dropdown-item @click="$router.push('/user/footprint')">
                     <el-icon><Star /></el-icon>
                     我的足迹
                   </el-dropdown-item>
@@ -44,32 +44,34 @@
             </el-dropdown>
             
             <!-- 其他功能链接 -->
-            <div class="function-links">
-              <router-link to="/cart" class="nav-link" @click="getCartCount">
-                <span class="link-text">购物车</span>
-                <span v-if="cartCount > 0" class="count-badge">{{ formatCount(cartCount) }}</span>
-              </router-link>
-              
-              <router-link to="/order" class="nav-link" @click="getOrderList">
-                <span class="link-text">我的订单</span>
-                <span v-if="orderCount > 0" class="count-badge">{{ formatCount(orderCount) }}</span>
-              </router-link>
-              
-              <router-link to="/favorite/shop" class="nav-link" @click="getShopFavorites">
-                <span class="link-text">收藏店铺</span>
-                <span v-if="shopFavoriteCount > 0" class="count-badge">{{ formatCount(shopFavoriteCount) }}</span>
-              </router-link>
-              
-              <router-link to="/favorite/product" class="nav-link" @click="getProductFavorites">
-                <span class="link-text">收藏商品</span>
-                <span v-if="productFavoriteCount > 0" class="count-badge">{{ formatCount(productFavoriteCount) }}</span>
-              </router-link>
-              
-              <router-link to="/review" class="nav-link" @click="getMyReviews">
-                <span class="link-text">我的评价</span>
-                <span v-if="reviewCount > 0" class="count-badge">{{ formatCount(reviewCount) }}</span>
-              </router-link>
-            </div>
+            <!-- 在首页的 template 部分，修改导航链接 -->
+<!-- 在 index.vue 的功能链接部分，确保使用正确的路由 -->
+<div class="function-links">
+  <router-link :to="{ path: '/user/cart' }" class="nav-link">
+    <span class="link-text">购物车</span>
+    <span v-if="cartCount > 0" class="count-badge">{{ formatCount(cartCount) }}</span>
+  </router-link>
+  
+  <router-link :to="{ path: '/user/orders' }" class="nav-link">
+    <span class="link-text">我的订单</span>
+    <span v-if="orderCount > 0" class="count-badge">{{ formatCount(orderCount) }}</span>
+  </router-link>
+  
+  <router-link :to="{ path: '/user/favorite/shop' }" class="nav-link">
+    <span class="link-text">收藏店铺</span>
+    <span v-if="shopFavoriteCount > 0" class="count-badge">{{ formatCount(shopFavoriteCount) }}</span>
+  </router-link>
+  
+  <router-link :to="{ path: '/user/favorite/product' }" class="nav-link">
+    <span class="link-text">收藏商品</span>
+    <span v-if="productFavoriteCount > 0" class="count-badge">{{ formatCount(productFavoriteCount) }}</span>
+  </router-link>
+  
+  <router-link :to="{ path: '/user/review' }" class="nav-link">
+    <span class="link-text">我的评价</span>
+    <span v-if="reviewCount > 0" class="count-badge">{{ formatCount(reviewCount) }}</span>
+  </router-link>
+</div>
           </div>
           
           <!-- 用户未登录时显示的登录链接 -->
