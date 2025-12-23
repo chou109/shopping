@@ -10,7 +10,7 @@ Target Server Type    : MYSQL
 Target Server Version : 80012
 File Encoding         : 65001
 
-Date: 2025-12-21 20:12:58
+Date: 2025-12-23 14:21:33
 */
 
 SET FOREIGN_KEY_CHECKS=0;
@@ -82,7 +82,7 @@ CREATE TABLE `cart` (
   `selected` tinyint(4) NOT NULL DEFAULT '1' COMMENT '是否已选择 1是 0 否',
   `product_total_price` decimal(20,2) NOT NULL DEFAULT '0.00' COMMENT '总价格',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=263 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC COMMENT='购物车';
+) ENGINE=InnoDB AUTO_INCREMENT=265 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC COMMENT='购物车';
 
 -- ----------------------------
 -- Records of cart
@@ -121,6 +121,8 @@ INSERT INTO `cart` VALUES ('255', '2024-10-13 10:28:10', '2024-10-13 10:28:10', 
 INSERT INTO `cart` VALUES ('256', '2024-10-13 10:28:25', '2024-10-13 10:28:25', '1', '1', '0', '1', '0', '', '3', 'KOLA 红米Note4全屏钢化膜', '五重护甲，精密保护', '/file/pic/0e6c5bd5-af70-45f6-a68a-7d48b8486ad9_source.jpg', '1', '9.99', '1', '9.99');
 INSERT INTO `cart` VALUES ('258', '2025-09-07 16:13:55', '2025-09-07 16:13:55', '1', '1', '0', '1', '0', null, '8', '华为(HUAWEI) 畅享7', '看得到，触得到的品质', '/file/pic/8691990c-57ee-4bdf-9a7e-758e2ec09d0d_source.jpg', '1', '960.00', '1', '960.00');
 INSERT INTO `cart` VALUES ('262', '2025-12-01 11:47:34', '2025-12-01 11:47:34', '1', '1', '0', '1', '0', null, '5', '华为畅享6S钢化膜', '高清防爆，耐磨防刮', '/file/pic/2b61d366-9ff9-4e1b-b99c-f9fd7c4c4908_source.jpg', '1', '31.00', '1', '31.00');
+INSERT INTO `cart` VALUES ('263', '2025-12-23 11:14:35', '2025-12-23 11:14:35', '100', '0', '0', '100', '0', '', '45', '索尼(SONY) KD-75X8566E电视', '放心去享受，尊享大屏', '/file/pic/9625d3b8-a342-4830-ac19-5522dc0b1d61_source.jpg', '1', '9390.00', '1', '9390.00');
+INSERT INTO `cart` VALUES ('264', '2025-12-23 11:14:41', '2025-12-23 11:14:40', '100', '0', '0', '100', '0', '', '181', '金大生 花朵戒指', '爱让戒指更闪耀', '/file/pic/d71d68f2-fca7-4ef0-9345-554542972838_source.jpg', '1', '480.00', '1', '480.00');
 
 -- ----------------------------
 -- Table structure for category
@@ -241,7 +243,7 @@ CREATE TABLE `gen_table` (
   `update_time` datetime DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`table_id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=50 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='代码生成业务表';
+) ENGINE=InnoDB AUTO_INCREMENT=51 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='代码生成业务表';
 
 -- ----------------------------
 -- Records of gen_table
@@ -264,6 +266,7 @@ INSERT INTO `gen_table` VALUES ('46', 'refund_record', '退款记录', '0', null
 INSERT INTO `gen_table` VALUES ('47', 'product_comment', '商品评论表', '0', null, null, 'ProductComment', 'crud', '0', 'com.neuedu.system', 'system', 'comment', '商品评论', 'ruoyi', '0', '/', null, 'admin', '2025-12-21 15:51:13', '', null, null);
 INSERT INTO `gen_table` VALUES ('48', 'shop', '店铺信息', '0', null, null, 'Shop', 'crud', '0', 'com.neuedu.system', 'system', 'shop', '店铺信息', 'ruoyi', '0', '/', null, 'admin', '2025-12-21 15:51:13', '', null, null);
 INSERT INTO `gen_table` VALUES ('49', 'user_favorite', '用户收藏表', '0', null, null, 'UserFavorite', 'crud', '0', 'com.neuedu.system', 'system', 'favorite', '用户收藏', 'ruoyi', '0', '/', null, 'admin', '2025-12-21 15:51:13', '', null, null);
+INSERT INTO `gen_table` VALUES ('50', 'user_footprint', '用户足迹表', '0', null, null, 'UserFootprint', 'crud', '0', 'com.neuedu.system', 'system', 'footprint', '用户足迹', 'ruoyi', '0', '/', null, 'admin', '2025-12-22 17:39:11', '', null, null);
 
 -- ----------------------------
 -- Table structure for gen_table_column
@@ -298,7 +301,7 @@ CREATE TABLE `gen_table_column` (
   `update_by` varchar(64) CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT '' COMMENT '更新者',
   `update_time` datetime DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`column_id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=520 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='代码生成业务表字段';
+) ENGINE=InnoDB AUTO_INCREMENT=536 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='代码生成业务表字段';
 
 -- ----------------------------
 -- Records of gen_table_column
@@ -529,6 +532,22 @@ INSERT INTO `gen_table_column` VALUES ('516', '49', 'user_id', '用户ID', 'bigi
 INSERT INTO `gen_table_column` VALUES ('517', '49', 'target_type', '收藏类型(1-商品 2-店铺)', 'tinyint(4)', 'Integer', 'targetType', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'select', '', '3', null, null, null, null, null, 'admin', '2025-12-21 15:51:13', '', null);
 INSERT INTO `gen_table_column` VALUES ('518', '49', 'target_id', '目标ID(商品ID或店铺ID)', 'bigint(20)', 'Long', 'targetId', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', '4', null, null, null, null, null, 'admin', '2025-12-21 15:51:13', '', null);
 INSERT INTO `gen_table_column` VALUES ('519', '49', 'create_time', '收藏时间', 'datetime', 'Date', 'createTime', '0', '0', null, '1', null, null, null, 'EQ', 'datetime', '', '5', null, null, null, null, null, 'admin', '2025-12-21 15:51:13', '', null);
+INSERT INTO `gen_table_column` VALUES ('520', '50', 'id', '主键', 'bigint(20) unsigned', 'Long', 'id', '1', '1', null, '1', null, null, null, 'EQ', 'input', '', '1', null, null, null, null, null, 'admin', '2025-12-22 17:39:11', '', null);
+INSERT INTO `gen_table_column` VALUES ('521', '50', 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', '1', '1', null, null, null, 'EQ', 'datetime', '', '2', null, null, null, null, null, 'admin', '2025-12-22 17:39:11', '', null);
+INSERT INTO `gen_table_column` VALUES ('522', '50', 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', '1', '1', '1', null, null, 'EQ', 'datetime', '', '3', null, null, null, null, null, 'admin', '2025-12-22 17:39:11', '', null);
+INSERT INTO `gen_table_column` VALUES ('523', '50', 'create_user', '创建人', 'bigint(20)', 'Long', 'createUser', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', '4', null, null, null, null, null, 'admin', '2025-12-22 17:39:11', '', null);
+INSERT INTO `gen_table_column` VALUES ('524', '50', 'update_user', '更新人', 'bigint(20)', 'Long', 'updateUser', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', '5', null, null, null, null, null, 'admin', '2025-12-22 17:39:11', '', null);
+INSERT INTO `gen_table_column` VALUES ('525', '50', 'delete_flag', '删除标志', 'tinyint(4)', 'Integer', 'deleteFlag', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', '6', null, null, null, null, null, 'admin', '2025-12-22 17:39:11', '', null);
+INSERT INTO `gen_table_column` VALUES ('526', '50', 'user_id', '用户ID（关联sys_user.user_id）', 'bigint(20)', 'Long', 'userId', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', '7', null, null, null, null, null, 'admin', '2025-12-22 17:39:11', '', null);
+INSERT INTO `gen_table_column` VALUES ('527', '50', 'target_type', '浏览类型(1-商品 2-店铺 3-活动)', 'tinyint(4)', 'Integer', 'targetType', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'select', '', '8', null, null, null, null, null, 'admin', '2025-12-22 17:39:11', '', null);
+INSERT INTO `gen_table_column` VALUES ('528', '50', 'target_id', '目标ID（商品ID/店铺ID/活动ID）', 'bigint(20)', 'Long', 'targetId', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', '9', null, null, null, null, null, 'admin', '2025-12-22 17:39:11', '', null);
+INSERT INTO `gen_table_column` VALUES ('529', '50', 'target_name', '目标名称', 'varchar(100)', 'String', 'targetName', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', '10', null, null, null, null, null, 'admin', '2025-12-22 17:39:11', '', null);
+INSERT INTO `gen_table_column` VALUES ('530', '50', 'target_image', '目标图片', 'varchar(200)', 'String', 'targetImage', '0', '0', null, '1', '1', '1', '1', 'EQ', 'imageUpload', '', '11', null, null, null, null, null, 'admin', '2025-12-22 17:39:11', '', null);
+INSERT INTO `gen_table_column` VALUES ('531', '50', 'price', '价格（如果是商品）', 'decimal(20,2)', 'BigDecimal', 'price', '0', '0', null, '1', '1', '1', '1', 'EQ', 'input', '', '12', null, null, null, null, null, 'admin', '2025-12-22 17:39:11', '', null);
+INSERT INTO `gen_table_column` VALUES ('532', '50', 'category_id', '分类ID', 'bigint(20)', 'Long', 'categoryId', '0', '0', null, '1', '1', '1', '1', 'EQ', 'input', '', '13', null, null, null, null, null, 'admin', '2025-12-22 17:39:11', '', null);
+INSERT INTO `gen_table_column` VALUES ('533', '50', 'category_name', '分类名称', 'varchar(50)', 'String', 'categoryName', '0', '0', null, '1', '1', '1', '1', 'LIKE', 'input', '', '14', null, null, null, null, null, 'admin', '2025-12-22 17:39:11', '', null);
+INSERT INTO `gen_table_column` VALUES ('534', '50', 'browse_count', '浏览次数', 'int(11)', 'Long', 'browseCount', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', '15', null, null, null, null, null, 'admin', '2025-12-22 17:39:11', '', null);
+INSERT INTO `gen_table_column` VALUES ('535', '50', 'last_browse_time', '最后浏览时间', 'datetime', 'Date', 'lastBrowseTime', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'datetime', '', '16', null, null, null, null, null, 'admin', '2025-12-22 17:39:11', '', null);
 
 -- ----------------------------
 -- Table structure for image_info
@@ -5022,7 +5041,7 @@ CREATE TABLE `sys_logininfor` (
   PRIMARY KEY (`info_id`) USING BTREE,
   KEY `idx_sys_logininfor_s` (`status`) USING BTREE,
   KEY `idx_sys_logininfor_lt` (`login_time`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=192 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='系统访问记录';
+) ENGINE=InnoDB AUTO_INCREMENT=310 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='系统访问记录';
 
 -- ----------------------------
 -- Records of sys_logininfor
@@ -5054,6 +5073,124 @@ INSERT INTO `sys_logininfor` VALUES ('188', 'admin', '127.0.0.1', '内网IP', 'C
 INSERT INTO `sys_logininfor` VALUES ('189', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-21 15:03:26');
 INSERT INTO `sys_logininfor` VALUES ('190', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-21 15:50:55');
 INSERT INTO `sys_logininfor` VALUES ('191', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-21 16:30:22');
+INSERT INTO `sys_logininfor` VALUES ('192', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-21 20:39:19');
+INSERT INTO `sys_logininfor` VALUES ('193', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 08:05:07');
+INSERT INTO `sys_logininfor` VALUES ('194', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '退出成功', '2025-12-22 08:05:39');
+INSERT INTO `sys_logininfor` VALUES ('195', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 08:05:47');
+INSERT INTO `sys_logininfor` VALUES ('196', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '退出成功', '2025-12-22 08:06:00');
+INSERT INTO `sys_logininfor` VALUES ('197', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 08:06:03');
+INSERT INTO `sys_logininfor` VALUES ('198', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '退出成功', '2025-12-22 08:12:36');
+INSERT INTO `sys_logininfor` VALUES ('199', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 08:26:55');
+INSERT INTO `sys_logininfor` VALUES ('200', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '1', '验证码错误', '2025-12-22 10:20:36');
+INSERT INTO `sys_logininfor` VALUES ('201', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 10:20:39');
+INSERT INTO `sys_logininfor` VALUES ('202', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 10:21:10');
+INSERT INTO `sys_logininfor` VALUES ('203', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '退出成功', '2025-12-22 10:21:20');
+INSERT INTO `sys_logininfor` VALUES ('204', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 10:21:42');
+INSERT INTO `sys_logininfor` VALUES ('205', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '退出成功', '2025-12-22 10:21:47');
+INSERT INTO `sys_logininfor` VALUES ('206', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 10:54:03');
+INSERT INTO `sys_logininfor` VALUES ('207', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '退出成功', '2025-12-22 11:01:30');
+INSERT INTO `sys_logininfor` VALUES ('208', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 11:01:35');
+INSERT INTO `sys_logininfor` VALUES ('209', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '退出成功', '2025-12-22 11:01:39');
+INSERT INTO `sys_logininfor` VALUES ('210', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 11:02:02');
+INSERT INTO `sys_logininfor` VALUES ('211', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '退出成功', '2025-12-22 11:02:29');
+INSERT INTO `sys_logininfor` VALUES ('212', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 11:02:32');
+INSERT INTO `sys_logininfor` VALUES ('213', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '退出成功', '2025-12-22 11:04:27');
+INSERT INTO `sys_logininfor` VALUES ('214', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 11:04:32');
+INSERT INTO `sys_logininfor` VALUES ('215', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '退出成功', '2025-12-22 11:06:27');
+INSERT INTO `sys_logininfor` VALUES ('216', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 11:06:31');
+INSERT INTO `sys_logininfor` VALUES ('217', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '1', '非管理员账号尝试登录管理端', '2025-12-22 11:06:31');
+INSERT INTO `sys_logininfor` VALUES ('218', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '1', '非管理员账号尝试登录管理端', '2025-12-22 11:06:39');
+INSERT INTO `sys_logininfor` VALUES ('219', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 11:06:39');
+INSERT INTO `sys_logininfor` VALUES ('220', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '1', '验证码已失效', '2025-12-22 11:14:11');
+INSERT INTO `sys_logininfor` VALUES ('221', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 11:14:15');
+INSERT INTO `sys_logininfor` VALUES ('222', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 11:14:23');
+INSERT INTO `sys_logininfor` VALUES ('223', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '1', '验证码错误', '2025-12-22 11:14:38');
+INSERT INTO `sys_logininfor` VALUES ('224', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 11:14:41');
+INSERT INTO `sys_logininfor` VALUES ('225', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 11:17:41');
+INSERT INTO `sys_logininfor` VALUES ('226', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 11:17:47');
+INSERT INTO `sys_logininfor` VALUES ('227', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 11:19:46');
+INSERT INTO `sys_logininfor` VALUES ('228', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '退出成功', '2025-12-22 11:19:51');
+INSERT INTO `sys_logininfor` VALUES ('229', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 11:19:55');
+INSERT INTO `sys_logininfor` VALUES ('230', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '退出成功', '2025-12-22 11:22:13');
+INSERT INTO `sys_logininfor` VALUES ('231', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '1', '管理员账号尝试登录用户端', '2025-12-22 11:22:22');
+INSERT INTO `sys_logininfor` VALUES ('232', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 11:22:22');
+INSERT INTO `sys_logininfor` VALUES ('233', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 11:23:19');
+INSERT INTO `sys_logininfor` VALUES ('234', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 11:23:27');
+INSERT INTO `sys_logininfor` VALUES ('235', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '1', '非管理员账号尝试登录管理端', '2025-12-22 11:23:27');
+INSERT INTO `sys_logininfor` VALUES ('236', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 11:23:35');
+INSERT INTO `sys_logininfor` VALUES ('237', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '退出成功', '2025-12-22 11:27:42');
+INSERT INTO `sys_logininfor` VALUES ('238', 'admin\' OR \'1\'=\'1', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '1', '登录用户：admin\' OR \'1\'=\'1 不存在', '2025-12-22 14:23:55');
+INSERT INTO `sys_logininfor` VALUES ('239', 'admin\' OR \'1\'=\'1', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '1', '验证码错误', '2025-12-22 14:24:02');
+INSERT INTO `sys_logininfor` VALUES ('240', 'admin\' OR \'1\'=\'1', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '1', '登录用户：admin\' OR \'1\'=\'1 不存在', '2025-12-22 14:24:08');
+INSERT INTO `sys_logininfor` VALUES ('241', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 14:49:33');
+INSERT INTO `sys_logininfor` VALUES ('242', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '退出成功', '2025-12-22 14:49:38');
+INSERT INTO `sys_logininfor` VALUES ('243', 'aaa', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '注册成功', '2025-12-22 15:14:10');
+INSERT INTO `sys_logininfor` VALUES ('244', 'aaa', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 15:15:19');
+INSERT INTO `sys_logininfor` VALUES ('245', 'aaa', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '退出成功', '2025-12-22 15:15:23');
+INSERT INTO `sys_logininfor` VALUES ('246', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '1', '验证码已失效', '2025-12-22 15:47:22');
+INSERT INTO `sys_logininfor` VALUES ('247', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 15:47:30');
+INSERT INTO `sys_logininfor` VALUES ('248', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '1', '验证码已失效', '2025-12-22 15:47:39');
+INSERT INTO `sys_logininfor` VALUES ('249', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 15:47:43');
+INSERT INTO `sys_logininfor` VALUES ('250', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 17:39:04');
+INSERT INTO `sys_logininfor` VALUES ('251', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 19:14:14');
+INSERT INTO `sys_logininfor` VALUES ('252', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '1', '管理员账号尝试登录用户端', '2025-12-22 19:14:14');
+INSERT INTO `sys_logininfor` VALUES ('253', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '1', '验证码错误', '2025-12-22 19:14:15');
+INSERT INTO `sys_logininfor` VALUES ('254', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '1', '验证码错误', '2025-12-22 19:14:21');
+INSERT INTO `sys_logininfor` VALUES ('255', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 19:14:24');
+INSERT INTO `sys_logininfor` VALUES ('256', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '退出成功', '2025-12-22 19:16:13');
+INSERT INTO `sys_logininfor` VALUES ('257', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 19:16:16');
+INSERT INTO `sys_logininfor` VALUES ('258', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '1', '验证码已失效', '2025-12-22 19:16:24');
+INSERT INTO `sys_logininfor` VALUES ('259', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 19:16:27');
+INSERT INTO `sys_logininfor` VALUES ('260', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '退出成功', '2025-12-22 19:21:37');
+INSERT INTO `sys_logininfor` VALUES ('261', 'aaa', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 19:21:49');
+INSERT INTO `sys_logininfor` VALUES ('262', 'aaa', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '退出成功', '2025-12-22 19:21:55');
+INSERT INTO `sys_logininfor` VALUES ('263', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 19:22:07');
+INSERT INTO `sys_logininfor` VALUES ('264', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '1', '管理员账号尝试登录用户端', '2025-12-22 19:22:07');
+INSERT INTO `sys_logininfor` VALUES ('265', 'yyy', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '注册成功', '2025-12-22 19:22:34');
+INSERT INTO `sys_logininfor` VALUES ('266', 'yyy', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 19:22:42');
+INSERT INTO `sys_logininfor` VALUES ('267', 'yyy', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '退出成功', '2025-12-22 19:30:19');
+INSERT INTO `sys_logininfor` VALUES ('268', 'yyy', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 19:30:29');
+INSERT INTO `sys_logininfor` VALUES ('269', 'yyy', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '退出成功', '2025-12-22 19:38:30');
+INSERT INTO `sys_logininfor` VALUES ('270', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 19:38:42');
+INSERT INTO `sys_logininfor` VALUES ('271', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '退出成功', '2025-12-22 19:42:43');
+INSERT INTO `sys_logininfor` VALUES ('272', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 19:42:47');
+INSERT INTO `sys_logininfor` VALUES ('273', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '退出成功', '2025-12-22 20:01:05');
+INSERT INTO `sys_logininfor` VALUES ('274', 'yyy', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 20:01:17');
+INSERT INTO `sys_logininfor` VALUES ('275', 'yyy', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '退出成功', '2025-12-22 20:23:40');
+INSERT INTO `sys_logininfor` VALUES ('276', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 20:23:48');
+INSERT INTO `sys_logininfor` VALUES ('277', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '退出成功', '2025-12-22 20:23:56');
+INSERT INTO `sys_logininfor` VALUES ('278', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '退出成功', '2025-12-22 20:24:01');
+INSERT INTO `sys_logininfor` VALUES ('279', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 20:24:16');
+INSERT INTO `sys_logininfor` VALUES ('280', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '1', '非管理员账号尝试登录管理端', '2025-12-22 20:24:16');
+INSERT INTO `sys_logininfor` VALUES ('281', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '1', '验证码错误', '2025-12-22 20:24:18');
+INSERT INTO `sys_logininfor` VALUES ('282', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 20:24:25');
+INSERT INTO `sys_logininfor` VALUES ('283', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '退出成功', '2025-12-22 20:26:21');
+INSERT INTO `sys_logininfor` VALUES ('284', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 20:26:25');
+INSERT INTO `sys_logininfor` VALUES ('285', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '退出成功', '2025-12-22 20:26:32');
+INSERT INTO `sys_logininfor` VALUES ('286', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 20:27:07');
+INSERT INTO `sys_logininfor` VALUES ('287', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '退出成功', '2025-12-22 20:27:10');
+INSERT INTO `sys_logininfor` VALUES ('288', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 20:28:00');
+INSERT INTO `sys_logininfor` VALUES ('289', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '退出成功', '2025-12-22 20:34:01');
+INSERT INTO `sys_logininfor` VALUES ('290', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 20:34:07');
+INSERT INTO `sys_logininfor` VALUES ('291', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '退出成功', '2025-12-22 20:38:02');
+INSERT INTO `sys_logininfor` VALUES ('292', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 20:38:06');
+INSERT INTO `sys_logininfor` VALUES ('293', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 20:38:35');
+INSERT INTO `sys_logininfor` VALUES ('294', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '1', '非管理员账号尝试登录管理端', '2025-12-22 20:38:35');
+INSERT INTO `sys_logininfor` VALUES ('295', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '退出成功', '2025-12-22 20:38:41');
+INSERT INTO `sys_logininfor` VALUES ('296', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 20:38:49');
+INSERT INTO `sys_logininfor` VALUES ('297', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '退出成功', '2025-12-22 20:50:05');
+INSERT INTO `sys_logininfor` VALUES ('298', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 20:50:17');
+INSERT INTO `sys_logininfor` VALUES ('299', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '1', '管理员账号尝试登录用户端', '2025-12-22 20:50:17');
+INSERT INTO `sys_logininfor` VALUES ('300', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '1', '验证码错误', '2025-12-22 20:50:18');
+INSERT INTO `sys_logininfor` VALUES ('301', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 20:51:13');
+INSERT INTO `sys_logininfor` VALUES ('302', 'ry', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '退出成功', '2025-12-22 20:51:58');
+INSERT INTO `sys_logininfor` VALUES ('303', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '1', '用户不存在/密码错误', '2025-12-22 20:52:05');
+INSERT INTO `sys_logininfor` VALUES ('304', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '1', '验证码错误', '2025-12-22 20:52:08');
+INSERT INTO `sys_logininfor` VALUES ('305', 'yyy', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-22 20:52:29');
+INSERT INTO `sys_logininfor` VALUES ('306', 'aaa', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-23 11:07:35');
+INSERT INTO `sys_logininfor` VALUES ('307', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '1', '验证码已失效', '2025-12-23 11:29:20');
+INSERT INTO `sys_logininfor` VALUES ('308', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '1', '验证码错误', '2025-12-23 11:29:24');
+INSERT INTO `sys_logininfor` VALUES ('309', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-23 11:29:27');
 
 -- ----------------------------
 -- Table structure for sys_menu
@@ -5221,7 +5358,7 @@ CREATE TABLE `sys_oper_log` (
   KEY `idx_sys_oper_log_bt` (`business_type`) USING BTREE,
   KEY `idx_sys_oper_log_s` (`status`) USING BTREE,
   KEY `idx_sys_oper_log_ot` (`oper_time`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=356 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='操作日志记录';
+) ENGINE=InnoDB AUTO_INCREMENT=362 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='操作日志记录';
 
 -- ----------------------------
 -- Records of sys_oper_log
@@ -5292,6 +5429,12 @@ INSERT INTO `sys_oper_log` VALUES ('352', '代码生成', '8', 'com.neuedu.gener
 INSERT INTO `sys_oper_log` VALUES ('353', '代码生成', '8', 'com.neuedu.generator.controller.GenController.batchGenCode()', 'GET', '1', 'admin', null, '/tool/gen/batchGenCode', '127.0.0.1', '内网IP', '{\"tables\":\"shop\"}', null, '0', null, '2025-12-21 15:53:15', '0');
 INSERT INTO `sys_oper_log` VALUES ('354', '代码生成', '8', 'com.neuedu.generator.controller.GenController.batchGenCode()', 'GET', '1', 'admin', null, '/tool/gen/batchGenCode', '127.0.0.1', '内网IP', '{\"tables\":\"user_favorite\"}', null, '0', null, '2025-12-21 15:53:32', '0');
 INSERT INTO `sys_oper_log` VALUES ('355', '代码生成', '8', 'com.neuedu.generator.controller.GenController.batchGenCode()', 'GET', '1', 'admin', null, '/tool/gen/batchGenCode', '127.0.0.1', '内网IP', '{\"tables\":\"category\"}', null, '0', null, '2025-12-21 16:30:41', '0');
+INSERT INTO `sys_oper_log` VALUES ('356', '代码生成', '6', 'com.neuedu.generator.controller.GenController.importTableSave()', 'POST', '1', 'admin', null, '/tool/gen/importTable', '127.0.0.1', '内网IP', '\"user_footprint\"', '{\"msg\":\"操作成功\",\"code\":200}', '0', null, '2025-12-22 17:39:11', '0');
+INSERT INTO `sys_oper_log` VALUES ('357', '代码生成', '8', 'com.neuedu.generator.controller.GenController.batchGenCode()', 'GET', '1', 'admin', null, '/tool/gen/batchGenCode', '127.0.0.1', '内网IP', '{\"tables\":\"user_footprint\"}', null, '0', null, '2025-12-22 17:39:14', '0');
+INSERT INTO `sys_oper_log` VALUES ('358', '用户管理', '2', 'com.neuedu.web.controller.system.SysUserController.edit()', 'PUT', '1', 'admin', null, '/system/user', '127.0.0.1', '内网IP', '{\"admin\":false,\"avatar\":\"\",\"createBy\":\"\",\"createTime\":\"2025-12-22 15:14:10\",\"delFlag\":\"0\",\"email\":\"\",\"loginDate\":\"2025-12-22 19:21:50\",\"loginIp\":\"127.0.0.1\",\"nickName\":\"aaa\",\"params\":{},\"phonenumber\":\"\",\"postIds\":[],\"roleIds\":[2],\"roles\":[],\"sex\":\"0\",\"status\":\"0\",\"updateBy\":\"admin\",\"userId\":100,\"userName\":\"aaa\"}', '{\"msg\":\"操作成功\",\"code\":200}', '0', null, '2025-12-22 19:42:24', '0');
+INSERT INTO `sys_oper_log` VALUES ('359', '用户管理', '2', 'com.neuedu.web.controller.system.SysUserController.edit()', 'PUT', '1', 'admin', null, '/system/user', '127.0.0.1', '内网IP', '{\"admin\":false,\"avatar\":\"\",\"createBy\":\"\",\"createTime\":\"2025-12-22 19:22:34\",\"delFlag\":\"0\",\"email\":\"\",\"loginDate\":\"2025-12-22 19:30:30\",\"loginIp\":\"127.0.0.1\",\"nickName\":\"yyy\",\"params\":{},\"phonenumber\":\"\",\"postIds\":[],\"roleIds\":[2],\"roles\":[],\"sex\":\"0\",\"status\":\"0\",\"updateBy\":\"admin\",\"userId\":101,\"userName\":\"yyy\"}', '{\"msg\":\"操作成功\",\"code\":200}', '0', null, '2025-12-22 19:42:33', '0');
+INSERT INTO `sys_oper_log` VALUES ('360', '购物车', '1', 'com.neuedu.system.controller.CartController.add()', 'POST', '1', 'aaa', null, '/system/cart', '127.0.0.1', '内网IP', '{\"createTime\":\"2025-12-23 11:14:34\",\"createUser\":100,\"deleteFlag\":0,\"deleted\":0,\"id\":263,\"params\":{},\"productId\":45,\"productMainImage\":\"/file/pic/9625d3b8-a342-4830-ac19-5522dc0b1d61_source.jpg\",\"productName\":\"索尼(SONY) KD-75X8566E电视\",\"productSubtitle\":\"放心去享受，尊享大屏\",\"productTotalPrice\":9390,\"productUnitPrice\":9390,\"quantity\":1,\"selected\":1,\"userId\":100}', '{\"msg\":\"操作成功\",\"code\":200}', '0', null, '2025-12-23 11:14:35', '0');
+INSERT INTO `sys_oper_log` VALUES ('361', '购物车', '1', 'com.neuedu.system.controller.CartController.add()', 'POST', '1', 'aaa', null, '/system/cart', '127.0.0.1', '内网IP', '{\"createTime\":\"2025-12-23 11:14:40\",\"createUser\":100,\"deleteFlag\":0,\"deleted\":0,\"id\":264,\"params\":{},\"productId\":181,\"productMainImage\":\"/file/pic/d71d68f2-fca7-4ef0-9345-554542972838_source.jpg\",\"productName\":\"金大生 花朵戒指\",\"productSubtitle\":\"爱让戒指更闪耀\",\"productTotalPrice\":480,\"productUnitPrice\":480,\"quantity\":1,\"selected\":1,\"userId\":100}', '{\"msg\":\"操作成功\",\"code\":200}', '0', null, '2025-12-23 11:14:40', '0');
 
 -- ----------------------------
 -- Table structure for sys_post
@@ -5345,7 +5488,7 @@ CREATE TABLE `sys_role` (
 -- Records of sys_role
 -- ----------------------------
 INSERT INTO `sys_role` VALUES ('1', '超级管理员', 'admin', '1', '1', '1', '1', '0', '0', 'admin', '2024-06-12 11:14:17', '', null, '超级管理员');
-INSERT INTO `sys_role` VALUES ('2', '普通角色', 'common', '2', '2', '1', '1', '0', '0', 'admin', '2024-06-12 11:14:17', '', null, '普通角色');
+INSERT INTO `sys_role` VALUES ('2', '普通用户', 'common', '2', '2', '1', '1', '0', '0', 'admin', '2024-06-12 11:14:17', '', null, '普通用户');
 
 -- ----------------------------
 -- Table structure for sys_role_dept
@@ -5472,7 +5615,7 @@ CREATE TABLE `sys_user` (
   `dept_id` bigint(20) DEFAULT NULL COMMENT '部门ID',
   `user_name` varchar(30) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL COMMENT '用户账号',
   `nick_name` varchar(30) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL COMMENT '用户昵称',
-  `user_type` varchar(2) CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT '00' COMMENT '用户类型（00系统用户）',
+  `user_type` varchar(2) CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT '0' COMMENT '用户类型（00系统用户）',
   `email` varchar(50) CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT '' COMMENT '用户邮箱',
   `phonenumber` varchar(11) CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT '' COMMENT '手机号码',
   `sex` char(1) CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT '0' COMMENT '用户性别（0男 1女 2未知）',
@@ -5488,13 +5631,15 @@ CREATE TABLE `sys_user` (
   `update_time` datetime DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`user_id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=100 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='用户信息表';
+) ENGINE=InnoDB AUTO_INCREMENT=102 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='用户信息表';
 
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES ('1', '103', 'admin', '若依', '00', 'ry@163.com', '15888888888', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2025-12-21 16:30:22', 'admin', '2024-06-12 11:14:17', '', '2025-12-21 16:30:22', '管理员');
-INSERT INTO `sys_user` VALUES ('2', '105', 'ry', '若依', '00', 'ry@qq.com', '15666666666', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2024-06-12 11:14:17', 'admin', '2024-06-12 11:14:17', '', null, '测试员');
+INSERT INTO `sys_user` VALUES ('1', '103', 'admin', '若依', '1', 'ry@163.com', '15888888888', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2025-12-23 11:29:28', 'admin', '2024-06-12 11:14:17', '', '2025-12-23 11:29:27', '管理员');
+INSERT INTO `sys_user` VALUES ('2', '105', 'ry', '若依', '0', 'ry@qq.com', '15666666666', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2025-12-22 20:51:13', '', '2024-06-12 11:14:17', '', '2025-12-22 20:51:13', '测试员');
+INSERT INTO `sys_user` VALUES ('100', null, 'aaa', 'aaa', '0', '', '', '0', '', '$2a$10$Ry5K9MRkA8j84nLOqlQI8OhpQjlYXQMFYGl6GHuQz9v9Am0t56wrW', '0', '0', '127.0.0.1', '2025-12-23 11:07:35', '', '2025-12-22 15:14:10', 'admin', '2025-12-23 11:07:35', null);
+INSERT INTO `sys_user` VALUES ('101', null, 'yyy', 'yyy', '0', '', '', '0', '', '$2a$10$Q.WvPlfCICJZ/Ma5u8oDQOF84tBdcdeMWnO/lTPkF.kw2Y8YurhvS', '0', '0', '127.0.0.1', '2025-12-22 20:52:30', '', '2025-12-22 19:22:34', 'admin', '2025-12-22 20:52:29', null);
 
 -- ----------------------------
 -- Table structure for sys_user_post
@@ -5527,6 +5672,8 @@ CREATE TABLE `sys_user_role` (
 -- ----------------------------
 INSERT INTO `sys_user_role` VALUES ('1', '1');
 INSERT INTO `sys_user_role` VALUES ('2', '2');
+INSERT INTO `sys_user_role` VALUES ('100', '2');
+INSERT INTO `sys_user_role` VALUES ('101', '2');
 
 -- ----------------------------
 -- Table structure for user
@@ -5547,6 +5694,7 @@ CREATE TABLE `user` (
   `type` varchar(255) NOT NULL COMMENT '角色',
   `nickname` varchar(255) NOT NULL COMMENT '昵称',
   `balance` decimal(20,2) unsigned DEFAULT NULL COMMENT '余额',
+  `avatar` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT '头像',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE KEY `union_phone_idx` (`phone`) USING BTREE
 ) ENGINE=InnoDB AUTO_INCREMENT=32 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC COMMENT='用户信息';
@@ -5554,11 +5702,11 @@ CREATE TABLE `user` (
 -- ----------------------------
 -- Records of user
 -- ----------------------------
-INSERT INTO `user` VALUES ('1', '2025-12-01 11:06:04', '2025-12-01 11:06:04', '0', '0', '0', '1', 'admin', '123@qq.com', '13712341234', 'e10adc3949ba59abbe56e057f20f883e', 'staff', 'users', '18276.00');
-INSERT INTO `user` VALUES ('5', '2024-10-11 19:52:38', '2024-10-11 19:52:38', '0', '0', '0', '1', 'abc', '123@139.com', '222222', 'e10adc3949ba59abbe56e057f20f883e', 'user', 'test', '683103.00');
-INSERT INTO `user` VALUES ('21', '2024-10-11 21:16:02', '2024-10-11 21:16:02', '0', '0', '0', '1', 'yyy', '123@123.com', '13412344321', '4297f44b13955235245b2497399d7a93', 'user', 'ccc', '683103.00');
-INSERT INTO `user` VALUES ('27', '2024-10-11 21:16:03', '2024-10-11 21:16:03', '0', '0', '0', '1', '33', '1', '11111', 'c4ca4238a0b923820dcc509a6f75849b', 'user', '1111', '683103.00');
-INSERT INTO `user` VALUES ('31', '2024-10-11 21:16:05', '2024-10-11 21:16:05', '0', '0', '0', '1', '3', '3', '3', 'eccbc87e4b5ce2fe28308fd9f2a7baf3', 'user', '3', '683103.00');
+INSERT INTO `user` VALUES ('1', '2025-12-01 11:06:04', '2025-12-01 11:06:04', '0', '0', '0', '1', 'admin', '123@qq.com', '13712341234', 'e10adc3949ba59abbe56e057f20f883e', 'staff', 'users', '18276.00', null);
+INSERT INTO `user` VALUES ('5', '2024-10-11 19:52:38', '2024-10-11 19:52:38', '0', '0', '0', '1', 'abc', '123@139.com', '222222', 'e10adc3949ba59abbe56e057f20f883e', 'user', 'test', '683103.00', null);
+INSERT INTO `user` VALUES ('21', '2024-10-11 21:16:02', '2024-10-11 21:16:02', '0', '0', '0', '1', 'yyy', '123@123.com', '13412344321', '4297f44b13955235245b2497399d7a93', 'user', 'ccc', '683103.00', null);
+INSERT INTO `user` VALUES ('27', '2024-10-11 21:16:03', '2024-10-11 21:16:03', '0', '0', '0', '1', '33', '1', '11111', 'c4ca4238a0b923820dcc509a6f75849b', 'user', '1111', '683103.00', null);
+INSERT INTO `user` VALUES ('31', '2024-10-11 21:16:05', '2024-10-11 21:16:05', '0', '0', '0', '1', '3', '3', '3', 'eccbc87e4b5ce2fe28308fd9f2a7baf3', 'user', '3', '683103.00', null);
 
 -- ----------------------------
 -- Table structure for user19
@@ -9045,11 +9193,11 @@ INSERT INTO `user_address` VALUES ('42', '1581912218608472000', '2024-09-16 21:1
 INSERT INTO `user_address` VALUES ('44', '0', '2024-09-16 17:53:11', '2024-09-16 17:53:11', '0', '0', '0', '0', '1', '13407266853', '北京', '', '北京', '', '北京', '', '11', '597329', '0');
 INSERT INTO `user_address` VALUES ('51', '0', '2024-09-16 18:02:45', '2024-09-16 18:02:45', '0', '0', '0', '0', '杨泽锐', '13407266853', '', '', '', '', '', '', '', '597329', '0');
 INSERT INTO `user_address` VALUES ('52', '0', '2024-09-16 18:09:04', '2024-09-16 18:09:04', '0', '0', '0', '0', '杨泽锐', '13407266853', '', '', '', '', '', '', '', '597329', '0');
-INSERT INTO `user_address` VALUES ('53', '0', '2024-09-26 09:22:59', '2024-09-26 21:06:28', '1', '0', '0', '0', '杨泽锐', '13407266853', '湖北', '', '湖北', '', '湖北', '', 's', '597329', '0');
-INSERT INTO `user_address` VALUES ('54', '0', '2024-09-26 09:22:47', '2024-09-26 09:22:47', '1', '0', '1', '0', '杨泽锐', '13407266853', '', '', '', '', '', '', '', '597329', '0');
-INSERT INTO `user_address` VALUES ('55', '0', '2024-09-26 09:22:44', '2024-09-26 09:22:44', '1', '0', '1', '0', '杨泽锐', '13407266853', '', '', '', '', '', '', '', '597329', '0');
-INSERT INTO `user_address` VALUES ('66', '0', '2024-09-26 10:35:22', '2024-09-26 10:35:22', '1', '0', '1', '0', '杨泽锐', '13712377321', '湖北', '', '湖北', '', '北京', '', '湖北省sss', '414112', '0');
-INSERT INTO `user_address` VALUES ('67', '0', '2024-09-26 10:35:19', '2024-09-26 10:35:19', '1', '0', '1', '0', '杨泽锐', '13712377321', '湖北', '', '湖北', '', '湖北', '', 'qaa', '414112', '0');
+INSERT INTO `user_address` VALUES ('53', '0', '2025-12-23 11:41:07', '2025-12-23 11:41:07', '100', '0', '0', '0', '杨泽锐', '13407266853', '湖北', '', '湖北', '', '湖北', '', 's', '597329', '0');
+INSERT INTO `user_address` VALUES ('54', '0', '2025-12-23 11:41:08', '2025-12-23 11:41:08', '100', '0', '1', '0', '杨泽锐', '13407266853', '', '', '', '', '', '', '', '597329', '0');
+INSERT INTO `user_address` VALUES ('55', '0', '2025-12-23 11:41:10', '2025-12-23 11:41:10', '100', '0', '1', '0', '杨泽锐', '13407266853', '', '', '', '', '', '', '', '597329', '0');
+INSERT INTO `user_address` VALUES ('66', '0', '2025-12-23 11:41:10', '2025-12-23 11:41:10', '100', '0', '1', '0', '杨泽锐', '13712377321', '湖北', '', '湖北', '', '北京', '', '湖北省sss', '414112', '0');
+INSERT INTO `user_address` VALUES ('67', '0', '2025-12-23 11:41:12', '2025-12-23 11:41:12', '100', '0', '1', '0', '杨泽锐', '13712377321', '湖北', '', '湖北', '', '湖北', '', 'qaa', '414112', '0');
 INSERT INTO `user_address` VALUES ('68', '0', '2024-09-20 17:37:40', '2024-09-20 17:37:40', '1', '0', '1', '0', '', '2222', '北京', '', '北京', '', '北京', '', '222', '414112', '0');
 INSERT INTO `user_address` VALUES ('69', '0', '2024-09-20 17:50:06', '2024-09-20 17:50:06', '1', '0', '1', '0', '22', '2222', '北京', '', '北京', '', '北京', '', '2222', '2222', '0');
 INSERT INTO `user_address` VALUES ('70', '0', '2024-09-20 17:42:28', '2024-09-20 17:42:28', '1', '0', '1', '0', '2', '1', '北京', '', '北京', '', '北京', '', '1', '1', '0');
@@ -9136,3 +9284,51 @@ INSERT INTO `user_favorite` VALUES ('50', '31', '1', '35', '2024-12-02 14:00:00'
 INSERT INTO `user_favorite` VALUES ('51', '31', '1', '115', '2024-12-03 10:00:00');
 INSERT INTO `user_favorite` VALUES ('52', '31', '1', '143', '2024-12-04 11:00:00');
 INSERT INTO `user_favorite` VALUES ('53', '31', '1', '223', '2024-12-05 09:00:00');
+
+-- ----------------------------
+-- Table structure for user_footprint
+-- ----------------------------
+DROP TABLE IF EXISTS `user_footprint`;
+CREATE TABLE `user_footprint` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `create_user` bigint(20) NOT NULL DEFAULT '0' COMMENT '创建人',
+  `update_user` bigint(20) NOT NULL DEFAULT '0' COMMENT '更新人',
+  `delete_flag` tinyint(4) NOT NULL DEFAULT '0' COMMENT '删除标志',
+  `user_id` bigint(20) NOT NULL COMMENT '用户ID（关联sys_user.user_id）',
+  `target_type` tinyint(4) NOT NULL COMMENT '浏览类型(1-商品 2-店铺 3-活动)',
+  `target_id` bigint(20) NOT NULL COMMENT '目标ID（商品ID/店铺ID/活动ID）',
+  `target_name` varchar(100) NOT NULL DEFAULT '' COMMENT '目标名称',
+  `target_image` varchar(200) DEFAULT '' COMMENT '目标图片',
+  `price` decimal(20,2) DEFAULT NULL COMMENT '价格（如果是商品）',
+  `category_id` bigint(20) DEFAULT NULL COMMENT '分类ID',
+  `category_name` varchar(50) DEFAULT '' COMMENT '分类名称',
+  `browse_count` int(11) NOT NULL DEFAULT '1' COMMENT '浏览次数',
+  `last_browse_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '最后浏览时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE KEY `uniq_user_target` (`user_id`,`target_type`,`target_id`) COMMENT '用户-目标唯一索引',
+  KEY `idx_user_id` (`user_id`) USING BTREE,
+  KEY `idx_target_type_id` (`target_type`,`target_id`) USING BTREE,
+  KEY `idx_last_browse_time` (`last_browse_time`) USING BTREE,
+  KEY `idx_user_browse_time` (`user_id`,`last_browse_time`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC COMMENT='用户足迹表';
+
+-- ----------------------------
+-- Records of user_footprint
+-- ----------------------------
+INSERT INTO `user_footprint` VALUES ('1', '2025-12-20 09:30:15', '2025-12-20 10:15:22', '100', '100', '0', '100', '2', '6', '华为官方旗舰店', '/file/shop/huawei_logo.jpg', null, null, '', '3', '2025-12-20 10:15:22');
+INSERT INTO `user_footprint` VALUES ('2', '2025-12-20 11:20:35', '2025-12-20 11:45:10', '100', '100', '0', '100', '2', '8', '苹果授权专卖店', '/file/shop/apple_logo.jpg', null, null, '', '2', '2025-12-20 11:45:10');
+INSERT INTO `user_footprint` VALUES ('3', '2025-12-20 14:10:05', '2025-12-20 14:10:05', '100', '100', '0', '100', '2', '7', '小米官方旗舰店', '/file/shop/xiaomi_logo.jpg', null, null, '', '1', '2025-12-20 14:10:05');
+INSERT INTO `user_footprint` VALUES ('4', '2025-12-20 11:25:30', '2025-12-20 11:25:30', '100', '100', '0', '100', '1', '30', '苹果(Apple) iPhone X', '/file/pic/a0808b7e-051b-424c-8b1c-04c0963ea8b6_source.jpg', '8300.00', '7', '手机', '1', '2025-12-20 11:25:30');
+INSERT INTO `user_footprint` VALUES ('5', '2025-12-20 11:30:45', '2025-12-21 09:20:15', '100', '100', '0', '100', '1', '29', '苹果(Apple) iPhone 8 Plus', '/file/pic/92aac5d6-a59f-49e9-8920-472c674abff4_source.jpg', '6800.00', '7', '手机', '5', '2025-12-21 09:20:15');
+INSERT INTO `user_footprint` VALUES ('6', '2025-12-20 15:40:20', '2025-12-20 16:05:30', '100', '100', '0', '100', '1', '39', '苹果(Apple) MacBook Pro', '/file/pic/e95b153e-e8b1-49a9-856d-ad6858835586_source.jpg', '11980.00', '15', '电脑', '2', '2025-12-20 16:05:30');
+INSERT INTO `user_footprint` VALUES ('7', '2025-12-20 15:50:10', '2025-12-20 15:50:10', '100', '100', '0', '100', '1', '40', '苹果(Apple) MacBook Air', '/file/pic/02f850e7-a04c-4635-b6a6-50a006ed598b_source.jpg', '5980.00', '15', '电脑', '1', '2025-12-20 15:50:10');
+INSERT INTO `user_footprint` VALUES ('8', '2025-12-20 09:35:45', '2025-12-20 09:35:45', '100', '100', '0', '100', '1', '38', '小米(MI) 笔记本', '/file/pic/d02e4409-6618-4d06-ad76-0ae3fbcf0964_source.jpg', '4750.00', '15', '电脑', '1', '2025-12-20 09:35:45');
+INSERT INTO `user_footprint` VALUES ('9', '2025-12-21 13:15:20', '2025-12-21 13:40:35', '100', '100', '0', '100', '1', '45', '索尼(SONY) KD-75X8566E电视', '/file/pic/9625d3b8-a342-4830-ac19-5522dc0b1d61_source.jpg', '9390.00', '18', '家电', '3', '2025-12-21 13:40:35');
+INSERT INTO `user_footprint` VALUES ('10', '2025-12-21 14:30:10', '2025-12-21 14:30:10', '100', '100', '0', '100', '1', '52', '格力(GREE) 家用空调', '/file/pic/d7e65539-5de2-4f09-807a-4d9a4f1faa29_source.jpg', '8490.00', '18', '家电', '1', '2025-12-21 14:30:10');
+INSERT INTO `user_footprint` VALUES ('11', '2025-12-21 16:20:45', '2025-12-21 16:20:45', '100', '100', '0', '100', '1', '35', '罗马仕(ROMOSS) 移动电源', '/file/pic/adb725a1-545d-4c61-b33c-4f389f93a5b5_source.jpg', '50.00', '8', '配件', '1', '2025-12-21 16:20:45');
+INSERT INTO `user_footprint` VALUES ('12', '2025-12-21 16:25:30', '2025-12-21 16:25:30', '100', '100', '0', '100', '1', '32', '爱国者(aiguo) 移动电源', '/file/pic/5393e585-05a4-492d-be20-c548ee14bee9_source.jpg', '58.00', '8', '配件', '1', '2025-12-21 16:25:30');
+INSERT INTO `user_footprint` VALUES ('13', '2025-12-22 10:10:15', '2025-12-22 10:10:15', '100', '100', '0', '100', '1', '37', '联想(Lenovo) 小新笔记本', '/file/pic/25cec535-aa0e-494f-8d35-effbc33a32bb_source.jpg', '5990.00', '15', '电脑', '1', '2025-12-22 10:10:15');
+INSERT INTO `user_footprint` VALUES ('14', '2025-12-22 10:12:30', '2025-12-22 10:12:30', '100', '100', '0', '100', '2', '12', '联想电脑旗舰店', '/file/shop/lenovo_logo.jpg', null, null, '', '1', '2025-12-22 10:12:30');
+INSERT INTO `user_footprint` VALUES ('15', '2025-12-21 13:10:10', '2025-12-21 13:10:10', '100', '100', '0', '100', '2', '14', '索尼电视旗舰店', '/file/shop/sony_logo.jpg', null, null, '', '1', '2025-12-21 13:10:10');

@@ -13,24 +13,15 @@
         </el-radio-group>
       </div>
     </div>
-    
+
     <!-- 商品列表 - 网格布局 -->
     <div class="products-container">
       <div class="products-grid">
-        <div 
-          v-for="product in products" 
-          :key="product.id"
-          class="product-item"
-          @click="handleProductClick(product.id)"
-        >
+        <div v-for="product in products" :key="product.id" class="product-item" @click="handleProductClick(product.id)">
           <div class="product-card">
             <div class="product-image-wrapper">
-              <img 
-                :src="getProductImageUrl(product.mainImage)" 
-                :alt="product.name"
-                class="product-image"
-                @error="handleImageError"
-              />
+              <img :src="getProductImageUrl(product.mainImage)" :alt="product.name" class="product-image"
+                @error="handleImageError" />
             </div>
             <div class="product-info">
               <h3 class="product-name">{{ product.name }}</h3>
@@ -53,28 +44,34 @@
           </div>
         </div>
       </div>
-      
+
       <!-- 加载状态 -->
       <div v-if="loading" class="loading-container">
         <div class="loading-spinner">
-          <el-icon class="loading-icon" :size="24"><Loading /></el-icon>
+          <el-icon class="loading-icon" :size="24">
+            <Loading />
+          </el-icon>
           <span class="loading-text">正在加载更多商品...</span>
         </div>
       </div>
-      
+
       <!-- 没有更多数据 -->
       <div v-if="!loading && hasMore === false && products.length > 0" class="no-more-container">
         <div class="no-more-content">
-          <el-icon class="no-more-icon"><CircleCheck /></el-icon>
+          <el-icon class="no-more-icon">
+            <CircleCheck />
+          </el-icon>
           <span class="no-more-text">已经到底了，没有更多商品了</span>
         </div>
       </div>
-      
+
       <!-- 空状态 -->
       <div v-if="!loading && products.length === 0" class="empty-container">
         <el-empty description="暂无商品数据">
           <template #image>
-            <el-icon :size="80"><Goods /></el-icon>
+            <el-icon :size="80">
+              <Goods />
+            </el-icon>
           </template>
           <el-button type="primary" @click="resetAndLoadProducts">重新加载</el-button>
         </el-empty>
@@ -87,8 +84,8 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { 
-  Loading, 
+import {
+  Loading,
   CircleCheck,
   Goods
 } from '@element-plus/icons-vue'
@@ -136,20 +133,20 @@ const formatSalesCount = (salesCount) => {
 // 加载商品数据
 const loadProducts = async (reset = false) => {
   if (loading.value) return
-  
+
   if (reset) {
     currentPage.value = 1
     products.value = []
     hasMore.value = true
   }
-  
+
   if (!hasMore.value) return
-  
+
   loading.value = true
-  
+
   try {
     const response = await api({
-      url: '/system/product/list',
+      url: '/system/product/list/random',
       method: 'get',
       params: {
         pageNum: currentPage.value,
@@ -159,10 +156,10 @@ const loadProducts = async (reset = false) => {
         needSalesCount: 1 // 预留参数，告诉后端需要返回销量数据
       }
     })
-    
+
     if (response.code === 200) {
       const newProducts = response.rows || response.data || []
-      
+
       // 为商品添加销量数据
       // 后期后端接口完善后，这里应该直接使用后端返回的salesCount字段
       const enhancedProducts = newProducts.map(product => ({
@@ -171,13 +168,13 @@ const loadProducts = async (reset = false) => {
         // 如果后端返回了salesCount，就用后端的；如果没有，可以显示默认值或不显示
         salesCount: product.salesCount || Math.floor(Math.random() * 1000)
       }))
-      
+
       if (reset) {
         products.value = enhancedProducts
       } else {
         products.value = [...products.value, ...enhancedProducts]
       }
-      
+
       // 判断是否还有更多数据
       const total = response.total || 0
       if (products.value.length >= total || newProducts.length < pageSize.value) {
@@ -204,17 +201,17 @@ let scrollListener = null
 const setupScrollListener = () => {
   scrollListener = () => {
     if (loading.value || !hasMore.value) return
-    
+
     const scrollTop = document.documentElement.scrollTop || document.body.scrollTop
     const windowHeight = window.innerHeight
     const scrollHeight = document.documentElement.scrollHeight
-    
+
     // 当滚动到底部 200px 内时加载更多
     if (scrollTop + windowHeight >= scrollHeight - 200) {
       loadProducts()
     }
   }
-  
+
   window.addEventListener('scroll', scrollListener)
 }
 
@@ -449,8 +446,13 @@ defineExpose({
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .loading-text {
@@ -497,7 +499,7 @@ defineExpose({
     grid-template-columns: repeat(5, 1fr);
     gap: 18px;
   }
-  
+
   .product-image-wrapper {
     height: 160px;
   }
@@ -508,20 +510,20 @@ defineExpose({
     grid-template-columns: repeat(5, 1fr);
     gap: 16px;
   }
-  
+
   .product-image-wrapper {
     height: 150px;
   }
-  
+
   .product-info {
     padding: 12px;
   }
-  
+
   .product-name {
     font-size: 13px;
     height: 36px;
   }
-  
+
   .current-price {
     font-size: 16px;
   }
@@ -532,7 +534,7 @@ defineExpose({
     grid-template-columns: repeat(4, 1fr);
     gap: 20px;
   }
-  
+
   .product-image-wrapper {
     height: 180px;
   }
@@ -543,7 +545,7 @@ defineExpose({
     grid-template-columns: repeat(3, 1fr);
     gap: 18px;
   }
-  
+
   .product-image-wrapper {
     height: 200px;
   }
@@ -555,29 +557,29 @@ defineExpose({
     align-items: flex-start;
     gap: 10px;
   }
-  
+
   .sort-label {
     font-size: 13px;
   }
-  
+
   .products-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 15px;
   }
-  
+
   .product-image-wrapper {
     height: 180px;
   }
-  
+
   .product-info {
     padding: 12px;
   }
-  
+
   .product-name {
     font-size: 13px;
     height: 36px;
   }
-  
+
   .current-price {
     font-size: 16px;
   }
@@ -588,29 +590,29 @@ defineExpose({
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
   }
-  
+
   .product-image-wrapper {
     height: 160px;
   }
-  
+
   .product-info {
     padding: 10px;
   }
-  
+
   .product-name {
     font-size: 12px;
     height: 34px;
   }
-  
+
   .product-subtitle {
     font-size: 11px;
     height: 32px;
   }
-  
+
   .current-price {
     font-size: 15px;
   }
-  
+
   .product-meta {
     font-size: 11px;
   }
@@ -620,30 +622,30 @@ defineExpose({
   .sort-options {
     padding: 10px;
   }
-  
+
   .products-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
   }
-  
+
   .product-image-wrapper {
     height: 150px;
   }
-  
+
   .product-name {
     font-size: 12px;
     height: 32px;
   }
-  
+
   .product-subtitle {
     font-size: 10px;
     height: 30px;
   }
-  
+
   .current-price {
     font-size: 14px;
   }
-  
+
   .product-meta {
     font-size: 10px;
   }
@@ -654,7 +656,7 @@ defineExpose({
     grid-template-columns: 1fr;
     gap: 12px;
   }
-  
+
   .product-image-wrapper {
     height: 200px;
   }
