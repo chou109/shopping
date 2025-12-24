@@ -42,3 +42,37 @@ export function delAddress(id) {
     method: 'delete'
   })
 }
+
+// 根据用户ID查询地址列表
+export function listAddressByUserId(userId) {
+  return request({
+    url: '/system/address/user/' + userId,
+    method: 'get'
+  })
+}
+
+// 获取用户的默认地址
+export function getDefaultAddress(userId) {
+  return request({
+    url: '/system/address/user/' + userId + '/default',
+    method: 'get'
+  })
+}
+
+// 设置默认地址
+export function setDefaultAddress(data) {
+  return request({
+    url: '/system/address/setDefault',
+    method: 'post',
+    data: data
+  })
+}
+
+// 验证地址信息
+export function validateAddress(data) {
+  return request({
+    url: '/system/address/validate',
+    method: 'post',
+    data: data
+  })
+}

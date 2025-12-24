@@ -288,6 +288,8 @@ const formatPrice = (price) => {
 }
 
 // 加载购物车数据
+// 加载购物车数据
+// 加载购物车数据
 const loadCartData = async () => {
   loading.value = true
   try {
@@ -302,11 +304,9 @@ const loadCartData = async () => {
     console.log("购物车数据:", response)
     if (response.code === 200) {
       cartItems.value = response.data || []
-      // 为每个商品添加selected属性
+      // 强制重置所有商品为未选中状态
       cartItems.value.forEach(item => {
-        if (item.selected === undefined) {
-          item.selected = true
-        }
+        item.selected = false  // 强制设置为false，忽略后端返回的选中状态
         // 计算小计
         if (item.productUnitPrice && item.quantity && !item.productTotalPrice) {
           item.productTotalPrice = item.productUnitPrice * item.quantity
