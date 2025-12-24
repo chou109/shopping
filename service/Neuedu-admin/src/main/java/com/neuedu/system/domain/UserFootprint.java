@@ -96,7 +96,7 @@ public class UserFootprint extends BaseEntity
 
     /** 最后浏览时间 */
     @Schema(title = "最后浏览时间")
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "最后浏览时间", width = 30, dateFormat = "yyyy-MM-dd")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")  // 包含时间
+    @Excel(name = "最后浏览时间", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date lastBrowseTime;
 }

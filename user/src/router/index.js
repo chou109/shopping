@@ -99,7 +99,7 @@ export const constantRoutes = [
     children: [
       {
         path: '',
-        component: () => import('@/views/products/ProductDetail.vue'),
+        component: () => import('@/views/products/productDetail.vue'),
         meta: { title: '商品详情' }
       }
     ]

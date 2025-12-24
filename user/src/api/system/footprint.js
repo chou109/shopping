@@ -25,10 +25,13 @@ export function clearFootprint(userId) {
 }
 
 // 记录用户足迹
-export function recordFootprint(data) {
+export function recordFootprint({ targetType, targetId }) {
   return request({
     url: '/system/footprint/record',
     method: 'post',
-    data: data
+    params: {  // 改为 params
+      targetType,
+      targetId
+    }
   })
 }

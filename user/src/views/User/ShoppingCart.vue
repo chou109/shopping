@@ -4,12 +4,7 @@
     <div class="page-header">
       <h2 class="page-title">购物车</h2>
       <div class="page-actions">
-        <el-button 
-          type="danger" 
-          plain 
-          :disabled="cartItems.length === 0"
-          @click="handleClearCart"
-        >
+        <el-button type="danger" plain :disabled="cartItems.length === 0" @click="handleClearCart">
           清空购物车
         </el-button>
       </div>
@@ -23,21 +18,13 @@
           <!-- 购物车工具栏 -->
           <div class="cart-toolbar">
             <div class="toolbar-left">
-              <el-checkbox 
-                v-model="isAllSelected" 
-                @change="handleSelectAll"
-                :indeterminate="isIndeterminate"
-              >
+              <el-checkbox v-model="isAllSelected" @change="handleSelectAll" :indeterminate="isIndeterminate">
                 全选
               </el-checkbox>
               <span class="selected-count">已选 {{ selectedCount }} 件商品</span>
             </div>
             <div class="toolbar-right">
-              <el-button 
-                type="text" 
-                @click="handleBatchDelete"
-                :disabled="selectedCount === 0"
-              >
+              <el-button type="text" @click="handleBatchDelete" :disabled="selectedCount === 0">
                 删除选中
               </el-button>
             </div>
@@ -45,25 +32,17 @@
 
           <!-- 商品列表 -->
           <div class="cart-items">
-            <div 
-              v-for="item in cartItems" 
-              :key="item.id"
-              class="cart-item"
-              :class="{ selected: item.selected }"
-            >
+            <div v-for="item in cartItems" :key="item.id" class="cart-item" :class="{ selected: item.selected }">
               <div class="item-select">
-                <el-checkbox 
-                  v-model="item.selected" 
-                  @change="handleItemSelect(item)"
-                />
+                <el-checkbox v-model="item.selected" @change="handleItemSelect(item)" />
               </div>
-              
+
               <div class="item-content">
                 <!-- 商品图片 -->
                 <div class="item-image" @click="goToProductDetail(item.productId)">
                   <img :src="getProductImageUrl(item.productMainImage)" :alt="item.name" @error="handleImageError" />
                 </div>
-                
+
                 <!-- 商品信息 -->
                 <div class="item-info">
                   <h3 class="product-name" @click="goToProductDetail(item.productId)">
@@ -74,7 +53,7 @@
                     {{ item.specifications }}
                   </div>
                 </div>
-                
+
                 <!-- 价格和数量控制区域 -->
                 <div class="item-controls">
                   <!-- 价格 -->
@@ -82,53 +61,30 @@
                     <span class="current-price">¥{{ formatPrice(item.productUnitPrice) }}</span>
                     <span class="quantity">×{{ item.quantity }}</span>
                   </div>
-                  
+
                   <!-- 数量控制 -->
                   <div class="quantity-control">
-                    <el-button 
-                      size="small" 
-                      :disabled="item.quantity <= 1"
-                      @click="decreaseQuantity(item)"
-                    >
+                    <el-button size="small" :disabled="item.quantity <= 1" @click="decreaseQuantity(item)">
                       -
                     </el-button>
-                    <el-input-number
-                      v-model="item.quantity"
-                      :min="1"
-                      :max="item.stock || 999"
-                      size="small"
-                      controls-position="right"
-                      @change="updateQuantity(item)"
-                    />
-                    <el-button 
-                      size="small" 
-                      :disabled="item.quantity >= (item.stock || 999)"
-                      @click="increaseQuantity(item)"
-                    >
+                    <el-input-number v-model="item.quantity" :min="1" :max="item.stock || 999" size="small"
+                      controls-position="right" @change="updateQuantity(item)" />
+                    <el-button size="small" :disabled="item.quantity >= (item.stock || 999)"
+                      @click="increaseQuantity(item)">
                       +
                     </el-button>
                   </div>
-                  
+
                   <!-- 小计 -->
                   <div class="total-price">小计: ¥{{ formatPrice(item.productTotalPrice) }}</div>
                 </div>
-                
+
                 <!-- 操作按钮 -->
                 <div class="item-actions">
-                  <el-button 
-                    type="danger" 
-                    text 
-                    size="small"
-                    @click="handleDeleteItem(item.id)"
-                  >
+                  <el-button type="danger" text size="small" @click="handleDeleteItem(item.id)">
                     删除
                   </el-button>
-                  <el-button 
-                    type="primary" 
-                    text 
-                    size="small"
-                    @click="addToFavorites(item)"
-                  >
+                  <el-button type="primary" text size="small" @click="addToFavorites(item)">
                     移入收藏
                   </el-button>
                 </div>
@@ -143,7 +99,7 @@
             <div class="panel-header">
               <h3>结算信息</h3>
             </div>
-            
+
             <div class="price-details">
               <div class="price-row">
                 <span class="label">商品总价</span>
@@ -162,27 +118,24 @@
                 <span class="value total-amount">¥{{ formatPrice(actualTotalPrice) }}</span>
               </div>
             </div>
-            
+
             <div class="checkout-actions">
-              <el-button 
-                type="danger" 
-                size="large" 
-                class="checkout-btn"
-                :disabled="selectedCount === 0"
-                @click="handleCheckout"
-              >
+              <el-button type="danger" size="large" class="checkout-btn" :disabled="selectedCount === 0"
+                @click="handleCheckout">
                 去结算 ({{ selectedCount }}件)
               </el-button>
-              
+
               <div class="security-tips">
-                <el-icon><Lock /></el-icon>
+                <el-icon>
+                  <Lock />
+                </el-icon>
                 <span>安全支付保障</span>
               </div>
             </div>
           </div>
         </div>
       </div>
-      
+
       <!-- 空购物车状态 -->
       <div v-else class="empty-cart">
         <el-empty description="购物车还是空的">
@@ -260,7 +213,7 @@ const actualTotalPrice = computed(() => {
 
 const availablePromotions = computed(() => {
   const promotions = []
-  
+
   if (selectedTotalPrice.value >= 200) {
     promotions.push({
       id: 1,
@@ -269,7 +222,7 @@ const availablePromotions = computed(() => {
       discount: 20
     })
   }
-  
+
   if (selectedTotalPrice.value >= 500) {
     promotions.push({
       id: 2,
@@ -278,7 +231,7 @@ const availablePromotions = computed(() => {
       discount: 50
     })
   }
-  
+
   return promotions
 })
 
@@ -317,7 +270,7 @@ const loadCartData = async () => {
       ElMessage.error('获取购物车数据失败')
       cartItems.value = []
     }
-    
+
   } catch (error) {
     console.error('加载购物车数据失败:', error)
     ElMessage.error('加载购物车数据失败')
@@ -345,7 +298,7 @@ const increaseQuantity = async (item) => {
     ElMessage.warning('库存不足')
     return
   }
-  
+
   item.quantity++
   await updateCartItem(item)
 }
@@ -355,7 +308,7 @@ const decreaseQuantity = async (item) => {
   if (item.quantity <= 1) {
     return
   }
-  
+
   item.quantity--
   await updateCartItem(item)
 }
@@ -365,12 +318,12 @@ const updateQuantity = async (item) => {
   if (item.quantity < 1) {
     item.quantity = 1
   }
-  
+
   if (item.quantity > (item.stock || 999)) {
     item.quantity = item.stock || 999
     ElMessage.warning('库存不足')
   }
-  
+
   await updateCartItem(item)
 }
 
@@ -394,7 +347,7 @@ const handleDeleteItem = async (itemId) => {
       cancelButtonText: '取消',
       type: 'warning'
     })
-    
+
     cartItems.value = cartItems.value.filter(item => item.id !== itemId)
     ElMessage.success('删除成功')
   } catch (error) {
@@ -411,14 +364,14 @@ const handleBatchDelete = async () => {
     ElMessage.warning('请先选择要删除的商品')
     return
   }
-  
+
   try {
     await ElMessageBox.confirm(`确定要删除选中的 ${selectedCount.value} 件商品吗？`, '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning'
     })
-    
+
     cartItems.value = cartItems.value.filter(item => !item.selected)
     ElMessage.success('删除成功')
   } catch (error) {
@@ -435,14 +388,14 @@ const handleClearCart = async () => {
     ElMessage.warning('购物车已经是空的')
     return
   }
-  
+
   try {
     await ElMessageBox.confirm('确定要清空购物车吗？', '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning'
     })
-    
+
     cartItems.value = []
     ElMessage.success('购物车已清空')
   } catch (error) {
@@ -459,7 +412,7 @@ const handleCheckout = () => {
     ElMessage.warning('请先选择要结算的商品')
     return
   }
-  
+
   router.push({
     path: '/order/confirm',
     query: {
@@ -509,7 +462,7 @@ onMounted(() => {
   align-items: center;
   margin-bottom: 20px;
   padding: 0 20px;
-  max-width: 1200px;
+  max-width: 1500px;
   margin-left: auto;
   margin-right: auto;
 }
@@ -522,7 +475,7 @@ onMounted(() => {
 }
 
 .cart-content {
-  max-width: 1200px;
+  max-width: 1500px;
   margin: 0 auto;
   padding: 0 20px;
 }
@@ -536,7 +489,8 @@ onMounted(() => {
 /* 左侧商品列表 - 淘宝风格布局 */
 .cart-list-section {
   flex: 1;
-  min-width: 0; /* 防止flex元素溢出 */
+  min-width: 0;
+  /* 防止flex元素溢出 */
   background: white;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
@@ -564,7 +518,7 @@ onMounted(() => {
 }
 
 .cart-items {
-  max-height: 600px;
+  max-height: 100%;
   overflow-y: auto;
 }
 
@@ -594,7 +548,8 @@ onMounted(() => {
   align-items: center;
   gap: 15px;
   flex: 1;
-  min-width: 0; /* 防止内容溢出 */
+  min-width: 0;
+  /* 防止内容溢出 */
 }
 
 .item-image {
@@ -798,7 +753,7 @@ onMounted(() => {
   .cart-container {
     flex-direction: column;
   }
-  
+
   .checkout-section {
     width: 100%;
     position: static;
@@ -811,30 +766,30 @@ onMounted(() => {
     gap: 15px;
     align-items: flex-start;
   }
-  
+
   .cart-item {
     flex-direction: column;
     align-items: flex-start;
     gap: 15px;
   }
-  
+
   .item-content {
     width: 100%;
     flex-wrap: wrap;
   }
-  
+
   .item-info {
     margin-right: 0;
     margin-bottom: 10px;
   }
-  
+
   .item-controls {
     flex-direction: row;
     justify-content: space-between;
     width: 100%;
     align-items: center;
   }
-  
+
   .item-actions {
     flex-direction: row;
     width: 100%;
@@ -847,21 +802,21 @@ onMounted(() => {
   .cart-content {
     padding: 0 10px;
   }
-  
+
   .cart-toolbar {
     flex-direction: column;
     gap: 10px;
     align-items: flex-start;
   }
-  
+
   .toolbar-right {
     align-self: flex-end;
   }
-  
+
   .item-content {
     gap: 10px;
   }
-  
+
   .item-image {
     width: 60px;
     height: 60px;

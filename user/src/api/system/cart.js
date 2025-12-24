@@ -58,3 +58,12 @@ export function getCartCount() {
     method: 'get'
   })
 }
+
+// 批量选择/取消选择商品
+export function batchSelectCart(selected) {
+  return request({
+    url: '/system/cart/batch-select',
+    method: 'put',
+    data: { selected }
+  })
+}

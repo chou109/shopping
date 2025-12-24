@@ -1,4 +1,10 @@
 package com.neuedu.system.service.impl;
+import com.neuedu.system.domain.Activity;
+import com.neuedu.system.domain.Product;
+import com.neuedu.system.domain.Shop;
+import com.neuedu.system.service.IActivityService;
+import com.neuedu.system.service.IProductService;
+import com.neuedu.system.service.IShopService;
 import lombok.RequiredArgsConstructor;
 import java.util.List;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -21,7 +27,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserFootprintServiceImpl extends ServiceImpl<UserFootprintMapper, UserFootprint> implements IUserFootprintService
 {
     private final UserFootprintMapper userFootprintMapper;
-
+    private final IProductService productService;
+    private final IShopService shopService;
+    private final IActivityService activityService;
     /**
      * 查询用户足迹
      * 
@@ -245,11 +253,55 @@ public class UserFootprintServiceImpl extends ServiceImpl<UserFootprintMapper, U
      * 获取目标信息（模拟方法，需要根据实际情况实现）
      */
     private FootprintTargetInfo getTargetInfo(Integer targetType, Long targetId) {
-        // TODO: 根据targetType调用不同的服务获取信息
-        // 1: productService.selectProductById(targetId)
-        // 2: shopService.selectShopById(targetId)
-        // 3: activityService.selectActivityById(targetId)
-        return null;
+        FootprintTargetInfo info = new FootprintTargetInfo();
+
+        try {
+            switch (targetType) {
+                case 1: // 商品
+                    Product product = productService.selectProductById(targetId);
+                    if (product != null) {
+                        info.setName(product.getName());
+                        info.setImage(product.getMainImage());
+                        info.setPrice(product.getPrice());
+                        info.setCategoryId(product.getCategoryId());
+                        // 这里需要获取分类名称，可能需要调用分类服务
+                        // 暂时先设置为空，后续可以完善
+                        info.setCategoryName("");
+                    }
+                    break;
+
+                case 2: // 店铺
+                    Shop shop = shopService.selectShopById(targetId);
+                    if (shop != null) {
+                        info.setName(shop.getShopName());
+                        info.setImage(shop.getShopLogo());
+                        info.setPrice(null); // 店铺没有价格
+                        info.setCategoryId(null);
+                        info.setCategoryName("");
+                    }
+                    break;
+
+                case 3: // 活动
+                    Activity activity = activityService.selectActivityById(targetId);
+                    if (activity != null) {
+                        info.setName(activity.getName());
+                        info.setImage(activity.getMainImage());
+                        info.setPrice(null); // 活动没有价格
+                        info.setCategoryId(null);
+                        info.setCategoryName("");
+                    }
+                    break;
+
+                default:
+                    // 未知类型
+                    break;
+            }
+        } catch (Exception e) {
+            // 记录日志，但不影响主要功能
+//            log.warn("获取目标信息失败: targetType={}, targetId={}, error={}", targetType, targetId, e.getMessage());
+        }
+
+        return info;
     }
 
     /**

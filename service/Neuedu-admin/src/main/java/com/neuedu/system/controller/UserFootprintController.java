@@ -1,6 +1,8 @@
 package com.neuedu.system.controller;
 
 import java.util.List;
+
+import com.neuedu.common.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -114,12 +116,18 @@ public class UserFootprintController extends BaseController
      */
     @Operation(summary = "记录用户足迹")
     @PostMapping("/record")
-    public AjaxResult record(@RequestParam Long userId,
-                             @RequestParam Integer targetType,
+    public AjaxResult record(@RequestParam Integer targetType,
                              @RequestParam Long targetId)
     {
+        // 设置当前用户ID
+        Long userId = SecurityUtils.getUserId();
+        if (userId == null) {
+            return error("用户未登录");
+        }
         return toAjax(userFootprintService.recordFootprint(userId, targetType, targetId));
     }
+
+
 
     /**
      * 查询用户的足迹列表
