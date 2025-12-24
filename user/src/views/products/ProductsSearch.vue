@@ -453,10 +453,9 @@ watch(() => route.query, (newQuery) => {
 
 <style scoped>
 .search-container {
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .breadcrumb-nav {
@@ -510,8 +509,9 @@ watch(() => route.query, (newQuery) => {
 }
 
 .search-results {
-  position: relative;
-  min-height: 400px;
+  flex: 1;
+  width: 100%;
+  min-height: calc(100vh - 200px);
 }
 
 .search-stats {
@@ -529,7 +529,7 @@ watch(() => route.query, (newQuery) => {
 /* 商品网格布局 */
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
   margin-bottom: 30px;
 }
@@ -660,7 +660,7 @@ watch(() => route.query, (newQuery) => {
 /* 店铺网格布局 */
 .shop-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
   margin-bottom: 30px;
 }

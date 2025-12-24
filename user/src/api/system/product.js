@@ -3,7 +3,16 @@ import request from '@/utils/request'
 // 查询商品列表
 export function listProduct(query) {
   return request({
-    url: '/system/list/random',
+    url: '/system/product/list',
+    method: 'get',
+    params: query
+  })
+}
+
+// 查询商品列表（随机排序）
+export function listProductRandom(query) {
+  return request({
+    url: '/system/product/list/random',
     method: 'get',
     params: query
   })

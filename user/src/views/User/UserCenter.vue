@@ -313,7 +313,7 @@ watch(
 }
 
 .header-content {
-  max-width: 1200px;
+  max-width: 1500px;
   margin: 0 auto;
   display: flex;
   justify-content: space-between;
@@ -344,7 +344,7 @@ watch(
 }
 
 .user-main {
-  max-width: 1200px;
+  max-width: 1500px;
   margin: 20px auto;
   display: flex;
   min-height: calc(100vh - 110px);

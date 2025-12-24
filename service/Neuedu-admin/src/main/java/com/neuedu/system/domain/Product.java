@@ -119,7 +119,9 @@ public class Product extends BaseEntity
     @TableField(exist = false)
     private Activity activity;
 
-
+    /** 店铺id */
+    @Schema(title = "店铺id")
+    @Excel(name = "店铺id")
     private Long shopId;
 
     // ============ 查询参数字段（非数据库字段） ============

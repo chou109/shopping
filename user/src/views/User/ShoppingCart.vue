@@ -509,7 +509,7 @@ onMounted(() => {
   align-items: center;
   margin-bottom: 20px;
   padding: 0 20px;
-  max-width: 1200px;
+  max-width: 1500px;
   margin-left: auto;
   margin-right: auto;
 }
@@ -522,7 +522,7 @@ onMounted(() => {
 }
 
 .cart-content {
-  max-width: 1200px;
+  max-width: 1500px;
   margin: 0 auto;
   padding: 0 20px;
 }
@@ -564,7 +564,7 @@ onMounted(() => {
 }
 
 .cart-items {
-  max-height: 600px;
+  max-height: 100%;
   overflow-y: auto;
 }
 
