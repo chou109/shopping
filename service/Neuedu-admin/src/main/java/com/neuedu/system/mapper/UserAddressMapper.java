@@ -5,6 +5,8 @@ import com.neuedu.system.domain.UserAddress;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
+
 /**
  * 用户地址Mapper接口
  * 
@@ -101,5 +103,6 @@ public interface UserAddressMapper extends BaseMapper<UserAddress>
      * @param userId 用户ID
      * @return 地址数量
      */
+    @Select("SELECT COUNT(*) FROM user_address WHERE delete_flag = 0 AND create_user = #{userId}")
     int countByUserId(@Param("userId") Long userId);
 }

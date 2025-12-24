@@ -2,10 +2,10 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { 
-  ChatDotRound, 
-  CircleCheck, 
-  ShoppingCart, 
+import {
+  ChatDotRound,
+  CircleCheck,
+  ShoppingCart,
   ShoppingCartFull,
   User,
   ShoppingBag,
@@ -16,12 +16,12 @@ import {
 import { getProduct } from '@/api/system/product'
 import { addCart } from '@/api/system/cart'
 import { getShopInfo } from '@/api/system/shop'
-import { 
-  listProductComments, 
+import {
+  listProductComments,
   getProductCommentStats
 } from '@/api/system/productComment'
 import { getProductImageUrl, handleImageError } from '@/utils/image'
-
+import { listFootprintByUser, deleteFootprint, recordFootprint } from '@/api/system/footprint'
 const route = useRoute()
 const router = useRouter()
 
@@ -90,27 +90,27 @@ const zoomImageUrl = ref('')
 
 // 商品类型选择（预留接口）
 const selectedProductType = ref('默认类型')
-const productTypes = ref(['默认类型', '类型1', '类型2', '类型3'])
+const productTypes = ref(['默认类型', '类型1', '类型2', '类型'])
 
 // 加载商品数据
 const loadProductData = async () => {
   const productId = route.query.id
   console.log('加载商品详情，ID:', productId)
-  
+
   if (!productId) {
     ElMessage.error('商品不存在')
     router.push('/products')
     return
   }
-  
+
   try {
     const response = await getProduct(productId)
     console.log('商品详情API响应:', response)
-    
+
     if (response.code === 200 && response.data) {
       product.value = response.data
       console.log('商品数据:', product.value)
-      
+      recordFootprint({ targetType: 1, targetId: route.query.id })
       // 确保category对象存在
       if (!product.value.category && product.value.categoryId) {
         product.value.category = {
@@ -118,12 +118,12 @@ const loadProductData = async () => {
           name: product.value.categoryName || `分类ID: ${product.value.categoryId}`
         }
       }
-      
+
       // 如果有商品详情数据
       if (response.data.productDetail) {
         productDetail.value = response.data.productDetail
       }
-      console.log('店1',response)
+      console.log('店1', response)
       // loadShopInfo(response.data.shopId)
       loadShopInfo(1)
       // 如果有店铺ID，加载店铺信息
@@ -151,10 +151,10 @@ const loadProductData = async () => {
 // 加载店铺信息
 const loadShopInfo = async (shopId) => {
   try {
-    console.log('店铺',shopId)
+    console.log('店铺', shopId)
     const response = await getShopInfo(shopId)
     console.log('店铺信息响应:', response)
-    
+
     if (response.code === 200 && response.data) {
       shopInfo.value = {
         ...shopInfo.value,
@@ -173,7 +173,7 @@ const loadShopInfo = async (shopId) => {
 // 加载商品评价
 const loadProductComments = async () => {
   if (!product.value.id) return
-  
+
   commentLoading.value = true
   try {
     const params = {
@@ -181,14 +181,14 @@ const loadProductComments = async () => {
       pageNum: commentPageParams.value.pageNum,
       pageSize: commentPageParams.value.pageSize
     }
-    
+
     const response = await listProductComments(params)
     console.log('商品评价列表响应:', response)
-    
+
     if (response.code === 200) {
       // 从响应中获取评论数据
       const comments = response.rows || []
-      
+
       // 如果没有评论，使用模拟数据（临时方案）
       if (comments.length === 0) {
         productComments.value = getMockComments()
@@ -215,14 +215,14 @@ const loadProductComments = async () => {
 // 加载评价统计
 const loadCommentStats = async () => {
   if (!product.value.id) return
-  
+
   try {
     const response = await getProductCommentStats(product.value.id)
     console.log('评价统计响应:', response)
-    
+
     if (response.code === 200 && response.data) {
       const statsData = response.data
-      
+
       // 格式化统计信息
       commentStats.value = {
         total: statsData.totalCount || 0,
@@ -292,31 +292,31 @@ const getMockCommentStats = () => {
 // 计算所有图片
 const allImages = computed(() => {
   const images = []
-  
+
   // 添加主图
   if (product.value.mainImage) {
-    images.push(getProductImageUrl(product.value.mainImage))
+    images.push(product.value.mainImage)
   }
-  
+
   // 如果有子图片，解析并添加
   if (product.value.subImages) {
     try {
       const subImages = product.value.subImages.split(',')
       subImages.forEach(img => {
         if (img.trim()) {
-          images.push(getProductImageUrl(img.trim()))
+          images.push(img.trim())
         }
       })
     } catch (e) {
       console.error('解析子图片失败:', e)
     }
   }
-  
+
   // 如果没有图片，使用默认图片
   if (images.length === 0) {
     images.push('/src/assets/images/default-product.png')
   }
-  
+
   return images
 })
 
@@ -348,11 +348,11 @@ const handleImageMouseEnter = (imageUrl) => {
 const handleImageMouseMove = (event) => {
   const container = event.currentTarget
   const rect = container.getBoundingClientRect()
-  
+
   // 计算鼠标在图片中的位置百分比
   const x = ((event.clientX - rect.left) / rect.width) * 100
   const y = ((event.clientY - rect.top) / rect.height) * 100
-  
+
   // 限制在0-100%之间
   zoomPosition.value = {
     x: Math.max(0, Math.min(100, x)),
@@ -384,7 +384,7 @@ const handleAddToCart = async () => {
     ElMessage.warning('商品信息不完整')
     return
   }
-  
+
   addingToCart.value = true
   try {
     const cartData = {
@@ -397,12 +397,12 @@ const handleAddToCart = async () => {
       selected: 1,
       productTotalPrice: product.value.price * quantity.value
     }
-    
+
     console.log('添加到购物车数据:', cartData)
-    
+
     const response = await addCart(cartData)
     console.log('添加到购物车响应:', response)
-    
+
     if (response.code === 200) {
       ElMessage.success('已成功加入购物车')
     } else {
@@ -422,7 +422,7 @@ const handleBuyNow = () => {
     ElMessage.warning('商品信息不完整')
     return
   }
-  
+
   const orderData = {
     productId: product.value.id,
     quantity: quantity.value,
@@ -430,7 +430,7 @@ const handleBuyNow = () => {
     price: product.value.price,
     mainImage: product.value.mainImage
   }
-  
+
   // 跳转到确认订单页面
   router.push({
     path: '/order/confirm',
@@ -511,34 +511,18 @@ onMounted(() => {
         <div class="product-images-section">
           <!-- 商品大图（带放大镜） -->
           <div class="main-image-container">
-            <div 
-              class="main-image-wrapper"
-              @mouseenter="handleImageMouseEnter(allImages[currentImageIndex])"
-              @mousemove="handleImageMouseMove"
-              @mouseleave="handleImageMouseLeave"
-            >
-              <img 
-                :src="allImages[currentImageIndex]" 
-                :alt="product.name" 
-                class="main-image"
-                @error="handleImageError"
-              />
+            <div class="main-image-wrapper" @mouseenter="handleImageMouseEnter(allImages[currentImageIndex])"
+              @mousemove="handleImageMouseMove" @mouseleave="handleImageMouseLeave">
+              <img :src="allImages[currentImageIndex]" :alt="product.name" class="main-image"
+                @error="handleImageError" />
             </div>
           </div>
-          
+
           <!-- 商品小图列表 -->
           <div class="thumbnail-list">
-            <div 
-              v-for="(img, index) in allImages" 
-              :key="index"
-              :class="['thumbnail-item', { active: currentImageIndex === index }]"
-              @click="changeMainImage(index)"
-            >
-              <img 
-                :src="img" 
-                :alt="`${product.name}-${index + 1}`"
-                @error="handleImageError"
-              />
+            <div v-for="(img, index) in allImages" :key="index"
+              :class="['thumbnail-item', { active: currentImageIndex === index }]" @click="changeMainImage(index)">
+              <img :src="img" :alt="`${product.name}-${index + 1}`" @error="handleImageError" />
             </div>
           </div>
         </div>
@@ -552,31 +536,25 @@ onMounted(() => {
               <span class="count">（{{ commentStats.total }}条评价）</span>
             </div>
           </div>
-          
+
           <!-- 评分分布 -->
           <div class="score-distribution" v-if="commentStats.total > 0">
             <div class="distribution-item" v-for="score in 5" :key="score">
               <span class="score-label">{{ 6 - score }}星</span>
-              <el-progress 
-                :percentage="(commentStats.scoreDistribution[6 - score] || 0) / commentStats.total * 100" 
-                :show-text="false"
-                class="score-progress"
-              />
+              <el-progress :percentage="(commentStats.scoreDistribution[6 - score] || 0) / commentStats.total * 100"
+                :show-text="false" class="score-progress" />
               <span class="score-count">{{ commentStats.scoreDistribution[6 - score] || 0 }}条</span>
             </div>
           </div>
-          
+
           <!-- 评价列表 -->
           <div v-loading="commentLoading">
             <div v-if="productComments.length > 0" class="comment-list">
               <div v-for="comment in productComments.slice(0, 5)" :key="comment.commentId" class="comment-item">
                 <div class="comment-header">
                   <div class="user-info">
-                    <el-avatar 
-                      :size="40" 
-                      :src="comment.avatar || '/src/assets/images/default-avatar.png'"
-                      class="user-avatar"
-                    />
+                    <el-avatar :size="40" :src="comment.avatar || '/src/assets/images/default-avatar.png'"
+                      class="user-avatar" />
                     <div class="user-details">
                       <div class="user-name">
                         {{ comment.isAnonymous ? '匿名用户' : (comment.nickName || `用户${comment.userId}`) }}
@@ -587,12 +565,7 @@ onMounted(() => {
                     </div>
                   </div>
                   <div class="comment-rating">
-                    <el-rate
-                      :model-value="comment.score || 5"
-                      disabled
-                      size="small"
-                      text-color="#ff9900"
-                    />
+                    <el-rate :model-value="comment.score || 5" disabled size="small" text-color="#ff9900" />
                   </div>
                 </div>
                 <div class="comment-content">
@@ -614,16 +587,8 @@ onMounted(() => {
           <div class="detail-content">
             <!-- 使用商品所有图片作为图文详情 -->
             <div v-if="allImages.length > 0" class="detail-images">
-              <div 
-                v-for="(img, index) in allImages" 
-                :key="index"
-                class="detail-image-item"
-              >
-                <img 
-                  :src="getProductImageUrl(img)" 
-                  :alt="`${product.name}-图${index + 1}`"
-                  @error="handleImageError"
-                />
+              <div v-for="(img, index) in allImages" :key="index" class="detail-image-item">
+                <img :src="img" :alt="`${product.name}-图${index + 1}`" @error="handleImageError" />
               </div>
             </div>
             <div v-else class="no-detail">
@@ -636,28 +601,24 @@ onMounted(() => {
       <!-- 右侧固定内容区域 -->
       <div class="right-column">
         <!-- 放大镜显示区域（在右侧内容上方显示） -->
-        <div 
-          v-if="zoomVisible" 
-          class="zoom-container"
-          :style="{
-            backgroundImage: `url(${zoomImageUrl})`,
-            backgroundPosition: `${zoomPosition.x}% ${zoomPosition.y}%`
-          }"
-        ></div>
-        
+        <div v-if="zoomVisible" class="zoom-container" :style="{
+          backgroundImage: `url(${zoomImageUrl})`,
+          backgroundPosition: `${zoomPosition.x}% ${zoomPosition.y}%`
+        }"></div>
+
         <div class="product-info-card">
           <!-- 商品名称 -->
           <h1 class="product-title">{{ product.name }}</h1>
-          
+
           <!-- 商品简介 -->
           <div class="product-subtitle">{{ product.subTitle }}</div>
-          
+
           <!-- 价格区域 -->
           <div class="price-section">
             <div class="price-label">价格</div>
             <div class="price-value">¥{{ formatPrice(product.price) }}</div>
           </div>
-          
+
           <!-- 商品信息 -->
           <div class="product-info-list">
             <div class="info-item">
@@ -669,87 +630,81 @@ onMounted(() => {
               <span class="info-value">{{ product.stock || 0 }} 件</span>
             </div>
           </div>
-          
+
           <!-- 服务承诺 -->
           <div class="service-promises">
             <div class="service-item">
-              <el-icon color="#67C23A"><CircleCheck /></el-icon>
+              <el-icon color="#67C23A">
+                <CircleCheck />
+              </el-icon>
               <span>现货，付款后48小时内发货，晚发必赔</span>
             </div>
             <div class="service-item">
-              <el-icon color="#67C23A"><CircleCheck /></el-icon>
+              <el-icon color="#67C23A">
+                <CircleCheck />
+              </el-icon>
               <span>快递: 免运费</span>
             </div>
             <div class="service-item">
-              <el-icon color="#67C23A"><CircleCheck /></el-icon>
+              <el-icon color="#67C23A">
+                <CircleCheck />
+              </el-icon>
               <span>退货宝极速退款</span>
             </div>
             <div class="service-item">
-              <el-icon color="#67C23A"><CircleCheck /></el-icon>
+              <el-icon color="#67C23A">
+                <CircleCheck />
+              </el-icon>
               <span>支持7天无理由退换</span>
             </div>
           </div>
-          
+
           <!-- 商品类型选择（预留） -->
           <div class="product-type-section" v-if="productTypes.length > 1">
             <div class="type-label">类型：</div>
             <div class="type-options">
-              <div 
-                v-for="type in productTypes" 
-                :key="type"
+              <div v-for="type in productTypes" :key="type"
                 :class="['type-option', { selected: selectedProductType === type }]"
-                @click="selectedProductType = type"
-              >
+                @click="selectedProductType = type">
                 {{ type }}
               </div>
             </div>
           </div>
-          
+
           <!-- 数量选择 -->
           <div class="quantity-section">
             <div class="quantity-label">数量</div>
             <div class="quantity-control">
-              <el-input-number 
-                v-model="quantity" 
-                :min="1" 
-                :max="product.stock || 999"
-                size="large"
-                @change="handleQuantityChange"
-              />
+              <el-input-number v-model="quantity" :min="1" :max="product.stock || 999" size="large"
+                @change="handleQuantityChange" />
               <div class="stock-info">库存 {{ product.stock || 0 }} 件</div>
             </div>
           </div>
-          
+
           <!-- 操作按钮 -->
           <div class="action-buttons">
-            <el-button 
-              type="danger" 
-              size="large" 
-              class="buy-now-btn"
-              @click="handleBuyNow"
-            >
-              <el-icon><ShoppingCart /></el-icon>
+            <el-button type="danger" size="large" class="buy-now-btn" @click="handleBuyNow">
+              <el-icon>
+                <ShoppingCart />
+              </el-icon>
               立即购买
             </el-button>
-            
-            <el-button 
-              type="primary" 
-              size="large" 
-              class="add-cart-btn"
-              @click="handleAddToCart"
-              :loading="addingToCart"
-            >
-              <el-icon><ShoppingCartFull /></el-icon>
+
+            <el-button type="primary" size="large" class="add-cart-btn" @click="handleAddToCart"
+              :loading="addingToCart">
+              <el-icon>
+                <ShoppingCartFull />
+              </el-icon>
               加入购物车
             </el-button>
-            
-            <el-button 
-              class="favorite-btn"
-              size="large"
-              @click="handleToggleFavorite"
-            >
-              <el-icon v-if="isFavorite"><StarFilled /></el-icon>
-              <el-icon v-else><Star /></el-icon>
+
+            <el-button class="favorite-btn" size="large" @click="handleToggleFavorite">
+              <el-icon v-if="isFavorite">
+                <StarFilled />
+              </el-icon>
+              <el-icon v-else>
+                <Star />
+              </el-icon>
               收藏
             </el-button>
           </div>
@@ -1272,17 +1227,17 @@ onMounted(() => {
 }
 
 /* 响应式设计 */
-@media (max-width: 1200px) {
+@media (max-width: 1500px) {
   .detail-layout {
     flex-direction: column;
   }
-  
+
   .right-column {
     width: 100%;
     position: static;
     margin-top: 20px;
   }
-  
+
   .zoom-container {
     position: fixed;
     right: 20px;
@@ -1297,28 +1252,28 @@ onMounted(() => {
   .product-detail-container {
     padding: 10px;
   }
-  
+
   .main-image-container {
     height: 400px;
   }
-  
+
   .shop-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 15px;
   }
-  
+
   .shop-actions {
     width: 100%;
     justify-content: center;
   }
-  
+
   .zoom-container {
     width: 300px;
     height: 300px;
     right: 10px;
   }
-  
+
   .thumbnail-item {
     width: 60px;
     height: 60px;
@@ -1329,25 +1284,25 @@ onMounted(() => {
   .main-image-container {
     height: 300px;
   }
-  
+
   .product-title {
     font-size: 18px;
   }
-  
+
   .price-value {
     font-size: 24px;
   }
-  
+
   .action-buttons {
     flex-direction: column;
   }
-  
+
   .buy-now-btn,
   .add-cart-btn,
   .favorite-btn {
     width: 100%;
   }
-  
+
   .zoom-container {
     width: 200px;
     height: 200px;

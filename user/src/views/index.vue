@@ -396,7 +396,7 @@ const logout = () => {
 }
 
 .header-container {
-  max-width: 1200px;
+  max-width: 1500px;
   margin: 0 auto;
   padding: 0 20px;
   display: flex;
@@ -676,7 +676,7 @@ const logout = () => {
 }
 
 .footer-content {
-  max-width: 1200px;
+  max-width: 1500px;
   margin: 0 auto;
   padding: 0 20px;
 }
@@ -699,7 +699,7 @@ const logout = () => {
 .service-icon {
   width: 50px;
   height: 50px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #ff5500 0%, #ff9900 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -731,7 +731,7 @@ const logout = () => {
 }
 
 /* 响应式设计 */
-@media (max-width: 1200px) {
+@media (max-width: 1500px) {
   .header-container {
     padding: 0 15px;
   }

@@ -15,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 用户地址Service业务层处理
- * 
+ *
  * @author ruoyi
  * @date 2025-12-13
  */
@@ -27,14 +27,16 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
 
     /**
      * 查询用户地址
-     * 
+     *
      * @param id 用户地址主键
      * @return 用户地址
      */
     @Override
     public UserAddress selectUserAddressById(Long id)
     {
+        System.out.println("查询地址ID: " + id);
         UserAddress address = userAddressMapper.selectUserAddressById(id);
+        System.out.println("查询结果: " + address);
         if (address != null) {
             enrichAddressInfo(address);
         }
@@ -58,7 +60,7 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
     }
 
     /**
-     * 查询用户的默认地址
+     * 查询用户的默认地址 - 修改为使用 create_user
      *
      * @param userId 用户ID
      * @return 默认地址
@@ -71,12 +73,11 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
             enrichAddressInfo(address);
         }
         return address;
-
     }
 
     /**
      * 查询用户地址列表
-     * 
+     *
      * @param userAddress 用户地址
      * @return 用户地址
      */
@@ -89,7 +90,7 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
     }
 
     /**
-     * 查询用户的所有地址列表
+     * 查询用户的所有地址列表 - 修改为使用 create_user
      *
      * @param userId 用户ID
      * @return 地址列表
@@ -97,9 +98,16 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
     @Override
     public List<UserAddress> selectUserAddressListByUserId(Long userId) {
         UserAddress query = new UserAddress();
-        query.setUserId(userId);
-        return selectUserAddressList(query);
+        query.setCreateUser(userId);
+        List<UserAddress> list = userAddressMapper.selectUserAddressList(query);
+        list.forEach(address -> {
+            // 设置userId到对象中供前端使用
+            address.setUserId(userId);
+            enrichAddressInfo(address);
+        });
+        return list;
     }
+
 
     /**
      * 新增用户地址
@@ -115,11 +123,26 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
         if (!validateAddress(userAddress)) {
             throw new RuntimeException("地址信息不完整");
         }
-        // 2. 设置默认值
+
+        // 2. 生成 address_id（如果没有提供）
+        if (userAddress.getAddressId() == null) {
+            // 使用雪花算法或简单的时间戳生成唯一ID
+            userAddress.setAddressId(System.currentTimeMillis());
+
+            // 或者使用随机数
+            // userAddress.setAddressId(IdUtil.getSnowflakeNextId());
+        }
+
+        // 3. 设置默认值
         userAddress.setCreateTime(DateUtils.getNowDate());
         userAddress.setDeleteFlag(AddressConstants.DELETE_FLAG_NO);
 
-        // 3. 如果是设置默认地址，需要取消其他默认地址
+        // 4. 将userId设置到createUser字段
+        if (userAddress.getUserId() != null) {
+            userAddress.setCreateUser(userAddress.getUserId());
+        }
+
+        // 5. 如果是设置默认地址，需要取消其他默认地址
         if (userAddress.getDefaultFlag() != null &&
                 userAddress.getDefaultFlag() == AddressConstants.DEFAULT_FLAG_YES) {
             cancelOtherDefaultAddress(userAddress.getUserId());
@@ -136,8 +159,9 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
         return userAddressMapper.insertUserAddress(userAddress);
     }
 
+
     /**
-     * 设置默认地址
+     * 设置默认地址 - 修改为使用 create_user
      *
      * @param addressId 地址ID
      * @param userId 用户ID
@@ -149,27 +173,30 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
     {
         // 1. 检查地址是否存在且属于该用户
         UserAddress address = userAddressMapper.selectUserAddressById(addressId);
-        if (address == null || !address.getUserId().equals(userId)) {
+        if (address == null || !address.getCreateUser().equals(userId)) {
             throw new RuntimeException("地址不存在或不属于该用户");
         }
 
-        // 1. 取消所有默认地址
+        // 2. 取消所有默认地址
         int cancelResult = userAddressMapper.cancelAllDefaultAddress(userId);
 
-        // 2. 设置新的默认地址
+        // 3. 设置新的默认地址
         int setResult = userAddressMapper.setDefaultAddress(addressId, userId);
 
         return cancelResult + setResult;
     }
+
+
     /**
-     * 取消其他默认地址
+     * 取消其他默认地址 - 修改为使用 create_user
      */
     private void cancelOtherDefaultAddress(Long userId) {
         userAddressMapper.cancelAllDefaultAddress(userId);
     }
+
     /**
      * 修改用户地址
-     * 
+     *
      * @param userAddress 用户地址
      * @return 结果
      */
@@ -198,14 +225,13 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
 
     /**
      * 批量删除用户地址
-     * 
+     *
      * @param ids 需要删除的用户地址主键
      * @return 结果
      */
     @Override
     public int deleteUserAddressByIds(Long[] ids)
     {
-
         // 检查是否有默认地址，默认地址不能删除
         for (Long id : ids) {
             UserAddress address = selectUserAddressById(id);
@@ -219,7 +245,7 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
 
     /**
      * 删除用户地址信息
-     * 
+     *
      * @param id 用户地址主键
      * @return 结果
      */
@@ -261,10 +287,9 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
             return false;
         }
 
-        // 省市区验证
+        // 省市区验证 - 修改为只需要省份和城市，区域可选
         if (StringUtils.isEmpty(userAddress.getProvince()) ||
-                StringUtils.isEmpty(userAddress.getCity()) ||
-                StringUtils.isEmpty(userAddress.getArea())) {
+                StringUtils.isEmpty(userAddress.getCity())) {
             return false;
         }
 
@@ -277,17 +302,14 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
     }
 
     /**
-     * 获取用户的地址数量
+     * 获取用户的地址数量 - 修改为使用 create_user
      *
      * @param userId 用户ID
      * @return 地址数量
      */
     @Override
     public int countUserAddress(Long userId) {
-        QueryWrapper<UserAddress> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("user_id", userId)
-                .eq("delete_flag", AddressConstants.DELETE_FLAG_NO);
-        return Math.toIntExact(count(queryWrapper));
+        return userAddressMapper.countByUserId(userId);
     }
 
     /**
@@ -295,6 +317,10 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
      */
     private void enrichAddressInfo(UserAddress address) {
         // 调用初始化方法设置扩展字段
-        address.initExtraFields();
+        if (address != null) {
+            // 设置userId到对象中供前端使用
+            address.setUserId(address.getCreateUser());
+            address.initExtraFields();
+        }
     }
 }

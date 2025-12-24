@@ -33,7 +33,7 @@
     </div>
 
     <!-- 搜索结果 -->
-    <div v-loading="loading" class="search-results">
+    <div v-loading="loading" class="search-results" style="max-width: 1300px;margin:0 auto;">
       <!-- 全部或商品筛选 -->
       <div v-if="activeFilter === 'all' || activeFilter === 'product'" class="product-section">
         <div v-if="filteredProducts.length > 0" class="product-list">

@@ -122,7 +122,7 @@ export default {
     letter-spacing: 0em;
     position: relative;
     top: -8px;
-    color: #3D3D3D;
+    color: #ff5500;
   }
 
   // .tabs {

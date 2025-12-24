@@ -65,7 +65,6 @@ export const constantRoutes = [
         component: () => import('@/views/user/UserCenter.vue'),
         meta: { 
           title: '用户中心',
-          // 映射路由参数到页面标题
           pageTitles: {
             profile: '个人中心',
             orders: '我的订单',
@@ -73,7 +72,7 @@ export const constantRoutes = [
             footprint: '我的足迹',
             'favorite/shop': '收藏店铺',
             'favorite/product': '收藏商品',
-            review: '我的评价'
+            review: '我的评价',
           }
         }
       }

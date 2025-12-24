@@ -127,7 +127,7 @@ onMounted(() => {
   margin: 0;
   line-height: 1.2;
   display: inline-block;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #ff5500 0%, #ff9900 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -142,7 +142,7 @@ onMounted(() => {
   transform: translateX(-50%);
   width: 60px;
   height: 3px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #ff5500 0%, #ff9900 100%);
   border-radius: 2px;
 }
 
@@ -157,7 +157,7 @@ onMounted(() => {
 }
 
 .view-more:hover {
-  color: #764ba2 !important;
+  color: #ff5500 !important;
   transform: translateY(-50%) translateX(5px);
 }
 
@@ -278,7 +278,7 @@ onMounted(() => {
 }
 
 /* 响应式调整 */
-@media (max-width: 1200px) {
+@media (max-width: 1500px) {
   .product-grid {
     grid-template-columns: repeat(3, 1fr);
   }

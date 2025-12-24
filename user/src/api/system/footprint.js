@@ -29,7 +29,7 @@ export function recordFootprint({ targetType, targetId }) {
   return request({
     url: '/system/footprint/record',
     method: 'post',
-    params: {  // 改为 params
+    params: {  // 改为 params1
       targetType,
       targetId
     }

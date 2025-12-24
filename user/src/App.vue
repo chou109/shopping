@@ -1,13 +1,21 @@
 <template>
   <div id="app">
     <router-view />
+    <!-- 右侧固定侧边栏 -->
+    <FixedSidebar />
   </div>
 </template>
 
 <script>
-export default {
-  name: 'App'
-}
+import { defineComponent } from 'vue'
+import FixedSidebar from '@/views/index/FixedSidebar.vue'
+
+export default defineComponent({
+  name: 'App',
+  components: {
+    FixedSidebar
+  }
+})
 </script>
 
 <style>

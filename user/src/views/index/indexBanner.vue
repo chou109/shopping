@@ -35,15 +35,15 @@ const updateCarouselHeight = () => {
 const loadBanners = function() {
   loading.value = true
   
-  // 修改：为每个banner添加对应的商品ID
+  // 为每个banner添加对应的商品ID
   banners.value = [
     { 
       id: 1, 
       imageUrl: banner1,
       title: '小米(MI) L65M4-AQ电视',
       description: '全高清屏，纤薄金属',
-      productId: 48,  // 添加商品ID
-      link: '/product/detail?id=48'  // 修改为商品详情页链接
+      productId: 48,
+      link: '/product/detail?id=48'
     },
     { 
       id: 2, 
@@ -289,18 +289,18 @@ onUnmounted(() => {
 <style scoped>
 /* 页面主题色 */
 :root {
-  --primary-color: #ff5500; /* 淘宝主题橙色 */
+  --primary-color: #ff5500;
   --hover-bg: rgba(255, 85, 0, 0.08);
   --active-bg: rgba(255, 85, 0, 0.15);
   --category-bg: #f8f8f8;
   --category-hover: #fff5f0;
   --category-border: #e0e0e0;
-  --text-primary: #333;
+  --text-primary: #ff5500;
   --text-secondary: #666;
 }
 
 .banner-container {
-  width: 1200px;
+  width: 1400px;
   margin: 0 auto 20px auto;
   position: relative;
   min-height: 417px;
@@ -522,7 +522,7 @@ onUnmounted(() => {
 @media (max-width: 1240px) {
   .banner-container {
     width: 95%;
-    max-width: 1200px;
+    max-width: 1500px;
   }
   
   .banner-wrapper {
