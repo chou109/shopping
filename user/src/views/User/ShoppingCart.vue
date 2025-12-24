@@ -2,7 +2,6 @@
   <div class="shopping-cart">
     <!-- 页面标题 -->
     <div class="page-header">
-      <h2 class="page-title">购物车</h2>
       <div class="page-actions">
         <el-button 
           type="danger" 
@@ -512,13 +511,6 @@ onMounted(() => {
   max-width: 1500px;
   margin-left: auto;
   margin-right: auto;
-}
-
-.page-title {
-  margin: 0;
-  font-size: 24px;
-  color: #333;
-  font-weight: 600;
 }
 
 .cart-content {

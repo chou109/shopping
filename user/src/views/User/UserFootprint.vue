@@ -2,7 +2,6 @@
   <div class="user-footprint">
     <!-- 页面标题和操作 -->
     <div class="page-header">
-      <h2 class="page-title">我的足迹</h2>
       <div class="page-actions">
         <el-button 
           type="danger" 
@@ -449,13 +448,6 @@ onMounted(() => {
   margin-bottom: 20px;
   padding-bottom: 15px;
   border-bottom: 1px solid #f0f0f0;
-}
-
-.page-title {
-  margin: 0;
-  font-size: 20px;
-  color: #333;
-  font-weight: 600;
 }
 
 /* 筛选选项卡样式 */

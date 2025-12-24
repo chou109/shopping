@@ -1272,7 +1272,7 @@ onMounted(() => {
 }
 
 /* 响应式设计 */
-@media (max-width: 1200px) {
+@media (max-width: 1500px) {
   .detail-layout {
     flex-direction: column;
   }

@@ -132,13 +132,13 @@ const handleSearch = () => {
 /* 导航栏样式 */
 .nav-header {
   width: 100%;
-  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+  background: linear-gradient(135deg, #ff5500 0%, #ff9900 100%);
   padding: 10px 0;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .nav-header .container {
-  max-width: 1200px;
+  max-width: 1500px;
   margin: 0 auto;
   padding: 0 15px;
   display: flex;
@@ -215,7 +215,7 @@ const handleSearch = () => {
 .content-wrapper {
   flex: 1;
   width: 100%;
-  max-width: 1200px;
+  max-width: 1500px;
   margin: 0 auto;
   padding: 20px 15px;
   box-sizing: border-box;
@@ -224,14 +224,14 @@ const handleSearch = () => {
 /* 页脚样式 - 修改为与导航栏相同风格 */
 .home-footer {
   width: 100%;
-  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+  background: linear-gradient(135deg, #ff5500 0%, #ff9900 100%);
   color: #fff;
   padding: 40px 0 20px;
   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .footer-content {
-  max-width: 1200px;
+  max-width: 1500px;
   margin: 0 auto;
   padding: 0 15px;
 }
