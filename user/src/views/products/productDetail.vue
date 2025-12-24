@@ -2,10 +2,10 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { 
-  ChatDotRound, 
-  CircleCheck, 
-  ShoppingCart, 
+import {
+  ChatDotRound,
+  CircleCheck,
+  ShoppingCart,
   ShoppingCartFull,
   User,
   ShoppingBag,
@@ -16,8 +16,8 @@ import {
 import { getProduct } from '@/api/system/product'
 import { addCart } from '@/api/system/cart'
 import { getShopInfo } from '@/api/system/shop'
-import { 
-  listProductComments, 
+import {
+  listProductComments,
   getProductCommentStats
 } from '@/api/system/productComment'
 import { getProductImageUrl, handleImageError } from '@/utils/image'
@@ -101,19 +101,19 @@ const handleBreadcrumbClick = (item) => {
 // 面包屑导航配置
 const breadcrumbItems = computed(() => {
   const items = [
-    { 
+    {
       name: '首页',
       path: '/',
       clickable: true
     }
   ]
-  
+
   // 如果有分类信息，添加到面包屑
   if (product.value.categoryId) {
-    const categoryName = product.value.categoryName || 
-                        product.value.category?.name || 
-                        `分类ID: ${product.value.categoryId}`
-    
+    const categoryName = product.value.categoryName ||
+      product.value.category?.name ||
+      `分类ID: ${product.value.categoryId}`
+
     items.push({
       name: categoryName,
       path: '/products',
@@ -130,13 +130,13 @@ const breadcrumbItems = computed(() => {
       clickable: true
     })
   }
-  
+
   // 当前商品（不可点击）
   items.push({
     name: product.value.name || '商品详情',
     clickable: false
   })
-  
+
   return items
 })
 
@@ -155,12 +155,12 @@ const commentRating = computed(() => {
 // 计算所有图片
 const allImages = computed(() => {
   const images = []
-  
+
   // 添加主图
   if (product.value.mainImage) {
     images.push(getProductImageUrl(product.value.mainImage))
   }
-  
+
   // 如果有子图片，解析并添加
   if (product.value.subImages) {
     try {
@@ -174,12 +174,12 @@ const allImages = computed(() => {
       console.error('解析子图片失败:', e)
     }
   }
-  
+
   // 如果没有图片，使用默认图片
   if (images.length === 0) {
     images.push('/src/assets/images/default-product.png')
   }
-  
+
   return images
 })
 
@@ -198,21 +198,21 @@ const formatPrice = (price) => {
 const loadProductData = async () => {
   const productId = route.query.id
   console.log('加载商品详情，ID:', productId)
-  
+
   if (!productId) {
     ElMessage.error('商品不存在')
     router.push('/products')
     return
   }
-  
+
   try {
     const response = await getProduct(productId)
     console.log('商品详情API响应:', response)
-    
+
     if (response.code === 200 && response.data) {
       product.value = response.data
       console.log('商品数据:', product.value)
-      
+
       // 确保category对象存在
       if (!product.value.category && product.value.categoryId) {
         product.value.category = {
@@ -220,12 +220,12 @@ const loadProductData = async () => {
           name: product.value.categoryName || `分类ID: ${product.value.categoryId}`
         }
       }
-      
+
       // 如果有商品详情数据
       if (response.data.productDetail) {
         productDetail.value = response.data.productDetail
       }
-      
+
       // 如果有店铺ID，加载店铺信息
       if (response.data.shopId) {
         await loadShopInfo(response.data.shopId)
@@ -254,7 +254,7 @@ const loadShopInfo = async (shopId) => {
   try {
     const response = await getShopInfo(shopId)
     console.log('店铺信息响应:', response)
-    
+
     if (response.code === 200 && response.data) {
       shopInfo.value = {
         ...shopInfo.value,
@@ -273,7 +273,7 @@ const loadShopInfo = async (shopId) => {
 // 加载商品评价
 const loadProductComments = async () => {
   if (!product.value.id) return
-  
+
   commentLoading.value = true
   try {
     const params = {
@@ -281,14 +281,14 @@ const loadProductComments = async () => {
       pageNum: commentPageParams.value.pageNum,
       pageSize: commentPageParams.value.pageSize
     }
-    
+
     const response = await listProductComments(params)
     console.log('商品评价列表响应:', response)
-    
+
     if (response.code === 200) {
       // 从响应中获取评论数据
       const comments = response.rows || []
-      
+
       // 如果没有评论，使用模拟数据（临时方案）
       if (comments.length === 0) {
         productComments.value = getMockComments()
@@ -315,14 +315,14 @@ const loadProductComments = async () => {
 // 加载评价统计
 const loadCommentStats = async () => {
   if (!product.value.id) return
-  
+
   try {
     const response = await getProductCommentStats(product.value.id)
     console.log('评价统计响应:', response)
-    
+
     if (response.code === 200 && response.data) {
       const statsData = response.data
-      
+
       // 格式化统计信息
       commentStats.value = {
         total: statsData.totalCount || 0,
@@ -450,7 +450,7 @@ const handleAddToCart = async () => {
     ElMessage.warning('商品信息不完整')
     return
   }
-  
+
   addingToCart.value = true
   try {
     const cartData = {
@@ -463,12 +463,12 @@ const handleAddToCart = async () => {
       selected: 1,
       productTotalPrice: product.value.price * quantity.value
     }
-    
+
     console.log('添加到购物车数据:', cartData)
-    
+
     const response = await addCart(cartData)
     console.log('添加到购物车响应:', response)
-    
+
     if (response.code === 200) {
       ElMessage.success('已成功加入购物车')
     } else {
@@ -488,7 +488,7 @@ const handleBuyNow = () => {
     ElMessage.warning('商品信息不完整')
     return
   }
-  
+
   const orderData = {
     productId: product.value.id,
     quantity: quantity.value,
@@ -496,7 +496,7 @@ const handleBuyNow = () => {
     price: product.value.price,
     mainImage: product.value.mainImage
   }
-  
+
   // 跳转到确认订单页面
   router.push({
     path: '/order/confirm',
@@ -590,11 +590,8 @@ const getDetailImageUrl = (imgPath) => {
     <!-- 面包屑导航 -->
     <div class="breadcrumb">
       <el-breadcrumb separator="/">
-        <el-breadcrumb-item 
-          v-for="(item, index) in breadcrumbItems" 
-          :key="index"
-          :to="item.clickable ? { path: item.path, query: item.query } : undefined"
-        >
+        <el-breadcrumb-item v-for="(item, index) in breadcrumbItems" :key="index"
+          :to="item.clickable ? { path: item.path, query: item.query } : undefined">
           {{ item.name }}
         </el-breadcrumb-item>
       </el-breadcrumb>
@@ -605,27 +602,14 @@ const getDetailImageUrl = (imgPath) => {
       <div class="left-section">
         <!-- 商品大图 -->
         <div class="main-image-wrapper">
-          <img 
-            :src="currentMainImage" 
-            :alt="product.name" 
-            class="main-image"
-            @error="handleImageError"
-          />
+          <img :src="currentMainImage" :alt="product.name" class="main-image" @error="handleImageError" />
         </div>
-        
+
         <!-- 商品小图列表 -->
         <div class="thumbnail-list">
-          <div 
-            v-for="(img, index) in allImages" 
-            :key="index"
-            :class="['thumbnail-item', { active: currentImageIndex === index }]"
-            @click="changeMainImage(index)"
-          >
-            <img 
-              :src="img" 
-              :alt="`${product.name}-${index + 1}`"
-              @error="handleImageError"
-            />
+          <div v-for="(img, index) in allImages" :key="index"
+            :class="['thumbnail-item', { active: currentImageIndex === index }]" @click="changeMainImage(index)">
+            <img :src="getProductImageUrl(img)" :alt="`${product.name}-${index + 1}`" @error="handleImageError" />
           </div>
         </div>
       </div>
@@ -636,56 +620,55 @@ const getDetailImageUrl = (imgPath) => {
         <div class="shop-info" v-if="shopInfo.shopName || shopInfo.id">
           <!-- 店铺头像 -->
           <div class="shop-avatar">
-            <el-avatar 
-              :size="50" 
-              :src="getProductImageUrl(shopInfo.shopLogo)" 
-              @error="handleImageError"
-            >
+            <el-avatar :size="50" :src="getProductImageUrl(shopInfo.shopLogo)" @error="handleImageError">
               <span>{{ (shopInfo.shopName || '店').substring(0, 1) }}</span>
             </el-avatar>
           </div>
-          
+
           <div class="shop-details">
             <!-- 店铺名 -->
             <div class="shop-name">{{ shopInfo.shopName || '官方旗舰店' }}</div>
-            
+
             <!-- 店铺星级 -->
             <div class="shop-rating">
               <span class="rating-stars">
-                <el-rate
-                  :model-value="parseFloat(shopRating)"
-                  disabled
-                  show-score
-                  text-color="#ff9900"
-                  :score-template="shopRating"
-                />
+                <el-rate :model-value="parseFloat(shopRating)" disabled show-score text-color="#ff9900"
+                  :score-template="shopRating" />
               </span>
               <span class="rating-score">{{ formatShopScore(shopInfo.shopScore) }}分</span>
-              
+
               <!-- 店铺统计信息 -->
               <span class="shop-stats" v-if="shopInfo.salesCount">
-                <el-icon><ShoppingBag /></el-icon>
+                <el-icon>
+                  <ShoppingBag />
+                </el-icon>
                 销量 {{ shopInfo.salesCount }}
               </span>
               <span class="shop-stats" v-if="shopInfo.followerCount">
-                <el-icon><User /></el-icon>
+                <el-icon>
+                  <User />
+                </el-icon>
                 粉丝 {{ shopInfo.followerCount }}
               </span>
             </div>
-            
+
             <!-- 店铺描述 -->
             <div class="shop-description" v-if="shopInfo.description">
               {{ shopInfo.description }}
             </div>
-            
+
             <!-- 客服入口 -->
             <div class="customer-service">
               <el-button type="primary" size="small" @click="contactCustomerService">
-                <el-icon><ChatDotRound /></el-icon>
+                <el-icon>
+                  <ChatDotRound />
+                </el-icon>
                 联系客服
               </el-button>
               <el-button size="small" @click="goToShopPage" v-if="shopInfo.id">
-                <el-icon><Shop /></el-icon>
+                <el-icon>
+                  <Shop />
+                </el-icon>
                 进店逛逛
               </el-button>
             </div>
@@ -696,7 +679,7 @@ const getDetailImageUrl = (imgPath) => {
         <div class="product-basic-info">
           <h1 class="product-title">{{ product.name }}</h1>
           <div class="product-subtitle">{{ product.subTitle }}</div>
-          
+
           <!-- 商品价格 -->
           <div class="product-price-section">
             <div class="current-price">
@@ -707,17 +690,17 @@ const getDetailImageUrl = (imgPath) => {
               ￥{{ formatPrice(product.originalPrice) }}
             </div>
           </div>
-          
+
           <!-- 商品分类信息 -->
           <div class="product-category-info" v-if="product.categoryName || product.category?.name">
             分类：{{ product.categoryName || product.category?.name }}
           </div>
-          
+
           <!-- 商品库存信息 -->
           <div class="product-stock-info" v-if="product.stock !== undefined">
             库存：{{ product.stock }} 件
           </div>
-          
+
           <!-- 店铺信息（如果上面没有显示店铺信息） -->
           <div class="product-shop-info" v-if="shopInfo.shopName && !shopInfo.id">
             店铺：{{ shopInfo.shopName }}
@@ -727,19 +710,27 @@ const getDetailImageUrl = (imgPath) => {
         <!-- 固定服务承诺 -->
         <div class="service-promises">
           <div class="service-item">
-            <el-icon color="#67C23A"><CircleCheck /></el-icon>
+            <el-icon color="#67C23A">
+              <CircleCheck />
+            </el-icon>
             <span>现货，付款后48小时内发货，晚发必赔</span>
           </div>
           <div class="service-item">
-            <el-icon color="#67C23A"><CircleCheck /></el-icon>
+            <el-icon color="#67C23A">
+              <CircleCheck />
+            </el-icon>
             <span>快递: 免运费</span>
           </div>
           <div class="service-item">
-            <el-icon color="#67C23A"><CircleCheck /></el-icon>
+            <el-icon color="#67C23A">
+              <CircleCheck />
+            </el-icon>
             <span>退货宝极速退款</span>
           </div>
           <div class="service-item">
-            <el-icon color="#67C23A"><CircleCheck /></el-icon>
+            <el-icon color="#67C23A">
+              <CircleCheck />
+            </el-icon>
             <span>支持7天无理由退换</span>
           </div>
         </div>
@@ -748,37 +739,25 @@ const getDetailImageUrl = (imgPath) => {
         <div class="quantity-section">
           <span class="quantity-label">数量</span>
           <div class="quantity-control">
-            <el-input-number 
-              v-model="quantity" 
-              :min="1" 
-              :max="product.stock || 999"
-              size="large"
-              @change="handleQuantityChange"
-            />
+            <el-input-number v-model="quantity" :min="1" :max="product.stock || 999" size="large"
+              @change="handleQuantityChange" />
             <span class="stock-info">库存 {{ product.stock || 0 }} 件</span>
           </div>
         </div>
 
         <!-- 操作按钮 -->
         <div class="action-buttons">
-          <el-button 
-            type="danger" 
-            size="large" 
-            class="buy-now-btn"
-            @click="handleBuyNow"
-          >
-            <el-icon><ShoppingCart /></el-icon>
+          <el-button type="danger" size="large" class="buy-now-btn" @click="handleBuyNow">
+            <el-icon>
+              <ShoppingCart />
+            </el-icon>
             立即购买
           </el-button>
-          
-          <el-button 
-            type="primary" 
-            size="large" 
-            class="add-cart-btn"
-            @click="handleAddToCart"
-            :loading="addingToCart"
-          >
-            <el-icon><ShoppingCartFull /></el-icon>
+
+          <el-button type="primary" size="large" class="add-cart-btn" @click="handleAddToCart" :loading="addingToCart">
+            <el-icon>
+              <ShoppingCartFull />
+            </el-icon>
             加入购物车
           </el-button>
         </div>
@@ -796,37 +775,31 @@ const getDetailImageUrl = (imgPath) => {
                 <h3>商品实拍图</h3>
                 <div class="images-count">共 {{ allImages.length }} 张图片</div>
               </div>
-              
+
               <!-- 图片展示区 -->
               <div class="images-container">
-                <div 
-                  v-for="(img, index) in allImages" 
-                  :key="index"
-                  class="detail-image-item"
-                  :class="{ 'first-image': index === 0, 'last-image': index === allImages.length - 1 }"
-                >
-                  <img 
-                    :src="getDetailImageUrl(img)" 
-                    :alt="`${product.name}-图${index + 1}`"
-                    :class="{ 'main-image': index === 0 }"
-                    @error="handleImageError"
-                  />
+                <div v-for="(img, index) in allImages" :key="index" class="detail-image-item"
+                  :class="{ 'first-image': index === 0, 'last-image': index === allImages.length - 1 }">
+                  <img :src="getDetailImageUrl(img)" :alt="`${product.name}-图${index + 1}`"
+                    :class="{ 'main-image': index === 0 }" @error="handleImageError" />
                   <div v-if="index === 0" class="image-caption">主图</div>
                   <div v-else class="image-caption">细节图 {{ index }}</div>
                 </div>
               </div>
             </div>
-            
+
             <!-- 商品详情底部信息 -->
             <div class="detail-footer">
               <div class="footer-tips">
-                <el-icon><Warning /></el-icon>
+                <el-icon>
+                  <Warning />
+                </el-icon>
                 <span>温馨提示：商品图片仅供参考，请以实物为准，如有疑问请联系客服</span>
               </div>
             </div>
           </div>
         </el-tab-pane>
-        
+
         <el-tab-pane label="商品评价" name="comments">
           <div class="product-comments">
             <!-- 评价概况 -->
@@ -839,11 +812,8 @@ const getDetailImageUrl = (imgPath) => {
                 <div class="score-distribution">
                   <div class="score-item" v-for="score in 5" :key="score">
                     <span class="score-label">{{ 6 - score }}星</span>
-                    <el-progress 
-                      :percentage="formatScorePercent(commentStats.scoreDistribution[6 - score] || 0)" 
-                      :show-text="false"
-                      class="score-progress"
-                    />
+                    <el-progress :percentage="formatScorePercent(commentStats.scoreDistribution[6 - score] || 0)"
+                      :show-text="false" class="score-progress" />
                     <span class="score-count">{{ commentStats.scoreDistribution[6 - score] || 0 }}条</span>
                   </div>
                 </div>
@@ -852,7 +822,7 @@ const getDetailImageUrl = (imgPath) => {
                 累计评价 <span class="count">{{ commentStats.total }}</span> 条
               </div>
             </div>
-            
+
             <!-- 评价列表 -->
             <div v-loading="commentLoading">
               <div v-if="productComments.length > 0" class="comment-list">
@@ -860,11 +830,8 @@ const getDetailImageUrl = (imgPath) => {
                   <!-- 评论头部 -->
                   <div class="comment-header">
                     <div class="user-info">
-                      <el-avatar 
-                        :size="40" 
-                        :src="comment.avatar || getProductImageUrl(comment.userAvatar)"
-                        class="user-avatar"
-                      >
+                      <el-avatar :size="40" :src="comment.avatar || getProductImageUrl(comment.userAvatar)"
+                        class="user-avatar">
                         <span>{{ comment.nickName ? comment.nickName.charAt(0) : '用' }}</span>
                       </el-avatar>
                       <div class="user-details">
@@ -880,54 +847,43 @@ const getDetailImageUrl = (imgPath) => {
                       </div>
                     </div>
                     <div class="comment-rating">
-                      <el-rate
-                        :model-value="comment.score || 5"
-                        disabled
-                        size="small"
-                        text-color="#ff9900"
-                      />
+                      <el-rate :model-value="comment.score || 5" disabled size="small" text-color="#ff9900" />
                     </div>
                   </div>
-                  
+
                   <!-- 评论内容 -->
                   <div class="comment-content">
                     {{ comment.content }}
                   </div>
-                  
+
                   <!-- 评论图片 -->
                   <div v-if="comment.images && comment.images.length > 0" class="comment-images">
-                    <img 
-                      v-for="(img, index) in comment.images" 
-                      :key="index"
-                      :src="getProductImageUrl(img)"
-                      @click="previewImage(img)"
-                      class="comment-image"
-                    />
+                    <img v-for="(img, index) in comment.images" :key="index" :src="getProductImageUrl(img)"
+                      @click="previewImage(img)" class="comment-image" />
                   </div>
-                  
+
                   <!-- 评论互动 -->
                   <div class="comment-actions">
                     <span class="like-count">
-                      <el-icon><StarFilled /></el-icon>
+                      <el-icon>
+                        <StarFilled />
+                      </el-icon>
                       {{ comment.likeCount || 0 }}
                     </span>
                     <span class="reply-count">
-                      <el-icon><ChatDotRound /></el-icon>
+                      <el-icon>
+                        <ChatDotRound />
+                      </el-icon>
                       {{ comment.replyCount || 0 }}
                     </span>
                   </div>
                 </div>
-                
+
                 <!-- 分页 -->
-                <el-pagination
-                  v-if="commentPageParams.total > commentPageParams.pageSize"
-                  v-model:current-page="commentPageParams.pageNum"
-                  v-model:page-size="commentPageParams.pageSize"
-                  :total="commentPageParams.total"
-                  layout="prev, pager, next, jumper"
-                  @current-change="loadProductComments"
-                  class="comment-pagination"
-                />
+                <el-pagination v-if="commentPageParams.total > commentPageParams.pageSize"
+                  v-model:current-page="commentPageParams.pageNum" v-model:page-size="commentPageParams.pageSize"
+                  :total="commentPageParams.total" layout="prev, pager, next, jumper"
+                  @current-change="loadProductComments" class="comment-pagination" />
               </div>
               <div v-else class="no-comments">
                 <el-empty description="暂无评价" />
@@ -1509,15 +1465,15 @@ const getDetailImageUrl = (imgPath) => {
   .product-detail-container {
     padding: 15px;
   }
-  
+
   .product-description-container {
     gap: 20px;
   }
-  
+
   .description-images {
     flex: 0 0 250px;
   }
-  
+
   .vertical-image-item img {
     height: 180px;
   }
@@ -1527,22 +1483,22 @@ const getDetailImageUrl = (imgPath) => {
   .detail-content {
     flex-wrap: wrap;
   }
-  
+
   .left-section {
     flex: 0 0 100%;
     margin-bottom: 20px;
   }
-  
+
   .main-image-wrapper {
     width: 100%;
     max-width: 400px;
     margin: 0 auto;
   }
-  
+
   .product-description-container {
     flex-direction: column;
   }
-  
+
   .description-images {
     flex: none;
     width: 100%;
@@ -1552,23 +1508,23 @@ const getDetailImageUrl = (imgPath) => {
     padding-top: 20px;
     margin-top: 20px;
   }
-  
+
   .vertical-image-list {
     flex-direction: row;
     flex-wrap: wrap;
     gap: 15px;
   }
-  
+
   .vertical-image-item {
     width: calc(33.333% - 10px);
   }
-  
+
   .shop-rating {
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
   }
-  
+
   .summary-header {
     flex-direction: column;
     gap: 20px;
@@ -1579,29 +1535,29 @@ const getDetailImageUrl = (imgPath) => {
   .product-detail-container {
     padding: 10px;
   }
-  
+
   .main-image-wrapper {
     height: 300px;
   }
-  
+
   .action-buttons {
     flex-direction: column;
   }
-  
+
   .buy-now-btn,
   .add-cart-btn {
     width: 100%;
   }
-  
+
   .thumbnail-item {
     width: 50px;
     height: 50px;
   }
-  
+
   .vertical-image-item {
     width: calc(50% - 8px);
   }
-  
+
   .vertical-image-item img {
     height: 150px;
   }
@@ -1611,23 +1567,23 @@ const getDetailImageUrl = (imgPath) => {
   .main-image-wrapper {
     height: 250px;
   }
-  
+
   .product-title {
     font-size: 18px;
   }
-  
+
   .price-value {
     font-size: 20px;
   }
-  
+
   .service-item {
     font-size: 12px;
   }
-  
+
   .vertical-image-item {
     width: 100%;
   }
-  
+
   .vertical-image-item img {
     height: 180px;
   }

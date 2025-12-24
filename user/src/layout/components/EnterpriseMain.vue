@@ -9,7 +9,7 @@
       <el-container>
         <aside class="aside">
           <el-menu background-color="#17C2AA" text-color="#FFFFFF" active-text-color="#17C2AA">
-            <el-menu-item v-for="({icon, label, path}, index) in pathList" :key="index" @click="jumpTo(path, label)">
+            <el-menu-item v-for="({ icon, label, path }, index) in pathList" :key="index" @click="jumpTo(path, label)">
               <i :class="icon"></i>
               <span slot="title">{{ label }}</span>
             </el-menu-item>
@@ -18,7 +18,7 @@
 
         <el-main>
           <el-scrollbar wrap-class="scrollbar-wrapper">
-            <app-main/>
+            <app-main />
           </el-scrollbar>
         </el-main>
       </el-container>
@@ -68,7 +68,6 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-
 aside {
   background: #17C2AA;
   box-shadow: 4px 0 4px 0 rgba(0, 0, 0, 0.08);
@@ -80,7 +79,7 @@ aside {
   padding: 0;
 }
 
-::v-deep .el-menu {
+:v-deep(.el-menu) {
   border-right: 0;
 
   .el-menu-item {
@@ -112,10 +111,10 @@ aside {
     padding: 0;
   }
 
-  ::v-deep .el-menu-item {
+  :v-deep(.el-menu-item) {
     padding-left: 15px !important;
 
-    > span {
+    >span {
       display: none;
     }
   }

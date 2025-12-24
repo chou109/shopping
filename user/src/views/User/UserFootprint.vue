@@ -4,12 +4,7 @@
     <div class="page-header">
       <h2 class="page-title">我的足迹</h2>
       <div class="page-actions">
-        <el-button 
-          type="danger" 
-          plain 
-          :disabled="!footprints || footprints.length === 0"
-          @click="handleClearAll"
-        >
+        <el-button type="danger" plain :disabled="!footprints || footprints.length === 0" @click="handleClearAll">
           清空全部足迹
         </el-button>
       </div>
@@ -22,7 +17,7 @@
         <el-radio-button label="shop">店铺</el-radio-button>
         <el-radio-button label="product">商品</el-radio-button>
       </el-radio-group>
-      
+
       <!-- 统计信息 -->
       <div class="filter-stats">
         <span class="stat-item">共 {{ totalCount }} 条记录</span>
@@ -43,21 +38,17 @@
               <div class="group-count">共 {{ group.length }} 条记录</div>
             </div>
             <div class="footprint-items">
-              <div 
-                v-for="item in group" 
-                :key="item.id"
-                class="footprint-item"
-                :class="{'shop-item': item.targetType === 2, 'product-item': item.targetType === 1}"
-              >
+              <div v-for="item in group" :key="item.id" class="footprint-item"
+                :class="{ 'shop-item': item.targetType === 2, 'product-item': item.targetType === 1 }">
                 <!-- 图片区域 -->
                 <div class="item-image" @click="handleItemClick(item)">
-                  <img :src="getProductImageUrl(item.targetImage)" alt="">
+                  <img :src="item.targetImage" alt="">
                   <!-- 类型标签 -->
                   <div class="type-badge" :class="getTypeBadgeClass(item.targetType)">
                     {{ getTypeText(item.targetType) }}
                   </div>
                 </div>
-                
+
                 <!-- 信息区域 -->
                 <div class="item-info">
                   <h3 class="item-title" @click="handleItemClick(item)">
@@ -75,33 +66,18 @@
                     <span class="follower-count" v-if="item.followerCount">粉丝: {{ item.followerCount }}</span>
                   </div>
                 </div>
-                
+
                 <!-- 操作区域 -->
                 <div class="item-actions">
-                  <el-button 
-                    type="danger" 
-                    text 
-                    size="small"
-                    @click="handleDelete(item.id)"
-                  >
+                  <el-button type="danger" text size="small" @click="handleDelete(item.id)">
                     删除
                   </el-button>
-                  <el-button 
-                    v-if="item.targetType === 1"
-                    type="primary" 
-                    text 
-                    size="small"
-                    @click="handleAddToCart(item)"
-                  >
+                  <el-button v-if="item.targetType === 1" type="primary" text size="small"
+                    @click="handleAddToCart(item)">
                     加入购物车
                   </el-button>
-                  <el-button 
-                    v-if="item.targetType === 2"
-                    type="success" 
-                    text 
-                    size="small"
-                    @click="handleFollowShop(item)"
-                  >
+                  <el-button v-if="item.targetType === 2" type="success" text size="small"
+                    @click="handleFollowShop(item)">
                     关注店铺
                   </el-button>
                 </div>
@@ -113,7 +89,7 @@
           <p>暂无分组数据</p>
         </div>
       </div>
-      
+
       <!-- 空状态 -->
       <div v-else class="empty-state">
         <el-empty :description="getEmptyDescription()">
@@ -169,7 +145,7 @@ const filteredFootprints = computed(() => {
   if (!footprints.value || footprints.value.length === 0) {
     return []
   }
-  
+
   switch (activeFilter.value) {
     case 'shop':
       return footprints.value.filter(item => item.targetType === 2)
@@ -189,22 +165,22 @@ const totalCount = computed(() => {
 // 按日期分组
 const groupedFootprints = computed(() => {
   console.log('计算 groupedFootprints，过滤后数据:', filteredFootprints.value)
-  
+
   if (!filteredFootprints.value || filteredFootprints.value.length === 0) {
     return {}
   }
-  
+
   const groups = {}
-  
+
   filteredFootprints.value.forEach(item => {
     if (!item || !item.lastBrowseTime) {
       console.warn('足迹项数据不完整:', item)
       return
     }
-    
+
     try {
       const date = new Date(item.lastBrowseTime).toDateString()
-      
+
       if (!groups[date]) {
         groups[date] = []
       }
@@ -213,7 +189,7 @@ const groupedFootprints = computed(() => {
       console.error('处理足迹日期时出错:', error)
     }
   })
-  
+
   console.log('分组结果:', groups)
   return groups
 })
@@ -268,7 +244,7 @@ const handleEmptyAction = () => {
 // 加入购物车
 const handleAddToCart = async (item) => {
   if (item.targetType !== 1) return
-  
+
   try {
     const cartData = {
       productId: item.targetId,
@@ -278,7 +254,7 @@ const handleAddToCart = async (item) => {
       productUnitPrice: item.price || 0,
       selected: 1
     }
-    
+
     const response = await addCart(cartData)
     if (response.code === 200) {
       ElMessage.success('已加入购物车')
@@ -304,7 +280,7 @@ const formatDate = (dateString) => {
     const today = new Date()
     const yesterday = new Date(today)
     yesterday.setDate(yesterday.getDate() - 1)
-    
+
     if (date.toDateString() === today.toDateString()) {
       return '今天'
     } else if (date.toDateString() === yesterday.toDateString()) {
@@ -350,13 +326,13 @@ const getTypeText = (type) => {
 const loadFootprints = async () => {
   const userId = store.state.user?.userId
   console.log('当前用户ID:', userId)
-  
+
   if (!userId) {
     ElMessage.warning('请先登录')
     router.push('/login')
     return
   }
-  
+
   loading.value = true
   try {
     const response = await listFootprintByUser(userId)
@@ -385,7 +361,7 @@ const handleDelete = async (footprintId) => {
       cancelButtonText: '取消',
       type: 'warning'
     })
-    
+
     const response = await deleteFootprint(footprintId)
     if (response.code === 200) {
       ElMessage.success('删除成功')
@@ -410,13 +386,13 @@ const handleClearAll = async () => {
       cancelButtonText: '取消',
       type: 'warning'
     })
-    
+
     const userId = store.state.user?.userId
     if (!userId) {
       ElMessage.warning('用户未登录')
       return
     }
-    
+
     const response = await clearFootprint(userId)
     if (response.code === 200) {
       ElMessage.success('清空成功')
@@ -683,41 +659,41 @@ onMounted(() => {
     align-items: flex-start;
     gap: 15px;
   }
-  
+
   .filter-tabs {
     flex-direction: column;
     gap: 15px;
     align-items: flex-start;
   }
-  
+
   .filter-stats {
     align-self: stretch;
     justify-content: space-between;
   }
-  
+
   .footprint-item {
     flex-direction: column;
     align-items: flex-start;
     text-align: left;
   }
-  
+
   .item-image {
     width: 100%;
     height: 150px;
     margin-right: 0;
     margin-bottom: 10px;
   }
-  
+
   .item-info {
     width: 100%;
     margin-bottom: 10px;
   }
-  
+
   .item-meta {
     flex-wrap: wrap;
     gap: 8px;
   }
-  
+
   .item-actions {
     align-self: stretch;
     flex-direction: row;
@@ -730,15 +706,15 @@ onMounted(() => {
     flex-direction: column;
     gap: 8px;
   }
-  
+
   .stat-item {
     align-self: flex-start;
   }
-  
+
   .item-actions {
     flex-direction: column;
   }
-  
+
   .item-actions .el-button {
     width: 100%;
   }

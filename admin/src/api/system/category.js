@@ -8,6 +8,15 @@ export function listCategory(query) {
     params: query
   })
 }
+export function listCategoryFront(query) {
+  return request({
+    url: '/system/category/front/tree',
+    method: 'get',
+    params: query
+  })
+}
+
+
 
 // 查询类目详细
 export function getCategory(id) {

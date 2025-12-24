@@ -2,23 +2,18 @@
   <div>
     <!--  头像 -->
     <div v-if="!chatOpen" class="avatar" :style="{
-            ...buttonPosition
-          }"
-         @mousedown="handleMouseDown"
-         ref="dragButton"
-    >
+      ...buttonPosition
+    }" @mousedown="handleMouseDown" ref="dragButton">
       <img :style="{
         height: buttonHeight + 'px',
         width: buttonWidth + 'px',
         userSelect: 'none',
         pointerEvents: 'none',
-        }"
-           src="@/assets/images/pic5.png" alt=""
-      />
+      }" src="@/assets/images/pic5.png" alt="" />
     </div>
 
     <!--  聊天窗  -->
-    <el-dialog v-model="chatOpen" :width="documentWidth > 600 ? '600px' : '100%' " class="dragButtonDialog">
+    <el-dialog v-model="chatOpen" :width="documentWidth > 600 ? '600px' : '100%'" class="dragButtonDialog">
       <Chat @close="minimize" @minimize="minimize"></Chat>
     </el-dialog>
   </div>
@@ -141,7 +136,7 @@ export default {
 
       if (!this.$refs.dragButton) return
 
-// 如果没有鼠标点击状态  则不执行
+      // 如果没有鼠标点击状态  则不执行
       if (!this.mouseDownState) return
 
       let { clientWidth: pageWidth } = document.documentElement
@@ -188,7 +183,7 @@ export default {
 }
 
 
-::v-deep .dragButtonDialog {
+:deep(.dragButtonDialog) {
   .el-dialog__header {
     display: none;
   }

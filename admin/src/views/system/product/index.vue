@@ -53,12 +53,44 @@
           </el-col>
           <el-col :span="6">
             <el-form-item label="品类" prop="categoryId">
-              <el-select v-model="queryParams.categoryId" placeholder="输入品类名称搜索" clearable filterable
-                :filter-method="filterCategoryOptions" style="width: 200px">
-                <el-option label="全部" :value="null" />
-                <el-option v-for="item in filteredCategoryOptions" :key="item.id" :label="`${item.name} `"
-                  :value="item.id" />
-              </el-select>
+              <div class="cascader-select-wrapper" @click.stop="toggleCascader">
+                <el-select v-model="queryParams.categoryId" placeholder="点击选择品类" clearable filterable
+                  style="width: 200px" @click.stop>
+                  <el-option label="全部" :value="null" />
+                  <el-option v-for="category in categoryTreeOptions" :key="category.id" :label="category.name"
+                    :value="category.id" />
+                </el-select>
+
+                <!-- 级联选择器面板 -->
+                <div v-if="showCascader" class="cascader-panel" @click.stop>
+                  <div class="cascader-container">
+                    <!-- 左侧父级菜单 -->
+                    <div class="cascader-menu left-menu">
+                      <div v-for="parent in categoryTree" :key="parent.id" class="cascader-menu-item"
+                        :class="{ active: activeParentId === parent.id }" @mouseenter="handleParentHover(parent)"
+                        @click.stop="handleParentClick(parent)">
+                        <span>{{ parent.name }}</span>
+                        <el-icon v-if="parent.children && parent.children.length > 0" style="margin-left: 8px;">
+                          <ArrowRight />
+                        </el-icon>
+                      </div>
+                    </div>
+
+                    <!-- 右侧子级菜单 -->
+                    <div v-if="activeParentId && activeChildren.length > 0" class="cascader-menu right-menu">
+                      <div v-for="child in activeChildren" :key="child.id" class="cascader-menu-item"
+                        :class="{ active: queryParams.categoryId === child.id }" @click.stop="handleChildClick(child)">
+                        <span>{{ child.name }}</span>
+                      </div>
+                    </div>
+
+                    <div v-if="activeParentId && activeChildren.length === 0"
+                      class="cascader-menu right-menu empty-tips">
+                      该分类下没有子分类
+                    </div>
+                  </div>
+                </div>
+              </div>
             </el-form-item>
           </el-col>
         </el-row>
@@ -241,8 +273,8 @@
     </el-table>
 
     <!-- 分页组件 -->
-    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize"
-      @pagination="getList" />
+    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum"
+      v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 添加或修改商品对话框 -->
     <el-dialog :title="title" v-model="open" width="800px" append-to-body>
@@ -262,8 +294,8 @@
 
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="品类ID" prop="categoryId">
-              <el-input v-model="form.categoryId" placeholder="请输入品类ID" />
+            <el-form-item label="品类" prop="categoryId">
+              <el-input v-model="form.categoryId" placeholder="请输入品类" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -361,8 +393,8 @@ const LOCAL_CATEGORY_OPTIONS = Object.entries(LOCAL_CATEGORY_MAP).map(([id, name
   name: name
 }));
 import { listProduct, getProduct, delProduct, addProduct, updateProduct, updateProductStatus, updateProductHotFlag } from "@/api/system/product";
-import { ArrowDown } from '@element-plus/icons-vue';
-
+import { listCategoryFront } from "@/api/system/category";
+import { ArrowDown, ArrowRight } from '@element-plus/icons-vue';
 const { proxy } = getCurrentInstance();
 const filteredCategoryOptions = ref([...LOCAL_CATEGORY_OPTIONS]); // 用于下拉框显示的过滤后列表
 const categoryLoading = ref(false); // 保留，但不再需要真实加载
@@ -377,6 +409,13 @@ const single = ref(true);
 const multiple = ref(true);
 const total = ref(0);
 const title = ref("");
+const categoryTree = ref([]); // 完整的树形数据
+const showCascader = ref(false);
+const activeParentId = ref(null); // 当前激活的父级ID
+const activeChildren = ref([]); // 当前激活父级的子级列表
+const categoryTreeOptions = ref([]); // 所有分类的扁平化列表（用于原下拉框）
+
+
 
 const data = reactive({
   form: {},
@@ -421,20 +460,287 @@ const data = reactive({
 
 const { queryParams, form, rules } = toRefs(data);
 
-/** 查询商品列表 */
-function getList() {
-  function filterCategoryOptions(query) {
-    if (query && query.trim()) {
-      const searchText = query.trim().toLowerCase();
-      filteredCategoryOptions.value = LOCAL_CATEGORY_OPTIONS.filter(item =>
-        item.name.toLowerCase().includes(searchText) ||
-        item.id.toString().includes(searchText)
-      );
+
+/** 将树形数据扁平化，用于下拉框显示 */
+function flattenCategoryTree(treeData, level = 0) {
+  const result = [];
+
+  const flatten = (categories, currentLevel) => {
+    categories.forEach(category => {
+      // 添加缩进标识
+      const indent = '　'.repeat(currentLevel); // 使用全角空格缩进
+      result.push({
+        id: category.id,
+        label: `${indent}${category.name}`,
+        name: category.name,
+        level: currentLevel,
+        original: category
+      });
+
+      // 递归处理子分类
+      if (category.children && category.children.length > 0) {
+        flatten(category.children, currentLevel + 1);
+      }
+    });
+  };
+
+  flatten(treeData, level);
+  return result;
+}
+
+/** 从后端加载分类树 */
+/** 从后端加载分类树 */
+async function loadCategoryTree() {
+  try {
+    // 使用接口获取树形数据
+    const response = await listCategoryFront();
+    console.log('Category tree response:', response);
+
+    if (response && response.data) {
+      // 假设接口返回的是树形结构数据
+      // 如果接口返回的是平铺数据，需要转换为树形结构
+      const categories = response.data;
+
+      if (Array.isArray(categories)) {
+        // 检查是否是树形结构（有children字段）
+        const firstItem = categories[0];
+        if (firstItem && firstItem.children !== undefined) {
+          // 已经是树形结构
+          categoryTree.value = categories;
+        } else {
+          // 平铺数据，转换为树形结构
+          categoryTree.value = buildCategoryTree(categories);
+        }
+
+        // 生成扁平化列表
+        generateCategoryOptions();
+      }
+    }
+
+  } catch (error) {
+    console.error('加载分类树失败:', error);
+    // 失败时暂时使用空数组
+    categoryTree.value = [];
+    categoryTreeOptions.value = [];
+  }
+}
+/** 将平铺数据转换为树形结构 */
+function buildCategoryTree(flatCategories) {
+  const categoryMap = {};
+  const tree = [];
+
+  // 创建映射
+  flatCategories.forEach(category => {
+    categoryMap[category.id] = {
+      ...category,
+      children: []
+    };
+  });
+
+  // 构建树形结构
+  flatCategories.forEach(category => {
+    const node = categoryMap[category.id];
+
+    if (category.parentId === null || category.parentId === 0 || !categoryMap[category.parentId]) {
+      // 根节点
+      tree.push(node);
     } else {
-      // 没有搜索词时显示全部
-      filteredCategoryOptions.value = [...LOCAL_CATEGORY_OPTIONS];
+      // 子节点
+      const parent = categoryMap[category.parentId];
+      if (parent) {
+        parent.children.push(node);
+      } else {
+        // 如果父节点不存在，也作为根节点
+        tree.push(node);
+      }
+    }
+  });
+
+  return tree;
+}
+
+
+function generateCategoryOptions() {
+  const result = [];
+
+  const flatten = (categories, level = 0) => {
+    categories.forEach(category => {
+      // 如果当前分类有子分类，将其标记为父级
+      const hasChildren = category.children && category.children.length > 0;
+
+      // 只添加叶子节点（可选择的分类）
+      if (!hasChildren) {
+        // 查找父级路径
+        const parentNames = getParentPath(categoryTree.value, category.id);
+        const displayName = parentNames.length > 0
+          ? `${parentNames.join(' / ')} / ${category.name}`
+          : category.name;
+
+        result.push({
+          id: category.id,
+          name: displayName, // 显示完整路径
+          originalName: category.name, // 原始名称
+          level: level
+        });
+      }
+
+      // 递归处理子分类
+      if (hasChildren) {
+        flatten(category.children, level + 1);
+      }
+    });
+  };
+
+  flatten(categoryTree.value);
+  categoryTreeOptions.value = result;
+}
+/** 处理父级菜单悬停 */
+function handleParentHover(parent) {
+  activeParentId.value = parent.id;
+  activeChildren.value = parent.children || [];
+}
+
+/** 切换级联面板显示 */
+function toggleCascader() {
+  showCascader.value = !showCascader.value;
+  if (showCascader.value && queryParams.value.categoryId) {
+    // 如果已选择了分类，找到对应的父级
+    findParentForSelected();
+  }
+}
+/** 获取分类的父级路径 */
+function getParentPath(tree, categoryId, path = []) {
+  for (const node of tree) {
+    if (node.id === categoryId) {
+      return path;
+    }
+
+    if (node.children && node.children.length > 0) {
+      const childPath = getParentPath(node.children, categoryId, [...path, node.name]);
+      if (childPath !== null) {
+        return childPath;
+      }
     }
   }
+  return null;
+}
+/** 查找已选分类的父级 */
+function findParentForSelected() {
+  const selectedId = queryParams.value.categoryId;
+  if (!selectedId) return;
+
+  const findParent = (categories) => {
+    for (const category of categories) {
+      if (category.children) {
+        const found = category.children.find(child => child.id === selectedId);
+        if (found) {
+          activeParentId.value = category.id;
+          activeChildren.value = category.children;
+          return true;
+        }
+
+        // 递归查找
+        if (findParent(category.children)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
+  findParent(categoryTree.value);
+}
+// 监听点击事件，点击外部关闭级联面板
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleClickOutside);
+});
+/** 点击页面其他区域关闭级联面板 */
+function handleClickOutside(event) {
+  const cascaderEl = document.querySelector('.cascader-select-wrapper');
+  if (cascaderEl && !cascaderEl.contains(event.target)) {
+    showCascader.value = false;
+  }
+}
+
+/** 处理父级菜单点击 */
+function handleParentClick(parent) {
+  activeParentId.value = parent.id;
+  activeChildren.value = parent.children || [];
+
+  // 如果父级没有子分类，则可以选择父级（如果允许的话）
+  if (!parent.children || parent.children.length === 0) {
+    // 如果允许选择父级，取消下面这行注释
+    // handleChildClick(parent);
+  }
+}
+/** 处理子级菜单点击 */
+function handleChildClick(child) {
+  queryParams.value.categoryId = child.id;
+  // 关闭级联面板（可选）
+  // showCascader.value = false;
+}
+
+/** 品类选择变化处理 */
+function handleCategoryChange(value) {
+  console.log('Selected category id:', value);
+  // 这里可以添加其他逻辑，如根据选择的分类筛选商品等
+}
+
+/** 过滤品类选项（用于下拉框搜索） */
+function filterCategoryOptions(query) {
+  if (!query) {
+    // 没有搜索词时显示全部（带层级结构）
+    return categoryTreeOptions.value;
+  }
+
+  const searchText = query.toLowerCase();
+
+  // 先筛选匹配的分类
+  const matchedCategories = categoryTreeOptions.value.filter(item =>
+    item.name.toLowerCase().includes(searchText) ||
+    item.id.toString().includes(searchText)
+  );
+
+  // 如果搜索结果为空，返回空数组
+  if (matchedCategories.length === 0) {
+    return [];
+  }
+
+  // 构建一个包含匹配分类及其所有祖先的集合
+  const resultSet = new Set();
+
+  matchedCategories.forEach(category => {
+    // 添加匹配的分类本身
+    resultSet.add(category.id);
+
+    // 如果需要，可以在这里添加查找祖先分类的逻辑
+    // 但考虑到我们已经有完整的树形数据，直接使用全部匹配项即可
+  });
+
+  // 返回匹配的分类
+  return categoryTreeOptions.value.filter(item =>
+    matchedCategories.some(match => match.id === item.id)
+  );
+}
+
+/** 查询商品列表 */
+function getList() {
+  // function filterCategoryOptions(query) {
+  //   if (query && query.trim()) {
+  //     const searchText = query.trim().toLowerCase();
+  //     filteredCategoryOptions.value = LOCAL_CATEGORY_OPTIONS.filter(item =>
+  //       item.name.toLowerCase().includes(searchText) ||
+  //       item.id.toString().includes(searchText)
+  //     );
+  //   } else {
+  //     // 没有搜索词时显示全部
+  //     filteredCategoryOptions.value = [...LOCAL_CATEGORY_OPTIONS];
+  //   }
+  // }
 
   /** 清空品类搜索（用于重置时） */
   function clearCategoryFilter() {
@@ -463,6 +769,7 @@ function getList() {
 
   listProduct(params).then(response => {
     productList.value = response.rows;
+    console.log('Fetched product list:', response.rows);
     total.value = response.total;
     loading.value = false;
   }).catch(() => {
@@ -520,6 +827,7 @@ function reset() {
 /** 搜索按钮操作 */
 function handleQuery() {
   queryParams.value.pageNum = 1;
+  console.log('Query params:', queryParams.value);
   getList();
 }
 
@@ -656,6 +964,11 @@ function toggleHot(row) {
 
 // 组件挂载时加载数据
 onMounted(() => {
+  // listCategoryFront().then(response => {
+  //   console.log('Fetched categories:', response);
+  // });
+  // 加载分类树
+  loadCategoryTree();
   getList();
 });
 </script>
@@ -701,5 +1014,99 @@ onMounted(() => {
 
 :deep(.el-form-item) {
   margin-bottom: 15px;
+}
+
+/* 添加样式使缩进显示正确 */
+:deep(.el-select-dropdown__item) {
+  white-space: pre;
+}
+
+/* 新增：级联选择器样式 */
+.cascader-select-wrapper {
+  position: relative;
+}
+
+.cascader-panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 5px;
+  background: white;
+  border: 1px solid #e4e7ed;
+  border-radius: 4px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  z-index: 9999;
+  min-width: 400px;
+  max-height: 300px;
+  overflow: hidden;
+}
+
+.cascader-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.cascader-menu {
+  flex: 1;
+  min-height: 200px;
+  overflow-y: auto;
+  border: none;
+  padding: 0;
+}
+
+.left-menu {
+  border-right: 1px solid #e4e7ed;
+  min-width: 150px;
+}
+
+.right-menu {
+  min-width: 150px;
+}
+
+.cascader-menu-item {
+  padding: 8px 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: background-color 0.3s;
+}
+
+.cascader-menu-item:hover {
+  background-color: #f5f7fa;
+}
+
+.cascader-menu-item.active {
+  background-color: #ecf5ff;
+  color: #409eff;
+}
+
+.empty-tips {
+  padding: 20px;
+  text-align: center;
+  color: #999;
+  font-size: 14px;
+}
+
+.cascader-footer {
+  padding: 10px;
+  border-top: 1px solid #e4e7ed;
+  text-align: right;
+  background: #f8f9fa;
+}
+
+/* 调整原下拉框的样式，使其不显示下拉箭头 */
+:deep(.category-cascader-popper) {
+  display: none !important;
+}
+
+:deep(.el-select .el-input .el-select__caret) {
+  opacity: 0.5;
+}
+
+/* 点击展开按钮样式 */
+.cascader-select-wrapper :deep(.el-input) {
+  cursor: pointer;
 }
 </style>

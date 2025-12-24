@@ -12,12 +12,7 @@
       </el-tooltip>
     </el-row>
     <el-dialog :title="title" v-model="open" append-to-body>
-      <el-transfer
-        :titles="['显示', '隐藏']"
-        v-model="value"
-        :data="columns"
-        @change="dataChange"
-      ></el-transfer>
+      <el-transfer :titles="['显示', '隐藏']" v-model="value" :data="columns" @change="dataChange"></el-transfer>
     </el-dialog>
   </div>
 </template>
@@ -68,13 +63,14 @@ export default {
 };
 </script>
 <style lang="scss" scoped>
-::v-deep .el-transfer__button {
+:v-deep(.el-transfer__button) {
   border-radius: 50%;
   padding: 12px;
   display: block;
   margin-left: 0px;
 }
-::v-deep .el-transfer__button:first-child {
+
+:v-deep(.el-transfer__button:first-child) {
   margin-bottom: 10px;
 }
 </style>

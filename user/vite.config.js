@@ -35,6 +35,11 @@ export default defineConfig(({ mode, command }) => {
 
           changeOrigin: true,
           rewrite: (p) => p.replace(/^\/dev-api/, '')
+        },
+        '/profile': {
+          target: 'http://127.0.0.1:9091',
+          changeOrigin: true
+          // 不需要rewrite，直接代理
         }
       }
     },

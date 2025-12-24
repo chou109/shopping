@@ -9,13 +9,13 @@
         <el-breadcrumb-item v-else>商品列表</el-breadcrumb-item>
       </el-breadcrumb>
     </div>
-    
+
     <!-- 搜索头部 -->
     <div class="search-header">
       <h2>搜索结果</h2>
       <p>{{ pageTitle }}</p>
     </div>
-    
+
     <!-- 分类筛选选项卡 -->
     <div class="filter-tabs">
       <el-radio-group v-model="activeFilter" @change="handleFilterChange">
@@ -23,7 +23,7 @@
         <el-radio-button label="product">商品</el-radio-button>
         <el-radio-button label="shop">店铺</el-radio-button>
       </el-radio-group>
-      
+
       <!-- 统计信息 -->
       <div class="filter-stats">
         <span class="stat-item">共 {{ totalCount }} 条结果</span>
@@ -31,7 +31,7 @@
         <span class="stat-item" v-if="activeFilter === 'shop'">店铺: {{ filteredShops.length }} 个</span>
       </div>
     </div>
-    
+
     <!-- 搜索结果 -->
     <div v-loading="loading" class="search-results">
       <!-- 全部或商品筛选 -->
@@ -40,10 +40,10 @@
           <div class="search-stats">
             <span>找到 {{ filteredProducts.length }} 个相关商品</span>
           </div>
-          
+
           <div class="product-grid">
-            <div class="product-item" v-for="item in filteredProducts" :key="item.id" 
-                 @click="handleProductClick(item.id)">
+            <div class="product-item" v-for="item in filteredProducts" :key="item.id"
+              @click="handleProductClick(item.id)">
               <div class="product-card">
                 <div class="product-image">
                   <img :src="getProductImageUrl(item.mainImage)" :alt="item.name" @error="handleImageError" />
@@ -63,24 +63,23 @@
             </div>
           </div>
         </div>
-        
+
         <div v-else-if="activeFilter === 'product' && !loading" class="empty-section">
           <el-empty description="暂无相关商品">
             <el-button type="primary" @click="resetSearch">重新搜索</el-button>
           </el-empty>
         </div>
       </div>
-      
+
       <!-- 全部或店铺筛选 -->
       <div v-if="activeFilter === 'all' || activeFilter === 'shop'" class="shop-section">
         <div v-if="filteredShops.length > 0" class="shop-list">
           <div class="search-stats">
             <span>找到 {{ filteredShops.length }} 个相关店铺</span>
           </div>
-          
+
           <div class="shop-grid">
-            <div class="shop-item" v-for="shop in filteredShops" :key="shop.id" 
-                 @click="handleShopClick(shop.id)">
+            <div class="shop-item" v-for="shop in filteredShops" :key="shop.id" @click="handleShopClick(shop.id)">
               <div class="shop-card">
                 <div class="shop-image">
                   <!-- {{ item.shopLogo }} -->
@@ -90,13 +89,8 @@
                 <div class="shop-info">
                   <h3 class="shop-name">{{ shop.shopName }}</h3>
                   <div class="shop-rating">
-                    <el-rate
-                      v-model="shop.shopScore"
-                      disabled
-                      show-score
-                      text-color="#ff9900"
-                      :score-template="formatShopScore(shop.shopScore)"
-                    />
+                    <el-rate v-model="shop.shopScore" disabled show-score text-color="#ff9900"
+                      :score-template="formatShopScore(shop.shopScore)" />
                   </div>
                   <div class="shop-desc">{{ shop.description || '暂无描述' }}</div>
                   <div class="shop-meta">
@@ -109,16 +103,17 @@
             </div>
           </div>
         </div>
-        
+
         <div v-else-if="activeFilter === 'shop' && !loading" class="empty-section">
           <el-empty description="暂无相关店铺">
             <el-button type="primary" @click="resetSearch">重新搜索</el-button>
           </el-empty>
         </div>
       </div>
-      
+
       <!-- 全部筛选下的空状态 -->
-      <div v-if="activeFilter === 'all' && filteredProducts.length === 0 && filteredShops.length === 0 && !loading" class="empty-state">
+      <div v-if="activeFilter === 'all' && filteredProducts.length === 0 && filteredShops.length === 0 && !loading"
+        class="empty-state">
         <el-empty :description="emptyDescription">
           <div class="empty-suggestions">
             <p>建议：</p>
@@ -131,19 +126,13 @@
           <el-button type="primary" @click="resetSearch">重新搜索</el-button>
         </el-empty>
       </div>
-      
+
       <!-- 分页组件 -->
-      <el-pagination
-        v-if="(activeFilter === 'all' && totalCount > pageSize) || 
-              (activeFilter === 'product' && filteredProducts.length > pageSize) ||
-              (activeFilter === 'shop' && filteredShops.length > pageSize)"
-        v-model:current-page="currentPage"
-        v-model:page-size="pageSize"
-        :total="totalCount"
-        layout="prev, pager, next, jumper"
-        @current-change="handlePageChange"
-        class="search-pagination"
-      />
+      <el-pagination v-if="(activeFilter === 'all' && totalCount > pageSize) ||
+        (activeFilter === 'product' && filteredProducts.length > pageSize) ||
+        (activeFilter === 'shop' && filteredShops.length > pageSize)" v-model:current-page="currentPage"
+        v-model:page-size="pageSize" :total="totalCount" layout="prev, pager, next, jumper"
+        @current-change="handlePageChange" class="search-pagination" />
     </div>
   </div>
 </template>
@@ -175,11 +164,11 @@ const loadCategoryName = async () => {
     categoryName.value = ''
     return
   }
-  
+
   try {
     const response = await getCategory(categoryId.value)
     console.log('分类详情响应:', response)
-    
+
     if (response.code === 200 && response.data) {
       categoryName.value = response.data.name || `ID: ${categoryId.value}`
     } else {
@@ -196,7 +185,7 @@ const filteredProducts = computed(() => {
   if (!products.value || products.value.length === 0) {
     return []
   }
-  
+
   return products.value
 })
 
@@ -205,7 +194,7 @@ const filteredShops = computed(() => {
   if (!shops.value || shops.value.length === 0) {
     return []
   }
-  
+
   return shops.value
 })
 
@@ -272,17 +261,17 @@ const resetSearch = () => {
 // 加载搜索结果
 const loadSearchResults = () => {
   loading.value = true
-  
+
   if (categoryId.value) {
     loadCategoryName()
   } else {
     categoryName.value = ''
   }
-  
+
   // 清空之前的数据
   products.value = []
   shops.value = []
-  
+
   if (categoryId.value) {
     // 按分类搜索商品
     api({
@@ -291,7 +280,7 @@ const loadSearchResults = () => {
     })
       .then((res) => {
         console.log('分类查询响应:', res)
-        
+
         if (res.code === 200) {
           products.value = res.data || []
           total.value = products.value.length
@@ -323,7 +312,7 @@ const loadSearchResults = () => {
       .then(([productRes, shopRes]) => {
         console.log('商品搜索响应:', productRes)
         console.log('店铺搜索响应:', shopRes)
-        
+
         // 处理商品搜索结果
         if (productRes.code === 200) {
           products.value = productRes.data || []
@@ -331,14 +320,14 @@ const loadSearchResults = () => {
         } else {
           products.value = []
         }
-        
+
         // 处理店铺搜索结果
         if (shopRes.code === 200) {
           shops.value = shopRes.data || []
         } else {
           shops.value = []
         }
-        
+
         total.value = products.value.length + shops.value.length
       })
       .catch((error) => {
@@ -365,19 +354,19 @@ const loadSearchResults = () => {
       .then(([productRes, shopRes]) => {
         console.log('热门商品响应:', productRes)
         console.log('热门店铺响应:', shopRes)
-        
+
         if (productRes.code === 200) {
           products.value = productRes.data || []
         } else {
           products.value = []
         }
-        
+
         if (shopRes.code === 200) {
           shops.value = shopRes.data || []
         } else {
           shops.value = []
         }
-        
+
         total.value = products.value.length + shops.value.length
       })
       .catch((error) => {
@@ -429,12 +418,12 @@ const formatShopScore = (score) => {
 onMounted(() => {
   keyword.value = route.query.keyword || ''
   categoryId.value = route.query.categoryId || ''
-  
+
   console.log('页面加载，参数:', {
     keyword: keyword.value,
     categoryId: categoryId.value
   })
-  
+
   loadSearchResults()
 })
 
@@ -444,9 +433,9 @@ watch(() => route.query, (newQuery) => {
   currentPage.value = 1
   categoryName.value = ''
   activeFilter.value = 'all'
-  
+
   console.log('路由参数变化:', newQuery)
-  
+
   loadSearchResults()
 })
 </script>
@@ -651,7 +640,8 @@ watch(() => route.query, (newQuery) => {
   margin-top: auto;
 }
 
-.product-sales, .product-stock {
+.product-sales,
+.product-stock {
   background: #f5f5f5;
   padding: 2px 6px;
   border-radius: 3px;
@@ -769,13 +759,16 @@ watch(() => route.query, (newQuery) => {
   margin-top: auto;
 }
 
-.shop-sales, .shop-products, .shop-followers {
+.shop-sales,
+.shop-products,
+.shop-followers {
   background: #f5f5f5;
   padding: 2px 6px;
   border-radius: 3px;
 }
 
-.empty-state, .empty-section {
+.empty-state,
+.empty-section {
   text-align: center;
   padding: 50px 20px;
 }
@@ -816,7 +809,7 @@ watch(() => route.query, (newQuery) => {
   .product-grid {
     grid-template-columns: repeat(3, 1fr);
   }
-  
+
   .shop-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -828,7 +821,7 @@ watch(() => route.query, (newQuery) => {
     gap: 15px;
     align-items: flex-start;
   }
-  
+
   .filter-stats {
     align-self: stretch;
     justify-content: space-between;
@@ -839,21 +832,21 @@ watch(() => route.query, (newQuery) => {
   .search-container {
     padding: 15px;
   }
-  
+
   .product-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 15px;
   }
-  
+
   .shop-grid {
     grid-template-columns: 1fr;
     gap: 15px;
   }
-  
+
   .product-image {
     height: 160px;
   }
-  
+
   .shop-image {
     height: 180px;
   }
@@ -863,22 +856,23 @@ watch(() => route.query, (newQuery) => {
   .search-container {
     padding: 12px;
   }
-  
+
   .product-grid {
     grid-template-columns: 1fr;
     gap: 12px;
   }
-  
+
   .filter-stats {
     flex-direction: column;
     gap: 8px;
   }
-  
+
   .stat-item {
     align-self: flex-start;
   }
-  
-  .product-meta, .shop-meta {
+
+  .product-meta,
+  .shop-meta {
     flex-direction: column;
     gap: 5px;
   }

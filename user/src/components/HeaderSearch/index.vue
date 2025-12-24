@@ -1,18 +1,10 @@
 <template>
-  <div :class="{'show':show}" class="header-search">
+  <div :class="{ 'show': show }" class="header-search">
     <svg-icon class-name="search-icon" icon-class="search" @click.stop="click" />
-    <el-select
-      ref="headerSearchSelect"
-      v-model="search"
-      :remote-method="querySearch"
-      filterable
-      default-first-option
-      remote
-      placeholder="Search"
-      class="header-search-select"
-      @change="change"
-    >
-      <el-option v-for="option in options" :key="option.item.path" :value="option.item" :label="option.item.title.join(' > ')" />
+    <el-select ref="headerSearchSelect" v-model="search" :remote-method="querySearch" filterable default-first-option
+      remote placeholder="Search" class="header-search-select" @change="change">
+      <el-option v-for="option in options" :key="option.item.path" :value="option.item"
+        :label="option.item.title.join(' > ')" />
     </el-select>
   </div>
 </template>
@@ -70,7 +62,7 @@ export default {
       this.show = false
     },
     change(val) {
-      if(this.ishttp(val.path)) {
+      if (this.ishttp(val.path)) {
         // http(s):// 路径新窗口打开
         window.open(val.path, "_blank");
       } else {
@@ -167,7 +159,7 @@ export default {
     display: inline-block;
     vertical-align: middle;
 
-    ::v-deep .el-input__inner {
+    :v-deep(.el-input__inner) {
       border-radius: 0;
       border: 0;
       padding-left: 0;

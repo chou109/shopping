@@ -456,7 +456,7 @@ export default {
   }
 }
 
-::v-deep .el-input__inner {
+:deep(.el-input__inner) {
   font-family: element-icons, serif;
 }
 </style>
