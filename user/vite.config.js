@@ -28,22 +28,65 @@ export default defineConfig(({ mode, command }) => {
       port: 18183,
       host: true,
       open: true,
+      cors: true,
       proxy: {
         // https://cn.vitejs.dev/config/#server-proxy
         '/dev-api': {
           target: 'http://127.0.0.1:9091',
-
           changeOrigin: true,
-          rewrite: (p) => p.replace(/^\/dev-api/, '')
+          rewrite: (p) => p.replace(/^\/dev-api/, ''),
+          secure: false
         },
-        '/profile': {
-          target: 'http://127.0.0.1:9091',
-          changeOrigin: true
-          // 不需要rewrite，直接代理
+        // WebSocket 代理配置
+        '/ai/chat': {
+          target: 'ws://localhost:9091',
+          ws: true, // 启用 WebSocket 代理
+          changeOrigin: true,
+           secure: false,
+            // 重要：添加重试和超时配置
+          configure: (proxy, options) => {
+            proxy.on('error', (err, req, res) => {
+              console.log('WebSocket 代理错误:', err.message)
+            })
+            proxy.on('proxyReq', (proxyReq, req, res) => {
+              console.log('代理请求:', req.method, req.url)
+            })
+          }
+          // 这里不需要 rewrite，因为要保持路径 /ai/chat 不变
+        }
+      },
+      '/ws': {
+          target: 'ws://localhost:9091',
+          ws: true,
+          changeOrigin: true,
+          secure: false,
+          rewrite: (path) => path.replace(/^\/ws/, '/ai/chat')
+        },
+           hmr: {
+        protocol: 'ws',
+        host: 'localhost',
+        port: 18183,
+        // 禁用 HMR 覆盖层
+        overlay: false
+      },
+      watch: {
+        usePolling: false
+      }
+    },
+     // 构建配置
+    build: {
+      sourcemap: false,
+      chunkSizeWarningLimit: 2000,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            vue: ['vue', 'vue-router', 'pinia'],
+            element: ['element-plus', '@element-plus/icons-vue']
+          }
         }
       }
     },
-    //fix:error:stdin>:7356:1: warning: "@charset" must be the first rule in the file
+    
     css: {
       postcss: {
         plugins: [
@@ -59,6 +102,8 @@ export default defineConfig(({ mode, command }) => {
           }
         ]
       }
-    }
+    },
+    //fix:error:stdin>:7356:1: warning: "@charset" must be the first rule in the file
+
   }
 })

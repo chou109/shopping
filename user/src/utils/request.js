@@ -171,3 +171,29 @@ export function getOnlineRegionData() {
     method: 'get'
   })
 }
+
+export const getWebSocketUrl = () => {
+   if (process.env.NODE_ENV === 'development') {
+    // 尝试多种连接方式
+    const strategies = [
+      // 策略1：通过 Vite 代理
+      () => {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        return `${protocol}//${window.location.host}/ai/chat`;
+      },
+      // 策略2：直接连接后端
+      () => 'ws://localhost:9091/ai/chat',
+      // 策略3：使用自定义代理
+      () => 'ws://localhost:3000/ai/chat',
+      // 策略4：使用当前主机名
+      () => `ws://${window.location.hostname}:9091/ai/chat`
+    ];
+    
+    // 返回第一个策略（可以根据需要修改）
+    return strategies[0]();
+  }
+  
+  // 生产环境
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  return `${protocol}//${window.location.host}/ai/chat`;
+}
