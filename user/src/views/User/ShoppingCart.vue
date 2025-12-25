@@ -39,7 +39,7 @@
               <div class="item-content">
                 <!-- 商品图片 -->
                 <div class="item-image" @click="goToProductDetail(item.productId)">
-                  <img :src="item.productMainImage" :alt="item.name" />
+                  <img :src="getProductImageUrl(item.productMainImage)" :alt="item.name" @error="handleImageError" />
                 </div>
 
                 <!-- 商品信息 -->
@@ -152,7 +152,7 @@ import { useStore } from 'vuex'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Lock } from '@element-plus/icons-vue'
 import { getProductImageUrl, handleImageError } from '@/utils/image'
-import { listCart } from '@/api/system/cart'
+import { listCart, updateCart, delCart, clearCart } from '@/api/system/cart'
 
 const router = useRouter()
 const store = useStore()
@@ -331,7 +331,18 @@ const updateCartItem = async (item) => {
   try {
     // 重新计算小计
     item.productTotalPrice = item.productUnitPrice * item.quantity
-    ElMessage.success('数量已更新')
+
+    // 调用API更新数据库
+    const response = await updateCart(item.id, {
+      quantity: item.quantity,
+      productTotalPrice: item.productTotalPrice
+    })
+
+    if (response.code === 200) {
+      ElMessage.success('数量已更新')
+    } else {
+      ElMessage.error(response.msg || '更新失败')
+    }
   } catch (error) {
     console.error('更新购物车失败:', error)
     ElMessage.error('更新失败')
@@ -347,8 +358,13 @@ const handleDeleteItem = async (itemId) => {
       type: 'warning'
     })
 
-    cartItems.value = cartItems.value.filter(item => item.id !== itemId)
-    ElMessage.success('删除成功')
+    const response = await delCart(itemId)
+    if (response.code === 200) {
+      cartItems.value = cartItems.value.filter(item => item.id !== itemId)
+      ElMessage.success('删除成功')
+    } else {
+      ElMessage.error(response.msg || '删除失败')
+    }
   } catch (error) {
     if (error !== 'cancel') {
       console.error('删除商品失败:', error)
@@ -395,8 +411,13 @@ const handleClearCart = async () => {
       type: 'warning'
     })
 
-    cartItems.value = []
-    ElMessage.success('购物车已清空')
+    const response = await clearCart()
+    if (response.code === 200) {
+      cartItems.value = []
+      ElMessage.success('购物车已清空')
+    } else {
+      ElMessage.error(response.msg || '清空失败')
+    }
   } catch (error) {
     if (error !== 'cancel') {
       console.error('清空购物车失败:', error)

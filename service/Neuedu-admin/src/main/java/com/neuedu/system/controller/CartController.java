@@ -109,8 +109,8 @@ public class CartController extends BaseController
     @Operation(summary = "修改购物车")
     @PreAuthorize("@ss.hasPermi('system:cart:edit')")
     @Log(title = "购物车", businessType = BusinessType.UPDATE)
-    @PutMapping
-    public AjaxResult edit(@PathVariable Long id,@RequestBody Cart cart)
+    @PutMapping("/{id}")
+    public AjaxResult edit(@PathVariable Long id, @RequestBody Cart cart)
     {
         cart.setId(id);
         // 设置更新人为当前用户

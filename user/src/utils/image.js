@@ -9,7 +9,7 @@ export function getProductImageUrl(imagePath) {
   }
 
   // 定义一个基础路径
-  const basePath = 'dev-api';
+  const basePath = '/dev-api';
 
   // 如果已经是基础路径开头，直接返回
   if (imagePath.startsWith(basePath)) {
@@ -18,12 +18,12 @@ export function getProductImageUrl(imagePath) {
 
   // 如果以 /file/pic/ 开头
   if (imagePath.startsWith('/file/pic/')) {
-    return basePath + imagePath.substring(1);
+    return basePath + imagePath;
   }
 
   // 如果以 file/pic/ 开头（没有前面的/）
   if (imagePath.startsWith('file/pic/')) {
-    return basePath + imagePath;
+    return basePath + '/' + imagePath;
   }
 
   // 如果是 src/assets/images/file/pic/xxx.jpg
@@ -32,8 +32,9 @@ export function getProductImageUrl(imagePath) {
   }
 
   // 其他情况：假设是相对路径，添加基础路径
-  console.log('处理图片路径:', basePath + imagePath);
-  return basePath + imagePath;
+  const finalPath = imagePath.startsWith('/') ? basePath + imagePath : basePath + '/' + imagePath;
+  console.log('处理图片路径:', finalPath);
+  return finalPath;
 }
 
 // 图片加载错误处理

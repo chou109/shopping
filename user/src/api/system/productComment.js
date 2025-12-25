@@ -36,6 +36,15 @@ export function replyComment(parentId, content) {
   })
 }
 
+// 获取商品评论列表（前台）
+export function getProductCommentsFront(productId, score, hasImages) {
+  return request({
+    url: `/system/comment/product/${productId}`,
+    method: 'get',
+    params: { score, hasImages }
+  })
+}
+
 // 获取商品评论统计
 export function getProductCommentStats(productId) {
   return request({
@@ -44,14 +53,7 @@ export function getProductCommentStats(productId) {
   })
 }
 
-// 获取商品评论列表（前台）
-export function getProductComments(productId, score, hasImages) {
-  return request({
-    url: `/system/comment/product/${productId}`,
-    method: 'get',
-    params: { score, hasImages }
-  })
-}
+
 
 // 获取商品的根评论列表
 export function getRootComments(productId) {
