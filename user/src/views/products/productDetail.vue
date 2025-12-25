@@ -699,8 +699,8 @@ onMounted(() => {
               <div class="shop-card">
                 <div class="shop-header">
                   <div class="shop-logo">
-                    <img :src="shopInfo.shopLogo || '/src/assets/images/default-shop.png'" :alt="shopInfo.shopName"
-                      @error="handleImageError" />
+                    <img :src="getProductImageUrl(shopInfo.shopLogo) || '/src/assets/images/default-shop.png'"
+                      :alt="shopInfo.shopName" @error="handleImageError" />
                   </div>
                   <div class="shop-info">
                     <div class="shop-name">{{ shopInfo.shopName }}</div>

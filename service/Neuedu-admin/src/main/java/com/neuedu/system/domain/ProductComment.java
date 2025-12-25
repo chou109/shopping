@@ -87,6 +87,24 @@ public class ProductComment extends BaseEntity
     private Integer status;
 
 
+    @TableField(exist = false)  // 告诉MyBatis这个字段不在数据库表中
+    private String createBy;
+
+//    @TableField(exist = false)
+//    private Date createTime;
+
+    @TableField(exist = false)
+    private String updateBy;
+
+//    @TableField(exist = false)
+//    private Date updateTime;
+
+    @TableField(exist = false)
+    private String remark;
+    //
+    @TableField(exist = false)
+    private Integer deleted;
+
     // ============ 新增的便捷方法 ============
 
     /**

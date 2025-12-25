@@ -20,7 +20,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 /**
  * 商品对象 product
- * 
+ *
  * @author ruoyi
  * @date 2025-12-13
  */
@@ -122,6 +122,7 @@ public class Product extends BaseEntity
     /** 店铺id */
     @Schema(title = "店铺id")
     @Excel(name = "店铺id")
+    @TableField(exist = false)
     private Long shopId;
 
     // ============ 查询参数字段（非数据库字段） ============
@@ -159,5 +160,4 @@ public class Product extends BaseEntity
     @JsonFormat(pattern = "yyyy-MM-dd")
     @DateTimeFormat(pattern = "yyyy-MM-dd")
     private LocalDate endCreateTime;
-
 }
