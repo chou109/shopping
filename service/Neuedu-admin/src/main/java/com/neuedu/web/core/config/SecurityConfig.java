@@ -112,6 +112,8 @@ public class SecurityConfig {
                     .anonymous()
                     .antMatchers("/druid/**")
                     .anonymous()
+                    .antMatchers("/ai/chat").permitAll()
+                    .antMatchers("/test/**").permitAll()
                     // === 临时修改：允许所有认证用户访问所有接口 ===
 //                    .antMatchers("/system/**").authenticated()  // 所有认证用户都可访问
 //                    .antMatchers("/user/**").authenticated()    // 所有认证用户都可访问

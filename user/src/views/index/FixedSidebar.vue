@@ -42,17 +42,19 @@
       <div class="item-text">消息</div>
     </div>
 
-    <!-- 客服 -->
+    <!-- 客服/AI助手 -->
     <div 
       v-if="showServiceButton" 
       class="sidebar-item" 
-      @click="contactService"
-      :title="currentRoute.includes('/service') ? '当前已在客服页' : '联系客服'"
+      @click="goToChat"
+      :title="currentRoute.includes('/chat') ? '当前已在AI助手页' : 'AI助手'"
     >
       <div class="item-icon">
         <el-icon><Headset /></el-icon>
+        <!-- 可选：添加AI助手消息提示 -->
+        <span v-if="chatUnreadCount > 0" class="item-badge">{{ formatCount(chatUnreadCount) }}</span>
       </div>
-      <div class="item-text">客服</div>
+      <div class="item-text">AI助手</div>
     </div>
 
     <!-- 回到顶部 -->
@@ -80,7 +82,6 @@ import {
   Top,
   Message
 } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
 
 const route = useRoute()
 const router = useRouter()
@@ -90,6 +91,7 @@ const isHidden = ref(false)
 const scrollY = ref(0)
 const cartCount = ref(0)
 const messageCount = ref(5) // 模拟消息数量
+const chatUnreadCount = ref(0) // AI助手未读消息数量
 
 // 计算当前路由路径
 const currentRoute = computed(() => route.path)
@@ -108,7 +110,8 @@ const showMessageButton = computed(() => {
 })
 
 const showServiceButton = computed(() => {
-  return !currentRoute.value.includes('/service')
+  // 如果当前已经在chat页面，就不显示AI助手按钮
+  return !currentRoute.value.includes('/chat')
 })
 
 const showTopButton = computed(() => {
@@ -140,9 +143,10 @@ const goToMessage = () => {
   }
 }
 
-const contactService = () => {
+// 跳转到AI助手页面
+const goToChat = () => {
   if (showServiceButton.value) {
-    ElMessage.info('客服功能正在开发中，敬请期待！')
+    router.push('/chat')
   }
 }
 
@@ -175,10 +179,16 @@ const getCartCount = () => {
   cartCount.value = 3 // 模拟数据
 }
 
+// 获取AI助手未读消息数量（模拟数据）
+const getChatUnreadCount = () => {
+  chatUnreadCount.value = 2 // 模拟未读消息数量
+}
+
 // 生命周期
 onMounted(() => {
   window.addEventListener('scroll', handleScroll, { passive: true })
   getCartCount()
+  getChatUnreadCount()
   
   // 初始化滚动位置
   scrollY.value = window.scrollY || document.documentElement.scrollTop
@@ -190,7 +200,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* 样式保持不变，与您提供的代码一致 */
+/* 样式保持不变 */
 .fixed-sidebar {
   position: fixed;
   right: 20px;
