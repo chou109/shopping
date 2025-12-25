@@ -234,15 +234,27 @@ public class SysUserServiceImpl implements ISysUserService
     @Override
     public void checkUserDataScope(Long userId)
     {
-        if (!SysUser.isAdmin(SecurityUtils.getUserId()))
+        Long currentUserId = SecurityUtils.getUserId();
+
+        // 如果是超级管理员，直接通过
+        if (SysUser.isAdmin(currentUserId))
         {
-            SysUser user = new SysUser();
-            user.setUserId(userId);
-            List<SysUser> users = SpringUtils.getAopProxy(this).selectUserList(user);
-            if (StringUtils.isEmpty(users))
-            {
-                throw new ServiceException("没有权限访问用户数据！");
-            }
+            return;
+        }
+
+        // 如果是修改自己的信息，允许操作
+        if (userId != null && userId.equals(currentUserId))
+        {
+            return;
+        }
+
+        // 否则检查数据权限
+        SysUser user = new SysUser();
+        user.setUserId(userId);
+        List<SysUser> users = SpringUtils.getAopProxy(this).selectUserList(user);
+        if (StringUtils.isEmpty(users))
+        {
+            throw new ServiceException("没有权限访问用户数据！");
         }
     }
 

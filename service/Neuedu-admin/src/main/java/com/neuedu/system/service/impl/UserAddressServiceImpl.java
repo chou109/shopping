@@ -3,7 +3,12 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.neuedu.common.utils.StringUtils;
 import com.neuedu.system.constants.AddressConstants;
 import lombok.RequiredArgsConstructor;
+
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.neuedu.common.utils.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +29,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserAddress> implements IUserAddressService
 {
     private final UserAddressMapper userAddressMapper;
-
+    // 直辖市列表
+    private static final Set<String> MUNICIPALITIES = new HashSet<>(Arrays.asList(
+            "北京市", "上海市", "天津市", "重庆市",
+            "北京", "上海", "天津", "重庆"
+    ));
     /**
      * 查询用户地址
      *
@@ -260,46 +269,6 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
         return userAddressMapper.deleteUserAddressById(id);
     }
 
-    /**
-     * 验证地址信息是否完整
-     *
-     * @param userAddress 地址信息
-     * @return 验证结果
-     */
-    @Override
-    public boolean validateAddress(UserAddress userAddress) {
-        if (userAddress == null) {
-            return false;
-        }
-
-        // 必填字段验证
-        if (StringUtils.isEmpty(userAddress.getReceiveName())) {
-            return false;
-        }
-
-        if (StringUtils.isEmpty(userAddress.getReceivePhone())) {
-            return false;
-        }
-
-        // 手机号格式验证（简单验证）
-        String phone = userAddress.getReceivePhone();
-        if (!phone.matches("^1[3-9]\\d{9}$")) {
-            return false;
-        }
-
-        // 省市区验证 - 修改为只需要省份和城市，区域可选
-        if (StringUtils.isEmpty(userAddress.getProvince()) ||
-                StringUtils.isEmpty(userAddress.getCity())) {
-            return false;
-        }
-
-        // 详细地址验证
-        if (StringUtils.isEmpty(userAddress.getStreet())) {
-            return false;
-        }
-
-        return true;
-    }
 
     /**
      * 获取用户的地址数量 - 修改为使用 create_user
@@ -322,5 +291,187 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
             address.setUserId(address.getCreateUser());
             address.initExtraFields();
         }
+    }
+
+
+    /**
+     * 验证地址信息是否完整（严格模式）- 修改后版本
+     * 注意：这个方法是旧版本，建议使用灵活模式
+     *
+     * @param userAddress 地址信息
+     * @return 验证结果
+     */
+    @Override
+    public boolean validateAddress(UserAddress userAddress) {
+        // 重定向到灵活模式
+        return validateAddressFlexible(userAddress);
+    }
+
+    /**
+     * 验证地址信息是否完整（灵活模式）
+     * 1. 对于直辖市：需要省份和区，城市可选（可以为空或与省份相同）
+     * 2. 对于普通省份：需要省份和城市，区可选
+     *
+     * @param userAddress 地址信息
+     * @return 验证结果
+     */
+    @Override
+    public boolean validateAddressFlexible(UserAddress userAddress) {
+        if (userAddress == null) {
+            return false;
+        }
+
+        // 1. 验证收货人姓名
+        if (StringUtils.isEmpty(userAddress.getReceiveName())) {
+            return false;
+        }
+
+        // 2. 验证手机号
+        if (StringUtils.isEmpty(userAddress.getReceivePhone())) {
+            return false;
+        }
+
+        // 手机号格式验证（简单验证）
+        String phone = userAddress.getReceivePhone();
+        if (!phone.matches("^1[3-9]\\d{9}$")) {
+            return false;
+        }
+
+        // 3. 验证省份（必填）
+        if (StringUtils.isEmpty(userAddress.getProvince())) {
+            return false;
+        }
+
+        String province = userAddress.getProvince().trim();
+        String city = userAddress.getCity() != null ? userAddress.getCity().trim() : "";
+        String area = userAddress.getArea() != null ? userAddress.getArea().trim() : "";
+
+        // 4. 根据是否为直辖市进行不同的验证逻辑
+        boolean isMunicipality = isMunicipality(province);
+
+        if (isMunicipality) {
+            // 直辖市验证逻辑
+            // 直辖市可以没有城市字段，或者城市字段与省份相同（如北京-北京）
+            // 如果有城市字段，需要与省份匹配
+            if (StringUtils.isNotEmpty(city) && !city.equals(province) && !city.contains(province)) {
+                // 直辖市下的城市名应该与省份名相同或包含省份名
+                // 例如：北京 -> 北京市，上海 -> 上海市
+                return false;
+            }
+
+            // 直辖市必须有区级信息
+            if (StringUtils.isEmpty(area)) {
+                return false;
+            }
+        } else {
+            // 普通省份验证逻辑
+            // 必须有城市信息
+            if (StringUtils.isEmpty(city)) {
+                return false;
+            }
+
+            // 普通省份的区级信息可选，但建议有
+            // 这里不强制要求区级信息
+        }
+
+        // 5. 验证详细地址（必填）
+        if (StringUtils.isEmpty(userAddress.getStreet())) {
+            return false;
+        }
+
+        // 6. 验证详细地址长度
+        String street = userAddress.getStreet().trim();
+        if (street.length() < 5 || street.length() > 200) {
+            return false;
+        }
+
+        // 7. 邮政编码可选，如果有则验证格式
+        if (StringUtils.isNotEmpty(userAddress.getPostalCode())) {
+            String postalCode = userAddress.getPostalCode();
+            if (!postalCode.matches("^\\d{6}$")) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * 检查是否为直辖市
+     *
+     * @param province 省份名称
+     * @return 是否为直辖市
+     */
+    @Override
+    public boolean isMunicipality(String province) {
+        if (StringUtils.isEmpty(province)) {
+            return false;
+        }
+
+        String normalizedProvince = province.trim();
+
+        // 直接匹配
+        if (MUNICIPALITIES.contains(normalizedProvince)) {
+            return true;
+        }
+
+        // 模糊匹配（包含关系）
+        for (String municipality : MUNICIPALITIES) {
+            if (normalizedProvince.contains(municipality) || municipality.contains(normalizedProvince)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 获取地址的完整格式
+     *
+     * @param userAddress 地址信息
+     * @return 完整地址字符串
+     */
+    @Override
+    public String getFullAddress(UserAddress userAddress) {
+        if (userAddress == null) {
+            return "";
+        }
+
+        StringBuilder fullAddress = new StringBuilder();
+
+        // 省份
+        if (StringUtils.isNotEmpty(userAddress.getProvince())) {
+            fullAddress.append(userAddress.getProvince());
+        }
+
+        // 城市
+        if (StringUtils.isNotEmpty(userAddress.getCity())) {
+            // 如果是直辖市且城市与省份相同，不重复添加
+            if (!(isMunicipality(userAddress.getProvince()) &&
+                    userAddress.getCity().equals(userAddress.getProvince()))) {
+                if (fullAddress.length() > 0) {
+                    fullAddress.append(" ");
+                }
+                fullAddress.append(userAddress.getCity());
+            }
+        }
+
+        // 区县
+        if (StringUtils.isNotEmpty(userAddress.getArea())) {
+            if (fullAddress.length() > 0) {
+                fullAddress.append(" ");
+            }
+            fullAddress.append(userAddress.getArea());
+        }
+
+        // 详细地址
+        if (StringUtils.isNotEmpty(userAddress.getStreet())) {
+            if (fullAddress.length() > 0) {
+                fullAddress.append(" ");
+            }
+            fullAddress.append(userAddress.getStreet());
+        }
+
+        return fullAddress.toString();
     }
 }

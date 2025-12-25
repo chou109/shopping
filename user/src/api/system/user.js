@@ -10,10 +10,30 @@ export function listUser(query) {
   })
 }
 
-// 查询用户详细
+// 查询用户详细s
 export function getUser(userId) {
   return request({
     url: '/system/user/' + praseStrEmpty(userId),
+    method: 'get'
+  })
+}
+
+export function updateCurrentUserPassword(oldPassword, newPassword, confirmPassword) {
+  const data = {
+    oldPassword,
+    newPassword,
+    confirmPassword
+  }
+  return request({
+    url: '/system/user/password',
+    method: 'put',
+    data: data
+  })
+}
+
+export function getUsers() {
+  return request({
+    url: '/system/user/current',
     method: 'get'
   })
 }

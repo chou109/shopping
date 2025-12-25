@@ -106,6 +106,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             and DATE(p.create_time) &lt;= #{endCreateTime}
         </if>
         <if test="hotFlag != null "> and p.hot_flag = #{hotFlag}</if>
+        <if test="shopId != null "> and p.shop_id = #{shopId}</if>
         <if test="deleteFlag != null  and deleteFlag != ''"> and p.delete_flag = #{deleteFlag}</if>
     </sql>
 

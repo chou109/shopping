@@ -8,9 +8,11 @@
           <div class="profile-card">
             <div class="avatar-section">
               <div class="avatar-wrapper">
-                
+
                 <div class="avatar-upload" @click="openAvatarDialog">
-                  <el-icon><Camera /></el-icon>
+                  <el-icon>
+                    <Camera />
+                  </el-icon>
                   <span>更换头像</span>
                 </div>
               </div>
@@ -44,11 +46,15 @@
 
             <div class="quick-actions">
               <el-button type="primary" plain @click="$router.push('/user/orders')">
-                <el-icon><List /></el-icon>
+                <el-icon>
+                  <List />
+                </el-icon>
                 我的订单
               </el-button>
               <el-button type="success" plain @click="$router.push('/user/cart')">
-                <el-icon><ShoppingCart /></el-icon>
+                <el-icon>
+                  <ShoppingCart />
+                </el-icon>
                 购物车
               </el-button>
             </div>
@@ -61,45 +67,23 @@
             <el-tabs v-model="activeTab" class="profile-tabs">
               <!-- 基本资料 -->
               <el-tab-pane label="基本资料" name="basic">
-                <el-form
-                  ref="basicFormRef"
-                  :model="basicForm"
-                  :rules="basicRules"
-                  label-width="100px"
-                  class="basic-form"
-                >
+                <el-form ref="basicFormRef" :model="basicForm" :rules="basicRules" label-width="100px"
+                  class="basic-form">
                   <el-form-item label="用户昵称" prop="nickName">
-                    <el-input
-                      v-model="basicForm.nickName"
-                      placeholder="请输入用户昵称"
-                      maxlength="30"
-                      show-word-limit
-                    />
+                    <el-input v-model="basicForm.nickName" placeholder="请输入用户昵称" maxlength="30" show-word-limit />
                   </el-form-item>
 
                   <el-form-item label="用户名" prop="userName">
-                    <el-input
-                      v-model="basicForm.userName"
-                      placeholder="请输入用户名"
-                      disabled
-                    />
+                    <el-input v-model="basicForm.userName" placeholder="请输入用户名" disabled />
                     <span class="form-tip">用户名不可修改</span>
                   </el-form-item>
 
                   <el-form-item label="邮箱" prop="email">
-                    <el-input
-                      v-model="basicForm.email"
-                      placeholder="请输入邮箱地址"
-                      type="email"
-                    />
+                    <el-input v-model="basicForm.email" placeholder="请输入邮箱地址" type="email" />
                   </el-form-item>
 
                   <el-form-item label="手机号" prop="phonenumber">
-                    <el-input
-                      v-model="basicForm.phonenumber"
-                      placeholder="请输入手机号码"
-                      maxlength="11"
-                    />
+                    <el-input v-model="basicForm.phonenumber" placeholder="请输入手机号码" maxlength="11" />
                   </el-form-item>
 
                   <el-form-item label="性别" prop="sex">
@@ -129,32 +113,6 @@
                     </div>
                     <el-button type="text" @click="openPasswordDialog">修改密码</el-button>
                   </div>
-
-                  <div class="security-item">
-                    <div class="security-info">
-                      <div class="security-title">手机验证</div>
-                      <div class="security-desc" v-if="userInfo.phonenumber">
-                        已绑定手机：{{ userInfo.phonenumber }}
-                      </div>
-                      <div class="security-desc" v-else>未绑定手机号</div>
-                    </div>
-                    <el-button type="text" @click="handlePhoneBind">
-                      {{ userInfo.phonenumber ? '更换手机' : '绑定手机' }}
-                    </el-button>
-                  </div>
-
-                  <div class="security-item">
-                    <div class="security-info">
-                      <div class="security-title">邮箱验证</div>
-                      <div class="security-desc" v-if="userInfo.email">
-                        已绑定邮箱：{{ userInfo.email }}
-                      </div>
-                      <div class="security-desc" v-else>未绑定邮箱</div>
-                    </div>
-                    <el-button type="text" @click="handleEmailBind">
-                      {{ userInfo.email ? '更换邮箱' : '绑定邮箱' }}
-                    </el-button>
-                  </div>
                 </div>
               </el-tab-pane>
 
@@ -177,7 +135,7 @@
                       <span class="balance-highlight">¥{{ formatPrice(userInfo.balance || 0) }}</span>
                     </el-descriptions-item>
                   </el-descriptions>
-                  
+
                   <div class="account-actions">
                     <el-button type="primary" @click="handleRecharge">充值</el-button>
                     <el-button @click="handleWithdraw">提现</el-button>
@@ -192,18 +150,16 @@
                   <div class="address-header">
                     <h3>我的收货地址</h3>
                     <el-button type="primary" @click="openAddAddressDialog">
-                      <el-icon><Plus /></el-icon>
+                      <el-icon>
+                        <Plus />
+                      </el-icon>
                       新增地址
                     </el-button>
                   </div>
-                  
+
                   <div class="address-list" v-if="addressList.length > 0">
-                    <div 
-                      v-for="address in addressList" 
-                      :key="address.id" 
-                      class="address-item"
-                      :class="{ 'default-address': address.defaultFlag === 1 }"
-                    >
+                    <div v-for="address in addressList" :key="address.id" class="address-item"
+                      :class="{ 'default-address': address.defaultFlag === 1 }">
                       <div class="address-info">
                         <div class="address-header-info">
                           <span class="receive-name">{{ address.receiveName }}</span>
@@ -214,25 +170,19 @@
                         <div class="full-address">{{ formatFullAddress(address) }}</div>
                       </div>
                       <div class="address-actions">
-                        <el-button 
-                          v-if="address.defaultFlag !== 1" 
-                          type="text" 
-                          @click="handleSetDefaultAddress(address.id)"
-                        >
+                        <el-button v-if="address.defaultFlag !== 1" type="text"
+                          @click="handleSetDefaultAddress(address.id)">
                           设为默认
                         </el-button>
                         <el-button type="text" @click="openEditAddressDialog(address)">编辑</el-button>
-                        <el-button 
-                          type="text" 
-                          @click="handleDeleteAddress(address.id)" 
-                          :disabled="address.defaultFlag === 1"
-                        >
+                        <el-button type="text" @click="handleDeleteAddress(address.id)"
+                          :disabled="address.defaultFlag === 1">
                           删除
                         </el-button>
                       </div>
                     </div>
                   </div>
-                  
+
                   <div v-else class="empty-address">
                     <el-empty description="暂无收货地址">
                       <el-button type="primary" @click="openAddAddressDialog">添加地址</el-button>
@@ -247,28 +197,21 @@
     </div>
 
     <!-- 头像上传对话框 -->
-    <el-dialog
-      title="更换头像"
-      v-model="avatarDialogVisible"
-      width="400px"
-      :before-close="handleAvatarClose"
-    >
+    <el-dialog title="更换头像" v-model="avatarDialogVisible" width="400px" :before-close="handleAvatarClose">
       <div class="avatar-dialog">
         <div class="avatar-preview" v-if="avatarPreviewUrl">
-          
+
         </div>
-        <el-upload
-          class="avatar-uploader"
-          :action="uploadAction"
-          :show-file-list="false"
-          :before-upload="beforeAvatarUpload"
-          :on-success="handleAvatarSuccess"
-          :on-error="handleAvatarError"
-          :headers="uploadHeaders"
-        >
-          <el-icon v-if="!avatarPreviewUrl" class="avatar-uploader-icon"><Plus /></el-icon>
+        <el-upload class="avatar-uploader" :action="uploadAction" :show-file-list="false"
+          :before-upload="beforeAvatarUpload" :on-success="handleAvatarSuccess" :on-error="handleAvatarError"
+          :headers="uploadHeaders">
+          <el-icon v-if="!avatarPreviewUrl" class="avatar-uploader-icon">
+            <Plus />
+          </el-icon>
           <div v-else class="upload-again">
-            <el-icon><Refresh /></el-icon>
+            <el-icon>
+              <Refresh />
+            </el-icon>
             <span>重新选择</span>
           </div>
         </el-upload>
@@ -284,40 +227,16 @@
     </el-dialog>
 
     <!-- 修改密码对话框 -->
-    <el-dialog
-      title="修改密码"
-      v-model="passwordDialogVisible"
-      width="400px"
-    >
-      <el-form
-        ref="passwordFormRef"
-        :model="passwordForm"
-        :rules="passwordRules"
-        label-width="80px"
-      >
+    <el-dialog title="修改密码" v-model="passwordDialogVisible" width="400px">
+      <el-form ref="passwordFormRef" :model="passwordForm" :rules="passwordRules" label-width="80px">
         <el-form-item label="原密码" prop="oldPassword">
-          <el-input
-            v-model="passwordForm.oldPassword"
-            type="password"
-            placeholder="请输入原密码"
-            show-password
-          />
+          <el-input v-model="passwordForm.oldPassword" type="password" placeholder="请输入原密码" show-password />
         </el-form-item>
         <el-form-item label="新密码" prop="newPassword">
-          <el-input
-            v-model="passwordForm.newPassword"
-            type="password"
-            placeholder="请输入新密码"
-            show-password
-          />
+          <el-input v-model="passwordForm.newPassword" type="password" placeholder="请输入新密码" show-password />
         </el-form-item>
         <el-form-item label="确认密码" prop="confirmPassword">
-          <el-input
-            v-model="passwordForm.confirmPassword"
-            type="password"
-            placeholder="请再次输入新密码"
-            show-password
-          />
+          <el-input v-model="passwordForm.confirmPassword" type="password" placeholder="请再次输入新密码" show-password />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -327,35 +246,18 @@
     </el-dialog>
 
     <!-- 地址编辑对话框 -->
-    <el-dialog
-      :title="isEditAddress ? '编辑地址' : '新增地址'"
-      v-model="addressDialogVisible"
-      width="600px"
-      @close="handleAddressDialogClose"
-    >
-      <el-form
-        ref="addressFormRef"
-        :model="addressForm"
-        :rules="addressRules"
-        label-width="80px"
-      >
+    <el-dialog :title="isEditAddress ? '编辑地址' : '新增地址'" v-model="addressDialogVisible" width="600px"
+      @close="handleAddressDialogClose">
+      <el-form ref="addressFormRef" :model="addressForm" :rules="addressRules" label-width="80px">
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="收货人" prop="receiveName">
-              <el-input
-                v-model="addressForm.receiveName"
-                placeholder="请输入收货人姓名"
-                maxlength="30"
-              />
+              <el-input v-model="addressForm.receiveName" placeholder="请输入收货人姓名" maxlength="30" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="手机号" prop="receivePhone">
-              <el-input
-                v-model="addressForm.receivePhone"
-                placeholder="请输入手机号码"
-                maxlength="11"
-              />
+              <el-input v-model="addressForm.receivePhone" placeholder="请输入手机号码" maxlength="11" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -363,20 +265,10 @@
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="省级" prop="provinceCode">
-              <el-select
-                v-model="addressForm.provinceCode"
-                placeholder="请选择省级"
-                filterable
-                clearable
-                :loading="provinceLoading"
-                @change="handleProvinceChange"
-              >
-                <el-option
-                  v-for="province in provinces"
-                  :key="province.code"
-                  :label="province.name"
-                  :value="province.code"
-                />
+              <el-select v-model="addressForm.provinceCode" placeholder="请选择省级" filterable clearable
+                :loading="provinceLoading" @change="handleProvinceChange">
+                <el-option v-for="province in provinces" :key="province.code" :label="province.name"
+                  :value="province.code" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -384,21 +276,9 @@
           <!-- 非直辖市显示地级选择 -->
           <el-col :span="8" v-if="!isMunicipality(addressForm.provinceCode)">
             <el-form-item label="地级" prop="cityCode">
-              <el-select
-                v-model="addressForm.cityCode"
-                placeholder="请选择地级"
-                filterable
-                clearable
-                :loading="cityLoading"
-                :disabled="!addressForm.provinceCode"
-                @change="handleCityChange"
-              >
-                <el-option
-                  v-for="city in cities"
-                  :key="city.code"
-                  :label="city.name"
-                  :value="city.code"
-                />
+              <el-select v-model="addressForm.cityCode" placeholder="请选择地级" filterable clearable :loading="cityLoading"
+                :disabled="!addressForm.provinceCode" @change="handleCityChange">
+                <el-option v-for="city in cities" :key="city.code" :label="city.name" :value="city.code" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -415,57 +295,32 @@
           <!-- 区域选择器 -->
           <el-col :span="8">
             <el-form-item label="县级" prop="areaCode">
-              <el-select
-                v-model="addressForm.areaCode"
-                placeholder="请选择县级"
-                filterable
-                clearable
-                :loading="areaLoading"
+              <el-select v-model="addressForm.areaCode" placeholder="请选择县级" filterable clearable :loading="areaLoading"
                 :disabled="!addressForm.provinceCode || (!isMunicipality(addressForm.provinceCode) && !addressForm.cityCode)"
-                @change="handleAreaChange"
-              >
-                <el-option
-                  v-for="area in areas"
-                  :key="area.code"
-                  :label="area.name"
-                  :value="area.code"
-                />
+                @change="handleAreaChange">
+                <el-option v-for="area in areas" :key="area.code" :label="area.name" :value="area.code" />
               </el-select>
             </el-form-item>
           </el-col>
         </el-row>
 
         <el-form-item label="详细地址" prop="street">
-          <el-input
-            v-model="addressForm.street"
-            type="textarea"
-            :rows="3"
-            placeholder="请输入详细地址（街道、门牌号等）"
-            maxlength="200"
-            show-word-limit
-          />
+          <el-input v-model="addressForm.street" type="textarea" :rows="3" placeholder="请输入详细地址（街道、门牌号等）"
+            maxlength="200" show-word-limit />
         </el-form-item>
 
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="地址标签">
               <el-select v-model="addressForm.addressLabel" placeholder="请选择标签">
-                <el-option
-                  v-for="option in addressLabelOptions"
-                  :key="option.value"
-                  :label="option.label"
-                  :value="option.value"
-                />
+                <el-option v-for="option in addressLabelOptions" :key="option.value" :label="option.label"
+                  :value="option.value" />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="邮编">
-              <el-input
-                v-model="addressForm.postalCode"
-                placeholder="请输入邮编"
-                maxlength="10"
-              />
+              <el-input v-model="addressForm.postalCode" placeholder="请输入邮编" maxlength="10" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -476,7 +331,7 @@
           </el-checkbox>
         </el-form-item>
       </el-form>
-      
+
       <template #footer>
         <el-button @click="addressDialogVisible = false">取消</el-button>
         <el-button type="primary" @click="handleAddressSubmit" :loading="addressLoading">
@@ -488,23 +343,24 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, computed, watch, nextTick } from 'vue'
 import { useStore } from 'vuex'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Camera, Plus, Refresh, List, ShoppingCart } from '@element-plus/icons-vue'
 import { getCurrentUser, updateUser, updateUserPwd, updateAvatar, getUserStats } from '@/api/system/customer'
 import { getUserOrderStats, getUserFavoriteStats, getUserFootprintStats, getUserCartStats } from '@/api/system/stats'
+import { getUsers, getUser, updateCurrentUserPassword } from '@/api/system/user'
 import { getToken } from '@/utils/auth'
 // 导入地址管理相关的API
-import { 
-  listAddressByUserId, 
-  getDefaultAddress, 
-  addAddress, 
-  updateAddress, 
-  delAddress, 
+import {
+  listAddressByUserId,
+  getDefaultAddress,
+  addAddress,
+  updateAddress,
+  delAddress,
   setDefaultAddress,
-  validateAddress 
+  validateAddress
 } from '@/api/system/address'
 
 const store = useStore()
@@ -516,6 +372,7 @@ const passwordDialogVisible = ref(false)
 const avatarLoading = ref(false)
 const basicLoading = ref(false)
 const passwordLoading = ref(false)
+const isLoadingEditData = ref(false) // 标记是否正在加载编辑数据
 
 // 用户信息
 const userInfo = ref({})
@@ -653,20 +510,25 @@ const loadUserInfo = async () => {
   try {
     const response = await getCurrentUser()
     if (response.code === 200) {
-      userInfo.value = response.data || response
-      
+      const responses = await getUsers()
+      console.log('getUsers接口返回:', responses)
+      userInfo.value = responses.data || response
+      console.log('加载的用户信息:', userInfo.value)
+
+      // const res = await getUser()
+      // console.log('getUser接口返回:', res)
       // 同步更新store中的用户信息
       if (store.state.user) {
         store.commit('SET_USER', userInfo.value)
       }
-      
+
       // 填充表单数据
       Object.keys(basicForm).forEach(key => {
         if (userInfo.value[key] !== undefined) {
           basicForm[key] = userInfo.value[key]
         }
       })
-      
+
       // 加载用户统计信息
       await loadUserStats()
     } else {
@@ -715,16 +577,16 @@ const loadUserStats = async () => {
 // 处理基本资料提交
 const handleBasicSubmit = async () => {
   if (!basicFormRef.value) return
-  
+
   try {
     await basicFormRef.value.validate()
     basicLoading.value = true
-    
+
     const updateData = {
       ...basicForm,
       userId: currentUserId.value
     }
-    
+
     const response = await updateUser(updateData)
     if (response.code === 200) {
       ElMessage.success('资料更新成功')
@@ -769,14 +631,14 @@ const beforeAvatarUpload = (file) => {
     ElMessage.error('头像大小不能超过 2MB!')
     return false
   }
-  
+
   uploadFile.value = file
   const reader = new FileReader()
   reader.onload = (e) => {
     avatarPreviewUrl.value = e.target.result
   }
   reader.readAsDataURL(file)
-  
+
   return false // 手动上传
 }
 
@@ -786,12 +648,12 @@ const submitAvatar = async () => {
     ElMessage.warning('请选择要上传的头像')
     return
   }
-  
+
   try {
     avatarLoading.value = true
     const formData = new FormData()
     formData.append('avatar', uploadFile.value)
-    
+
     const response = await updateAvatar(formData)
     if (response.code === 200) {
       ElMessage.success('头像更新成功')
@@ -838,12 +700,12 @@ const openPasswordDialog = () => {
 // 处理密码修改提交
 const handlePasswordSubmit = async () => {
   if (!passwordFormRef.value) return
-  
+
   try {
     await passwordFormRef.value.validate()
     passwordLoading.value = true
-    
-    const response = await updateUserPwd(passwordForm.oldPassword, passwordForm.newPassword)
+
+    const response = await updateCurrentUserPassword(passwordForm.oldPassword, passwordForm.newPassword, passwordForm.confirmPassword)
     if (response.code === 200) {
       ElMessage.success('密码修改成功')
       passwordDialogVisible.value = false
@@ -894,7 +756,7 @@ const defaultAddress = ref(null)
 
 // 地址表单数据
 const addressForm = reactive({
-  addressId: null, 
+  addressId: null,
   receiveName: '',
   receivePhone: '',
   province: '',
@@ -924,7 +786,19 @@ const addressRules = {
     { required: true, message: '请选择省级', trigger: 'change' }
   ],
   cityCode: [
-    { required: true, message: '请选择地级', trigger: 'change' }
+    {
+      validator: (rule, value, callback) => {
+        // 直辖市不需要选择地级
+        if (isMunicipality(addressForm.provinceCode)) {
+          callback()
+        } else if (!value) {
+          callback(new Error('请选择地级'))
+        } else {
+          callback()
+        }
+      },
+      trigger: 'change'
+    }
   ],
   areaCode: [
     { required: true, message: '请选择县级', trigger: 'change' }
@@ -943,133 +817,92 @@ const addressLabelOptions = [
   { value: 4, label: '其他' }
 ]
 
-// 省市区数据服务
+// 省市区数据服务 - 使用静态数据
 class AreaDataService {
   constructor() {
     this.cache = new Map()
+    this.initData()
   }
 
-  // 获取所有省份数据
+  initData() {
+    // 省份数据
+    this.provincesData = [
+      { code: '110000', name: '北京市' },
+      { code: '120000', name: '天津市' },
+      { code: '130000', name: '河北省' },
+      { code: '140000', name: '山西省' },
+      { code: '150000', name: '内蒙古自治区' },
+      { code: '210000', name: '辽宁省' },
+      { code: '220000', name: '吉林省' },
+      { code: '230000', name: '黑龙江省' },
+      { code: '310000', name: '上海市' },
+      { code: '320000', name: '江苏省' },
+      { code: '330000', name: '浙江省' },
+      { code: '340000', name: '安徽省' },
+      { code: '350000', name: '福建省' },
+      { code: '360000', name: '江西省' },
+      { code: '370000', name: '山东省' },
+      { code: '410000', name: '河南省' },
+      { code: '420000', name: '湖北省' },
+      { code: '430000', name: '湖南省' },
+      { code: '440000', name: '广东省' },
+      { code: '450000', name: '广西壮族自治区' },
+      { code: '460000', name: '海南省' },
+      { code: '500000', name: '重庆市' },
+      { code: '510000', name: '四川省' },
+      { code: '520000', name: '贵州省' },
+      { code: '530000', name: '云南省' },
+      { code: '540000', name: '西藏自治区' },
+      { code: '610000', name: '陕西省' },
+      { code: '620000', name: '甘肃省' },
+      { code: '630000', name: '青海省' },
+      { code: '640000', name: '宁夏回族自治区' },
+      { code: '650000', name: '新疆维吾尔自治区' }
+    ]
+  }
+
   async getProvinces() {
-    const cacheKey = 'provinces'
-    if (this.cache.has(cacheKey)) {
-      return this.cache.get(cacheKey)
-    }
-
-    try {
-      const response = await fetch('https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json')
-      const data = await response.json()
-      const provinces = data.features.map(feature => ({
-        code: feature.properties.adcode,
-        name: feature.properties.name,
-        level: 'province'
-      }))
-      this.cache.set(cacheKey, provinces)
-      return provinces
-    } catch (error) {
-      console.error('获取省份数据失败:', error)
-      return this.getFallbackProvinces()
-    }
+    return this.provincesData
   }
 
-  // 获取某个省份下的城市
   async getCities(provinceCode) {
     const cacheKey = `cities_${provinceCode}`
     if (this.cache.has(cacheKey)) {
       return this.cache.get(cacheKey)
     }
-
     try {
       const response = await fetch(`https://geo.datav.aliyun.com/areas_v3/bound/${provinceCode}_full.json`)
       const data = await response.json()
       const cities = data.features.map(feature => ({
-        code: feature.properties.adcode,
-        name: feature.properties.name,
-        level: 'city'
+        code: String(feature.properties.adcode),
+        name: feature.properties.name
       }))
       this.cache.set(cacheKey, cities)
       return cities
     } catch (error) {
-      console.error('获取城市数据失败:', error)
-      return this.getFallbackCities(provinceCode)
+      console.error('加载城市失败:', error)
+      return []
     }
   }
 
-  // 获取某个城市下的区县
   async getAreas(cityCode) {
     const cacheKey = `areas_${cityCode}`
     if (this.cache.has(cacheKey)) {
       return this.cache.get(cacheKey)
     }
-
     try {
       const response = await fetch(`https://geo.datav.aliyun.com/areas_v3/bound/${cityCode}_full.json`)
       const data = await response.json()
       const areas = data.features.map(feature => ({
-        code: feature.properties.adcode,
-        name: feature.properties.name,
-        level: 'area'
+        code: String(feature.properties.adcode),
+        name: feature.properties.name
       }))
       this.cache.set(cacheKey, areas)
       return areas
     } catch (error) {
-      console.error('获取区县数据失败:', error)
-      return this.getFallbackAreas(cityCode)
+      console.error('加载区县失败:', error)
+      return []
     }
-  }
-
-  // 备用省份数据
-  getFallbackProvinces() {
-    return [
-      { code: '110000', name: '北京市', level: 'province' },
-      { code: '120000', name: '天津市', level: 'province' },
-      { code: '130000', name: '河北省', level: 'province' },
-      { code: '140000', name: '山西省', level: 'province' },
-      { code: '150000', name: '内蒙古自治区', level: 'province' },
-      { code: '210000', name: '辽宁省', level: 'province' },
-      { code: '220000', name: '吉林省', level: 'province' },
-      { code: '230000', name: '黑龙江省', level: 'province' },
-      { code: '310000', name: '上海市', level: 'province' },
-      { code: '320000', name: '江苏省', level: 'province' },
-      { code: '330000', name: '浙江省', level: 'province' },
-      { code: '340000', name: '安徽省', level: 'province' },
-      { code: '350000', name: '福建省', level: 'province' },
-      { code: '360000', name: '江西省', level: 'province' },
-      { code: '370000', name: '山东省', level: 'province' },
-      { code: '410000', name: '河南省', level: 'province' },
-      { code: '420000', name: '湖北省', level: 'province' },
-      { code: '430000', name: '湖南省', level: 'province' },
-      { code: '440000', name: '广东省', level: 'province' },
-      { code: '450000', name: '广西壮族自治区', level: 'province' },
-      { code: '460000', name: '海南省', level: 'province' },
-      { code: '500000', name: '重庆市', level: 'province' },
-      { code: '510000', name: '四川省', level: 'province' },  // 确保有这个编码
-      { code: '520000', name: '贵州省', level: 'province' },
-      { code: '530000', name: '云南省', level: 'province' },
-      { code: '540000', name: '西藏自治区', level: 'province' },
-      { code: '610000', name: '陕西省', level: 'province' },
-      { code: '620000', name: '甘肃省', level: 'province' },
-      { code: '630000', name: '青海省', level: 'province' },
-      { code: '640000', name: '宁夏回族自治区', level: 'province' },
-      { code: '650000', name: '新疆维吾尔自治区', level: 'province' },
-      { code: '710000', name: '台湾省', level: 'province' },
-      { code: '810000', name: '香港特别行政区', level: 'province' },
-      { code: '820000', name: '澳门特别行政区', level: 'province' }
-    ]
-  }
-
-  getFallbackCities(provinceCode) {
-    // 简化的城市数据，实际项目中应该使用完整的API数据
-    return [
-      { code: `${provinceCode.substring(0, 4)}0100`, name: '市辖区', level: 'city' }
-    ]
-  }
-
-  getFallbackAreas(cityCode) {
-    // 简化的区县数据
-    return [
-      { code: `${cityCode.substring(0, 6)}01`, name: '辖区', level: 'area' }
-    ]
   }
 }
 
@@ -1080,7 +913,7 @@ const loadProvinces = async () => {
   provinceLoading.value = true
   try {
     provinces.value = await areaService.getProvinces()
-    
+
     console.log('省份数据加载完成，总数:', provinces.value.length)
   } catch (error) {
     console.error('加载省份数据失败:', error)
@@ -1101,12 +934,12 @@ const isMunicipality = (provinceCode) => {
 // 省份改变时加载城市
 const handleProvinceChange = async (provinceCode) => {
   console.log('省份改变:', provinceCode);
-  
+
   // 确保 provinceCode 是字符串而不是数组
   if (Array.isArray(provinceCode)) {
     provinceCode = provinceCode[0];
   }
-  
+
   // 清空下级数据
   addressForm.cityCode = '';
   addressForm.areaCode = '';
@@ -1114,24 +947,24 @@ const handleProvinceChange = async (provinceCode) => {
   addressForm.area = '';
   cities.value = [];
   areas.value = [];
-  
+
   if (!provinceCode) return;
-  
+
   // 设置省份名称
   const province = provinces.value.find(p => p.code === provinceCode);
   if (province) {
     addressForm.province = province.name;
     addressForm.provinceCode = provinceCode;
   }
-  
+
   // 如果是直辖市，直接加载区县数据，跳过地级市
   if (isMunicipality(provinceCode)) {
     console.log('检测到直辖市，直接加载区县数据');
-    
+
     // 直辖市没有地级市，直接设置city为直辖市名称
     addressForm.city = province.name;
     addressForm.cityCode = provinceCode; // 使用省份代码作为城市代码
-    
+
     // 直接加载区县数据
     areaLoading.value = true;
     try {
@@ -1163,33 +996,33 @@ const handleProvinceChange = async (provinceCode) => {
 // 城市改变时加载区县
 const handleCityChange = async (cityCode) => {
   console.log('城市改变:', cityCode);
-  
+
   // 确保 cityCode 是字符串而不是数组
   if (Array.isArray(cityCode)) {
     cityCode = cityCode[0];
   }
-  
+
   // 清空区域数据
   addressForm.areaCode = '';
   addressForm.area = '';
   areas.value = [];
-  
+
   if (!cityCode) return;
-  
+
   // 设置城市名称
   const city = cities.value.find(c => c.code === cityCode);
   if (city) {
     addressForm.city = city.name;
     addressForm.cityCode = cityCode;
   }
-  
+
   // 如果是直辖市，已经在上一步处理了区县数据，这里不需要重复加载
   const currentProvinceCode = addressForm.provinceCode;
   if (currentProvinceCode && isMunicipality(currentProvinceCode)) {
     console.log('直辖市，跳过区县加载');
     return;
   }
-  
+
   // 非直辖市，正常加载区域
   areaLoading.value = true;
   try {
@@ -1253,25 +1086,25 @@ const loadMunicipalityAreas = async (provinceCode) => {
       { code: '500155', name: '梁平区' }, { code: '500156', name: '武隆区' }
     ]
   };
-  
+
   return municipalityAreas[provinceCode] || [];
 };
 
 // 区县改变时更新数据
 const handleAreaChange = (areaCode) => {
   console.log('区域改变:', areaCode);
-  
+
   // 确保 areaCode 是字符串而不是数组
   if (Array.isArray(areaCode)) {
     areaCode = areaCode[0];
   }
-  
+
   if (!areaCode) {
     addressForm.area = '';
     addressForm.areaCode = '';
     return;
   }
-  
+
   // 设置区域名称
   const area = areas.value.find(a => a.code === areaCode);
   if (area) {
@@ -1304,7 +1137,7 @@ const loadAddressList = async () => {
 const openAddAddressDialog = () => {
   isEditAddress.value = false
   currentAddressId.value = null
-  
+
   // 重置表单
   Object.keys(addressForm).forEach(key => {
     if (key === 'addressLabel') {
@@ -1318,16 +1151,16 @@ const openAddAddressDialog = () => {
       addressForm[key] = ''
     }
   })
-  
+
   // 设置 userId
   addressForm.userId = currentUserId.value
-  
+
   addressDialogVisible.value = true
-  
+
   // 重置省市区数据
   cities.value = []
   areas.value = []
-  
+
   // 加载省份数据
   if (provinces.value.length === 0) {
     loadProvinces()
@@ -1338,10 +1171,10 @@ const openAddAddressDialog = () => {
 const openEditAddressDialog = async (address) => {
   isEditAddress.value = true
   currentAddressId.value = address.id
-  
-  console.log('编辑地址原始数据:', address)
-  
-  // 重置表单
+
+  console.log('=== 编辑地址原始数据 ===', address)
+
+  // 重置表单（不清空省市区编码，等待数据加载后设置）
   Object.keys(addressForm).forEach(key => {
     if (key === 'addressLabel') {
       addressForm[key] = 1
@@ -1353,8 +1186,8 @@ const openEditAddressDialog = async (address) => {
       addressForm[key] = ''
     }
   })
-  
-  // 只设置基本字段，不设置省市区编码
+
+  // 设置基本字段
   addressForm.id = address.id
   addressForm.userId = currentUserId.value
   addressForm.receiveName = address.receiveName || ''
@@ -1363,123 +1196,96 @@ const openEditAddressDialog = async (address) => {
   addressForm.postalCode = address.postalCode || ''
   addressForm.addressLabel = address.addressLabel || 1
   addressForm.defaultFlag = address.defaultFlag || 0
-  
-  // 先设置显示名称，让用户看到
-  addressForm.province = address.province || ''
-  addressForm.city = address.city || ''
-  addressForm.area = address.area || ''
-  
-  console.log('初始化表单:', JSON.parse(JSON.stringify(addressForm)))
-  
-  addressDialogVisible.value = true
-  
+
+  console.log('基本字段设置完成')
+
   // 确保省份数据已加载
   if (provinces.value.length === 0) {
+    console.log('开始加载省份数据...')
     await loadProvinces()
+    console.log('省份数据加载完成:', provinces.value.length)
   }
-  
-  // 等待对话框完全打开
-  await new Promise(resolve => setTimeout(resolve, 300))
-  
-  // 延迟设置编码，避免与选择器冲突
-  setTimeout(() => {
-    // 设置省市区编码
-    if (address.provinceCode) {
-      addressForm.provinceCode = address.provinceCode
-      console.log('设置省份编码:', addressForm.provinceCode)
-    }
-    
-    if (address.cityCode) {
-      addressForm.cityCode = address.cityCode
-      console.log('设置城市编码:', addressForm.cityCode)
-    }
-    
-    if (address.areaCode) {
-      addressForm.areaCode = address.areaCode
-      console.log('设置区域编码:', addressForm.areaCode)
-    }
-  }, 500)
+
+  // 先打开对话框
+  addressDialogVisible.value = true
+
+  // 等待对话框DOM渲染完成
+  await nextTick()
+  console.log('对话框渲染完成')
+
+  // 加载并设置省市区数据
+  await loadEditAddressData(address)
+
+  console.log('=== 编辑地址对话框打开完成 ===')
 }
 
-// 添加 watch 监听器来确保数据同步
-import { watch } from 'vue'
+// 监听省份编码变化，自动加载城市（仅在新增时触发）
+watch(() => addressForm.provinceCode, async (newVal, oldVal) => {
+  // 编辑模式下不触发自动加载
+  if (isEditAddress.value || isLoadingEditData.value) return
+  if (!newVal || newVal === oldVal) return
 
-// 监听省份编码变化，自动加载城市
-watch(() => addressForm.provinceCode, async (newVal) => {
-  if (!newVal) return
-  
   // 确保是字符串
   if (Array.isArray(newVal)) {
     newVal = newVal[0]
     addressForm.provinceCode = newVal
   }
-  
-  console.log('监听到省份编码变化:', newVal)
-  
+
+  console.log('监听到省份编码变化（新增模式）:', newVal)
+
   // 设置省份名称
   const province = provinces.value.find(p => p.code === newVal)
   if (province && addressForm.province !== province.name) {
     addressForm.province = province.name
   }
-  
-  // 加载城市
-  if (newVal) {
-    cityLoading.value = true
-    try {
-      cities.value = await areaService.getCities(newVal)
-      console.log('监听到省份变化，加载城市:', cities.value.length)
-    } catch (error) {
-      console.error('加载城市失败:', error)
-    } finally {
-      cityLoading.value = false
-    }
-  }
+
+  // 清空下级数据
+  addressForm.cityCode = ''
+  addressForm.areaCode = ''
+  addressForm.city = ''
+  addressForm.area = ''
+  cities.value = []
+  areas.value = []
 })
 
-// 监听城市编码变化，自动加载区域
-watch(() => addressForm.cityCode, async (newVal) => {
-  if (!newVal) return
-  
+// 监听城市编码变化，自动加载区域（仅在新增时触发）
+watch(() => addressForm.cityCode, async (newVal, oldVal) => {
+  // 编辑模式下不触发自动加载
+  if (isEditAddress.value || isLoadingEditData.value) return
+  if (!newVal || newVal === oldVal) return
+
   // 确保是字符串
   if (Array.isArray(newVal)) {
     newVal = newVal[0]
     addressForm.cityCode = newVal
   }
-  
-  console.log('监听到城市编码变化:', newVal)
-  
+
+  console.log('监听到城市编码变化（新增模式）:', newVal)
+
   // 设置城市名称
   const city = cities.value.find(c => c.code === newVal)
   if (city && addressForm.city !== city.name) {
     addressForm.city = city.name
   }
-  
-  // 加载区域
-  if (newVal) {
-    areaLoading.value = true
-    try {
-      areas.value = await areaService.getAreas(newVal)
-      console.log('监听到城市变化，加载区域:', areas.value.length)
-    } catch (error) {
-      console.error('加载区域失败:', error)
-    } finally {
-      areaLoading.value = false
-    }
-  }
+
+  // 清空区域数据
+  addressForm.areaCode = ''
+  addressForm.area = ''
+  areas.value = []
 })
 
 // 监听区域编码变化
 watch(() => addressForm.areaCode, (newVal) => {
   if (!newVal) return
-  
+
   // 确保是字符串
   if (Array.isArray(newVal)) {
     newVal = newVal[0]
     addressForm.areaCode = newVal
   }
-  
+
   console.log('监听到区域编码变化:', newVal)
-  
+
   // 设置区域名称
   const area = areas.value.find(a => a.code === newVal)
   if (area && addressForm.area !== area.name) {
@@ -1487,176 +1293,103 @@ watch(() => addressForm.areaCode, (newVal) => {
   }
 })
 
-// 专门处理编辑时的省市区加载
-const handleEditAreaData = async (address) => {
-  console.log('=== 调试省市区数据 ===');
-  console.log('地址对象:', JSON.parse(JSON.stringify(address)));
-  
-  // 重置数据
-  cities.value = [];
-  areas.value = [];
-  addressForm.cityCode = '';
-  addressForm.areaCode = '';
-  addressForm.city = '';
-  addressForm.area = '';
-  
-  // 设置省份
-  if (address.provinceCode) {
-    addressForm.provinceCode = address.provinceCode;
-    addressForm.province = address.province;
-    
-    console.log('省份已设置:', addressForm.provinceCode, addressForm.province);
-    
-    // 如果是直辖市，特殊处理
-    if (isMunicipality(address.provinceCode)) {
-      console.log('编辑地址：检测到直辖市');
-      
-      // 直辖市没有地级市，直接设置city为直辖市名称
-      addressForm.city = address.province;
-      addressForm.cityCode = address.provinceCode;
-      
-      // 加载区县数据
-      areaLoading.value = true;
-      try {
-        areas.value = await areaService.getAreas(address.provinceCode);
-        if (areas.value.length === 0) {
-          areas.value = await loadMunicipalityAreas(address.provinceCode);
-        }
-        console.log('直辖市区县数据加载完成:', areas.value);
-        
-        // 设置区县
-        if (address.areaCode) {
-          addressForm.areaCode = address.areaCode;
-          addressForm.area = address.area;
-          console.log('区县已设置:', addressForm.areaCode, addressForm.area);
-        }
-      } catch (error) {
-        console.error('加载直辖市区县数据失败:', error);
-        areas.value = await loadMunicipalityAreas(address.provinceCode);
-      } finally {
-        areaLoading.value = false;
-      }
-    } else {
-      // 非直辖市，正常加载城市
-      cityLoading.value = true;
-      try {
-        cities.value = await areaService.getCities(address.provinceCode);
-        console.log('城市数据加载完成:', cities.value);
-        
-        // 设置城市
-        if (address.cityCode) {
-          addressForm.cityCode = address.cityCode;
-          addressForm.city = address.city;
-          console.log('城市已设置:', addressForm.cityCode, addressForm.city);
-          
-          // 加载区县
-          areaLoading.value = true;
-          try {
-            areas.value = await areaService.getAreas(address.cityCode);
-            console.log('区县数据加载完成:', areas.value);
-            
-            // 设置区县
-            if (address.areaCode) {
-              addressForm.areaCode = address.areaCode;
-              addressForm.area = address.area;
-              console.log('区县已设置:', addressForm.areaCode, addressForm.area);
-            }
-          } catch (error) {
-            console.error('加载区县数据失败:', error);
-          } finally {
-            areaLoading.value = false;
-          }
-        }
-      } catch (error) {
-        console.error('加载城市数据失败:', error);
-      } finally {
-        cityLoading.value = false;
-      }
-    }
-  }
-};
-
 // 专门处理编辑时的省市区数据加载
-const loadAreaDataForEdit = async (address) => {
-  console.log('加载省市区数据:', {
-    provinceCode: address.provinceCode,
-    cityCode: address.cityCode,
-    areaCode: address.areaCode
-  })
-  
-  // 如果有省份编码，加载对应的城市
-  if (address.provinceCode) {
-    // 设置省份下拉框的值
-    addressForm.provinceCode = address.provinceCode
-    
-    // 获取省份名称
-    const province = provinces.value.find(p => p.code === address.provinceCode)
-    if (province) {
-      addressForm.province = province.name
-    }
-    
-    // 加载城市数据
-    try {
-      cityLoading.value = true
-      cities.value = await areaService.getCities(address.provinceCode)
-      console.log('加载的城市数据:', cities.value)
-    } catch (error) {
-      console.error('加载城市数据失败:', error)
-    } finally {
-      cityLoading.value = false
-    }
-    
-    // 等待城市数据加载完成
-    await nextTick()
-    
-    // 如果有城市编码，加载对应的区县
-    if (address.cityCode && cities.value.length > 0) {
-      // 设置城市下拉框的值
-      addressForm.cityCode = address.cityCode
-      
-      // 获取城市名称
-      const city = cities.value.find(c => c.code === address.cityCode)
-      if (city) {
-        addressForm.city = city.name
-      }
-      
-      // 加载区县数据
+const loadEditAddressData = async (address) => {
+  // 统一转换为字符串
+  const provinceCode = String(address.provinceCode || '')
+  const cityCode = String(address.cityCode || '')
+  const areaCode = String(address.areaCode || '')
+
+  if (!provinceCode) return
+
+  cities.value = []
+  areas.value = []
+
+  try {
+    const province = provinces.value.find(p => p.code === provinceCode)
+    if (!province) return
+
+    const isMunicipalityArea = isMunicipality(provinceCode)
+
+    if (isMunicipalityArea) {
+      areaLoading.value = true
       try {
-        areaLoading.value = true
-        areas.value = await areaService.getAreas(address.cityCode)
-        console.log('加载的区域数据:', areas.value)
-      } catch (error) {
-        console.error('加载区县数据失败:', error)
+        areas.value = await areaService.getAreas(provinceCode)
+        if (areas.value.length === 0) {
+          areas.value = await loadMunicipalityAreas(provinceCode)
+        }
       } finally {
         areaLoading.value = false
       }
-      
-      // 等待区县数据加载完成
+
       await nextTick()
-      
-      // 如果有区县编码，设置区县
-      if (address.areaCode && areas.value.length > 0) {
-        // 设置区县下拉框的值
-        addressForm.areaCode = address.areaCode
-        
-        // 获取区县名称
-        const area = areas.value.find(a => a.code === address.areaCode)
+      await nextTick()
+
+      addressForm.provinceCode = provinceCode
+      addressForm.province = province.name
+      addressForm.cityCode = provinceCode
+      addressForm.city = province.name
+
+      if (areaCode) {
+        const area = areas.value.find(a => a.code === areaCode)
         if (area) {
+          addressForm.areaCode = areaCode
           addressForm.area = area.name
         }
       }
+    } else {
+      cityLoading.value = true
+      try {
+        cities.value = await areaService.getCities(provinceCode)
+      } finally {
+        cityLoading.value = false
+      }
+
+      await nextTick()
+      await nextTick()
+
+      addressForm.provinceCode = provinceCode
+      addressForm.province = province.name
+
+      if (cityCode && cities.value.length > 0) {
+        const city = cities.value.find(c => c.code === cityCode)
+        if (!city) return
+
+        areaLoading.value = true
+        try {
+          areas.value = await areaService.getAreas(cityCode)
+        } finally {
+          areaLoading.value = false
+        }
+
+        await nextTick()
+        await nextTick()
+
+        addressForm.cityCode = cityCode
+        addressForm.city = city.name
+
+        if (areaCode && areas.value.length > 0) {
+          const area = areas.value.find(a => a.code === areaCode)
+          if (area) {
+            addressForm.areaCode = areaCode
+            addressForm.area = area.name
+          }
+        }
+      }
     }
+  } catch (error) {
+    console.error('加载省市区数据失败:', error)
   }
 }
 
 // 处理地址提交
 const handleAddressSubmit = async () => {
   if (!addressFormRef.value) return
-  
+
   try {
     await addressFormRef.value.validate()
     addressLoading.value = true
-    
+
     // 修复数据：确保编码是字符串而不是数组
     const submitData = {
       ...addressForm,
@@ -1664,32 +1397,32 @@ const handleAddressSubmit = async () => {
       cityCode: Array.isArray(addressForm.cityCode) ? addressForm.cityCode[0] : addressForm.cityCode,
       areaCode: Array.isArray(addressForm.areaCode) ? addressForm.areaCode[0] : addressForm.areaCode,
     }
-    
+
     // 确保名称正确
     if (!submitData.province && submitData.provinceCode) {
       const province = provinces.value.find(p => p.code === submitData.provinceCode)
       if (province) submitData.province = province.name
     }
-    
+
     if (!submitData.city && submitData.cityCode) {
       const city = cities.value.find(c => c.code === submitData.cityCode)
       if (city) submitData.city = city.name
     }
-    
+
     if (!submitData.area && submitData.areaCode) {
       const area = areas.value.find(a => a.code === submitData.areaCode)
       if (area) submitData.area = area.name
     }
-    
+
     console.log('最终提交数据:', submitData)
-    
+
     let response
     if (isEditAddress.value) {
       response = await updateAddress(submitData)
     } else {
       response = await addAddress(submitData)
     }
-    
+
     if (response.code === 200) {
       ElMessage.success(isEditAddress.value ? '地址更新成功' : '地址添加成功')
       addressDialogVisible.value = false
@@ -1720,7 +1453,7 @@ const handleDeleteAddress = async (addressId) => {
       cancelButtonText: '取消',
       type: 'warning'
     })
-    
+
     // 直接调用删除接口，不需要先查询
     const response = await delAddress(addressId)
     if (response.code === 200) {
@@ -1744,7 +1477,7 @@ const handleSetDefaultAddress = async (addressId) => {
       addressId: addressId,
       userId: currentUserId.value
     })
-    
+
     if (response.code === 200) {
       ElMessage.success('默认地址设置成功')
       await loadAddressList()
@@ -2288,56 +2021,56 @@ onMounted(() => {
     position: static;
     margin-bottom: 20px;
   }
-  
+
   .stats-section {
     padding: 15px 0;
   }
-  
+
   .stat-value {
     font-size: 20px;
   }
-  
+
   .balance-amount {
     font-size: 24px;
   }
-  
+
   .info-edit-section {
     padding: 15px;
   }
-  
+
   .basic-form {
     max-width: 100%;
   }
-  
+
   :deep(.basic-form .el-form-item__label) {
     width: 80px !important;
   }
-  
+
   :deep(.basic-form .el-form-item__content) {
     margin-left: 80px !important;
   }
-  
+
   .security-item {
     flex-direction: column;
     align-items: flex-start;
     gap: 10px;
   }
-  
+
   .account-actions {
     justify-content: center;
   }
-  
+
   .account-actions .el-button {
     flex: 1;
     min-width: 100px;
   }
-  
+
   .address-item {
     flex-direction: column;
     align-items: flex-start;
     gap: 15px;
   }
-  
+
   .address-actions {
     align-self: flex-end;
   }
@@ -2347,57 +2080,57 @@ onMounted(() => {
   .profile-card {
     padding: 20px 15px;
   }
-  
+
   .avatar-image {
     width: 80px;
     height: 80px;
     font-size: 32px;
   }
-  
+
   .avatar-upload {
     padding: 3px 6px;
     font-size: 11px;
   }
-  
+
   .user-name {
     font-size: 16px;
   }
-  
+
   .stats-section {
     margin: 15px 0;
   }
-  
+
   .stat-value {
     font-size: 18px;
   }
-  
+
   .balance-section {
     margin: 15px 0;
     padding: 15px;
   }
-  
+
   .balance-amount {
     font-size: 22px;
   }
-  
+
   .quick-actions {
     gap: 8px;
   }
-  
+
   .info-edit-section {
     padding: 10px;
   }
-  
+
   :deep(.profile-tabs .el-tabs__item) {
     padding: 0 12px;
     font-size: 14px;
   }
-  
+
   .address-header-info {
     flex-wrap: wrap;
     gap: 5px;
   }
-  
+
   .address-actions {
     flex-direction: column;
     gap: 5px;
@@ -2418,6 +2151,7 @@ onMounted(() => {
     opacity: 0;
     transform: translateY(30px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -2567,7 +2301,7 @@ onMounted(() => {
   .mobile-only {
     display: block;
   }
-  
+
   .desktop-only {
     display: none;
   }
@@ -2575,12 +2309,13 @@ onMounted(() => {
 
 /* 打印样式 */
 @media print {
+
   .profile-card,
   .info-edit-section {
     box-shadow: none;
     border: 1px solid #ddd;
   }
-  
+
   .quick-actions,
   .account-actions {
     display: none;
@@ -2592,11 +2327,11 @@ onMounted(() => {
   .profile-card {
     border: 2px solid #000;
   }
-  
+
   .stat-value {
     color: #000;
   }
-  
+
   .balance-section {
     background: #000;
     color: #fff;
@@ -2605,19 +2340,20 @@ onMounted(() => {
 
 /* 减少动画模式支持 */
 @media (prefers-reduced-motion: reduce) {
+
   .profile-card,
   .info-edit-section {
     animation: none;
   }
-  
+
   :deep(.el-button:hover) {
     transform: none;
   }
-  
+
   .stat-item:hover {
     transform: none;
   }
-  
+
   .address-item:hover {
     transform: none;
   }
@@ -2666,8 +2402,13 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* 错误状态样式 */
@@ -2780,55 +2521,158 @@ onMounted(() => {
 }
 
 /* 间距工具类 */
-.mt-1 { margin-top: 4px; }
-.mt-2 { margin-top: 8px; }
-.mt-3 { margin-top: 12px; }
-.mt-4 { margin-top: 16px; }
-.mt-5 { margin-top: 20px; }
+.mt-1 {
+  margin-top: 4px;
+}
 
-.mb-1 { margin-bottom: 4px; }
-.mb-2 { margin-bottom: 8px; }
-.mb-3 { margin-bottom: 12px; }
-.mb-4 { margin-bottom: 16px; }
-.mb-5 { margin-bottom: 20px; }
+.mt-2 {
+  margin-top: 8px;
+}
 
-.p-1 { padding: 4px; }
-.p-2 { padding: 8px; }
-.p-3 { padding: 12px; }
-.p-4 { padding: 16px; }
-.p-5 { padding: 20px; }
+.mt-3 {
+  margin-top: 12px;
+}
+
+.mt-4 {
+  margin-top: 16px;
+}
+
+.mt-5 {
+  margin-top: 20px;
+}
+
+.mb-1 {
+  margin-bottom: 4px;
+}
+
+.mb-2 {
+  margin-bottom: 8px;
+}
+
+.mb-3 {
+  margin-bottom: 12px;
+}
+
+.mb-4 {
+  margin-bottom: 16px;
+}
+
+.mb-5 {
+  margin-bottom: 20px;
+}
+
+.p-1 {
+  padding: 4px;
+}
+
+.p-2 {
+  padding: 8px;
+}
+
+.p-3 {
+  padding: 12px;
+}
+
+.p-4 {
+  padding: 16px;
+}
+
+.p-5 {
+  padding: 20px;
+}
 
 /* 文本工具类 */
-.text-xs { font-size: 12px; }
-.text-sm { font-size: 14px; }
-.text-base { font-size: 16px; }
-.text-lg { font-size: 18px; }
-.text-xl { font-size: 20px; }
+.text-xs {
+  font-size: 12px;
+}
 
-.text-center { text-align: center; }
-.text-left { text-align: left; }
-.text-right { text-align: right; }
+.text-sm {
+  font-size: 14px;
+}
 
-.text-primary { color: #409eff; }
-.text-success { color: #67c23a; }
-.text-warning { color: #e6a23c; }
-.text-danger { color: #f56c6c; }
-.text-info { color: #909399; }
+.text-base {
+  font-size: 16px;
+}
+
+.text-lg {
+  font-size: 18px;
+}
+
+.text-xl {
+  font-size: 20px;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-left {
+  text-align: left;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.text-primary {
+  color: #409eff;
+}
+
+.text-success {
+  color: #67c23a;
+}
+
+.text-warning {
+  color: #e6a23c;
+}
+
+.text-danger {
+  color: #f56c6c;
+}
+
+.text-info {
+  color: #909399;
+}
 
 /* 弹性布局工具类 */
-.flex { display: flex; }
-.flex-col { flex-direction: column; }
-.items-center { align-items: center; }
-.justify-center { justify-content: center; }
-.justify-between { justify-content: space-between; }
-.flex-1 { flex: 1; }
+.flex {
+  display: flex;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.flex-1 {
+  flex: 1;
+}
 
 /* 隐藏工具类 */
-.hidden { display: none; }
-@media (max-width: 768px) {
-  .hidden-mobile { display: none; }
+.hidden {
+  display: none;
 }
+
+@media (max-width: 768px) {
+  .hidden-mobile {
+    display: none;
+  }
+}
+
 @media (min-width: 769px) {
-  .hidden-desktop { display: none; }
+  .hidden-desktop {
+    display: none;
+  }
 }
 </style>
