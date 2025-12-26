@@ -90,7 +90,6 @@
                     <el-radio-group v-model="basicForm.sex">
                       <el-radio label="0">男</el-radio>
                       <el-radio label="1">女</el-radio>
-                      <el-radio label="2">未知</el-radio>
                     </el-radio-group>
                   </el-form-item>
 
@@ -395,7 +394,7 @@ const basicForm = reactive({
   userName: '',
   email: '',
   phonenumber: '',
-  sex: '2'
+  sex: '0'
 })
 
 const passwordForm = reactive({

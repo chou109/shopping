@@ -1,10 +1,14 @@
 import request from '@/utils/request'
 
 // 查询用户足迹列表
-export function listFootprintByUser(userId) {
+export function listFootprintByUser(userId, params = {}) {
   return request({
     url: `/system/footprint/user/${userId}`,
-    method: 'get'
+    method: 'get',
+    params: {
+      pageNum: params.pageNum || 1,
+      pageSize: params.pageSize || 1000  // 默认获取全部
+    }
   })
 }
 

@@ -54,14 +54,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectShopById" parameterType="Long" resultMap="ShopResult">
         <include refid="selectShopVo"/>
-        where shop.id = #{id}
+        where shop.id = #{id}  and p.delete_flag = 0
     </select>
 
     <!-- 新增：根据用户ID查询店铺 -->
     <select id="selectShopByUserId" parameterType="Long" resultMap="ShopResult">
         <include refid="selectShopVo"/>
-        where user_id = #{userId} and delete_flag = 0
-        limit 1
+        AND user_id = #{userId}
+        LIMIT 1
     </select>
 
     <!-- 新增：增加店铺销量 -->
@@ -212,7 +212,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <!-- 新增：热门店铺查询 -->
     <select id="selectHotShopList" resultMap="ShopResult">
         <include refid="selectShopVo"/>
-        WHERE delete_flag = 0 AND status = 1
+        AND status = 1
         ORDER BY sales_count DESC, follower_count DESC
         LIMIT #{limit}
     </select>
@@ -220,16 +220,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <!-- 新增：搜索店铺 -->
     <select id="searchShops" parameterType="map" resultMap="ShopResult">
         <include refid="selectShopVo"/>
-        <where>
-            delete_flag = 0
-            <if test="keyword != null and keyword != ''">
-                AND (shop_name LIKE CONCAT('%', #{keyword}, '%')
-                OR description LIKE CONCAT('%', #{keyword}, '%'))
-            </if>
-            <if test="status != null">
-                AND status = #{status}
-            </if>
-        </where>
+        <if test="keyword != null and keyword != ''">
+            AND (shop_name LIKE CONCAT('%', #{keyword}, '%')
+            OR description LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        <if test="status != null">
+            AND status = #{status}
+        </if>
         ORDER BY sales_count DESC, create_time DESC
     </select>
 </mapper>

@@ -83,4 +83,7 @@ public class Category extends BaseEntity
     /** 子类目列表 */
     @TableField(exist = false)
     private List<Category> children = new ArrayList<>();
+
+
+  
 }

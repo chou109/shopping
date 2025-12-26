@@ -11,6 +11,7 @@
 
 <style scoped>
 .user-profile {
-  padding: 20px;
+  padding: 0;
+  background: transparent;
 }
 </style>

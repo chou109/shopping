@@ -36,6 +36,7 @@ public class OrderInfo extends BaseEntity
 
     /** 主键 */
     @Schema(title = "主键")
+    @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
     /** 创建人 */

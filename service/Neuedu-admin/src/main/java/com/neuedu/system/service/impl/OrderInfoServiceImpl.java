@@ -161,10 +161,7 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
         }
 
         // 3. 获取用户购物车中选中的商品
-        Cart cartQuery = new Cart();
-        cartQuery.setUserId(userId);
-        cartQuery.setSelected(1); // 选中的商品
-        List<Cart> cartItems = cartService.selectCartList(cartQuery);
+        List<Cart> cartItems = cartService.getSelectedCartItems(userId);
 
         if (cartItems.isEmpty()) {
             throw new RuntimeException("购物车中没有选中的商品");
@@ -502,9 +499,9 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
             throw new RuntimeException("订单不存在");
         }
 
-        // 验证订单状态（只有待付款和已付款的订单可以取消）
+        // 验证订单状态（只有待付款和待发货的订单可以取消）
         if (!OrderStatusConstants.WAIT_PAY.equals(orderInfo.getStatus())
-                && !OrderStatusConstants.PAID.equals(orderInfo.getStatus())) {
+                && !OrderStatusConstants.WAIT_SHIP.equals(orderInfo.getStatus())) {
             throw new RuntimeException("订单状态不正确，无法取消");
         }
 
@@ -517,8 +514,8 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
                 productService.updateProductStock(detail.getProductId(), detail.getQuantity());
             }
 
-            // 如果是已付款订单，需要退款
-            if (OrderStatusConstants.PAID.equals(orderInfo.getStatus())) {
+            // 如果是待发货订单，需要退款
+            if (OrderStatusConstants.WAIT_SHIP.equals(orderInfo.getStatus())) {
                 // 退款到原支付方式
                 if (orderInfo.getPaymentType().equals(OrderStatusConstants.PAYMENT_BALANCE)) {
                     // 退回余额
@@ -562,8 +559,8 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
             throw new RuntimeException("订单不存在");
         }
 
-        // 验证订单状态（只有已付款的订单可以发货）
-        if (!OrderStatusConstants.PAID.equals(orderInfo.getStatus())) {
+        // 验证订单状态（只有待发货的订单可以发货）
+        if (!OrderStatusConstants.WAIT_SHIP.equals(orderInfo.getStatus())) {
             throw new RuntimeException("订单状态不正确，无法发货");
         }
 
@@ -635,32 +632,53 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
      * 申请退款
      *
      * @param orderNo 订单编号
-     * @param refundAmount 退款金额
-     * @param refundReason 退款原因
+     * @param reason 退款原因
+     * @param description 退款说明
+     * @param contactPhone 联系电话
      * @return 结果
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int applyRefund(String orderNo, BigDecimal refundAmount, String refundReason)
+    public int applyRefund(String orderNo, String reason, String description, String contactPhone)
     {
         OrderInfo orderInfo = orderInfoMapper.selectOrderInfoByOrderNo(orderNo);
         if (orderInfo == null) {
             throw new RuntimeException("订单不存在");
         }
 
-        // 验证订单状态（只有已付款、已发货的订单可以申请退款）
-        if (!OrderStatusConstants.PAID.equals(orderInfo.getStatus())
-                && !OrderStatusConstants.SHIPPED.equals(orderInfo.getStatus())) {
-            throw new RuntimeException("订单状态不正确，无法申请退款");
+        // 验证订单状态（只有待发货的订单可以申请退款）
+        if (!OrderStatusConstants.WAIT_SHIP.equals(orderInfo.getStatus())) {
+            throw new RuntimeException("仅待发货订单可申请退款");
         }
 
-        // 验证退款金额
-        if (refundAmount.compareTo(orderInfo.getPayment()) > 0) {
-            throw new RuntimeException("退款金额不能超过订单金额");
+        // 获取订单明细
+        List<OrderDetail> details = orderDetailService.selectOrderDetailByOrderNo(orderNo);
+        if (details.isEmpty()) {
+            throw new RuntimeException("订单没有明细");
         }
 
-        // 调用退款服务
-        return refundRecordService.applyRefund(orderNo, orderInfo.getUserId(), refundAmount, refundReason);
+        // 更新订单状态为已取消
+        orderInfo.setStatus(OrderStatusConstants.CANCELLED);
+        orderInfo.setStatusDesc(OrderStatusConstants.getOrderStatusDesc(OrderStatusConstants.CANCELLED));
+        orderInfo.setCancelReason(reason);
+        orderInfo.setUpdateTime(DateUtils.getNowDate());
+        int result = orderInfoMapper.updateOrderInfo(orderInfo);
+
+        if (result > 0) {
+            // 返还用户余额（使用 sys_user 表）
+            sysUserService.updateUserBalance(orderInfo.getUserId(), orderInfo.getPayment());
+
+            // 恢复商品库存
+            for (OrderDetail detail : details) {
+                // 确保使用正数增加库存
+                productService.updateProductStock(detail.getProductId(), Long.valueOf(Math.abs(detail.getQuantity())));
+            }
+
+            // 记录退款日志
+            // 这里可以根据需要记录退款记录到数据库
+        }
+
+        return result;
     }
 
     /**

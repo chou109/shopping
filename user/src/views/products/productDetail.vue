@@ -32,6 +32,13 @@ import {
 } from '@/api/system/productComment'
 import { getProductImageUrl, handleImageError } from '@/utils/image'
 import { listFootprintByUser, deleteFootprint, recordFootprint } from '@/api/system/footprint'
+<<<<<<< HEAD
+=======
+import { createDirectOrder, payOrder } from '@/api/system/orderInfo'
+import { getMyAddressList } from '@/api/system/address'
+import { toggleFavorite, checkFavorite } from '@/api/system/favorite'
+import PurchaseDialog from '@/components/PurchaseDialog/index.vue'
+>>>>>>> f973400af551833ca42ea8a626a49c8b38ab9eb8
 
 const route = useRoute()
 const router = useRouter()
@@ -121,6 +128,7 @@ const loadProductData = async () => {
       product.value = response.data
       console.log('商品数据:', product.value)
       recordFootprint({ targetType: 1, targetId: route.query.id })
+      checkProductFavorite(productId) // 检查是否已收藏
 
       if (!product.value.category && product.value.categoryId) {
         product.value.category = {
@@ -633,13 +641,36 @@ const handleBuyNow = () => {
   })
 }
 
+// 检查商品是否已收藏
+const checkProductFavorite = async (productId) => {
+  try {
+    const res = await checkFavorite(1, productId) // 1表示商品
+    if (res.code === 200 && res.data) {
+      isFavorite.value = res.data.isFavorite || false
+    }
+  } catch (e) {
+    console.error('检查收藏状态失败', e)
+  }
+}
+
 // 收藏商品
-const handleToggleFavorite = () => {
-  isFavorite.value = !isFavorite.value
-  if (isFavorite.value) {
-    ElMessage.success('已收藏商品')
-  } else {
-    ElMessage.info('已取消收藏')
+const handleToggleFavorite = async () => {
+  try {
+    const productId = route.query.id
+    const res = await toggleFavorite(1, productId) // 1表示商品
+    if (res.code === 200) {
+      isFavorite.value = res.data
+      if (isFavorite.value) {
+        ElMessage.success('已收藏商品')
+      } else {
+        ElMessage.info('已取消收藏')
+      }
+    } else {
+      ElMessage.error(res.msg || '操作失败')
+    }
+  } catch (e) {
+    console.error('收藏操作失败', e)
+    ElMessage.error('操作失败')
   }
 }
 

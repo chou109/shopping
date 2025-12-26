@@ -26,7 +26,7 @@
     </div>
 
     <!-- 足迹列表 -->
-    <div class="footprint-list" v-loading="loading">
+    <div class="footprint-list" ref="footprintListRef" v-loading="loading">
       <!-- 先检查 footprints 是否存在且有数据 -->
       <div v-if="filteredFootprints && filteredFootprints.length > 0" class="footprint-container">
         <!-- 再检查 groupedFootprints 是否存在且有数据 -->
@@ -97,12 +97,21 @@
           </el-button>
         </el-empty>
       </div>
+      
+      <!-- 加载更多提示 -->
+      <div v-if="hasMore && displayedFootprints.length > 0" class="load-more-tip">
+        <span v-if="loadingMore">加载中...</span>
+        <span v-else>下滑加载更多</span>
+      </div>
+      <div v-if="!hasMore && displayedFootprints.length > 0" class="no-more-tip">
+        已加载全部
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, computed, watch, onUnmounted, inject, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useStore } from 'vuex'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -115,6 +124,15 @@ const store = useStore()
 const loading = ref(false)
 const footprints = ref([])
 const activeFilter = ref('all') // 当前激活的筛选类型：all, shop, product
+
+// 懒加载相关
+const footprintListRef = ref(null)
+const pageSize = 10
+const displayCount = ref(10)
+const loadingMore = ref(false)
+
+// 注入父组件的滚动容器引用
+const scrollContainer = inject('scrollContainer', null)
 
 // 处理商品点击
 const handleProductClick = (productId) => {
@@ -156,22 +174,54 @@ const filteredFootprints = computed(() => {
   }
 })
 
+// 显示的足迹（懒加载）
+const displayedFootprints = computed(() => {
+  return filteredFootprints.value.slice(0, displayCount.value)
+})
+
+// 是否还有更多
+const hasMore = computed(() => {
+  return displayCount.value < filteredFootprints.value.length
+})
+
+// 加载更多
+const loadMore = () => {
+  if (loadingMore.value || !hasMore.value) return
+  loadingMore.value = true
+  setTimeout(() => {
+    displayCount.value += pageSize
+    loadingMore.value = false
+  }, 300)
+}
+
+// 滚动加载更多（监听父容器 .user-content 的滚动事件）
+const handleScroll = () => {
+  if (!scrollContainer || !scrollContainer.value) return
+  
+  const { scrollTop, scrollHeight, clientHeight } = scrollContainer.value
+  
+  // 距离底部 200px 时加载更多
+  if (scrollHeight - scrollTop - clientHeight < 200 && hasMore.value && !loadingMore.value) {
+    loadMore()
+  }
+}
+
 // 总记录数
 const totalCount = computed(() => {
   return footprints.value ? footprints.value.length : 0
 })
 
-// 按日期分组
+// 按日期分组（使用懒加载后的数据）
 const groupedFootprints = computed(() => {
-  console.log('计算 groupedFootprints，过滤后数据:', filteredFootprints.value)
+  console.log('计算 groupedFootprints，显示数据:', displayedFootprints.value)
 
-  if (!filteredFootprints.value || filteredFootprints.value.length === 0) {
+  if (!displayedFootprints.value || displayedFootprints.value.length === 0) {
     return {}
   }
 
   const groups = {}
 
-  filteredFootprints.value.forEach(item => {
+  displayedFootprints.value.forEach(item => {
     if (!item || !item.lastBrowseTime) {
       console.warn('足迹项数据不完整:', item)
       return
@@ -197,6 +247,7 @@ const groupedFootprints = computed(() => {
 const handleFilterChange = (filterType) => {
   console.log('筛选类型改变为:', filterType)
   activeFilter.value = filterType
+  displayCount.value = pageSize // 重置显示数量
 }
 
 // 获取类型徽章样式
@@ -409,12 +460,25 @@ const handleClearAll = async () => {
 
 onMounted(() => {
   loadFootprints()
+  // 使用 nextTick 等待父容器准备完毕
+  nextTick(() => {
+    if (scrollContainer && scrollContainer.value) {
+      scrollContainer.value.addEventListener('scroll', handleScroll)
+    }
+  })
+})
+
+onUnmounted(() => {
+  if (scrollContainer && scrollContainer.value) {
+    scrollContainer.value.removeEventListener('scroll', handleScroll)
+  }
 })
 </script>
 
 <style scoped>
 .user-footprint {
   padding: 0;
+  background: transparent;
 }
 
 .page-header {
@@ -422,8 +486,12 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
-  padding-bottom: 15px;
+  padding: 15px 0;
   border-bottom: 1px solid #f0f0f0;
+  position: sticky;
+  top: 70px;
+  background: white;
+  z-index: 10;
 }
 
 /* 筛选选项卡样式 */
@@ -433,8 +501,11 @@ onMounted(() => {
   align-items: center;
   margin-bottom: 20px;
   padding: 15px;
-  background: #f8f9fa;
+  background: white;
   border-radius: 8px;
+  position: sticky;
+  top: 130px;
+  z-index: 9;
 }
 
 .filter-stats {
@@ -446,7 +517,7 @@ onMounted(() => {
 
 .stat-item {
   padding: 4px 8px;
-  background: #fff;
+  background: transparent;
   border-radius: 4px;
   border: 1px solid #e0e0e0;
 }
@@ -457,6 +528,19 @@ onMounted(() => {
 
 .footprint-container {
   max-width: 100%;
+}
+
+/* 加载更多提示 */
+.load-more-tip,
+.no-more-tip {
+  text-align: center;
+  padding: 20px;
+  color: #999;
+  font-size: 14px;
+}
+
+.load-more-tip {
+  color: #409eff;
 }
 
 .footprint-group {
@@ -485,7 +569,7 @@ onMounted(() => {
 }
 
 .footprint-items {
-  background: #fafafa;
+  background: transparent;
   border-radius: 8px;
   padding: 15px;
 }
@@ -494,10 +578,9 @@ onMounted(() => {
   display: flex;
   align-items: center;
   padding: 15px;
-  background: white;
+  background: transparent;
   border-radius: 6px;
   margin-bottom: 10px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   transition: all 0.3s ease;
   border-left: 4px solid transparent;
 }
