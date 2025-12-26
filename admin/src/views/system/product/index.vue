@@ -11,21 +11,74 @@
           </el-form-item>
         </el-col>
         <el-col :span="6">
-          <el-form-item label="商品状态" prop="status">
-            <el-select v-model="queryParams.status" placeholder="全部状态" clearable style="width: 200px">
-              <el-option label="全部" :value="null" />
-              <el-option label="上架" :value="1" />
-              <el-option label="下架" :value="0" />
-            </el-select>
-          </el-form-item>
-        </el-col>
-        <el-col :span="6">
           <el-form-item label="热门状态" prop="hotFlag">
             <el-select v-model="queryParams.hotFlag" placeholder="全部" clearable style="width: 200px">
               <el-option label="全部" :value="null" />
               <el-option label="热门" :value="1" />
               <el-option label="非热门" :value="0" />
             </el-select>
+          </el-form-item>
+        </el-col>
+        <!-- 店铺名称搜索框 -->
+        <el-col :span="6">
+          <el-form-item label="店铺名称" prop="shopId">
+            <div class="store-select-wrapper" @click.stop="toggleStoreCascader">
+              <el-select v-model="queryParams.shopId" placeholder="点击选择店铺" clearable filterable
+                style="width: 200px" @click.stop>
+                <el-option label="全部" :value="null" />
+                <el-option v-for="store in storeTreeOptions" :key="store.id" :label="store.shopName"
+                  :value="store.id" />
+              </el-select>
+
+              <!-- 级联选择器面板 -->
+              <div v-if="showStoreCascader" class="cascader-panel store-cascader" @click.stop>
+                <div class="cascader-container">
+                  <!-- 左侧店铺列表 -->
+                  <div class="cascader-menu left-menu">
+                    <div v-for="store in storeTree" :key="store.id" class="cascader-menu-item"
+                      :class="{ active: queryParams.shopId === store.id }" 
+                      @click.stop="handleStoreClick(store)">
+                      <span>{{ store.shopName }}</span>
+                      <el-tag v-if="store.status === 1" size="small" type="success" style="margin-left: 8px;">正常</el-tag>
+                      <el-tag v-else-if="store.status === 2" size="small" type="warning" style="margin-left: 8px;">关闭</el-tag>
+                      <el-tag v-else size="small" type="info" style="margin-left: 8px;">审核中</el-tag>
+                    </div>
+                  </div>
+
+                  <!-- 右侧店铺详情 -->
+                  <div v-if="selectedStore" class="cascader-menu right-menu">
+                    <div class="store-detail-panel">
+                      <div class="store-detail-header">
+                        <h4>{{ selectedStore.shopName }}</h4>
+                      </div>
+                      <div class="store-detail-info">
+                        <p><span class="detail-label">联系电话:</span> {{ selectedStore.contactPhone || '未填写' }}</p>
+                        <p><span class="detail-label">店铺地址:</span> {{ selectedStore.contactAddress || '未填写' }}</p>
+                        <p><span class="detail-label">店铺评分:</span> 
+                          <el-rate
+                            v-model="selectedStore.shopScore"
+                            disabled
+                            show-score
+                            text-color="#ff9900"
+                            score-template="{value}"
+                            style="display: inline-block; margin-left: 5px;"
+                          />
+                        </p>
+                        <p><span class="detail-label">商品数量:</span> {{ selectedStore.productCount || 0 }}</p>
+                        <p><span class="detail-label">销售数量:</span> {{ selectedStore.salesCount || 0 }}</p>
+                      </div>
+                      <div class="store-detail-footer">
+                        <el-button type="primary" size="small" @click.stop="confirmStoreSelection">选择此店铺</el-button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div v-if="storeTree.length === 0" class="cascader-menu right-menu empty-tips">
+                    暂无店铺数据
+                  </div>
+                </div>
+              </div>
+            </div>
           </el-form-item>
         </el-col>
         <el-col :span="6">
@@ -46,11 +99,14 @@
       <div v-if="showAdvanced" class="advanced-search"
         style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
         <el-row :gutter="20">
+          <!-- 商品ID -->
           <el-col :span="6">
             <el-form-item label="商品ID" prop="productId">
               <el-input v-model="queryParams.productId" placeholder="请输入商品编码" clearable />
             </el-form-item>
           </el-col>
+          
+          <!-- 品类 -->
           <el-col :span="6">
             <el-form-item label="品类" prop="categoryId">
               <div class="cascader-select-wrapper" @click.stop="toggleCascader">
@@ -92,6 +148,22 @@
                 </div>
               </div>
             </el-form-item>
+          </el-col>
+          
+          <!-- 商品状态 - 放在品类后面 -->
+          <el-col :span="6">
+            <el-form-item label="商品状态" prop="status">
+              <el-select v-model="queryParams.status" placeholder="全部状态" clearable style="width: 200px">
+                <el-option label="全部" :value="null" />
+                <el-option label="上架" :value="1" />
+                <el-option label="下架" :value="0" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          
+          <!-- 这里留空一个位置，保持布局平衡 -->
+          <el-col :span="6">
+            <!-- 可以为空，或者放其他查询条件 -->
           </el-col>
         </el-row>
 
@@ -220,7 +292,7 @@
             <svg t="1766388502966" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg"
               p-id="10265" width="200" height="200">
               <path
-                d="M843.292444 605.184c-112.782222-244.224-39.964444-322.531556-39.253333-323.441778a3.868444 3.868444 0 0 0 0.426667-4.864 3.868444 3.868444 0 0 0-4.664889-1.336889c-1.649778 0.625778-158.577778 65.962667-138.780445 210.972445-43.093333-38.741333-244.224-237.169778-121.173333-470.727111a3.982222 3.982222 0 0 0-0.625778-4.465778 3.527111 3.527111 0 0 0-4.238222-0.938667c-2.702222 1.024-65.450667 27.960889-115.370667 95.687111-46.08 62.464-89.059556 172.743111-31.288888 343.552 21.020444 80.384-18.631111 145.521778-39.879112 173.169778 5.290667-19.057778 11.804444-51.370667 10.666667-88.462222-1.649778-54.272-21.219556-129.251556-104.931555-177.720889a3.868444 3.868444 0 0 0-4.152889 0.199111 3.640889 3.640889 0 0 0-1.450667 4.039111c0.199111 1.450667 31.601778 144.184889-23.296 210.147556-47.331556 56.974222-93.838222 156.188444-68.664889 248.064 21.020444 76.856889 86.784 135.480889 195.555556 174.193778 27.847111 8.590222 54.584889 15.132444 83.996444 20.622222a3.640889 3.640889 0 0 0 4.352-2.588445c0.512-1.962667-0.312889-4.039111-2.161778-4.750222-55.836444-24.234667-113.408-74.581333-70.627555-177.009778 40.704-88.234667 33.450667-133.717333 25.258666-153.287111 21.020444 11.804444 62.862222 42.666667 52.394667 96.739556a3.925333 3.925333 0 0 0 1.763556 4.039111 3.754667 3.754667 0 0 0 4.352-0.312889c1.336889-1.024 127.089778-104.504889 69.916444-231.281778 28.16 16.270222 102.855111 73.130667 58.823111 203.406222-14.705778 56.149333 25.258667 96.426667 26.936889 98.076445 1.336889 1.251556 3.328 1.564444 4.864 0.426667 1.450667-0.938667 2.076444-2.901333 1.450667-4.551112-1.336889-3.527111-31.061333-83.797333 33.564444-128.113777-3.413333 20.622222-8.903111 71.566222 14.279111 99.328 20.821333 25.059556 40.817778 66.076444 34.702223 106.069333-4.238222 28.16-20.935111 51.882667-49.720889 70.542222a3.783111 3.783111 0 0 0-1.336889 4.977778c0.711111 1.763556 2.901333 2.588444 4.750222 1.962667 71.054222-22.983111 164.152889-69.603556 204.657778-158.577778 30.122667-65.564444 26.282667-144.184889-11.093334-233.784889z"
+                d="M843.292444 605.184c-112.782222-244.224-39.964444-322.531556-39.253333-323.441778a3.868444 3.868444 0 0 0 0.426667-4.864 3.868444 3.868444 0 0 0-4.664889-1.336889c-1.649778 0.625778-158.577778 65.962667-138.780445 210.972445-43.093333-38.741333-244.224-237.169778-121.173333-470.727111a3.982222 3.982222 0 0 0-0.625778-4.465778 3.527111 3.527111 0 0 0-4.238222-0.938667c-2.702222 1.024-65.450667 27.960889 -115.370667 95.687111-46.08 62.464-89.059556 172.743111-31.288888 343.552 21.020444 80.384-18.631111 145.521778-39.879112 173.169778 5.290667-19.057778 11.804444-51.370667 10.666667-88.462222-1.649778-54.272-21.219556-129.251556-104.931555-177.720889a3.868444 3.868444 0 0 0-4.152889 0.199111 3.640889 3.640889 0 0 0-1.450667 4.039111c0.199111 1.450667 31.601778 144.184889-23.296 210.147556-47.331556 56.974222-93.838222 156.188444-68.664889 248.064 21.020444 76.856889 86.784 135.480889 195.555556 174.193778 27.847111 8.590222 54.584889 15.132444 83.996444 20.622222a3.640889 3.640889 0 0 0 4.352-2.588445c0.512-1.962667-0.312889-4.039111-2.161778-4.750222-55.836444-24.234667-113.408-74.581333-70.627555-177.009778 40.704-88.234667 33.450667-133.717333 25.258666-153.287111 21.020444 11.804444 62.862222 42.666667 52.394667 96.739556a3.925333 3.925333 0 0 0 1.763556 4.039111 3.754667 3.754667 0 0 0 4.352-0.312889c1.336889-1.024 127.089778-104.504889 69.916444-231.281778 28.16 16.270222 102.855111 73.130667 58.823111 203.406222-14.705778 56.149333 25.258667 96.426667 26.936889 98.076445 1.336889 1.251556 3.328 1.564444 4.864 0.426667 1.450667-0.938667 2.076444-2.901333 1.450667-4.551112-1.336889-3.527111-31.061333-83.797333 33.564444-128.113777-3.413333 20.622222-8.903111 71.566222 14.279111 99.328 20.821333 25.059556 40.817778 66.076444 34.702223 106.069333-4.238222 28.16-20.935111 51.882667-49.720889 70.542222a3.783111 3.783111 0 0 0-1.336889 4.977778c0.711111 1.763556 2.901333 2.588444 4.750222 1.962667 71.054222-22.983111 164.152889-69.603556 204.657778-158.577778 30.122667-65.564444 26.282667-144.184889-11.093334-233.784889z"
                 fill="#8a8a8a" p-id="10266"></path>
             </svg> </el-icon>
         </template>
@@ -295,7 +367,12 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="品类" prop="categoryId">
-              <el-input v-model="form.categoryId" placeholder="请输入品类" />
+              <el-select v-model="form.categoryId" placeholder="点击选择品类" clearable filterable
+                  style="width: 200px" @click.stop>
+                  <el-option label="全部" :value="null" />
+                  <el-option v-for="category in categoryTreeOptions" :key="category.id" :label="category.name"
+                    :value="category.id" />
+                </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -395,27 +472,33 @@ const LOCAL_CATEGORY_OPTIONS = Object.entries(LOCAL_CATEGORY_MAP).map(([id, name
 import { listProduct, getProduct, delProduct, addProduct, updateProduct, updateProductStatus, updateProductHotFlag } from "@/api/system/product";
 import { listCategoryFront } from "@/api/system/category";
 import { ArrowDown, ArrowRight } from '@element-plus/icons-vue';
+import { listStore } from "@/api/system/store";
+
 const { proxy } = getCurrentInstance();
-const filteredCategoryOptions = ref([...LOCAL_CATEGORY_OPTIONS]); // 用于下拉框显示的过滤后列表
-const categoryLoading = ref(false); // 保留，但不再需要真实加载
+const filteredCategoryOptions = ref([...LOCAL_CATEGORY_OPTIONS]);
+const categoryLoading = ref(false);
 
 const productList = ref([]);
 const open = ref(false);
 const loading = ref(true);
 const showSearch = ref(true);
-const showAdvanced = ref(false); // 控制高级筛选显示
+const showAdvanced = ref(false);
 const ids = ref([]);
 const single = ref(true);
 const multiple = ref(true);
 const total = ref(0);
 const title = ref("");
-const categoryTree = ref([]); // 完整的树形数据
+const categoryTree = ref([]);
 const showCascader = ref(false);
-const activeParentId = ref(null); // 当前激活的父级ID
-const activeChildren = ref([]); // 当前激活父级的子级列表
-const categoryTreeOptions = ref([]); // 所有分类的扁平化列表（用于原下拉框）
+const activeParentId = ref(null);
+const activeChildren = ref([]);
+const categoryTreeOptions = ref([]);
 
-
+// 新增店铺相关的响应式变量
+const storeTree = ref([]);
+const storeTreeOptions = ref([]);
+const showStoreCascader = ref(false);
+const selectedStore = ref(null);
 
 const data = reactive({
   form: {},
@@ -426,6 +509,7 @@ const data = reactive({
     name: null,
     status: null,
     hotFlag: null,
+    shopId: null, // 修改为shopId
     // 高级查询条件
     id: null,
     productId: null,
@@ -460,15 +544,13 @@ const data = reactive({
 
 const { queryParams, form, rules } = toRefs(data);
 
-
 /** 将树形数据扁平化，用于下拉框显示 */
 function flattenCategoryTree(treeData, level = 0) {
   const result = [];
 
   const flatten = (categories, currentLevel) => {
     categories.forEach(category => {
-      // 添加缩进标识
-      const indent = '　'.repeat(currentLevel); // 使用全角空格缩进
+      const indent = '　'.repeat(currentLevel);
       result.push({
         id: category.id,
         label: `${indent}${category.name}`,
@@ -477,7 +559,6 @@ function flattenCategoryTree(treeData, level = 0) {
         original: category
       });
 
-      // 递归处理子分类
       if (category.children && category.children.length > 0) {
         flatten(category.children, currentLevel + 1);
       }
@@ -489,47 +570,112 @@ function flattenCategoryTree(treeData, level = 0) {
 }
 
 /** 从后端加载分类树 */
-/** 从后端加载分类树 */
 async function loadCategoryTree() {
   try {
-    // 使用接口获取树形数据
     const response = await listCategoryFront();
     console.log('Category tree response:', response);
 
     if (response && response.data) {
-      // 假设接口返回的是树形结构数据
-      // 如果接口返回的是平铺数据，需要转换为树形结构
       const categories = response.data;
 
       if (Array.isArray(categories)) {
-        // 检查是否是树形结构（有children字段）
         const firstItem = categories[0];
         if (firstItem && firstItem.children !== undefined) {
-          // 已经是树形结构
           categoryTree.value = categories;
         } else {
-          // 平铺数据，转换为树形结构
           categoryTree.value = buildCategoryTree(categories);
         }
-
-        // 生成扁平化列表
         generateCategoryOptions();
       }
     }
-
   } catch (error) {
     console.error('加载分类树失败:', error);
-    // 失败时暂时使用空数组
     categoryTree.value = [];
     categoryTreeOptions.value = [];
   }
 }
+
+/** 从后端加载店铺列表 */
+async function loadStoreList() {
+  try {
+    const response = await listStore({
+      pageNum: 1,
+      pageSize: 1000,
+      deleteFlag: 0
+    });
+    
+    console.log('Store list response:', response);
+
+    if (response && response.code === 200) {
+      const stores = response.rows || response.data || [];
+      storeTree.value = stores;
+      generateStoreOptions();
+    }
+  } catch (error) {
+    console.error('加载店铺列表失败:', error);
+    storeTree.value = [];
+    storeTreeOptions.value = [];
+  }
+}
+
+/** 生成店铺选项 */
+function generateStoreOptions() {
+  storeTreeOptions.value = storeTree.value.map(store => ({
+    id: store.id,
+    shopName: store.shopName,
+    status: store.status,
+    contactAddress: store.contactAddress
+  }));
+}
+
+/** 切换店铺级联面板显示 */
+function toggleStoreCascader() {
+  showStoreCascader.value = !showStoreCascader.value;
+  
+  if (showStoreCascader.value && queryParams.value.shopId) {
+    const store = storeTree.value.find(s => s.id === queryParams.value.shopId);
+    if (store) {
+      selectedStore.value = store;
+    }
+  }
+}
+
+/** 处理店铺点击 */
+function handleStoreClick(store) {
+  selectedStore.value = store;
+  queryParams.value.shopId = store.id;
+}
+
+/** 确认店铺选择 */
+function confirmStoreSelection() {
+  if (selectedStore.value) {
+    queryParams.value.shopId = selectedStore.value.id;
+    showStoreCascader.value = false;
+    handleQuery();
+  }
+}
+
+/** 点击页面其他区域关闭店铺级联面板 */
+function handleStoreClickOutside(event) {
+  const storeCascaderEl = document.querySelector('.store-select-wrapper');
+  if (storeCascaderEl && !storeCascaderEl.contains(event.target)) {
+    showStoreCascader.value = false;
+  }
+}
+
+/** 点击页面其他区域关闭品类级联面板 */
+function handleClickOutside(event) {
+  const cascaderEl = document.querySelector('.cascader-select-wrapper');
+  if (cascaderEl && !cascaderEl.contains(event.target)) {
+    showCascader.value = false;
+  }
+}
+
 /** 将平铺数据转换为树形结构 */
 function buildCategoryTree(flatCategories) {
   const categoryMap = {};
   const tree = [];
 
-  // 创建映射
   flatCategories.forEach(category => {
     categoryMap[category.id] = {
       ...category,
@@ -537,20 +683,16 @@ function buildCategoryTree(flatCategories) {
     };
   });
 
-  // 构建树形结构
   flatCategories.forEach(category => {
     const node = categoryMap[category.id];
 
     if (category.parentId === null || category.parentId === 0 || !categoryMap[category.parentId]) {
-      // 根节点
       tree.push(node);
     } else {
-      // 子节点
       const parent = categoryMap[category.parentId];
       if (parent) {
         parent.children.push(node);
       } else {
-        // 如果父节点不存在，也作为根节点
         tree.push(node);
       }
     }
@@ -559,18 +701,14 @@ function buildCategoryTree(flatCategories) {
   return tree;
 }
 
-
 function generateCategoryOptions() {
   const result = [];
 
   const flatten = (categories, level = 0) => {
     categories.forEach(category => {
-      // 如果当前分类有子分类，将其标记为父级
       const hasChildren = category.children && category.children.length > 0;
 
-      // 只添加叶子节点（可选择的分类）
       if (!hasChildren) {
-        // 查找父级路径
         const parentNames = getParentPath(categoryTree.value, category.id);
         const displayName = parentNames.length > 0
           ? `${parentNames.join(' / ')} / ${category.name}`
@@ -578,13 +716,12 @@ function generateCategoryOptions() {
 
         result.push({
           id: category.id,
-          name: displayName, // 显示完整路径
-          originalName: category.name, // 原始名称
+          name: displayName,
+          originalName: category.name,
           level: level
         });
       }
 
-      // 递归处理子分类
       if (hasChildren) {
         flatten(category.children, level + 1);
       }
@@ -594,6 +731,7 @@ function generateCategoryOptions() {
   flatten(categoryTree.value);
   categoryTreeOptions.value = result;
 }
+
 /** 处理父级菜单悬停 */
 function handleParentHover(parent) {
   activeParentId.value = parent.id;
@@ -604,10 +742,10 @@ function handleParentHover(parent) {
 function toggleCascader() {
   showCascader.value = !showCascader.value;
   if (showCascader.value && queryParams.value.categoryId) {
-    // 如果已选择了分类，找到对应的父级
     findParentForSelected();
   }
 }
+
 /** 获取分类的父级路径 */
 function getParentPath(tree, categoryId, path = []) {
   for (const node of tree) {
@@ -624,6 +762,7 @@ function getParentPath(tree, categoryId, path = []) {
   }
   return null;
 }
+
 /** 查找已选分类的父级 */
 function findParentForSelected() {
   const selectedId = queryParams.value.categoryId;
@@ -639,7 +778,6 @@ function findParentForSelected() {
           return true;
         }
 
-        // 递归查找
         if (findParent(category.children)) {
           return true;
         }
@@ -650,78 +788,39 @@ function findParentForSelected() {
 
   findParent(categoryTree.value);
 }
-// 监听点击事件，点击外部关闭级联面板
-onMounted(() => {
-  document.addEventListener('click', handleClickOutside);
-});
-
-onBeforeUnmount(() => {
-  document.removeEventListener('click', handleClickOutside);
-});
-/** 点击页面其他区域关闭级联面板 */
-function handleClickOutside(event) {
-  const cascaderEl = document.querySelector('.cascader-select-wrapper');
-  if (cascaderEl && !cascaderEl.contains(event.target)) {
-    showCascader.value = false;
-  }
-}
 
 /** 处理父级菜单点击 */
 function handleParentClick(parent) {
   activeParentId.value = parent.id;
   activeChildren.value = parent.children || [];
-
-  // 如果父级没有子分类，则可以选择父级（如果允许的话）
-  if (!parent.children || parent.children.length === 0) {
-    // 如果允许选择父级，取消下面这行注释
-    // handleChildClick(parent);
-  }
 }
+
 /** 处理子级菜单点击 */
 function handleChildClick(child) {
   queryParams.value.categoryId = child.id;
-  // 关闭级联面板（可选）
-  // showCascader.value = false;
 }
 
 /** 品类选择变化处理 */
 function handleCategoryChange(value) {
   console.log('Selected category id:', value);
-  // 这里可以添加其他逻辑，如根据选择的分类筛选商品等
 }
 
 /** 过滤品类选项（用于下拉框搜索） */
 function filterCategoryOptions(query) {
   if (!query) {
-    // 没有搜索词时显示全部（带层级结构）
     return categoryTreeOptions.value;
   }
 
   const searchText = query.toLowerCase();
-
-  // 先筛选匹配的分类
   const matchedCategories = categoryTreeOptions.value.filter(item =>
     item.name.toLowerCase().includes(searchText) ||
     item.id.toString().includes(searchText)
   );
 
-  // 如果搜索结果为空，返回空数组
   if (matchedCategories.length === 0) {
     return [];
   }
 
-  // 构建一个包含匹配分类及其所有祖先的集合
-  const resultSet = new Set();
-
-  matchedCategories.forEach(category => {
-    // 添加匹配的分类本身
-    resultSet.add(category.id);
-
-    // 如果需要，可以在这里添加查找祖先分类的逻辑
-    // 但考虑到我们已经有完整的树形数据，直接使用全部匹配项即可
-  });
-
-  // 返回匹配的分类
   return categoryTreeOptions.value.filter(item =>
     matchedCategories.some(match => match.id === item.id)
   );
@@ -729,38 +828,16 @@ function filterCategoryOptions(query) {
 
 /** 查询商品列表 */
 function getList() {
-  // function filterCategoryOptions(query) {
-  //   if (query && query.trim()) {
-  //     const searchText = query.trim().toLowerCase();
-  //     filteredCategoryOptions.value = LOCAL_CATEGORY_OPTIONS.filter(item =>
-  //       item.name.toLowerCase().includes(searchText) ||
-  //       item.id.toString().includes(searchText)
-  //     );
-  //   } else {
-  //     // 没有搜索词时显示全部
-  //     filteredCategoryOptions.value = [...LOCAL_CATEGORY_OPTIONS];
-  //   }
-  // }
-
-  /** 清空品类搜索（用于重置时） */
-  function clearCategoryFilter() {
-    filteredCategoryOptions.value = [...LOCAL_CATEGORY_OPTIONS];
-    queryParams.value.categoryId = null;
-  }
-
   loading.value = true;
 
-  // 构建查询参数
   const params = { ...queryParams.value };
 
-  // 处理时间范围
   if (params.createTime && params.createTime.length === 2) {
     params.beginCreateTime = params.createTime[0];
     params.endCreateTime = params.createTime[1];
     delete params.createTime;
   }
 
-  // 移除空值参数
   Object.keys(params).forEach(key => {
     if (params[key] === '' || params[key] === null || params[key] === undefined) {
       delete params[key];
@@ -804,25 +881,13 @@ function reset() {
     mainImage: null,
     subImages: null,
     activityId: null,
-    status: 1, // 默认上架
+    status: 1,
     price: null,
     stock: null,
-    hotFlag: 0 // 默认非热门
+    hotFlag: 0
   };
   proxy.resetForm("productRef");
-
-  function resetQuery() {
-    proxy.resetForm("queryRef");
-    queryParams.value = {
-      // ... 所有其他参数重置
-    };
-    // 新增这一行 ↓
-    clearCategoryFilter(); // 重置品类搜索状态
-    handleQuery();
-  }
 }
-
-
 
 /** 搜索按钮操作 */
 function handleQuery() {
@@ -840,6 +905,7 @@ function resetQuery() {
     name: null,
     status: null,
     hotFlag: null,
+    shopId: null,
     id: null,
     productId: null,
     categoryId: null,
@@ -876,7 +942,6 @@ function handleUpdate(row) {
   const _id = row.id || ids.value[0];
   getProduct(_id).then(response => {
     form.value = response.data;
-    // 确保必要字段有默认值
     if (form.value.status === undefined || form.value.status === null) {
       form.value.status = 1;
     }
@@ -926,7 +991,6 @@ function handleDelete(row) {
 /** 导出按钮操作 */
 function handleExport() {
   const params = { ...queryParams.value };
-  // 处理时间范围
   if (params.createTime && params.createTime.length === 2) {
     params.beginCreateTime = params.createTime[0];
     params.endCreateTime = params.createTime[1];
@@ -964,12 +1028,18 @@ function toggleHot(row) {
 
 // 组件挂载时加载数据
 onMounted(() => {
-  // listCategoryFront().then(response => {
-  //   console.log('Fetched categories:', response);
-  // });
-  // 加载分类树
   loadCategoryTree();
+  loadStoreList();
   getList();
+  
+  // 添加点击外部关闭监听
+  document.addEventListener('click', handleClickOutside);
+  document.addEventListener('click', handleStoreClickOutside);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleClickOutside);
+  document.removeEventListener('click', handleStoreClickOutside);
 });
 </script>
 
@@ -1016,13 +1086,9 @@ onMounted(() => {
   margin-bottom: 15px;
 }
 
-/* 添加样式使缩进显示正确 */
-:deep(.el-select-dropdown__item) {
-  white-space: pre;
-}
-
-/* 新增：级联选择器样式 */
-.cascader-select-wrapper {
+/* 级联选择器样式 */
+.cascader-select-wrapper,
+.store-select-wrapper {
   position: relative;
 }
 
@@ -1039,6 +1105,10 @@ onMounted(() => {
   min-width: 400px;
   max-height: 300px;
   overflow: hidden;
+}
+
+.store-cascader .cascader-container {
+  min-width: 500px;
 }
 
 .cascader-container {
@@ -1089,24 +1159,82 @@ onMounted(() => {
   font-size: 14px;
 }
 
-.cascader-footer {
-  padding: 10px;
-  border-top: 1px solid #e4e7ed;
-  text-align: right;
-  background: #f8f9fa;
+/* 店铺详情面板样式 */
+.store-detail-panel {
+  padding: 15px;
+  max-width: 300px;
 }
 
-/* 调整原下拉框的样式，使其不显示下拉箭头 */
-:deep(.category-cascader-popper) {
-  display: none !important;
+.store-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
 }
 
-:deep(.el-select .el-input .el-select__caret) {
+.store-detail-header h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+.store-detail-info {
+  margin-bottom: 15px;
+}
+
+.store-detail-info p {
+  margin: 8px 0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.detail-label {
+  display: inline-block;
+  width: 70px;
+  color: #666;
+  font-weight: 500;
+}
+
+.store-detail-footer {
+  text-align: center;
+  padding-top: 10px;
+  border-top: 1px solid #eee;
+}
+
+/* 店铺项样式 */
+.cascader-menu-item .el-tag {
+  margin-left: 8px;
+  font-size: 10px;
+  height: 18px;
+  line-height: 16px;
+}
+
+/* 确保级联面板在所有元素之上 */
+.cascader-panel {
+  z-index: 9999;
+}
+
+/* 店铺下拉框优化 */
+:deep(.el-select-dropdown__item) {
+  padding: 0 20px;
+  height: 36px;
+  line-height: 36px;
+}
+
+:deep(.el-select .el-input__inner) {
+  cursor: pointer;
+}
+
+:deep(.el-select .el-select__caret) {
   opacity: 0.5;
 }
 
 /* 点击展开按钮样式 */
-.cascader-select-wrapper :deep(.el-input) {
+.cascader-select-wrapper :deep(.el-input),
+.store-select-wrapper :deep(.el-input) {
   cursor: pointer;
 }
 </style>

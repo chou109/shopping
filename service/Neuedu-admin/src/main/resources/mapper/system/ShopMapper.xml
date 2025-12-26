@@ -3,7 +3,7 @@
 PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.neuedu.system.mapper.ShopMapper">
-    
+
     <resultMap type="Shop" id="ShopResult">
         <result property="id"    column="id"    />
         <result property="createTime"    column="create_time"    />
@@ -31,7 +31,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectShopList" parameterType="Shop" resultMap="ShopResult">
         <include refid="selectShopVo"/>
-        <where>  
+        <where>
             <if test="createUser != null "> and create_user = #{createUser}</if>
             <if test="updateUser != null "> and update_user = #{updateUser}</if>
             <if test="deleteFlag != null "> and delete_flag = #{deleteFlag}</if>
@@ -49,7 +49,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="status != null "> and status = #{status}</if>
         </where>
     </select>
-    
+
     <select id="selectShopById" parameterType="Long" resultMap="ShopResult">
         <include refid="selectShopVo"/>
         where shop.id = #{id}
