@@ -161,7 +161,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     
     <select id="selectOrderInfoById" parameterType="Long" resultMap="OrderInfoResult">
         <include refid="selectOrderInfoVo"/>
-        where order_info.id = #{id}
+        where oi.id = #{id}
     </select>
 
     <insert id="insertOrderInfo" parameterType="OrderInfo" useGeneratedKeys="true" keyProperty="id">
@@ -280,8 +280,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <!-- 支付订单 -->
     <update id="payOrder">
         update order_info
-        set status = 20,
-            status_desc = '已付款',
+        set status = 30,
+            status_desc = '待发货',
             payment_time = now(),
             payment_type = #{paymentType},
             payment_type_desc = #{paymentTypeDesc},
@@ -344,15 +344,4 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         group by date(create_time)
         order by date(create_time) desc
     </select>
-
-    <delete id="deleteOrderInfoById" parameterType="Long">
-        delete from order_info where id = #{id}
-    </delete>
-
-    <delete id="deleteOrderInfoByIds" parameterType="String">
-        delete from order_info where id in 
-        <foreach item="id" collection="array" open="(" separator="," close=")">
-            #{id}
-        </foreach>
-    </delete>
 </mapper>

@@ -1,9 +1,10 @@
 package com.neuedu.system.service.impl;
 import com.neuedu.system.constants.OrderStatusConstants;
 import com.neuedu.system.domain.OrderInfo;
-import com.neuedu.system.domain.User;
+import com.neuedu.system.domain.OrderDetail;
 import com.neuedu.system.service.IOrderInfoService;
-import com.neuedu.system.service.IUserService;
+import com.neuedu.system.service.IProductService;
+import com.neuedu.system.service.ISysUserService;
 import lombok.RequiredArgsConstructor;
 
 import java.math.BigDecimal;
@@ -40,7 +41,10 @@ public class RefundRecordServiceImpl extends ServiceImpl<RefundRecordMapper, Ref
     private IOrderInfoService orderInfoService;
 
     @Autowired
-    private IUserService userService;
+    private ISysUserService sysUserService;
+    
+    @Autowired
+    private IProductService productService;
     /**
      * 查询退款记录
      * 
@@ -230,13 +234,16 @@ public class RefundRecordServiceImpl extends ServiceImpl<RefundRecordMapper, Ref
                 orderInfo.setUpdateTime(DateUtils.getNowDate());
                 orderInfoService.updateOrderInfo(orderInfo);
 
-                // 如果是余额支付，退还余额
-                if (orderInfo.getPaymentType().equals(OrderStatusConstants.PAYMENT_BALANCE)) {
-                    User user = userService.getById(orderInfo.getUserId());
-                    if (user != null) {
-                        user.setBalance(user.getBalance().add(refundRecord.getRefundAmount()));
-                        userService.updateById(user);
+                // 恢复商品库存
+                if (orderInfo.getOrderDetails() != null) {
+                    for (OrderDetail detail : orderInfo.getOrderDetails()) {
+                        productService.updateProductStock(detail.getProductId(), Long.valueOf(detail.getQuantity()));
                     }
+                }
+                
+                // 如果是余额支付，退还余额到 sys_user 表
+                if (orderInfo.getPaymentType() != null && orderInfo.getPaymentType().equals(OrderStatusConstants.PAYMENT_BALANCE)) {
+                    sysUserService.updateUserBalance(orderInfo.getUserId(), refundRecord.getRefundAmount());
                 }
                 // 其他支付方式的退款逻辑...
             }

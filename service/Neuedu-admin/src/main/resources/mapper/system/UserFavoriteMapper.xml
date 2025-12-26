@@ -12,6 +12,25 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="createTime"    column="create_time"    />
     </resultMap>
 
+    <!-- 收藏列表包含商品/店铺详情 -->
+    <resultMap type="UserFavorite" id="UserFavoriteWithDetailResult">
+        <result property="favoriteId"    column="favorite_id"    />
+        <result property="userId"    column="user_id"    />
+        <result property="targetType"    column="target_type"    />
+        <result property="targetId"    column="target_id"    />
+        <result property="createTime"    column="create_time"    />
+        <!-- 商品关联字段 -->
+        <result property="productName"    column="product_name"    />
+        <result property="productMainImage"    column="product_main_image"    />
+        <result property="productPrice"    column="product_price"    />
+        <result property="productSubtitle"    column="product_subtitle"    />
+        <!-- 店铺关联字段 -->
+        <result property="shopName"    column="shop_name"    />
+        <result property="shopLogo"    column="shop_logo"    />
+        <result property="shopFollowers"    column="shop_followers"    />
+        <result property="shopRating"    column="shop_rating"    />
+    </resultMap>
+
     <sql id="selectUserFavoriteVo">
         select favorite_id, user_id, target_type, target_id, create_time from user_favorite
     </sql>
@@ -40,13 +59,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <!-- 新增：查询用户的收藏列表（按类型） -->
-    <select id="selectUserFavorites" resultMap="UserFavoriteResult">
-        <include refid="selectUserFavoriteVo"/>
-        where user_id = #{userId}
+    <select id="selectUserFavorites" resultMap="UserFavoriteWithDetailResult">
+        SELECT uf.favorite_id, uf.user_id, uf.target_type, uf.target_id, uf.create_time,
+               p.name as product_name, p.main_image as product_main_image, p.price as product_price, p.sub_title as product_subtitle,
+               s.shop_name as shop_name, s.shop_logo as shop_logo, s.follower_count as shop_followers, s.shop_score as shop_rating
+        FROM user_favorite uf
+        LEFT JOIN product p ON uf.target_type = 1 AND uf.target_id = p.id
+        LEFT JOIN shop s ON uf.target_type = 2 AND uf.target_id = s.id
+        WHERE uf.user_id = #{userId}
         <if test="targetType != null">
-            and target_type = #{targetType}
+            AND uf.target_type = #{targetType}
         </if>
-        order by create_time desc
+        ORDER BY uf.create_time DESC
     </select>
 
     <!-- 新增：检查用户是否已收藏 -->

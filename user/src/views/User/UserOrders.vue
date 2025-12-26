@@ -5,7 +5,6 @@
       <el-tab-pane label="全部订单" name="all">
         <template #label>
           <span>全部订单</span>
-          <el-badge v-if="orderCounts.all > 0" :value="orderCounts.all" :max="99" class="tab-badge" />
         </template>
       </el-tab-pane>
       <el-tab-pane label="待付款" name="waitPay">
@@ -29,12 +28,16 @@
       <el-tab-pane label="待评价" name="waitReview">
         <template #label>
           <span>待评价</span>
-          <el-badge v-if="orderCounts.waitReview > 0" :value="orderCounts.waitReview" :max="99" class="tab-badge" />
         </template>
       </el-tab-pane>
       <el-tab-pane label="已完成" name="completed">
         <template #label>
           <span>已完成</span>
+        </template>
+      </el-tab-pane>
+      <el-tab-pane label="已取消" name="cancelled">
+        <template #label>
+          <span>已取消</span>
         </template>
       </el-tab-pane>
     </el-tabs>
@@ -102,30 +105,35 @@
                 <template v-if="order.status === 10">
                   <el-button size="small" @click="handleCancelOrder(order)">取消订单</el-button>
                   <el-button type="primary" size="small" @click="handlePayOrder(order)">立即付款</el-button>
+                  <el-button type="danger" size="small" @click="handleDeleteOrder(order)">删除订单</el-button>
                 </template>
                 
                 <!-- 待发货订单 -->
                 <template v-else-if="order.status === 30">
                   <el-button size="small" @click="handleRefund(order)">申请退款</el-button>
                   <el-button size="small" @click="viewOrderDetail(order)">查看详情</el-button>
+                  <el-button type="danger" size="small" @click="handleDeleteOrder(order)">删除订单</el-button>
                 </template>
                 
                 <!-- 待收货订单 -->
                 <template v-else-if="order.status === 50">
                   <el-button size="small" @click="viewLogistics(order)">查看物流</el-button>
                   <el-button type="primary" size="small" @click="handleConfirmReceipt(order)">确认收货</el-button>
+                  <el-button type="danger" size="small" @click="handleDeleteOrder(order)">删除订单</el-button>
                 </template>
                 
                 <!-- 待评价订单 -->
                 <template v-else-if="order.status === 60 && !order.isReviewed">
                   <el-button size="small" @click="viewOrderDetail(order)">查看详情</el-button>
                   <el-button type="primary" size="small" @click="handleReview(order)">去评价</el-button>
+                  <el-button type="danger" size="small" @click="handleDeleteOrder(order)">删除订单</el-button>
                 </template>
                 
                 <!-- 已完成/其他状态订单 -->
                 <template v-else>
                   <el-button size="small" @click="viewOrderDetail(order)">查看详情</el-button>
                   <el-button size="small" @click="handleBuyAgain(order)">再次购买</el-button>
+                  <el-button type="danger" size="small" @click="handleDeleteOrder(order)">删除订单</el-button>
                 </template>
               </div>
             </div>
@@ -171,6 +179,63 @@
         <el-button type="danger" :loading="cancelling" @click="confirmCancel">确认取消</el-button>
       </template>
     </el-dialog>
+
+    <!-- 申请退款弹窗 -->
+    <el-dialog v-model="refundDialogVisible" title="申请退款" width="600px">
+      <el-form ref="refundFormRef" :model="refundForm" :rules="refundRules" label-width="100px">
+        <!-- 商品信息 -->
+        <el-form-item label="商品信息">
+          <div class="refund-product-info">
+            <div v-for="(detail, index) in currentOrder?.orderDetails" :key="index" class="refund-product-item">
+              <div class="product-image">
+                <img :src="getProductImageUrl(detail.productMainImage)" :alt="detail.productName" @error="handleImageError" />
+              </div>
+              <div class="product-info">
+                <div class="product-name">{{ detail.productName }}</div>
+                <div class="product-spec" v-if="detail.specifications">{{ detail.specifications }}</div>
+                <div class="product-quantity">数量：{{ detail.quantity }}</div>
+              </div>
+            </div>
+          </div>
+        </el-form-item>
+
+        <!-- 申请原因 -->
+        <el-form-item label="申请原因" prop="reason">
+          <el-select v-model="refundForm.reason" placeholder="请选择申请原因" style="width: 100%">
+            <el-option label="不想要了" value="不想要了" />
+            <el-option label="重量/数量/大小等描述不符" value="重量/数量/大小等描述不符" />
+            <el-option label="图片/品种/口味/标签等描述不符" value="图片/品种/口味/标签等描述不符" />
+            <el-option label="包装/商品破损" value="包装/商品破损" />
+            <el-option label="少件/漏发" value="少件/漏发" />
+            <el-option label="商品变质/发霉/有异物" value="商品变质/发霉/有异物" />
+            <el-option label="生产日期/保质期与商品描述不符" value="生产日期/保质期与商品描述不符" />
+            <el-option label="质量问题" value="质量问题" />
+            <el-option label="商家发错货" value="商家发错货" />
+            <el-option label="假冒品牌" value="假冒品牌" />
+            <el-option label="其他原因" value="其他原因" />
+          </el-select>
+        </el-form-item>
+
+        <!-- 退款金额 -->
+        <el-form-item label="退款金额">
+          <div class="refund-amount">¥{{ formatPrice(currentOrder?.payment) }}</div>
+        </el-form-item>
+
+        <!-- 申请说明 -->
+        <el-form-item label="申请说明">
+          <el-input v-model="refundForm.description" type="textarea" :rows="3" placeholder="请输入申请说明（可选）" />
+        </el-form-item>
+
+        <!-- 联系电话 -->
+        <el-form-item label="联系电话" prop="contactPhone">
+          <el-input v-model="refundForm.contactPhone" placeholder="请输入联系电话" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="refundDialogVisible = false">取消</el-button>
+        <el-button type="danger" :loading="refunding" @click="submitRefund">提交申请</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -179,19 +244,20 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Location } from '@element-plus/icons-vue'
-import { getMyOrders, payOrder, cancelOrder, confirmReceipt } from '@/api/system/orderInfo'
+import { getMyOrders, payOrder, cancelOrder, confirmReceipt, delInfo, applyRefund } from '@/api/system/orderInfo'
 import { getProductImageUrl, handleImageError } from '@/utils/image'
 
 const router = useRouter()
 
-// 状态映射
-const STATUS_MAP = {
+// 状态描述映射（根据 status_desc 字段）
+const STATUS_DESC_MAP = {
   all: null,
-  waitPay: 10,      // 待付款
-  waitShip: 30,     // 待发货
-  waitReceive: 50,  // 待收货
-  waitReview: 60,   // 待评价（已完成但未评价）
-  completed: 60     // 已完成
+  waitPay: '待付款',
+  waitShip: '待发货',
+  waitReceive: '待收货',
+  waitReview: '待评价',
+  completed: '交易完成',
+  cancelled: '已取消'
 }
 
 // 响应式数据
@@ -202,13 +268,11 @@ const total = ref(0)
 const pageNum = ref(1)
 const pageSize = ref(10)
 
-// 订单数量统计
+// 订单数量统计（只统计待付款、待发货、待收货）
 const orderCounts = ref({
-  all: 0,
   waitPay: 0,
   waitShip: 0,
-  waitReceive: 0,
-  waitReview: 0
+  waitReceive: 0
 })
 
 // 支付相关
@@ -221,18 +285,48 @@ const cancelDialogVisible = ref(false)
 const cancelReason = ref('')
 const cancelling = ref(false)
 
+// 退款相关
+const refundDialogVisible = ref(false)
+const refundFormRef = ref()
+const refundForm = ref({
+  reason: '',
+  description: '',
+  contactPhone: ''
+})
+const refundRules = ref({
+  reason: [
+    { required: true, message: '请选择申请原因', trigger: 'change' }
+  ],
+  contactPhone: [
+    { required: true, message: '请输入联系电话', trigger: 'blur' },
+    { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' }
+  ]
+})
+const refunding = ref(false)
+
 // 加载订单列表
 const loadOrders = async () => {
   loading.value = true
   try {
-    const status = STATUS_MAP[activeTab.value]
-    const res = await getMyOrders(status)
+    // 获取所有订单，前端根据 statusDesc 筛选
+    const res = await getMyOrders()
     if (res.code === 200) {
+      let allOrders = res.rows || []
+      
       // 按创建时间倒序排列
-      orderList.value = (res.rows || []).sort((a, b) => {
+      allOrders = allOrders.sort((a, b) => {
         return new Date(b.createTime) - new Date(a.createTime)
       })
-      total.value = res.total || 0
+      
+      // 根据当前标签筛选
+      const statusDesc = STATUS_DESC_MAP[activeTab.value]
+      if (statusDesc) {
+        orderList.value = allOrders.filter(order => order.statusDesc === statusDesc)
+      } else {
+        orderList.value = allOrders
+      }
+      
+      total.value = orderList.value.length
     }
   } catch (e) {
     console.error('加载订单失败', e)
@@ -242,23 +336,19 @@ const loadOrders = async () => {
   }
 }
 
-// 加载订单数量统计
+// 加载订单数量统计（只统计待付款、待发货、待收货）
 const loadOrderCounts = async () => {
   try {
-    // 获取各状态订单数量
-    const [allRes, waitPayRes, waitShipRes, waitReceiveRes] = await Promise.all([
-      getMyOrders(null),
-      getMyOrders(10),
-      getMyOrders(30),
-      getMyOrders(50)
-    ])
-    
-    orderCounts.value = {
-      all: allRes.total || 0,
-      waitPay: waitPayRes.total || 0,
-      waitShip: waitShipRes.total || 0,
-      waitReceive: waitReceiveRes.total || 0,
-      waitReview: 0 // 待评价需要特殊处理
+    const res = await getMyOrders()
+    if (res.code === 200) {
+      const allOrders = res.rows || []
+      
+      // 根据 statusDesc 统计各状态数量
+      orderCounts.value = {
+        waitPay: allOrders.filter(o => o.statusDesc === '待付款').length,
+        waitShip: allOrders.filter(o => o.statusDesc === '待发货').length,
+        waitReceive: allOrders.filter(o => o.statusDesc === '待收货').length
+      }
     }
   } catch (e) {
     console.error('加载订单数量失败', e)
@@ -325,7 +415,10 @@ const goShopping = () => {
 
 // 跳转商品详情
 const goProductDetail = (productId) => {
-  router.push(`/product/${productId}`)
+  router.push({
+    path: '/product/detail',
+    query: { id: productId }
+  })
 }
 
 // 查看订单详情
@@ -421,7 +514,50 @@ const handleConfirmReceipt = async (order) => {
 
 // 申请退款
 const handleRefund = (order) => {
-  ElMessage.info('退款功能开发中')
+  currentOrder.value = order
+  // 初始化退款表单
+  refundForm.value = {
+    reason: '',
+    description: '',
+    contactPhone: order.receivePhone || ''
+  }
+  refundDialogVisible.value = true
+}
+
+// 提交退款申请
+const submitRefund = async () => {
+  if (!currentOrder.value) return
+  
+  // 表单验证
+  if (!refundFormRef.value) return
+  await refundFormRef.value.validate(async (valid) => {
+    if (!valid) return
+    
+    refunding.value = true
+    try {
+      const refundData = {
+        orderNo: currentOrder.value.orderNo,
+        reason: refundForm.value.reason,
+        description: refundForm.value.description,
+        contactPhone: refundForm.value.contactPhone
+      }
+      
+      // 调用退款API
+      const res = await applyRefund(refundData)
+      if (res.code === 200) {
+        ElMessage.success('退款申请提交成功')
+        refundDialogVisible.value = false
+        loadOrders()
+        loadOrderCounts()
+      } else {
+        ElMessage.error(res.msg || '退款申请提交失败')
+      }
+    } catch (e) {
+      ElMessage.error('退款申请提交失败：' + (e.message || '未知错误'))
+    } finally {
+      refunding.value = false
+    }
+  })
 }
 
 // 去评价
@@ -433,7 +569,34 @@ const handleReview = (order) => {
 const handleBuyAgain = (order) => {
   if (order.orderDetails && order.orderDetails.length > 0) {
     const productId = order.orderDetails[0].productId
-    router.push(`/product/${productId}`)
+    router.push({
+      path: '/product/detail',
+      query: { id: productId }
+    })
+  }
+}
+
+// 删除订单
+const handleDeleteOrder = async (order) => {
+  try {
+    await ElMessageBox.confirm('确定要删除该订单吗？删除后不可恢复！', '删除订单', {
+      confirmButtonText: '确定删除',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    
+    const res = await delInfo(order.id)
+    if (res.code === 200) {
+      ElMessage.success('订单已删除')
+      loadOrders()
+      loadOrderCounts()
+    } else {
+      ElMessage.error(res.msg || '删除失败')
+    }
+  } catch (e) {
+    if (e !== 'cancel') {
+      ElMessage.error('删除失败：' + (e.message || '未知错误'))
+    }
   }
 }
 
@@ -445,16 +608,18 @@ onMounted(() => {
 
 <style scoped>
 .user-orders {
-  padding: 20px;
-  background: #f5f5f5;
+  padding: 0;
   min-height: 100%;
 }
 
 .el-tabs {
-  background: #fff;
+  background: white;
   padding: 0 20px;
   border-radius: 8px;
   margin-bottom: 16px;
+  position: sticky;
+  top: 70px;
+  z-index: 10;
 }
 
 :deep(.el-tabs__header) {
@@ -470,7 +635,7 @@ onMounted(() => {
 }
 
 .empty-orders {
-  background: #fff;
+  background: transparent;
   padding: 60px 20px;
   border-radius: 8px;
   text-align: center;
@@ -685,7 +850,7 @@ onMounted(() => {
   margin-top: 20px;
   display: flex;
   justify-content: center;
-  background: #fff;
+  background: transparent;
   padding: 16px;
   border-radius: 8px;
 }
@@ -704,5 +869,72 @@ onMounted(() => {
 .pay-dialog-content strong {
   color: #ff5000;
   font-size: 24px;
+}
+
+/* 退款弹窗样式 */
+.refund-product-info {
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 10px;
+  background: #fafafa;
+  border-radius: 6px;
+}
+
+.refund-product-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.refund-product-item:last-child {
+  border-bottom: none;
+}
+
+.refund-product-item .product-image {
+  width: 60px;
+  height: 60px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.refund-product-item .product-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.refund-product-item .product-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.refund-product-item .product-name {
+  font-size: 13px;
+  color: #333;
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.refund-product-item .product-spec {
+  font-size: 12px;
+  color: #999;
+  margin-bottom: 4px;
+}
+
+.refund-product-item .product-quantity {
+  font-size: 12px;
+  color: #666;
+}
+
+.refund-amount {
+  color: #ff5000;
+  font-size: 20px;
+  font-weight: 700;
+  padding: 10px 0;
 }
 </style>

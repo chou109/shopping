@@ -137,7 +137,7 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements IC
 
         // 6. 设置默认值
         if (cart.getSelected() == null) {
-            cart.setSelected(1); // 默认选中
+            cart.setSelected(0); // 默认不选中
         }
         if (cart.getDeleteFlag() == null) {
             cart.setDeleteFlag(0); // 默认未删除

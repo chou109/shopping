@@ -201,11 +201,10 @@ public class OrderInfoController extends BaseController {
      */
     @Operation(summary = "申请退款")
     @Log(title = "订单", businessType = BusinessType.UPDATE)
-    @PostMapping("/{orderNo}/apply-refund")
-    public AjaxResult applyRefund(@PathVariable String orderNo,
-                                  @RequestParam String refundAmount,
-                                  @RequestParam String refundReason) {
+    @PostMapping("/apply-refund")
+    public AjaxResult applyRefund(@RequestBody Map<String, Object> refundData) {
         Long userId = SecurityUtils.getUserId();
+        String orderNo = (String) refundData.get("orderNo");
         OrderInfo orderInfo = orderInfoService.selectOrderInfoByOrderNo(orderNo);
 
         if (orderInfo == null) {
@@ -218,7 +217,11 @@ public class OrderInfoController extends BaseController {
         }
 
         try {
-            int result = orderInfoService.applyRefund(orderNo, new java.math.BigDecimal(refundAmount), refundReason);
+            String reason = (String) refundData.get("reason");
+            String description = (String) refundData.get("description");
+            String contactPhone = (String) refundData.get("contactPhone");
+            
+            int result = orderInfoService.applyRefund(orderNo, reason, description, contactPhone);
             return toAjax(result);
         } catch (RuntimeException e) {
             return error(e.getMessage());
@@ -238,6 +241,28 @@ public class OrderInfoController extends BaseController {
 
         Map<String, Object> statistics = orderInfoService.getOrderStatistics(null, null);
         return success(statistics);
+    }
+
+    /**
+     * 用户删除自己的订单
+     */
+    @Operation(summary = "用户删除订单")
+    @Log(title = "订单", businessType = BusinessType.DELETE)
+    @PostMapping("/delete-my-order")
+    public AjaxResult userDelete(@RequestParam("id") Long id) {
+        Long userId = SecurityUtils.getUserId();
+        if (userId == null) {
+            return AjaxResult.error("用户未登录");
+        }
+        // 验证订单属于当前用户
+        OrderInfo order = orderInfoService.selectOrderInfoById(id);
+        if (order == null) {
+            return AjaxResult.error("订单不存在");
+        }
+        if (!order.getUserId().equals(userId)) {
+            return AjaxResult.error("无权删除此订单");
+        }
+        return toAjax(orderInfoService.deleteOrderInfoById(id));
     }
 
 }
@@ -419,7 +444,7 @@ class OrderInfoAdminController extends BaseController
     }
 
     /**
-     * 删除订单
+     * 删除订单（管理员）
      */
     @Operation(summary = "删除订单")
     @PreAuthorize("@ss.hasPermi('system:info:remove')")

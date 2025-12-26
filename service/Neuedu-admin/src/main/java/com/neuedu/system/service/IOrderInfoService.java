@@ -109,11 +109,12 @@ public interface IOrderInfoService extends IService<OrderInfo>
      * 申请退款
      *
      * @param orderNo 订单编号
-     * @param refundAmount 退款金额
-     * @param refundReason 退款原因
+     * @param reason 退款原因
+     * @param description 退款说明
+     * @param contactPhone 联系电话
      * @return 结果
      */
-    public int applyRefund(String orderNo, BigDecimal refundAmount, String refundReason);
+    public int applyRefund(String orderNo, String reason, String description, String contactPhone);
 
     /**
      * 处理退款

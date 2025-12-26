@@ -1,16 +1,275 @@
 <template>
-  <div class="user-profile">
-    <h2>收藏商品</h2>
-    <p>收藏商品功能正在开发中...</p>
+  <div class="favorite-products">
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <h3>收藏商品</h3>
+      <span class="count">共 {{ favoriteList.length }} 件商品</span>
+    </div>
+
+    <!-- 商品列表 -->
+    <div class="products-container" v-loading="loading">
+      <div v-if="favoriteList.length === 0" class="empty-state">
+        <el-empty description="暂无收藏商品">
+          <el-button type="primary" @click="goShopping">去逛逛</el-button>
+        </el-empty>
+      </div>
+
+      <div v-else class="product-grid">
+        <div 
+          v-for="item in favoriteList" 
+          :key="item.favoriteId" 
+          class="product-card"
+          @click="goProductDetail(item.targetId)"
+        >
+          <div class="product-image">
+            <img :src="getProductImageUrl(item.productMainImage)" :alt="item.productName" @error="handleImageError" />
+            <div class="favorite-btn" @click.stop="handleRemoveFavorite(item)">
+              <el-icon><Star /></el-icon>
+            </div>
+          </div>
+          <div class="product-info">
+            <div class="product-name">{{ item.productName }}</div>
+            <div class="product-subtitle" v-if="item.productSubtitle">{{ item.productSubtitle }}</div>
+            <div class="product-price">
+              <span class="price">¥{{ formatPrice(item.productPrice) }}</span>
+            </div>
+            <div class="favorite-time">
+              收藏于 {{ formatTime(item.createTime) }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-// 收藏商品组件
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Star } from '@element-plus/icons-vue'
+import { getMyProductFavorites, removeFavorite } from '@/api/system/favorite'
+import { getProductImageUrl, handleImageError } from '@/utils/image'
+
+const router = useRouter()
+
+// 响应式数据
+const loading = ref(false)
+const favoriteList = ref([])
+
+// 加载收藏列表
+const loadFavorites = async () => {
+  loading.value = true
+  try {
+    const res = await getMyProductFavorites()
+    if (res.code === 200) {
+      favoriteList.value = res.data || []
+    }
+  } catch (e) {
+    console.error('加载收藏列表失败', e)
+    ElMessage.error('加载收藏列表失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+// 取消收藏
+const handleRemoveFavorite = async (item) => {
+  try {
+    await ElMessageBox.confirm('确定要取消收藏该商品吗？', '取消收藏', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    
+    const res = await removeFavorite(1, item.targetId) // 1表示商品
+    if (res.code === 200) {
+      ElMessage.success('已取消收藏')
+      // 从列表中移除
+      favoriteList.value = favoriteList.value.filter(f => f.favoriteId !== item.favoriteId)
+    } else {
+      ElMessage.error(res.msg || '操作失败')
+    }
+  } catch (e) {
+    if (e !== 'cancel') {
+      ElMessage.error('操作失败')
+    }
+  }
+}
+
+// 格式化价格
+const formatPrice = (price) => {
+  if (!price) return '0.00'
+  return parseFloat(price).toFixed(2)
+}
+
+// 格式化时间
+const formatTime = (time) => {
+  if (!time) return ''
+  try {
+    return new Date(time).toLocaleDateString('zh-CN')
+  } catch (e) {
+    return time
+  }
+}
+//周超的文件没上传呢
+
+// 跳转商品详情
+const goProductDetail = (productId) => {
+  router.push({
+    path: '/product/detail',
+    query: { id: productId }
+  })
+}
+
+// 去购物
+const goShopping = () => {
+  router.push('/index')
+}
+
+onMounted(() => {
+  loadFavorites()
+})
 </script>
 
 <style scoped>
-.user-profile {
-  padding: 20px;
+.favorite-products {
+  padding: 0;
+  min-height: 100%;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: white;
+  padding: 16px 20px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  position: sticky;
+  top: 70px;
+  z-index: 10;
+}
+
+.page-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+.page-header .count {
+  font-size: 14px;
+  color: #999;
+}
+
+.products-container {
+  min-height: 400px;
+}
+
+.empty-state {
+  background: transparent;
+  padding: 60px 20px;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.product-card {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.product-image {
+  position: relative;
+  width: 100%;
+  padding-top: 100%;
+  overflow: hidden;
+}
+
+.product-image img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.favorite-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.favorite-btn .el-icon {
+  font-size: 18px;
+  color: #ff5000;
+}
+
+.favorite-btn:hover {
+  background: #fff;
+  transform: scale(1.1);
+}
+
+.product-info {
+  padding: 12px;
+}
+
+.product-name {
+  font-size: 14px;
+  color: #333;
+  font-weight: 500;
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  min-height: 40px;
+}
+
+.product-subtitle {
+  font-size: 12px;
+  color: #999;
+  margin-bottom: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.product-price .price {
+  color: #ff5000;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.favorite-time {
+  font-size: 12px;
+  color: #bbb;
+  margin-top: 8px;
 }
 </style>

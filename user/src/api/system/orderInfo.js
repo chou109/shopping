@@ -105,11 +105,12 @@ export function updateInfo(data) {
   })
 }
 
-// 删除订单
+// 删除订单（用户端）
 export function delInfo(id) {
   return request({
-    url: '/system/orderInfo/' + id,
-    method: 'delete'
+    url: '/system/orderInfo/delete-my-order',
+    method: 'post',
+    params: { id }
   })
 }
 
@@ -118,5 +119,14 @@ export function getUserBalance() {
   return request({
     url: '/system/user/current',
     method: 'get'
+  })
+}
+
+// 申请退款
+export function applyRefund(data) {
+  return request({
+    url: '/system/orderInfo/apply-refund',
+    method: 'post',
+    data: data
   })
 }

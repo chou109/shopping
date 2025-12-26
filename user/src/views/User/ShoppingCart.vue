@@ -30,8 +30,8 @@
           </div>
 
           <!-- 商品列表 -->
-          <div class="cart-items">
-            <div v-for="item in cartItems" :key="item.id" class="cart-item" :class="{ selected: item.selected }">
+          <div class="cart-items" ref="cartListRef">
+            <div v-for="item in displayedItems" :key="item.id" class="cart-item" :class="{ selected: item.selected }">
               <div class="item-select">
                 <el-checkbox v-model="item.selected" @change="handleItemSelect(item)" />
               </div>
@@ -88,6 +88,14 @@
                   </el-button>
                 </div>
               </div>
+            </div>
+            <!-- 加载更多提示 -->
+            <div v-if="hasMore" class="load-more">
+              <el-icon class="loading-icon" v-if="loadingMore"><Loading /></el-icon>
+              <span v-else>下滑加载更多</span>
+            </div>
+            <div v-else-if="displayedItems.length > 0" class="no-more">
+              已加载全部商品
             </div>
           </div>
         </div>
@@ -157,23 +165,65 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, inject, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useStore } from 'vuex'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Lock } from '@element-plus/icons-vue'
+import { Lock, Loading } from '@element-plus/icons-vue'
 import { getProductImageUrl, handleImageError } from '@/utils/image'
-import { listCart, updateCart, delCart, clearCart } from '@/api/system/cart'
+import { listCart, updateCart, delCart, clearCart, batchSelectCart } from '@/api/system/cart'
 import { createOrderFromCart, payOrder } from '@/api/system/orderInfo'
 import { getMyAddressList } from '@/api/system/address'
 import PurchaseDialog from '@/components/PurchaseDialog/index.vue'
 
 const router = useRouter()
 const store = useStore()
+
+// 注入父组件的滚动容器引用
+const scrollContainer = inject('scrollContainer', null)
 const loading = ref(false)
 
 // 购物车数据
 const cartItems = ref([])
+
+// 懒加载相关
+const cartListRef = ref(null)
+const pageSize = 10 // 每次加载数量
+const displayCount = ref(10) // 当前显示数量
+const loadingMore = ref(false)
+
+// 显示的商品列表（懒加载）
+const displayedItems = computed(() => {
+  return cartItems.value.slice(0, displayCount.value)
+})
+
+// 是否还有更多
+const hasMore = computed(() => {
+  return displayCount.value < cartItems.value.length
+})
+
+// 滚动加载更多（监听父容器 .user-content 的滚动事件）
+const handleScroll = () => {
+  if (!scrollContainer || !scrollContainer.value) return
+  
+  const { scrollTop, scrollHeight, clientHeight } = scrollContainer.value
+  
+  // 滚动到底部时加载更多
+  if (scrollHeight - scrollTop - clientHeight < 100 && hasMore.value && !loadingMore.value) {
+    loadMore()
+  }
+}
+
+// 加载更多
+const loadMore = () => {
+  if (loadingMore.value || !hasMore.value) return
+  
+  loadingMore.value = true
+  setTimeout(() => {
+    displayCount.value += pageSize
+    loadingMore.value = false
+  }, 300)
+}
 
 // 购买弹窗相关
 const purchaseDialogVisible = ref(false)
@@ -253,6 +303,11 @@ const availablePromotions = computed(() => {
   return promotions
 })
 
+// 重置懒加载
+const resetLazyLoad = () => {
+  displayCount.value = pageSize
+}
+
 // 方法
 const formatPrice = (price) => {
   if (!price) return '0.00'
@@ -276,14 +331,23 @@ const loadCartData = async () => {
     console.log("购物车数据:", response)
     if (response.code === 200) {
       cartItems.value = response.data || []
-      // 强制重置所有商品为未选中状态
+      // 强制设置所有商品为未选中状态
       cartItems.value.forEach(item => {
-        item.selected = false  // 强制设置为false，忽略后端返回的选中状态
+        // 确保selected字段有值且为false
+        item.selected = false
         // 计算小计
         if (item.productUnitPrice && item.quantity && !item.productTotalPrice) {
           item.productTotalPrice = item.productUnitPrice * item.quantity
         }
       })
+      // 同步未选中状态到后端
+      try {
+        await batchSelectCart(0)
+      } catch (error) {
+        console.error('同步未选中状态失败:', error)
+      }
+      // 重置懒加载
+      resetLazyLoad()
     } else {
       ElMessage.error('获取购物车数据失败')
       cartItems.value = []
@@ -299,15 +363,41 @@ const loadCartData = async () => {
 }
 
 // 全选/取消全选
-const handleSelectAll = (selected) => {
+const handleSelectAll = async (selected) => {
   cartItems.value.forEach(item => {
     item.selected = selected
   })
+  // 同步选中状态到后端
+  try {
+    const response = await batchSelectCart(selected ? 1 : 0)
+    if (response.code !== 200) {
+      ElMessage.error('更新选中状态失败')
+    }
+  } catch (error) {
+    console.error('更新选中状态失败:', error)
+    ElMessage.error('更新选中状态失败')
+  }
 }
 
 // 单个商品选择
-const handleItemSelect = (item) => {
+const handleItemSelect = async (item) => {
   console.log('商品选择状态变化:', item.productName, item.selected)
+  try {
+    // 同步选中状态到后端
+    const response = await updateCart(item.id, {
+      selected: item.selected ? 1 : 0
+    })
+    if (response.code !== 200) {
+      // 如果更新失败，恢复原来的状态
+      item.selected = !item.selected
+      ElMessage.error('更新选中状态失败')
+    }
+  } catch (error) {
+    console.error('更新选中状态失败:', error)
+    // 如果更新失败，恢复原来的状态
+    item.selected = !item.selected
+    ElMessage.error('更新选中状态失败')
+  }
 }
 
 // 增加数量
@@ -539,14 +629,26 @@ const goShopping = () => {
 
 onMounted(() => {
   loadCartData()
+  // 使用 nextTick 等待父容器准备完毕
+  nextTick(() => {
+    if (scrollContainer && scrollContainer.value) {
+      scrollContainer.value.addEventListener('scroll', handleScroll)
+    }
+  })
+})
+
+onUnmounted(() => {
+  if (scrollContainer && scrollContainer.value) {
+    scrollContainer.value.removeEventListener('scroll', handleScroll)
+  }
 })
 </script>
 
 <style scoped>
 .shopping-cart {
-  min-height: 100vh;
-  background: #f5f5f5;
-  padding: 20px 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .page-header {
@@ -554,10 +656,14 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
-  padding: 0 20px;
+  padding: 15px 20px;
   max-width: 1500px;
   margin-left: auto;
   margin-right: auto;
+  position: sticky;
+  top: 70px;
+  background: white;
+  z-index: 10;
 }
 
 .cart-content {
@@ -577,10 +683,8 @@ onMounted(() => {
   flex: 1;
   min-width: 0;
   /* 防止flex元素溢出 */
-  background: white;
+  background: transparent;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  overflow: hidden;
 }
 
 .cart-toolbar {
@@ -589,7 +693,10 @@ onMounted(() => {
   align-items: center;
   padding: 15px 20px;
   border-bottom: 1px solid #f0f0f0;
-  background: #fafafa;
+  background: white;
+  position: sticky;
+  top: 130px;
+  z-index: 9;
 }
 
 .toolbar-left {
@@ -604,8 +711,25 @@ onMounted(() => {
 }
 
 .cart-items {
-  max-height: 100%;
-  overflow-y: auto;
+  /* 不设置滚动，让内容自然擑开 */
+}
+
+/* 加载更多提示 */
+.load-more,
+.no-more {
+  padding: 20px;
+  text-align: center;
+  color: #999;
+  font-size: 14px;
+}
+
+.load-more .loading-icon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .cart-item {
@@ -745,16 +869,15 @@ onMounted(() => {
 }
 
 .checkout-panel {
-  background: white;
+  background: transparent;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   overflow: hidden;
 }
 
 .panel-header {
   padding: 15px 20px;
   border-bottom: 1px solid #f0f0f0;
-  background: #fafafa;
+  background: transparent;
 }
 
 .panel-header h3 {
@@ -827,9 +950,8 @@ onMounted(() => {
 
 /* 空购物车状态 */
 .empty-cart {
-  background: white;
+  background: transparent;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   padding: 60px 20px;
   text-align: center;
 }

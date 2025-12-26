@@ -25,9 +25,9 @@
     </div>
 
     <!-- 主体内容 -->
-    <div class="user-main">
+    <div class="user-main" ref="mainRef">
       <!-- 左侧导航 -->
-      <div class="user-sidebar">
+      <div class="user-sidebar" ref="sidebarRef">
         <nav class="sidebar-nav">
           <ul>
             <li 
@@ -48,8 +48,8 @@
         </nav>
       </div>
 
-      <!-- 右侧内容区域 -->
-      <div class="user-content">
+      <!-- 右侧内容区域 - 滚动容器 -->
+      <div class="user-content" ref="contentRef" @scroll="handleContentScroll">
         <div class="page-header">
           <h2>{{ pageTitle }}</h2>
           <div class="page-subtitle">{{ pageSubtitle }}</div>
@@ -60,17 +60,24 @@
           v-bind="componentProps"
         />
       </div>
+      
+      <!-- 回到顶部按钮 -->
+      <transition name="fade">
+        <div v-show="showBackTop" class="back-to-top" @click="scrollToTop">
+          <el-icon><Top /></el-icon>
+        </div>
+      </transition>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, provide } from 'vue'
 import { useStore } from 'vuex'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { 
-  User, List, ShoppingCart, Clock, Shop, Star, ChatDotRound, HomeFilled
+  User, List, ShoppingCart, Clock, Shop, Star, ChatDotRound, HomeFilled, Top
 } from '@element-plus/icons-vue'
 import { getUsers } from '@/api/system/user'
 import { getProductImageUrl } from '@/utils/image'
@@ -170,7 +177,7 @@ const currentComponent = computed(() => {
   const map = {
     'profile': UserProfile, 'orders': UserOrders, 'cart': ShoppingCartPage,
     'footprint': UserFootprint, 'favoriteShop': FavoriteShops, 
-    'favoriteProduct': FavoriteProducts,
+    'favoriteProduct': FavoriteProducts, 'review': UserReviews
   }
   return map[activeNav.value] || UserProfile
 })
@@ -179,6 +186,30 @@ const componentProps = computed(() => {
   const map = { 'orders': { query: props.query }, 'cart': { query: props.query } }
   return map[activeNav.value] || {}
 })
+
+// 内容区域滚动容器引用
+const contentRef = ref(null)
+
+// 提供滚动容器给子组件使用（用于懒加载）
+provide('scrollContainer', contentRef)
+
+// 回到顶部相关
+const showBackTop = ref(false)
+
+const handleContentScroll = () => {
+  if (contentRef.value) {
+    showBackTop.value = contentRef.value.scrollTop > 300
+  }
+}
+
+const scrollToTop = () => {
+  if (contentRef.value) {
+    contentRef.value.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    })
+  }
+}
 
 const switchNav = (navItem) => {
   if (activeNav.value === navItem.key) return
@@ -192,9 +223,23 @@ const getBadgeCount = (navKey) => {
   return item?.badgeKey ? (badgeCounts.value[item.badgeKey] || 0) : 0
 }
 
+// 侧边栏引用
+const sidebarRef = ref(null)
+const mainRef = ref(null)
+
 onMounted(async () => {
+  // 禁用 body 滚动
+  document.body.style.overflow = 'hidden'
+  document.documentElement.style.overflow = 'hidden'
+  
   await loadUserInfo()
   if (!userInfo.value.name) { router.push('/login'); return }
+})
+
+onUnmounted(() => {
+  // 恢复 body 滚动
+  document.body.style.overflow = ''
+  document.documentElement.style.overflow = ''
 })
 
 watch(() => props.page, (newPage) => {
@@ -204,18 +249,22 @@ watch(() => props.page, (newPage) => {
 
 <style scoped>
 .user-center {
-  min-height: 100vh;
+  height: 100vh;
   background-color: #f5f5f5;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 /* 顶部用户卡片 */
 .user-header-card {
   background: linear-gradient(135deg, #ff6034 0%, #ee0a24 100%);
   padding: 30px 20px;
+  flex-shrink: 0;
 }
 
 .header-card-content {
-  max-width: 1200px;
+  max-width: 1300px;
   margin: 0 auto;
   display: flex;
   justify-content: space-between;
@@ -305,11 +354,15 @@ watch(() => props.page, (newPage) => {
 
 /* 主体内容 */
 .user-main {
-  max-width: 1200px;
-  margin: 20px auto;
-  padding: 0 20px;
+  flex: 1;
+  max-width: 1300px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 20px;
   display: flex;
   gap: 20px;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .user-sidebar {
@@ -317,8 +370,10 @@ watch(() => props.page, (newPage) => {
   background: white;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-  height: fit-content;
   flex-shrink: 0;
+  height: fit-content;
+  max-height: 100%;
+  overflow-y: auto;
 }
 
 .sidebar-nav ul {
@@ -379,12 +434,19 @@ watch(() => props.page, (newPage) => {
   box-shadow: 0 2px 8px rgba(0,0,0,0.06);
   padding: 25px;
   min-width: 0;
+  max-width: calc(100% - 240px);
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .page-header {
   margin-bottom: 25px;
-  padding-bottom: 15px;
+  padding: 15px 0;
   border-bottom: 1px solid #f0f0f0;
+  position: sticky;
+  top: 0;
+  background: white;
+  z-index: 20;
 }
 
 .page-header h2 {
@@ -398,8 +460,39 @@ watch(() => props.page, (newPage) => {
   color: #999;
 }
 
-/* 响应式 */
+/* 响应式 - 大屏幕 */
+@media (min-width: 1600px) {
+  .header-card-content,
+  .user-main {
+    max-width: 1600px;
+  }
+}
+
+/* 响应式 - 中等屏幕 */
+@media (max-width: 1200px) {
+  .header-card-content,
+  .user-main {
+    max-width: 100%;
+    padding: 15px;
+  }
+  
+  .user-sidebar {
+    width: 180px;
+  }
+  
+  .user-content {
+    max-width: calc(100% - 200px);
+  }
+}
+
+/* 响应式 - 小屏幕 */
 @media (max-width: 768px) {
+  .user-center {
+    height: auto;
+    min-height: 100vh;
+    overflow: auto;
+  }
+  
   .header-card-content {
     flex-direction: column;
     gap: 15px;
@@ -421,10 +514,14 @@ watch(() => props.page, (newPage) => {
   
   .user-main {
     flex-direction: column;
+    padding: 10px;
+    overflow: visible;
   }
   
   .user-sidebar {
     width: 100%;
+    max-height: none;
+    overflow: visible;
   }
   
   .sidebar-nav ul {
@@ -447,7 +544,46 @@ watch(() => props.page, (newPage) => {
   }
   
   .user-content {
+    max-width: 100%;
     padding: 15px;
+    overflow: visible;
   }
+}
+
+/* 回到顶部按钮 */
+.back-to-top {
+  position: absolute;
+  right: 30px;
+  bottom: 30px;
+  width: 44px;
+  height: 44px;
+  background: #ee0a24;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(238, 10, 36, 0.4);
+  transition: all 0.3s;
+  z-index: 100;
+}
+
+.back-to-top:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(238, 10, 36, 0.5);
+}
+
+/* 过渡动画 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(20px);
 }
 </style>
