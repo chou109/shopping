@@ -190,7 +190,7 @@ const loading = ref(false)
 const open = ref(false)
 const title = ref("")
 const categoryOptions = ref([])
-const isExpandAll = ref(true)
+const isExpandAll = ref(false)
 const refreshTable = ref(true)
 
 // 数据

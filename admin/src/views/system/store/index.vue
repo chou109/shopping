@@ -302,33 +302,7 @@
         
         <!-- 店铺logo上传 -->
         <el-form-item label="店铺logo" prop="shopLogo">
-          <el-upload
-            class="avatar-uploader"
-            :action="uploadUrl"
-            :show-file-list="false"
-            :on-success="handleLogoSuccess"
-            :before-upload="beforeLogoUpload"
-            :headers="headers"
-            :data="uploadData"
-          >
-            <img v-if="form.shopLogo" :src="form.shopLogo" class="avatar" />
-            <el-icon v-else class="avatar-uploader-icon">
-              <Plus />
-            </el-icon>
-            <div class="upload-tips" v-if="!form.shopLogo">
-              点击上传店铺logo
-              <div style="font-size: 12px; color: #999; margin-top: 5px;">
-                建议尺寸：200×200像素，支持JPG、PNG格式
-              </div>
-            </div>
-            <div class="upload-preview" v-if="form.shopLogo">
-              <div class="preview-text">预览</div>
-            </div>
-          </el-upload>
-          <div class="upload-actions" v-if="form.shopLogo">
-            <el-button type="text" @click="form.shopLogo = ''" size="small">移除</el-button>
-            <el-button type="text" @click="openLogoDialog = true" size="small">更换</el-button>
-          </div>
+          <image-upload v-model="form.shopLogo"/>
         </el-form-item>
               
         <el-form-item label="店铺描述" prop="description">

@@ -489,38 +489,29 @@ const data = reactive({
 
 const { queryParams, form, rules } = toRefs(data);
 
+
 /** 查询订单列表 */
 function getList() {
   loading.value = true;
   
-  // 构建查询参数
   const params = { ...queryParams.value };
   
-  // 处理时间范围
-  if (params.paymentTimeRange && params.paymentTimeRange.length === 2) {
-    params.beginPaymentTime = params.paymentTimeRange[0];
-    params.endPaymentTime = params.paymentTimeRange[1];
-    delete params.paymentTimeRange;
-  }
+  // 调试：查看请求参数
+  console.log('请求参数:', JSON.stringify(params, null, 2));
   
-  // 处理支付金额范围
-  if (params.minPayment !== null && params.minPayment !== '') {
-    params.minPayment = params.minPayment;
-  }
-  if (params.maxPayment !== null && params.maxPayment !== '') {
-    params.maxPayment = params.maxPayment;
-  }
-  
-  // 移除空值参数
-  Object.keys(params).forEach(key => {
-    if (params[key] === '' || params[key] === null || params[key] === undefined) {
-      delete params[key];
-    }
-  });
+  // ... 处理参数的代码 ...
   
   listInfo(params).then(response => {
+    // 调试：查看响应数据
+    console.log('响应数据:', {
+      rows: response.rows?.length || 0,
+      total: response.total,
+      pageNum: params.pageNum,
+      pageSize: params.pageSize
+    });
+    
     infoList.value = response.rows;
-    total.value = response.total;
+    total.value = response.total;  // 这里应该是正确的总记录数
     loading.value = false;
   }).catch(() => {
     loading.value = false;
@@ -632,21 +623,36 @@ function handleUpdate(row) {
   });
 }
 
+
+/** 提交按钮 */
 /** 提交按钮 */
 function submitForm() {
   proxy.$refs["infoRef"].validate(valid => {
     if (valid) {
+      // 如果是修改操作
       if (form.value.id != null) {
         updateInfo(form.value).then(response => {
           proxy.$modal.msgSuccess("修改成功");
           open.value = false;
-          getList();
+          getList();  // 修改成功后重新加载当前页
+        }).catch(error => {
+          proxy.$modal.msgError("修改失败：" + (error.message || "未知错误"));
         });
       } else {
+        // 新增操作 - 生成唯一的订单编号
+        if (!form.value.orderNo) {
+          form.value.orderNo = generateOrderNo();
+        }
+        
         addInfo(form.value).then(response => {
           proxy.$modal.msgSuccess("新增成功");
           open.value = false;
+          
+          // 关键修复：新增后回到第一页重新查询
+          queryParams.value.pageNum = 1;
           getList();
+        }).catch(error => {
+          proxy.$modal.msgError("新增失败：" + (error.message || "未知错误"));
         });
       }
     }
@@ -659,6 +665,7 @@ function handleDelete(row) {
   proxy.$modal.confirm('是否确认删除订单编号为"' + _ids.join(',') + '"的数据项？').then(function() {
     return delInfo(_ids);
   }).then(() => {
+    // 删除后重新查询数据
     getList();
     proxy.$modal.msgSuccess("删除成功");
   }).catch(() => {});

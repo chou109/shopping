@@ -85,7 +85,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         oi.street,
         oi.postal_code,
         oi.user_id,
-        oi.expire_time,
         oi.ship_time,
         oi.receive_time,
         oi.cancel_time,
@@ -156,6 +155,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectOrderInfoList" parameterType="OrderInfo" resultMap="OrderInfoResult">
         <include refid="selectOrderInfoVo"/>
         <include refid="baseWhereClause"/>
+        <!-- 这里不能有 LIMIT 限制，分页由 MyBatis 的分页插件处理 -->
         order by oi.create_time desc
     </select>
     
