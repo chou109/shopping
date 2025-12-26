@@ -10,7 +10,7 @@ Target Server Type    : MYSQL
 Target Server Version : 80012
 File Encoding         : 65001
 
-Date: 2025-12-24 23:26:20
+Date: 2025-12-26 14:29:53
 */
 
 SET FOREIGN_KEY_CHECKS=0;
@@ -45111,7 +45111,7 @@ CREATE TABLE `cart` (
   `selected` tinyint(4) NOT NULL DEFAULT '1' COMMENT '是否已选择 1是 0 否',
   `product_total_price` decimal(20,2) NOT NULL DEFAULT '0.00' COMMENT '总价格',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=266 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC COMMENT='购物车';
+) ENGINE=InnoDB AUTO_INCREMENT=269 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC COMMENT='购物车';
 
 -- ----------------------------
 -- Records of cart
@@ -45150,9 +45150,12 @@ INSERT INTO `cart` VALUES ('255', '2024-10-13 10:28:10', '2025-12-24 23:12:40', 
 INSERT INTO `cart` VALUES ('256', '2024-10-13 10:28:25', '2025-12-24 23:12:40', '1', '1', '0', '1', '0', '', '3', 'KOLA 红米Note4全屏钢化膜', '五重护甲，精密保护', '/profile/file/pic/0e6c5bd5-af70-45f6-a68a-7d48b8486ad9_source.jpg', '1', '9.99', '1', '9.99');
 INSERT INTO `cart` VALUES ('258', '2025-09-07 16:13:55', '2025-12-24 23:12:40', '1', '1', '0', '1', '0', null, '8', '华为(HUAWEI) 畅享7', '看得到，触得到的品质', '/profile/file/pic/8691990c-57ee-4bdf-9a7e-758e2ec09d0d_source.jpg', '1', '960.00', '1', '960.00');
 INSERT INTO `cart` VALUES ('262', '2025-12-01 11:47:34', '2025-12-24 23:12:40', '1', '1', '0', '1', '0', null, '5', '华为畅享6S钢化膜', '高清防爆，耐磨防刮', '/profile/file/pic/2b61d366-9ff9-4e1b-b99c-f9fd7c4c4908_source.jpg', '1', '31.00', '1', '31.00');
-INSERT INTO `cart` VALUES ('263', '2025-12-23 11:14:35', '2025-12-24 23:12:40', '100', '0', '0', '100', '0', '', '45', '索尼(SONY) KD-75X8566E电视', '放心去享受，尊享大屏', '/profile/file/pic/9625d3b8-a342-4830-ac19-5522dc0b1d61_source.jpg', '1', '9390.00', '1', '9390.00');
-INSERT INTO `cart` VALUES ('264', '2025-12-23 11:14:41', '2025-12-24 23:12:40', '100', '0', '0', '100', '0', '', '181', '金大生 花朵戒指', '爱让戒指更闪耀', '/profile/file/pic/d71d68f2-fca7-4ef0-9345-554542972838_source.jpg', '1', '480.00', '1', '480.00');
-INSERT INTO `cart` VALUES ('265', '2025-12-24 15:57:26', '2025-12-24 15:57:25', '100', '0', '0', '100', '0', '', '13', '小米(MI) 红米 4A', '超长续航，玩得更久', '/profile/file/pic/7b18fef2-8d03-42a1-a87b-d0391e2e7070_source.jpg', '2', '599.00', '1', '1198.00');
+INSERT INTO `cart` VALUES ('263', '2025-12-23 11:14:35', '2025-12-26 13:27:55', '100', '0', '1', '100', '0', '', '45', '索尼(SONY) KD-75X8566E电视', '放心去享受，尊享大屏', '/profile/file/pic/9625d3b8-a342-4830-ac19-5522dc0b1d61_source.jpg', '1', '9390.00', '1', '9390.00');
+INSERT INTO `cart` VALUES ('264', '2025-12-23 11:14:41', '2025-12-26 13:27:55', '100', '0', '1', '100', '0', '', '181', '金大生 花朵戒指', '爱让戒指更闪耀', '/profile/file/pic/d71d68f2-fca7-4ef0-9345-554542972838_source.jpg', '1', '480.00', '1', '480.00');
+INSERT INTO `cart` VALUES ('265', '2025-12-24 15:57:26', '2025-12-26 13:27:55', '100', '0', '1', '100', '0', '', '13', '小米(MI) 红米 4A', '超长续航，玩得更久', '/profile/file/pic/7b18fef2-8d03-42a1-a87b-d0391e2e7070_source.jpg', '2', '599.00', '1', '1198.00');
+INSERT INTO `cart` VALUES ('266', '2025-12-26 13:28:19', '2025-12-26 13:28:37', '100', '0', '1', '100', '0', '', '77', '未风(WIFING) 秋冬季打底连衣裙', '针织袖拼接', '/profile/file/pic/4d0d7a9a-9150-40f5-8c4f-39aa1e048d70_source.jpg', '1', '349.00', '1', '349.00');
+INSERT INTO `cart` VALUES ('267', '2025-12-26 13:28:25', '2025-12-26 13:28:37', '100', '0', '1', '100', '0', '', '53', '海尔(Haier) 家用空调', '智能智控，净化脏空气', '/profile/file/pic/aab74237-8040-4cca-85d7-f99a0b0d2556_source.jpg', '1', '6990.00', '1', '6990.00');
+INSERT INTO `cart` VALUES ('268', '2025-12-26 13:31:22', '2025-12-26 13:31:21', '100', '0', '0', '100', '0', '', '53', '海尔(Haier) 家用空调', '智能智控，净化脏空气', '/profile/file/pic/aab74237-8040-4cca-85d7-f99a0b0d2556_source.jpg', '1', '6990.00', '1', '6990.00');
 
 -- ----------------------------
 -- Table structure for category
@@ -45662,7 +45665,7 @@ CREATE TABLE `order_detail` (
   `send_time` datetime DEFAULT NULL COMMENT '发货时间',
   `receive_time` datetime DEFAULT NULL COMMENT '签收时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=524 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC COMMENT='订单明细';
+) ENGINE=InnoDB AUTO_INCREMENT=548 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC COMMENT='订单明细';
 
 -- ----------------------------
 -- Records of order_detail
@@ -45934,6 +45937,30 @@ INSERT INTO `order_detail` VALUES ('520', '2025-09-07 21:20:10', '2025-09-07 21:
 INSERT INTO `order_detail` VALUES ('521', '2025-09-07 21:26:56', '2025-09-07 21:27:01', '1', '0', '0', '1757251615', '1757251615632', '0', '', '', '13', '小米(MI) 红米 4A', '/file/pic/7b18fef2-8d03-42a1-a87b-d0391e2e7070_source.jpg', '599.00', '1', '599.00', '1', '20', '已付款', null, '0', null, null);
 INSERT INTO `order_detail` VALUES ('522', '2025-12-01 11:05:56', '2025-12-01 11:06:02', '1', '0', '0', '1764558355', '1764558355418', '0', '', '', '6', '华为Nova全屏覆盖钢化玻璃膜', '/file/pic/f287662b-3f86-43ac-bf71-df5db2b97b65_source.jpg', '20.00', '1', '20.00', '1', '20', '已付款', null, '0', null, null);
 INSERT INTO `order_detail` VALUES ('523', '2025-12-02 10:37:46', '2025-12-02 10:37:46', '1', '0', '0', '1764643065', '1764643065991', '0', '', '', '16', '小米(MI) MIX2', '/file/pic/62920974-c86b-4e69-be76-7f641fccfcc9_source.jpg', '4699.00', '1', '4699.00', '1', '10', '未付款', null, '0', null, null);
+INSERT INTO `order_detail` VALUES ('524', '2025-12-26 11:08:37', '2025-12-26 11:08:36', '100', '0', '0', 'O20251226110836810960', 'D40ddd51376884746', '0', '', '/profile/file/pic/d7e4b63c-0102-4893-babf-8d120824aedc_source.jpg', '157', '丹迪(Dante) 时尚休闲包', '/profile/file/pic/d7e4b63c-0102-4893-babf-8d120824aedc_source.jpg', '238.00', '1', '238.00', '100', '10', '待付款', null, '0', null, null);
+INSERT INTO `order_detail` VALUES ('525', '2025-12-26 11:08:37', '2025-12-26 11:08:36', '100', '0', '0', 'O20251226110836810960', 'D09d8b8d3335e40cf', '0', '', '/profile/file/pic/7b18fef2-8d03-42a1-a87b-d0391e2e7070_source.jpg', '13', '小米(MI) 红米 4A', '/profile/file/pic/7b18fef2-8d03-42a1-a87b-d0391e2e7070_source.jpg', '599.00', '2', '1198.00', '100', '10', '待付款', null, '0', null, null);
+INSERT INTO `order_detail` VALUES ('526', '2025-12-26 11:08:37', '2025-12-26 11:08:36', '100', '0', '0', 'O20251226110836810960', 'Df99489a0437a4d68', '0', '', '/profile/file/pic/d71d68f2-fca7-4ef0-9345-554542972838_source.jpg', '181', '金大生 花朵戒指', '/profile/file/pic/d71d68f2-fca7-4ef0-9345-554542972838_source.jpg', '480.00', '1', '480.00', '100', '10', '待付款', null, '0', null, null);
+INSERT INTO `order_detail` VALUES ('527', '2025-12-26 11:08:37', '2025-12-26 11:08:36', '100', '0', '0', 'O20251226110836810960', 'D3b7c00e08afb4659', '0', '', '/profile/file/pic/9625d3b8-a342-4830-ac19-5522dc0b1d61_source.jpg', '45', '索尼(SONY) KD-75X8566E电视', '/profile/file/pic/9625d3b8-a342-4830-ac19-5522dc0b1d61_source.jpg', '9390.00', '1', '9390.00', '100', '10', '待付款', null, '0', null, null);
+INSERT INTO `order_detail` VALUES ('528', '2025-12-26 11:11:39', '2025-12-26 11:11:43', '100', '0', '0', 'O20251226111138832431', 'D39eea4bea09e4a2c', '0', '', '/profile/file/pic/4d0d7a9a-9150-40f5-8c4f-39aa1e048d70_source.jpg', '77', '未风(WIFING) 秋冬季打底连衣裙', '/profile/file/pic/4d0d7a9a-9150-40f5-8c4f-39aa1e048d70_source.jpg', '349.00', '1', '349.00', '100', '20', '已付款', null, '0', null, null);
+INSERT INTO `order_detail` VALUES ('529', '2025-12-26 11:11:39', '2025-12-26 11:11:43', '100', '0', '0', 'O20251226111138832431', 'D487885b4146441e8', '0', '', '/profile/file/pic/c7324757-9c40-43c9-96e5-d05dbcfc9141_source.jpg', '48', '小米(MI) L65M4-AQ电视', '/profile/file/pic/c7324757-9c40-43c9-96e5-d05dbcfc9141_source.jpg', '990.00', '2', '1980.00', '100', '20', '已付款', null, '0', null, null);
+INSERT INTO `order_detail` VALUES ('530', '2025-12-26 11:11:39', '2025-12-26 11:11:43', '100', '0', '0', 'O20251226111138832431', 'Dd16513f2d4f040da', '0', '', '/profile/file/pic/a8be48e7-6578-493c-8b3b-461bdbe36e4f_source.jpg', '69', '颈袖添香 气质优雅修身连衣裙', '/profile/file/pic/a8be48e7-6578-493c-8b3b-461bdbe36e4f_source.jpg', '459.00', '2', '918.00', '100', '20', '已付款', null, '0', null, null);
+INSERT INTO `order_detail` VALUES ('531', '2025-12-26 11:13:06', '2025-12-26 11:13:09', '100', '0', '0', 'O20251226111305168148', 'D2e02b41f8372488d', '0', '', '/profile/file/pic/6c433c08-5a4c-4316-afcd-066833e37dae_source.jpg', '46', '索尼(SONY) KD-6575Z9D电视', '/profile/file/pic/6c433c08-5a4c-4316-afcd-066833e37dae_source.jpg', '23800.00', '1', '23800.00', '100', '20', '已付款', null, '0', null, null);
+INSERT INTO `order_detail` VALUES ('532', '2025-12-26 11:13:06', '2025-12-26 11:13:09', '100', '0', '0', 'O20251226111305168148', 'D273883f9a74248f0', '0', '', '/profile/file/pic/7b18fef2-8d03-42a1-a87b-d0391e2e7070_source.jpg', '13', '小米(MI) 红米 4A', '/profile/file/pic/7b18fef2-8d03-42a1-a87b-d0391e2e7070_source.jpg', '599.00', '3', '1797.00', '100', '20', '已付款', null, '0', null, null);
+INSERT INTO `order_detail` VALUES ('533', '2025-12-26 11:14:00', '2025-12-26 11:14:00', '100', '0', '0', 'O20251226111400233991', 'D25950c3c7f7f4c87', '0', '', '', '46', '索尼(SONY) KD-6575Z9D电视', '/profile/file/pic/6c433c08-5a4c-4316-afcd-066833e37dae_source.jpg', '23800.00', '1', '23800.00', '100', '10', '待付款', null, '0', null, null);
+INSERT INTO `order_detail` VALUES ('534', '2025-12-26 11:14:04', '2025-12-26 11:14:03', '100', '0', '0', 'O20251226111403403008', 'D72e698278073470c', '0', '', '', '46', '索尼(SONY) KD-6575Z9D电视', '/profile/file/pic/6c433c08-5a4c-4316-afcd-066833e37dae_source.jpg', '23800.00', '1', '23800.00', '100', '10', '待付款', null, '0', null, null);
+INSERT INTO `order_detail` VALUES ('535', '2025-12-26 11:14:07', '2025-12-26 11:14:06', '100', '0', '0', 'O20251226111406181564', 'D953b5b6c98a34a96', '0', '', '', '46', '索尼(SONY) KD-6575Z9D电视', '/profile/file/pic/6c433c08-5a4c-4316-afcd-066833e37dae_source.jpg', '23800.00', '1', '23800.00', '100', '10', '待付款', null, '0', null, null);
+INSERT INTO `order_detail` VALUES ('536', '2025-12-26 11:14:52', '2025-12-26 11:14:56', '100', '0', '0', 'O20251226111452568279', 'D6a268ffdf4e74768', '0', '', '', '46', '索尼(SONY) KD-6575Z9D电视', '/profile/file/pic/6c433c08-5a4c-4316-afcd-066833e37dae_source.jpg', '23800.00', '1', '23800.00', '100', '20', '已付款', null, '0', null, null);
+INSERT INTO `order_detail` VALUES ('537', '2025-12-26 11:15:33', '2025-12-26 11:18:38', '100', '0', '0', 'O20251226111532916924', 'Da60a8008cb0742ac', '0', '', '', '45', '索尼(SONY) KD-75X8566E电视', '/profile/file/pic/9625d3b8-a342-4830-ac19-5522dc0b1d61_source.jpg', '9390.00', '1', '9390.00', '100', '20', '已付款', null, '0', null, null);
+INSERT INTO `order_detail` VALUES ('538', '2025-12-26 11:21:13', '2025-12-26 11:21:13', '100', '0', '0', 'O20251226112113993712', 'Db8cc2ef425004fe3', '0', '', '', '181', '金大生 花朵戒指', '/profile/file/pic/d71d68f2-fca7-4ef0-9345-554542972838_source.jpg', '480.00', '1', '480.00', '100', '10', '待付款', null, '0', null, null);
+INSERT INTO `order_detail` VALUES ('539', '2025-12-26 11:28:23', '2025-12-26 11:28:35', '100', '0', '0', 'O20251226112822473807', 'D10864c4003344d36', '0', '', '', '181', '金大生 花朵戒指', '/profile/file/pic/d71d68f2-fca7-4ef0-9345-554542972838_source.jpg', '480.00', '1', '480.00', '100', '20', '已付款', null, '0', null, null);
+INSERT INTO `order_detail` VALUES ('540', '2025-12-26 13:15:46', '2025-12-26 13:15:46', '100', '0', '0', 'O20251226131546961052', 'D2a36c5b366ea4663', '0', '', '', '53', '海尔(Haier) 家用空调', '/profile/file/pic/aab74237-8040-4cca-85d7-f99a0b0d2556_source.jpg', '6990.00', '1', '6990.00', '100', '10', '待付款', null, '0', null, null);
+INSERT INTO `order_detail` VALUES ('541', '2025-12-26 13:17:59', '2025-12-26 13:17:58', '100', '0', '0', 'O20251226131758417398', 'D3f52b09bb1394a5f', '0', '', '', '53', '海尔(Haier) 家用空调', '/profile/file/pic/aab74237-8040-4cca-85d7-f99a0b0d2556_source.jpg', '6990.00', '1', '6990.00', '100', '10', '待付款', null, '0', null, null);
+INSERT INTO `order_detail` VALUES ('542', '2025-12-26 13:20:56', '2025-12-26 13:21:01', '100', '0', '0', 'O20251226132056301014', 'D0e5e8c552f1b4233', '0', '', '', '53', '海尔(Haier) 家用空调', '/profile/file/pic/aab74237-8040-4cca-85d7-f99a0b0d2556_source.jpg', '6990.00', '1', '6990.00', '100', '20', '已付款', null, '0', null, null);
+INSERT INTO `order_detail` VALUES ('543', '2025-12-26 13:27:55', '2025-12-26 13:27:55', '100', '0', '0', 'O20251226132755319264', 'D354086cf86c34994', '0', '', '/profile/file/pic/7b18fef2-8d03-42a1-a87b-d0391e2e7070_source.jpg', '13', '小米(MI) 红米 4A', '/profile/file/pic/7b18fef2-8d03-42a1-a87b-d0391e2e7070_source.jpg', '599.00', '2', '1198.00', '100', '10', '待付款', null, '0', null, null);
+INSERT INTO `order_detail` VALUES ('544', '2025-12-26 13:27:55', '2025-12-26 13:27:55', '100', '0', '0', 'O20251226132755319264', 'Dd9d4431c879f4a14', '0', '', '/profile/file/pic/d71d68f2-fca7-4ef0-9345-554542972838_source.jpg', '181', '金大生 花朵戒指', '/profile/file/pic/d71d68f2-fca7-4ef0-9345-554542972838_source.jpg', '480.00', '1', '480.00', '100', '10', '待付款', null, '0', null, null);
+INSERT INTO `order_detail` VALUES ('545', '2025-12-26 13:27:55', '2025-12-26 13:27:55', '100', '0', '0', 'O20251226132755319264', 'D45f426995899445e', '0', '', '/profile/file/pic/9625d3b8-a342-4830-ac19-5522dc0b1d61_source.jpg', '45', '索尼(SONY) KD-75X8566E电视', '/profile/file/pic/9625d3b8-a342-4830-ac19-5522dc0b1d61_source.jpg', '9390.00', '1', '9390.00', '100', '10', '待付款', null, '0', null, null);
+INSERT INTO `order_detail` VALUES ('546', '2025-12-26 13:28:38', '2025-12-26 13:28:37', '100', '0', '0', 'O20251226132837463168', 'D083c8b11ba174146', '0', '', '/profile/file/pic/aab74237-8040-4cca-85d7-f99a0b0d2556_source.jpg', '53', '海尔(Haier) 家用空调', '/profile/file/pic/aab74237-8040-4cca-85d7-f99a0b0d2556_source.jpg', '6990.00', '1', '6990.00', '100', '10', '待付款', null, '0', null, null);
+INSERT INTO `order_detail` VALUES ('547', '2025-12-26 13:28:38', '2025-12-26 13:28:37', '100', '0', '0', 'O20251226132837463168', 'D85c05b5a6ab94049', '0', '', '/profile/file/pic/4d0d7a9a-9150-40f5-8c4f-39aa1e048d70_source.jpg', '77', '未风(WIFING) 秋冬季打底连衣裙', '/profile/file/pic/4d0d7a9a-9150-40f5-8c4f-39aa1e048d70_source.jpg', '349.00', '1', '349.00', '100', '10', '待付款', null, '0', null, null);
 
 -- ----------------------------
 -- Table structure for order_info
@@ -45963,12 +45990,35 @@ CREATE TABLE `order_info` (
   `street` varchar(50) DEFAULT '' COMMENT '详细地址',
   `postal_code` varchar(255) DEFAULT '' COMMENT '邮编',
   `user_id` bigint(20) NOT NULL DEFAULT '0' COMMENT '购买人id',
+  `expire_time` datetime DEFAULT NULL COMMENT '订单过期时间',
+  `ship_time` datetime DEFAULT NULL COMMENT '发货时间',
+  `receive_time` datetime DEFAULT NULL COMMENT '收货时间',
+  `cancel_time` datetime DEFAULT NULL COMMENT '取消时间',
+  `cancel_reason` varchar(500) DEFAULT NULL COMMENT '取消原因',
+  `refund_amount` decimal(10,2) DEFAULT NULL COMMENT '退款金额',
+  `refund_time` datetime DEFAULT NULL COMMENT '退款时间',
+  `refund_reason` varchar(500) DEFAULT NULL COMMENT '退款原因',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=87 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC COMMENT='订单';
+) ENGINE=InnoDB AUTO_INCREMENT=102 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC COMMENT='订单';
 
 -- ----------------------------
 -- Records of order_info
 -- ----------------------------
+INSERT INTO `order_info` VALUES ('87', '2025-12-26 11:08:37', '2025-12-26 11:08:36', '100', '0', '0', 'O20251226110836810960', '11306.00', '0', '', '0.00', '10', '待付款', null, '53', '杨泽锐', '13407266853', '湖北', '湖北', '湖北', 's', '597329', '100', '2025-12-26 11:38:37', null, null, null, null, null, null, null);
+INSERT INTO `order_info` VALUES ('88', '2025-12-26 11:11:39', '2025-12-26 11:11:43', '100', '0', '0', 'O20251226111138832431', '3247.00', '4', '余额支付', '0.00', '20', '已付款', '2025-12-26 11:11:43', '53', '杨泽锐', '13407266853', '湖北', '湖北', '湖北', 's', '597329', '100', '2025-12-26 11:41:39', null, null, null, null, null, null, null);
+INSERT INTO `order_info` VALUES ('89', '2025-12-26 11:13:06', '2025-12-26 11:13:09', '100', '0', '0', 'O20251226111305168148', '25597.00', '4', '余额支付', '0.00', '20', '已付款', '2025-12-26 11:13:09', '53', '杨泽锐', '13407266853', '湖北', '湖北', '湖北', 's', '597329', '100', '2025-12-26 11:43:06', null, null, null, null, null, null, null);
+INSERT INTO `order_info` VALUES ('90', '2025-12-26 11:14:00', '2025-12-26 11:14:00', '100', '0', '0', 'O20251226111400233991', '23800.00', '0', '', '0.00', '10', '待付款', null, '53', '杨泽锐', '13407266853', '湖北', '湖北', '湖北', 's', '597329', '100', '2025-12-26 11:44:00', null, null, null, null, null, null, null);
+INSERT INTO `order_info` VALUES ('91', '2025-12-26 11:14:04', '2025-12-26 11:14:03', '100', '0', '0', 'O20251226111403403008', '23800.00', '0', '', '0.00', '10', '待付款', null, '53', '杨泽锐', '13407266853', '湖北', '湖北', '湖北', 's', '597329', '100', '2025-12-26 11:44:04', null, null, null, null, null, null, null);
+INSERT INTO `order_info` VALUES ('92', '2025-12-26 11:14:07', '2025-12-26 11:14:06', '100', '0', '0', 'O20251226111406181564', '23800.00', '0', '', '0.00', '10', '待付款', null, '53', '杨泽锐', '13407266853', '湖北', '湖北', '湖北', 's', '597329', '100', '2025-12-26 11:44:07', null, null, null, null, null, null, null);
+INSERT INTO `order_info` VALUES ('93', '2025-12-26 11:14:52', '2025-12-26 11:14:56', '100', '0', '0', 'O20251226111452568279', '23800.00', '4', '余额支付', '0.00', '20', '已付款', '2025-12-26 11:14:56', '53', '杨泽锐', '13407266853', '湖北', '湖北', '湖北', 's', '597329', '100', '2025-12-26 11:44:52', null, null, null, null, null, null, null);
+INSERT INTO `order_info` VALUES ('94', '2025-12-26 11:15:33', '2025-12-26 11:18:37', '100', '0', '0', 'O20251226111532916924', '9390.00', '3', '银行卡支付', '0.00', '20', '已付款', '2025-12-26 11:18:37', '53', '杨泽锐', '13407266853', '湖北', '湖北', '湖北', 's', '597329', '100', '2025-12-26 11:45:33', null, null, null, null, null, null, null);
+INSERT INTO `order_info` VALUES ('95', '2025-12-26 11:21:13', '2025-12-26 11:21:13', '100', '0', '0', 'O20251226112113993712', '480.00', '0', '', '0.00', '10', '待付款', null, '84', '丁真', '15598985656', '四川省', '甘孜藏族自治州', '理塘县', '世界最高城', '', '100', '2025-12-26 11:51:13', null, null, null, null, null, null, null);
+INSERT INTO `order_info` VALUES ('96', '2025-12-26 11:28:23', '2025-12-26 11:28:35', '100', '0', '0', 'O20251226112822473807', '480.00', '4', '余额支付', '0.00', '20', '已付款', '2025-12-26 11:28:35', '84', '丁真', '15598985656', '四川省', '甘孜藏族自治州', '理塘县', '世界最高城', '', '100', '2025-12-26 11:58:23', null, null, null, null, null, null, null);
+INSERT INTO `order_info` VALUES ('97', '2025-12-26 13:15:46', '2025-12-26 13:15:46', '100', '0', '0', 'O20251226131546961052', '6990.00', '0', '', '0.00', '10', '待付款', null, '83', '222', '13407266853', '湖北省', '黄石市', '大冶市', '湖北省潜江市泰丰办事处白窑村七组', '597329', '100', '2025-12-26 13:45:46', null, null, null, null, null, null, null);
+INSERT INTO `order_info` VALUES ('98', '2025-12-26 13:17:59', '2025-12-26 13:17:58', '100', '0', '0', 'O20251226131758417398', '6990.00', '0', '', '0.00', '10', '待付款', null, '83', '222', '13407266853', '湖北省', '黄石市', '大冶市', '湖北省潜江市泰丰办事处白窑村七组', '597329', '100', '2025-12-26 13:47:59', null, null, null, null, null, null, null);
+INSERT INTO `order_info` VALUES ('99', '2025-12-26 13:20:56', '2025-12-26 13:21:00', '100', '0', '0', 'O20251226132056301014', '6990.00', '4', '余额支付', '0.00', '20', '已付款', '2025-12-26 13:21:00', '83', '222', '13407266853', '湖北省', '黄石市', '大冶市', '湖北省潜江市泰丰办事处白窑村七组', '597329', '100', '2025-12-26 13:50:56', null, null, null, null, null, null, null);
+INSERT INTO `order_info` VALUES ('100', '2025-12-26 13:27:55', '2025-12-26 13:27:55', '100', '0', '0', 'O20251226132755319264', '11068.00', '0', '', '0.00', '10', '待付款', null, '83', '222', '13407266853', '湖北省', '黄石市', '大冶市', '湖北省潜江市泰丰办事处白窑村七组', '597329', '100', '2025-12-26 13:57:55', null, null, null, null, null, null, null);
+INSERT INTO `order_info` VALUES ('101', '2025-12-26 13:28:38', '2025-12-26 13:28:37', '100', '0', '0', 'O20251226132837463168', '7339.00', '0', '', '0.00', '10', '待付款', null, '83', '222', '13407266853', '湖北省', '黄石市', '大冶市', '湖北省潜江市泰丰办事处白窑村七组', '597329', '100', '2025-12-26 13:58:38', null, null, null, null, null, null, null);
 
 -- ----------------------------
 -- Table structure for order_status_record
@@ -45984,7 +46034,7 @@ CREATE TABLE `order_status_record` (
   `status` tinyint(4) NOT NULL DEFAULT '0' COMMENT '订单状态',
   `status_desc` varchar(60) DEFAULT '' COMMENT '状态描述',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=2927 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC COMMENT='订单记录';
+) ENGINE=InnoDB AUTO_INCREMENT=2937 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC COMMENT='订单记录';
 
 -- ----------------------------
 -- Records of order_status_record
@@ -48896,6 +48946,16 @@ INSERT INTO `order_status_record` VALUES ('2923', '2022-10-18 18:14:26', '166608
 INSERT INTO `order_status_record` VALUES ('2924', '2022-10-18 18:14:26', '1666088066', '1666088066774', '8', '华为(HUAWEI) 畅享7', '10', '未付款');
 INSERT INTO `order_status_record` VALUES ('2925', '2022-10-19 08:56:29', '1666140989', '1666140989706', '17', '三星(SAMSUNG) Galaxy C5 Pro', '10', '未付款');
 INSERT INTO `order_status_record` VALUES ('2926', '2022-10-19 09:13:30', '1666142010', '1666142010452', '10', '华为(HUAWEI) G9', '10', '未付款');
+INSERT INTO `order_status_record` VALUES ('2927', '2025-12-26 13:15:46', 'O20251226131546961052', 'D2a36c5b366ea4663', '53', '海尔(Haier) 家用空调', '10', '待付款');
+INSERT INTO `order_status_record` VALUES ('2928', '2025-12-26 13:17:59', 'O20251226131758417398', 'D3f52b09bb1394a5f', '53', '海尔(Haier) 家用空调', '10', '待付款');
+INSERT INTO `order_status_record` VALUES ('2929', '2025-12-26 13:20:56', 'O20251226132056301014', 'D0e5e8c552f1b4233', '53', '海尔(Haier) 家用空调', '10', '待付款');
+INSERT INTO `order_status_record` VALUES ('2930', '2025-12-26 13:21:01', 'O20251226132056301014', '', '0', '', '20', '已付款');
+INSERT INTO `order_status_record` VALUES ('2931', '2025-12-26 13:21:01', 'O20251226132056301014', 'D0e5e8c552f1b4233', '53', '海尔(Haier) 家用空调', '20', '已付款');
+INSERT INTO `order_status_record` VALUES ('2932', '2025-12-26 13:27:55', 'O20251226132755319264', 'D354086cf86c34994', '13', '小米(MI) 红米 4A', '10', '待付款');
+INSERT INTO `order_status_record` VALUES ('2933', '2025-12-26 13:27:55', 'O20251226132755319264', 'Dd9d4431c879f4a14', '181', '金大生 花朵戒指', '10', '待付款');
+INSERT INTO `order_status_record` VALUES ('2934', '2025-12-26 13:27:55', 'O20251226132755319264', 'D45f426995899445e', '45', '索尼(SONY) KD-75X8566E电视', '10', '待付款');
+INSERT INTO `order_status_record` VALUES ('2935', '2025-12-26 13:28:38', 'O20251226132837463168', 'D083c8b11ba174146', '53', '海尔(Haier) 家用空调', '10', '待付款');
+INSERT INTO `order_status_record` VALUES ('2936', '2025-12-26 13:28:38', 'O20251226132837463168', 'D85c05b5a6ab94049', '77', '未风(WIFING) 秋冬季打底连衣裙', '10', '待付款');
 
 -- ----------------------------
 -- Table structure for product
@@ -48937,7 +48997,7 @@ INSERT INTO `product` VALUES ('7', '2025-12-24 10:50:46', '2025-12-24 10:50:46',
 INSERT INTO `product` VALUES ('8', '2025-12-24 10:50:46', '2025-12-24 10:50:46', '0', '0', '0', '8', '7', '华为(HUAWEI) 畅享7', '看得到，触得到的品质', '/profile/file/pic/8691990c-57ee-4bdf-9a7e-758e2ec09d0d_source.jpg', '/profile/file/pic/8691990c-57ee-4bdf-9a7e-758e2ec09d0d_source.jpg,/profile/file/pic/5c70f247-324a-4792-8330-fe382d0ab4ec_source.jpg,/profile/file/pic/1895f879-4565-4f0c-a6dc-33f3bd7c7c6f_source.jpg,/profile/file/pic/3e25fea8-3e3f-4f22-875b-2e98518ba044_source.jpg,/profile/file/pic/d23fbe0b-0906-4e0f-8e52-0a8d55fdf4be_source.jpg', '0', '1', '960.00', '5', '0', '6');
 INSERT INTO `product` VALUES ('11', '2025-12-24 10:50:46', '2025-12-24 10:50:46', '0', '0', '0', '11', '8', 'KOOLIFE 畅玩5C钢化膜', '高清高透，视觉享受', '/profile/file/pic/c71.jpg', '/profile/file/pic/c7.jpg,/profile/file/pic/e2.jpg', '0', '1', '19.90', '5', '0', '10');
 INSERT INTO `product` VALUES ('12', '2025-12-24 10:50:46', '2025-12-24 10:50:46', '0', '0', '0', '12', '7', '小米(MI) 5C', '轻薄多彩金属机身，一见倾心的精致优雅', '/profile/file/pic/1c6d0aa6-4d8c-433f-84cc-9319565b504f_source.jpg', '/profile/file/pic/1c6d0aa6-4d8c-433f-84cc-9319565b504f_source.jpg,/profile/file/pic/3dc595ff-b0ce-42bd-b93e-5ae1abfdfad7_source.jpg,/profile/file/pic/b6aa59ee-2149-4bbd-9f8e-76ac40a1e748_source.jpg,/profile/file/pic/92a5f9ec-8e8f-49df-8765-efab1c50931e_source.jpg', '0', '1', '1499.00', '5', '0', '7');
-INSERT INTO `product` VALUES ('13', '2025-12-24 10:50:46', '2025-12-24 10:50:46', '0', '0', '0', '13', '7', '小米(MI) 红米 4A', '超长续航，玩得更久', '/profile/file/pic/7b18fef2-8d03-42a1-a87b-d0391e2e7070_source.jpg', '/profile/file/pic/7b18fef2-8d03-42a1-a87b-d0391e2e7070_source.jpg,/profile/file/pic/8931ed9a-ee28-467e-8260-f096fc242d8f_source.jpg,/profile/file/pic/b978b012-825e-4e3d-9b4a-b7653f0d66aa_source.jpg,/profile/file/pic/38d841b6-6b69-491f-b26d-85996c76310f_source.jpg', '0', '1', '599.00', '5', '0', '7');
+INSERT INTO `product` VALUES ('13', '2025-12-26 13:27:55', '2025-12-26 13:27:55', '0', '0', '0', '13', '7', '小米(MI) 红米 4A', '超长续航，玩得更久', '/profile/file/pic/7b18fef2-8d03-42a1-a87b-d0391e2e7070_source.jpg', '/profile/file/pic/7b18fef2-8d03-42a1-a87b-d0391e2e7070_source.jpg,/profile/file/pic/8931ed9a-ee28-467e-8260-f096fc242d8f_source.jpg,/profile/file/pic/b978b012-825e-4e3d-9b4a-b7653f0d66aa_source.jpg,/profile/file/pic/38d841b6-6b69-491f-b26d-85996c76310f_source.jpg', '0', '1', '599.00', '3', '0', '7');
 INSERT INTO `product` VALUES ('14', '2025-12-24 10:50:46', '2025-12-24 10:50:46', '0', '0', '0', '14', '7', '小米(MI) 红米 Note 4X', '多彩金属机身，长续航的国民手机', '/profile/file/pic/4ce1e097-8bf8-43b7-9646-e6247770e598_source.jpg', '/profile/file/pic/4ce1e097-8bf8-43b7-9646-e6247770e598_source.jpg,/profile/file/pic/17e0122f-eff0-4261-bf31-3b5de744d4c8_source.jpg,/profile/file/pic/69dd27dc-f29f-44cf-9a05-69e7573cb1b3_source.jpg,/profile/file/pic/770ab5f9-8160-488d-88b1-b778645f0c75_source.jpg', '0', '1', '999.00', '5', '1', '7');
 INSERT INTO `product` VALUES ('15', '2025-12-24 10:50:46', '2025-12-24 10:50:46', '0', '0', '0', '15', '7', '小米(MI) 小米 5X', '变焦双摄，拍人更美', '/profile/file/pic/70bf86db-e5cb-4f93-bd3e-177a8358e934_source.jpg', '/profile/file/pic/70bf86db-e5cb-4f93-bd3e-177a8358e934_source.jpg,/profile/file/pic/76380673-2974-47bb-8fcb-84976cbbd6ba_source.jpg,/profile/file/pic/3d62f54a-55d3-45d0-a53f-108732acc9af_source.jpg', '0', '1', '1299.00', '5', '0', '7');
 INSERT INTO `product` VALUES ('16', '2025-12-24 10:50:46', '2025-12-24 10:50:46', '0', '0', '0', '16', '7', '小米(MI) MIX2', '不失商务不失娱乐', '/profile/file/pic/62920974-c86b-4e69-be76-7f641fccfcc9_source.jpg', '/profile/file/pic/62920974-c86b-4e69-be76-7f641fccfcc9_source.jpg,/profile/file/pic/4bfb9c54-cae8-4afa-99a7-8cf11a458bd1_source.jpg,/profile/file/pic/554236e8-8dcb-4d4e-ae27-69bbdb7b0510_source.jpg,/profile/file/pic/1afeb74f-6c17-4401-9e13-560a807aabe0_source.jpg,/profile/file/pic/e9144c30-3071-4ce4-8101-bb7165441b90_source.jpg', '0', '1', '4699.00', '5', '1', '7');
@@ -48969,7 +49029,7 @@ INSERT INTO `product` VALUES ('41', '2025-12-24 10:50:46', '2025-12-24 10:50:46'
 INSERT INTO `product` VALUES ('42', '2025-12-24 10:50:46', '2025-12-24 10:50:46', '0', '0', '0', '42', '18', '海信(Hisense) LED50MU7000U电视', '金属拉丝背板，海量影视资源', '/profile/file/pic/249e573d-058a-4d3c-b0da-bb8f537cacfa_source.jpg', '/profile/file/pic/249e573d-058a-4d3c-b0da-bb8f537cacfa_source.jpg,/profile/file/pic/d34ee373-22ea-4db3-954a-a2f1684b3ea2_source.jpg', '0', '1', '5990.00', '5', '0', '6');
 INSERT INTO `product` VALUES ('43', '2025-12-24 10:50:46', '2025-12-24 10:50:46', '0', '0', '0', '43', '18', '康佳(KONKA) S55U电视', '真14核4K，HDR，64位芯片', '/profile/file/pic/d934b456-7c01-4251-a517-6b2a79445f27_source.jpg', '/profile/file/pic/d934b456-7c01-4251-a517-6b2a79445f27_source.jpg', '0', '1', '2590.00', '5', '0', '6');
 INSERT INTO `product` VALUES ('44', '2025-12-24 10:50:46', '2025-12-24 10:50:46', '0', '0', '0', '44', '18', '三星(SAMSUNG) UA55KS7300JXXZ电视', '超高清，量子点，HDR', '/profile/file/pic/218c5c93-8ade-4040-ad4c-31dd12c8ddd0_source.jpg', '/profile/file/pic/218c5c93-8ade-4040-ad4c-31dd12c8ddd0_source.jpg,/profile/file/pic/f8015715-2d98-49fa-8b71-ee0bad7465dc_source.jpg,/profile/file/pic/1ccbc58c-4a52-4db5-a2b4-aeb3b119a897_source.jpg,/profile/file/pic/ef1e906f-1167-45cf-9d67-f80063c47858_source.jpg', '0', '1', '8490.00', '5', '0', '6');
-INSERT INTO `product` VALUES ('45', '2025-12-24 10:50:46', '2025-12-24 10:50:46', '0', '0', '0', '45', '18', '索尼(SONY) KD-75X8566E电视', '放心去享受，尊享大屏', '/profile/file/pic/9625d3b8-a342-4830-ac19-5522dc0b1d61_source.jpg', '/profile/file/pic/9625d3b8-a342-4830-ac19-5522dc0b1d61_source.jpg,/profile/file/pic/44295318-1d48-4637-ae9a-f52af20b4216_source.jpg', '0', '1', '9390.00', '5', '1', '14');
+INSERT INTO `product` VALUES ('45', '2025-12-26 13:27:55', '2025-12-26 13:27:55', '0', '0', '0', '45', '18', '索尼(SONY) KD-75X8566E电视', '放心去享受，尊享大屏', '/profile/file/pic/9625d3b8-a342-4830-ac19-5522dc0b1d61_source.jpg', '/profile/file/pic/9625d3b8-a342-4830-ac19-5522dc0b1d61_source.jpg,/profile/file/pic/44295318-1d48-4637-ae9a-f52af20b4216_source.jpg', '0', '1', '9390.00', '4', '1', '14');
 INSERT INTO `product` VALUES ('46', '2025-12-24 10:50:46', '2025-12-24 10:50:46', '0', '0', '0', '46', '18', '索尼(SONY) KD-6575Z9D电视', '光影大师，大开眼界', '/profile/file/pic/6c433c08-5a4c-4316-afcd-066833e37dae_source.jpg', '/profile/file/pic/6c433c08-5a4c-4316-afcd-066833e37dae_source.jpg,/profile/file/pic/305b06b2-694a-48d3-9fdc-4e9070c47b7c_source.jpg', '0', '1', '23800.00', '5', '1', '14');
 INSERT INTO `product` VALUES ('47', '2025-12-24 10:50:46', '2025-12-24 10:50:46', '0', '0', '0', '47', '18', '先锋(Pioneer) LED-55U560P电视', '4K超高清，智能生态系统', '/profile/file/pic/a37f58d4-50cf-425e-9bba-a97b8f9eaeef_source.jpg', '/profile/file/pic/a37f58d4-50cf-425e-9bba-a97b8f9eaeef_source.jpg,/profile/file/pic/9d9595c7-4888-4fc4-a5b4-dd53f5d2df7e_source.jpg', '0', '1', '3680.00', '5', '1', '6');
 INSERT INTO `product` VALUES ('48', '2025-12-24 10:50:46', '2025-12-24 10:50:46', '0', '0', '0', '48', '18', '小米(MI) L65M4-AQ电视', '全高清屏，纤薄金属', '/profile/file/pic/c7324757-9c40-43c9-96e5-d05dbcfc9141_source.jpg', '/profile/file/pic/c7324757-9c40-43c9-96e5-d05dbcfc9141_source.jpg,/profile/file/pic/9ba7b7bb-ae3d-43a8-88a6-67de62f40829_source.jpg', '0', '1', '990.00', '5', '0', '6');
@@ -48977,7 +49037,7 @@ INSERT INTO `product` VALUES ('49', '2025-12-24 10:50:46', '2025-12-24 10:50:46'
 INSERT INTO `product` VALUES ('50', '2025-12-24 10:50:46', '2025-12-24 10:50:46', '0', '0', '0', '50', '18', 'LG 65UJ6500-CB电视', '360，VR，一秒身临其境', '/profile/file/pic/cf6ac408-56fe-4ad6-bac3-68af6f32bf29_source.jpg', '/profile/file/pic/cf6ac408-56fe-4ad6-bac3-68af6f32bf29_source.jpg,/profile/file/pic/4a33b798-c7ee-4064-b0a1-4bbb1d1be80d_source.jpg,/profile/file/pic/9f884a5b-07d2-4cc4-9d2c-3810b470b67b_source.jpg', '0', '1', '8900.00', '5', '0', '6');
 INSERT INTO `product` VALUES ('51', '2025-12-24 10:50:46', '2025-12-24 10:50:46', '0', '0', '0', '51', '18', 'TCL D55A630U电视', '超薄金属4K爆款', '/profile/file/pic/406106b4-81f4-47c2-8401-c83fe0431d9f_source.jpg', '/profile/file/pic/406106b4-81f4-47c2-8401-c83fe0431d9f_source.jpg,/profile/file/pic/62d1925e-ca92-48ec-9c9f-329c4977b17c_source.jpg,/profile/file/pic/e5690110-32b7-4503-9eb0-6a8d9e05a410_source.jpg,/profile/file/pic/9bf5730d-389f-4a0b-bd83-c11fa3c227c2_source.jpg', '0', '1', '2400.00', '5', '0', '6');
 INSERT INTO `product` VALUES ('52', '2025-12-24 10:50:46', '2025-12-24 10:50:46', '0', '0', '0', '52', '18', '格力(GREE) 家用空调', '艺术化圆柱，曼妙身姿', '/profile/file/pic/d7e65539-5de2-4f09-807a-4d9a4f1faa29_source.jpg', '/profile/file/pic/d7e65539-5de2-4f09-807a-4d9a4f1faa29_source.jpg,/profile/file/pic/fe44b45e-e05c-4474-8ded-b6f738f1b4fe_source.jpg,/profile/file/pic/76ced7c5-6c2e-4b4b-a1b7-eeb2a2984c43_source.jpg', '0', '1', '8490.00', '5', '0', '15');
-INSERT INTO `product` VALUES ('53', '2025-12-24 10:50:46', '2025-12-24 10:50:46', '0', '0', '0', '53', '18', '海尔(Haier) 家用空调', '智能智控，净化脏空气', '/profile/file/pic/aab74237-8040-4cca-85d7-f99a0b0d2556_source.jpg', '/profile/file/pic/aab74237-8040-4cca-85d7-f99a0b0d2556_source.jpg,/profile/file/pic/2aa2776e-0733-4e39-9311-2849d51b4ed9_source.jpg,/profile/file/pic/1dc7bee6-6ecd-4d56-aebd-cfb6ef5a3d32_source.jpg', '0', '1', '6990.00', '5', '1', '6');
+INSERT INTO `product` VALUES ('53', '2025-12-26 13:28:37', '2025-12-26 13:28:37', '0', '0', '0', '53', '18', '海尔(Haier) 家用空调', '智能智控，净化脏空气', '/profile/file/pic/aab74237-8040-4cca-85d7-f99a0b0d2556_source.jpg', '/profile/file/pic/aab74237-8040-4cca-85d7-f99a0b0d2556_source.jpg,/profile/file/pic/2aa2776e-0733-4e39-9311-2849d51b4ed9_source.jpg,/profile/file/pic/1dc7bee6-6ecd-4d56-aebd-cfb6ef5a3d32_source.jpg', '0', '1', '6990.00', '1', '1', '6');
 INSERT INTO `product` VALUES ('54', '2025-12-24 10:50:46', '2025-12-24 10:50:46', '0', '0', '0', '54', '18', '海信(Hisense) 家用空调', '智能节能，快速制暖', '/profile/file/pic/bcd5e380-3f4b-43e7-a15f-f7462f3936bc_source.jpg', '/profile/file/pic/bcd5e380-3f4b-43e7-a15f-f7462f3936bc_source.jpg,/profile/file/pic/a4949982-bf2b-4d02-9bf0-2569ef1fa50a_source.jpg,/profile/file/pic/6e338689-d107-4720-9d73-3f5bb40bef38_source.jpg', '0', '1', '6180.00', '5', '0', '6');
 INSERT INTO `product` VALUES ('55', '2025-12-24 10:50:46', '2025-12-24 10:50:46', '0', '0', '0', '55', '18', '美的(Midea) 家用空调', '青春时尚柜机，澎湃风量舒适不等待', '/profile/file/pic/ccd533c2-fc7d-46d1-9165-2536efe56aed_source.jpg', '/profile/file/pic/ccd533c2-fc7d-46d1-9165-2536efe56aed_source.jpg,/profile/file/pic/71e9d93d-de85-4be8-8566-1390d8f6bfd5_source.jpg,/profile/file/pic/76aada43-2595-4932-8ddc-38e4a5a04dbc_source.jpg', '0', '1', '4490.00', '5', '0', '6');
 INSERT INTO `product` VALUES ('56', '2025-12-24 10:50:46', '2025-12-24 10:50:46', '0', '0', '0', '56', '18', 'TCL 家用空调', '水晶之冠，女神风范', '/profile/file/pic/beaf7089-2328-4bd2-9259-c6afc9e80213_source.jpg', '/profile/file/pic/beaf7089-2328-4bd2-9259-c6afc9e80213_source.jpg,/profile/file/pic/f7901ff6-d56d-454b-a79a-da7d2055cd3e_source.jpg,/profile/file/pic/8ecb719a-79a9-427b-a038-b40026d14031_source.jpg', '0', '1', '3090.00', '5', '0', '6');
@@ -49001,7 +49061,7 @@ INSERT INTO `product` VALUES ('73', '2025-12-24 10:50:46', '2025-12-24 10:50:46'
 INSERT INTO `product` VALUES ('74', '2025-12-24 10:50:46', '2025-12-24 10:50:46', '0', '0', '0', '74', '23', '南极人(NanJiren) A字连衣裙', '时尚与舒适', '/profile/file/pic/94cbd6ee-21bf-4bfd-a3d8-f7b6b4d54efc_source.jpg', '/profile/file/pic/94cbd6ee-21bf-4bfd-a3d8-f7b6b4d54efc_source.jpg,/profile/file/pic/19f82465-50e6-4bab-a234-9495ce63e5c5_source.jpg,/profile/file/pic/7ade57b5-4e58-4bdb-abc7-307858cfea69_source.jpg,/profile/file/pic/4fbd1867-8862-46ce-97eb-9b8f8c2b55fc_source.jpg', '0', '1', '179.00', '5', '0', '16');
 INSERT INTO `product` VALUES ('75', '2025-12-24 10:50:46', '2025-12-24 10:50:46', '0', '0', '0', '75', '23', '伲嘉(ni) 毛呢连衣裙', '圆领多箱褶，微燕尾修身', '/profile/file/pic/62467a60-7ed8-4859-8b36-b4b575d673c7_source.jpg', '/profile/file/pic/62467a60-7ed8-4859-8b36-b4b575d673c7_source.jpg,/profile/file/pic/5c0f4e33-ee04-4731-aa3c-be05e2de7374_source.jpg,/profile/file/pic/29c1e1ba-54e2-4ef0-af9d-bae30d6d3d0e_source.jpg,/profile/file/pic/605e3491-5199-4608-9714-6c8c66ecf12c_source.jpg', '0', '1', '309.00', '5', '0', '16');
 INSERT INTO `product` VALUES ('76', '2025-12-24 10:50:46', '2025-12-24 10:50:46', '0', '0', '0', '76', '23', '糖力(TAMMYTANGS) 时尚气质连衣裙', '舒适保暖高领设计，考究气质高腰线设计', '/profile/file/pic/a474344f-f3f6-4702-aa5c-9e9417940357_source.jpg', '/profile/file/pic/a474344f-f3f6-4702-aa5c-9e9417940357_source.jpg,/profile/file/pic/0eb1274e-c6fb-4f28-b5ec-a3205cc014a2_source.jpg,/profile/file/pic/94953459-c83b-4447-b82c-2d95f59ec30f_source.jpg,/profile/file/pic/1540fa3b-9acd-4dfc-92c2-01a200422024_source.jpg,/profile/file/pic/10ea48c5-c512-4ac9-80c7-dd6a4d703268_source.jpg', '0', '1', '299.00', '5', '0', '16');
-INSERT INTO `product` VALUES ('77', '2025-12-24 10:50:46', '2025-12-24 10:50:46', '0', '0', '0', '77', '23', '未风(WIFING) 秋冬季打底连衣裙', '针织袖拼接', '/profile/file/pic/4d0d7a9a-9150-40f5-8c4f-39aa1e048d70_source.jpg', '/profile/file/pic/4d0d7a9a-9150-40f5-8c4f-39aa1e048d70_source.jpg,/profile/file/pic/3cc5a587-3ecd-473b-9e9f-e363f1cebedc_source.jpg,/profile/file/pic/f3c63ff6-6622-4b8b-bb0f-9276227f67e3_source.jpg,/profile/file/pic/014dbf3f-a2f4-4d2d-a5b3-40205d41ddf9_source.jpg', '0', '1', '349.00', '5', '0', '16');
+INSERT INTO `product` VALUES ('77', '2025-12-26 13:28:37', '2025-12-26 13:28:37', '0', '0', '0', '77', '23', '未风(WIFING) 秋冬季打底连衣裙', '针织袖拼接', '/profile/file/pic/4d0d7a9a-9150-40f5-8c4f-39aa1e048d70_source.jpg', '/profile/file/pic/4d0d7a9a-9150-40f5-8c4f-39aa1e048d70_source.jpg,/profile/file/pic/3cc5a587-3ecd-473b-9e9f-e363f1cebedc_source.jpg,/profile/file/pic/f3c63ff6-6622-4b8b-bb0f-9276227f67e3_source.jpg,/profile/file/pic/014dbf3f-a2f4-4d2d-a5b3-40205d41ddf9_source.jpg', '0', '1', '349.00', '4', '0', '16');
 INSERT INTO `product` VALUES ('78', '2025-12-24 10:50:46', '2025-12-24 10:50:46', '0', '0', '0', '78', '23', '颜域(YANYEE) 针织连衣裙', '源自欧美原创设计品牌', '/profile/file/pic/7be373c1-5230-4595-8197-cc9b0c11a1f4_source.jpg', '/profile/file/pic/7be373c1-5230-4595-8197-cc9b0c11a1f4_source.jpg,/profile/file/pic/6dbc27ea-1898-48ac-aca2-3b84c4280b5d_source.jpg,/profile/file/pic/43da8489-8619-4109-930a-dda23bef7747_source.jpg,/profile/file/pic/dd474796-f574-4a06-b24b-b1df8166ea45_source.jpg', '0', '1', '399.00', '5', '0', '16');
 INSERT INTO `product` VALUES ('79', '2025-12-24 10:50:46', '2025-12-24 10:50:46', '0', '0', '0', '79', '23', 'Five Plus 春装气质镂空刺绣连衣裙', '青春时尚，舒适不等待', '/profile/file/pic/38679b97-fc67-4cd2-93fe-ae32bf575b72_source.jpg', '/profile/file/pic/38679b97-fc67-4cd2-93fe-ae32bf575b72_source.jpg,/profile/file/pic/ed6b3e6a-e1f9-48e6-b5ef-00e680a2c285_source.jpg,/profile/file/pic/51e669ab-60b1-4d63-b05b-d44942ad9517_source.jpg,/profile/file/pic/266dd171-e223-4f94-80f9-edf6d385be68_source.jpg,/profile/file/pic/cd955c5b-ca57-4ffa-be35-f410d94f31c0_source.jpg', '0', '1', '645.00', '5', '0', '16');
 INSERT INTO `product` VALUES ('80', '2025-12-24 10:50:46', '2025-12-24 10:50:46', '0', '0', '0', '80', '23', 'ONLY 冬季新条纹连衣裙女', '条纹撞色，简约', '/profile/file/pic/d18801a9-9738-4157-8412-eaaaa12c7b4c_source.jpg', '/profile/file/pic/d18801a9-9738-4157-8412-eaaaa12c7b4c_source.jpg,/profile/file/pic/8b8af30a-99ab-4616-ad7d-efa4648b069d_source.jpg,/profile/file/pic/ced2bac6-9872-4e54-b967-6fabc03bdd64_source.jpg,/profile/file/pic/3c4d72ad-243e-4b12-8fe8-3cbeef1b6b7b_source.jpg', '0', '1', '349.00', '5', '0', '16');
@@ -49105,7 +49165,7 @@ INSERT INTO `product` VALUES ('177', '2025-12-24 10:50:46', '2025-12-24 10:50:46
 INSERT INTO `product` VALUES ('178', '2025-12-24 10:50:46', '2025-12-24 10:50:46', '0', '0', '0', '178', '31', '戴玫雅 三角形戒指', '自信的女人总是分外耀眼', '/profile/file/pic/500f0d2d-5c5f-4bbb-8f94-6e70c93f5149_source.jpg', '/profile/file/pic/500f0d2d-5c5f-4bbb-8f94-6e70c93f5149_source.jpg,/profile/file/pic/3c55754d-fc5c-4df7-a877-7b7250dca7d8_source.jpg,/profile/file/pic/d2dbbf99-79d4-45f6-8c27-7753b158eac9_source.jpg', '0', '1', '1200.00', '5', '0', '19');
 INSERT INTO `product` VALUES ('179', '2025-12-24 10:50:46', '2025-12-24 10:50:46', '0', '0', '0', '179', '31', '丰红 戒指', '可爱，婉约，展现你的无限魅力', '/profile/file/pic/89470f4a-0132-40e9-9b8a-f4f5c77482dd_source.jpg', '/profile/file/pic/89470f4a-0132-40e9-9b8a-f4f5c77482dd_source.jpg,/profile/file/pic/3b1e6363-96e4-436b-8018-706ae5ee2e7b_source.jpg,/profile/file/pic/3bc9f128-8367-42e0-9895-4f7e910884a9_source.jpg', '0', '1', '1800.00', '5', '0', '19');
 INSERT INTO `product` VALUES ('180', '2025-12-24 10:50:46', '2025-12-24 10:50:46', '0', '0', '0', '180', '31', '金大生 百福戒指', '纳天地之福气，寓好运满怀', '/profile/file/pic/314a7986-f3b2-4b19-a127-4a8bdc2a18c6_source.jpg', '/profile/file/pic/314a7986-f3b2-4b19-a127-4a8bdc2a18c6_source.jpg,/profile/file/pic/9350bc9c-5899-4241-9a51-d676412a296b_source.jpg,/profile/file/pic/fc804175-9ffe-4973-a5a2-0657a500ac07_source.jpg', '0', '1', '1480.00', '5', '0', '19');
-INSERT INTO `product` VALUES ('181', '2025-12-24 10:50:46', '2025-12-24 10:50:46', '0', '0', '0', '181', '31', '金大生 花朵戒指', '爱让戒指更闪耀', '/profile/file/pic/d71d68f2-fca7-4ef0-9345-554542972838_source.jpg', '/profile/file/pic/d71d68f2-fca7-4ef0-9345-554542972838_source.jpg,/profile/file/pic/849e65db-707a-4c03-8978-3aaa9a781deb_source.jpg,/profile/file/pic/500048dd-7cd7-4ab5-b1cc-17c7ef8b336d_source.jpg', '0', '1', '480.00', '5', '0', '19');
+INSERT INTO `product` VALUES ('181', '2025-12-26 13:27:55', '2025-12-26 13:27:55', '0', '0', '0', '181', '31', '金大生 花朵戒指', '爱让戒指更闪耀', '/profile/file/pic/d71d68f2-fca7-4ef0-9345-554542972838_source.jpg', '/profile/file/pic/d71d68f2-fca7-4ef0-9345-554542972838_source.jpg,/profile/file/pic/849e65db-707a-4c03-8978-3aaa9a781deb_source.jpg,/profile/file/pic/500048dd-7cd7-4ab5-b1cc-17c7ef8b336d_source.jpg', '0', '1', '480.00', '4', '0', '19');
 INSERT INTO `product` VALUES ('182', '2025-12-24 10:50:46', '2025-12-24 10:50:46', '0', '0', '0', '182', '31', '金利福(JINLIFU DIAMEND) 黄金戒指', '光泽明亮动以，彰显高贵', '/profile/file/pic/a4e4aebb-8673-4373-8f4e-d988fa345db2_source.jpg', '/profile/file/pic/a4e4aebb-8673-4373-8f4e-d988fa345db2_source.jpg,/profile/file/pic/072fe55e-2a32-4b91-8f04-19e4e249d574_source.jpg,/profile/file/pic/5fd0aac4-9379-47a0-b340-7a83c7d30005_source.jpg', '0', '1', '680.00', '5', '0', '19');
 INSERT INTO `product` VALUES ('183', '2025-12-24 10:50:46', '2025-12-24 10:50:46', '0', '0', '0', '183', '31', '千叶珠宝 黄金戒指', '打造你的专属喜欢', '/profile/file/pic/2e18b073-082f-47a6-927b-37bade565458_source.jpg', '/profile/file/pic/2e18b073-082f-47a6-927b-37bade565458_source.jpg,/profile/file/pic/953465ff-7ba3-46ad-a07d-2ce0313dd8be_source.jpg,/profile/file/pic/2f1ec9c6-5a57-44d6-80ed-4e5106bc81ae_source.jpg,/profile/file/pic/f8bd8502-b87f-4fb0-adf8-8869f8746ca7_source.jpg,/profile/file/pic/9ac7a717-af7a-4c11-9ed0-b01212e9c97e_source.jpg', '0', '1', '980.00', '5', '0', '19');
 INSERT INTO `product` VALUES ('184', '2025-12-24 10:50:46', '2025-12-24 10:50:46', '0', '0', '0', '184', '31', '钻石凤凰(Dphoenix) 黄金戒指', '星月相伴，不离不弃', '/profile/file/pic/99f7abbd-1e64-4e53-9576-674de8eba6a4_source.jpg', '/profile/file/pic/99f7abbd-1e64-4e53-9576-674de8eba6a4_source.jpg,/profile/file/pic/448e1b3e-15dd-4b7a-a750-80336cf3dd5c_source.jpg,/profile/file/pic/04b3f219-01bc-4ec9-a6f2-dce55e9f1187_source.jpg', '0', '1', '670.00', '5', '0', '19');
@@ -49191,8 +49251,8 @@ CREATE TABLE `product_comment` (
 DROP TABLE IF EXISTS `product_detail`;
 CREATE TABLE `product_detail` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT '主键',
-  `create_time` datetime NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_time` datetime NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `create_user` bigint(20) NOT NULL DEFAULT '0' COMMENT '创建人',
   `update_user` bigint(20) NOT NULL DEFAULT '0' COMMENT '更新人',
   `delete_flag` tinyint(4) NOT NULL DEFAULT '0' COMMENT '删除标志',
@@ -49200,12 +49260,239 @@ CREATE TABLE `product_detail` (
   `detail` json DEFAULT NULL COMMENT '商品详情',
   `param` json DEFAULT NULL COMMENT '商品参数',
   `rotation` json DEFAULT NULL COMMENT '轮播图片',
-  PRIMARY KEY (`id`) USING BTREE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC COMMENT='商品明细';
+  `options` json DEFAULT NULL COMMENT '商品分类选项，如颜色、尺码等',
+  PRIMARY KEY (`id`) USING BTREE,
+  KEY `idx_product_id` (`product_id`) COMMENT '商品ID索引'
+) ENGINE=InnoDB AUTO_INCREMENT=226 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC COMMENT='商品明细';
 
 -- ----------------------------
 -- Records of product_detail
 -- ----------------------------
+INSERT INTO `product_detail` VALUES ('1', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '1');
+INSERT INTO `product_detail` VALUES ('2', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '7');
+INSERT INTO `product_detail` VALUES ('3', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '8');
+INSERT INTO `product_detail` VALUES ('4', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '12');
+INSERT INTO `product_detail` VALUES ('5', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '13');
+INSERT INTO `product_detail` VALUES ('6', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '14');
+INSERT INTO `product_detail` VALUES ('7', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '15');
+INSERT INTO `product_detail` VALUES ('8', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '16');
+INSERT INTO `product_detail` VALUES ('9', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '17');
+INSERT INTO `product_detail` VALUES ('10', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '18');
+INSERT INTO `product_detail` VALUES ('11', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '19');
+INSERT INTO `product_detail` VALUES ('12', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '20');
+INSERT INTO `product_detail` VALUES ('13', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '21');
+INSERT INTO `product_detail` VALUES ('14', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '22');
+INSERT INTO `product_detail` VALUES ('15', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '23');
+INSERT INTO `product_detail` VALUES ('16', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '24');
+INSERT INTO `product_detail` VALUES ('17', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '25');
+INSERT INTO `product_detail` VALUES ('18', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '26');
+INSERT INTO `product_detail` VALUES ('19', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '27');
+INSERT INTO `product_detail` VALUES ('20', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '28');
+INSERT INTO `product_detail` VALUES ('21', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '29');
+INSERT INTO `product_detail` VALUES ('22', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '30');
+INSERT INTO `product_detail` VALUES ('23', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '31');
+INSERT INTO `product_detail` VALUES ('24', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '2');
+INSERT INTO `product_detail` VALUES ('25', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '3');
+INSERT INTO `product_detail` VALUES ('26', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '4');
+INSERT INTO `product_detail` VALUES ('27', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '5');
+INSERT INTO `product_detail` VALUES ('28', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '6');
+INSERT INTO `product_detail` VALUES ('29', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '11');
+INSERT INTO `product_detail` VALUES ('30', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '32');
+INSERT INTO `product_detail` VALUES ('31', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '33');
+INSERT INTO `product_detail` VALUES ('32', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '34');
+INSERT INTO `product_detail` VALUES ('33', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '35');
+INSERT INTO `product_detail` VALUES ('34', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '36');
+INSERT INTO `product_detail` VALUES ('35', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '37');
+INSERT INTO `product_detail` VALUES ('36', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '38');
+INSERT INTO `product_detail` VALUES ('37', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '39');
+INSERT INTO `product_detail` VALUES ('38', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '40');
+INSERT INTO `product_detail` VALUES ('39', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '41');
+INSERT INTO `product_detail` VALUES ('40', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '42');
+INSERT INTO `product_detail` VALUES ('41', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '43');
+INSERT INTO `product_detail` VALUES ('42', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '44');
+INSERT INTO `product_detail` VALUES ('43', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '45');
+INSERT INTO `product_detail` VALUES ('44', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '46');
+INSERT INTO `product_detail` VALUES ('45', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '47');
+INSERT INTO `product_detail` VALUES ('46', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '48');
+INSERT INTO `product_detail` VALUES ('47', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '49');
+INSERT INTO `product_detail` VALUES ('48', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '50');
+INSERT INTO `product_detail` VALUES ('49', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '51');
+INSERT INTO `product_detail` VALUES ('50', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '52');
+INSERT INTO `product_detail` VALUES ('51', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '53');
+INSERT INTO `product_detail` VALUES ('52', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '54');
+INSERT INTO `product_detail` VALUES ('53', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '55');
+INSERT INTO `product_detail` VALUES ('54', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '56');
+INSERT INTO `product_detail` VALUES ('55', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '57');
+INSERT INTO `product_detail` VALUES ('56', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '58');
+INSERT INTO `product_detail` VALUES ('57', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '59');
+INSERT INTO `product_detail` VALUES ('58', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '60');
+INSERT INTO `product_detail` VALUES ('59', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '61');
+INSERT INTO `product_detail` VALUES ('60', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '62');
+INSERT INTO `product_detail` VALUES ('61', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '63');
+INSERT INTO `product_detail` VALUES ('62', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '64');
+INSERT INTO `product_detail` VALUES ('63', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '65');
+INSERT INTO `product_detail` VALUES ('64', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '66');
+INSERT INTO `product_detail` VALUES ('65', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '67');
+INSERT INTO `product_detail` VALUES ('66', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '68');
+INSERT INTO `product_detail` VALUES ('67', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '69');
+INSERT INTO `product_detail` VALUES ('68', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '70');
+INSERT INTO `product_detail` VALUES ('69', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '71');
+INSERT INTO `product_detail` VALUES ('70', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '72');
+INSERT INTO `product_detail` VALUES ('71', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '73');
+INSERT INTO `product_detail` VALUES ('72', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '74');
+INSERT INTO `product_detail` VALUES ('73', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '75');
+INSERT INTO `product_detail` VALUES ('74', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '76');
+INSERT INTO `product_detail` VALUES ('75', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '77');
+INSERT INTO `product_detail` VALUES ('76', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '78');
+INSERT INTO `product_detail` VALUES ('77', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '79');
+INSERT INTO `product_detail` VALUES ('78', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '80');
+INSERT INTO `product_detail` VALUES ('79', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '81');
+INSERT INTO `product_detail` VALUES ('80', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '82');
+INSERT INTO `product_detail` VALUES ('81', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '83');
+INSERT INTO `product_detail` VALUES ('82', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '84');
+INSERT INTO `product_detail` VALUES ('83', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '85');
+INSERT INTO `product_detail` VALUES ('84', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '86');
+INSERT INTO `product_detail` VALUES ('85', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '87');
+INSERT INTO `product_detail` VALUES ('86', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '88');
+INSERT INTO `product_detail` VALUES ('87', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '89');
+INSERT INTO `product_detail` VALUES ('88', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '90');
+INSERT INTO `product_detail` VALUES ('89', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '91');
+INSERT INTO `product_detail` VALUES ('90', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '92');
+INSERT INTO `product_detail` VALUES ('91', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '93');
+INSERT INTO `product_detail` VALUES ('92', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '94');
+INSERT INTO `product_detail` VALUES ('93', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '95');
+INSERT INTO `product_detail` VALUES ('94', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '96');
+INSERT INTO `product_detail` VALUES ('95', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '97');
+INSERT INTO `product_detail` VALUES ('96', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '98');
+INSERT INTO `product_detail` VALUES ('97', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '99');
+INSERT INTO `product_detail` VALUES ('98', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '100');
+INSERT INTO `product_detail` VALUES ('99', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '101');
+INSERT INTO `product_detail` VALUES ('100', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '102');
+INSERT INTO `product_detail` VALUES ('101', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '103');
+INSERT INTO `product_detail` VALUES ('102', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '104');
+INSERT INTO `product_detail` VALUES ('103', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '105');
+INSERT INTO `product_detail` VALUES ('104', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '106');
+INSERT INTO `product_detail` VALUES ('105', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '107');
+INSERT INTO `product_detail` VALUES ('106', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '108');
+INSERT INTO `product_detail` VALUES ('107', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '109');
+INSERT INTO `product_detail` VALUES ('108', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '110');
+INSERT INTO `product_detail` VALUES ('109', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '111');
+INSERT INTO `product_detail` VALUES ('110', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '112');
+INSERT INTO `product_detail` VALUES ('111', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '113');
+INSERT INTO `product_detail` VALUES ('112', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '114');
+INSERT INTO `product_detail` VALUES ('113', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '115');
+INSERT INTO `product_detail` VALUES ('114', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '116');
+INSERT INTO `product_detail` VALUES ('115', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '117');
+INSERT INTO `product_detail` VALUES ('116', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '118');
+INSERT INTO `product_detail` VALUES ('117', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '119');
+INSERT INTO `product_detail` VALUES ('118', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '120');
+INSERT INTO `product_detail` VALUES ('119', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '121');
+INSERT INTO `product_detail` VALUES ('120', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '122');
+INSERT INTO `product_detail` VALUES ('121', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '123');
+INSERT INTO `product_detail` VALUES ('122', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '124');
+INSERT INTO `product_detail` VALUES ('123', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '125');
+INSERT INTO `product_detail` VALUES ('124', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '126');
+INSERT INTO `product_detail` VALUES ('125', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '127');
+INSERT INTO `product_detail` VALUES ('126', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '128');
+INSERT INTO `product_detail` VALUES ('127', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '129');
+INSERT INTO `product_detail` VALUES ('128', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '130');
+INSERT INTO `product_detail` VALUES ('129', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '131');
+INSERT INTO `product_detail` VALUES ('130', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '132');
+INSERT INTO `product_detail` VALUES ('131', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '133');
+INSERT INTO `product_detail` VALUES ('132', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '134');
+INSERT INTO `product_detail` VALUES ('133', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '135');
+INSERT INTO `product_detail` VALUES ('134', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '136');
+INSERT INTO `product_detail` VALUES ('135', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '137');
+INSERT INTO `product_detail` VALUES ('136', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '138');
+INSERT INTO `product_detail` VALUES ('137', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '139');
+INSERT INTO `product_detail` VALUES ('138', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '140');
+INSERT INTO `product_detail` VALUES ('139', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '141');
+INSERT INTO `product_detail` VALUES ('140', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '142');
+INSERT INTO `product_detail` VALUES ('141', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '143');
+INSERT INTO `product_detail` VALUES ('142', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '144');
+INSERT INTO `product_detail` VALUES ('143', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '145');
+INSERT INTO `product_detail` VALUES ('144', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '146');
+INSERT INTO `product_detail` VALUES ('145', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '147');
+INSERT INTO `product_detail` VALUES ('146', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '148');
+INSERT INTO `product_detail` VALUES ('147', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '149');
+INSERT INTO `product_detail` VALUES ('148', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '150');
+INSERT INTO `product_detail` VALUES ('149', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '151');
+INSERT INTO `product_detail` VALUES ('150', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '152');
+INSERT INTO `product_detail` VALUES ('151', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '153');
+INSERT INTO `product_detail` VALUES ('152', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '154');
+INSERT INTO `product_detail` VALUES ('153', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '155');
+INSERT INTO `product_detail` VALUES ('154', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '156');
+INSERT INTO `product_detail` VALUES ('155', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '157');
+INSERT INTO `product_detail` VALUES ('156', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '158');
+INSERT INTO `product_detail` VALUES ('157', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '159');
+INSERT INTO `product_detail` VALUES ('158', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '160');
+INSERT INTO `product_detail` VALUES ('159', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '161');
+INSERT INTO `product_detail` VALUES ('160', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '162');
+INSERT INTO `product_detail` VALUES ('161', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '163');
+INSERT INTO `product_detail` VALUES ('162', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '164');
+INSERT INTO `product_detail` VALUES ('163', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '165');
+INSERT INTO `product_detail` VALUES ('164', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '166');
+INSERT INTO `product_detail` VALUES ('165', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '167');
+INSERT INTO `product_detail` VALUES ('166', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '168');
+INSERT INTO `product_detail` VALUES ('167', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '169');
+INSERT INTO `product_detail` VALUES ('168', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '170');
+INSERT INTO `product_detail` VALUES ('169', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '171');
+INSERT INTO `product_detail` VALUES ('170', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '172');
+INSERT INTO `product_detail` VALUES ('171', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '173');
+INSERT INTO `product_detail` VALUES ('172', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '174');
+INSERT INTO `product_detail` VALUES ('173', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '175');
+INSERT INTO `product_detail` VALUES ('174', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '176');
+INSERT INTO `product_detail` VALUES ('175', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '177');
+INSERT INTO `product_detail` VALUES ('176', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '178');
+INSERT INTO `product_detail` VALUES ('177', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '179');
+INSERT INTO `product_detail` VALUES ('178', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '180');
+INSERT INTO `product_detail` VALUES ('179', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '181');
+INSERT INTO `product_detail` VALUES ('180', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '182');
+INSERT INTO `product_detail` VALUES ('181', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '183');
+INSERT INTO `product_detail` VALUES ('182', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '184');
+INSERT INTO `product_detail` VALUES ('183', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '185');
+INSERT INTO `product_detail` VALUES ('184', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '186');
+INSERT INTO `product_detail` VALUES ('185', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '187');
+INSERT INTO `product_detail` VALUES ('186', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '188');
+INSERT INTO `product_detail` VALUES ('187', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '189');
+INSERT INTO `product_detail` VALUES ('188', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '190');
+INSERT INTO `product_detail` VALUES ('189', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '191');
+INSERT INTO `product_detail` VALUES ('190', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '192');
+INSERT INTO `product_detail` VALUES ('191', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '193');
+INSERT INTO `product_detail` VALUES ('192', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '194');
+INSERT INTO `product_detail` VALUES ('193', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '195');
+INSERT INTO `product_detail` VALUES ('194', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '196');
+INSERT INTO `product_detail` VALUES ('195', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '197');
+INSERT INTO `product_detail` VALUES ('196', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '198');
+INSERT INTO `product_detail` VALUES ('197', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '199');
+INSERT INTO `product_detail` VALUES ('198', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '200');
+INSERT INTO `product_detail` VALUES ('199', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '201');
+INSERT INTO `product_detail` VALUES ('200', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '202');
+INSERT INTO `product_detail` VALUES ('201', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '203');
+INSERT INTO `product_detail` VALUES ('202', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '204');
+INSERT INTO `product_detail` VALUES ('203', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '205');
+INSERT INTO `product_detail` VALUES ('204', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '206');
+INSERT INTO `product_detail` VALUES ('205', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '207');
+INSERT INTO `product_detail` VALUES ('206', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '208');
+INSERT INTO `product_detail` VALUES ('207', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '209');
+INSERT INTO `product_detail` VALUES ('208', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '210');
+INSERT INTO `product_detail` VALUES ('209', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '211');
+INSERT INTO `product_detail` VALUES ('210', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '212');
+INSERT INTO `product_detail` VALUES ('211', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '213');
+INSERT INTO `product_detail` VALUES ('212', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '214');
+INSERT INTO `product_detail` VALUES ('213', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '215');
+INSERT INTO `product_detail` VALUES ('214', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '216');
+INSERT INTO `product_detail` VALUES ('215', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '217');
+INSERT INTO `product_detail` VALUES ('216', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '218');
+INSERT INTO `product_detail` VALUES ('217', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '219');
+INSERT INTO `product_detail` VALUES ('218', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '220');
+INSERT INTO `product_detail` VALUES ('219', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '221');
+INSERT INTO `product_detail` VALUES ('220', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '222');
+INSERT INTO `product_detail` VALUES ('221', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '223');
+INSERT INTO `product_detail` VALUES ('222', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '224');
+INSERT INTO `product_detail` VALUES ('223', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '225');
+INSERT INTO `product_detail` VALUES ('224', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '226');
+INSERT INTO `product_detail` VALUES ('225', '2025-12-26 13:41:42', '2025-12-26 13:41:42', '0', '0', '0', '227');
 
 -- ----------------------------
 -- Table structure for recharge_info
@@ -50072,7 +50359,7 @@ CREATE TABLE `sys_logininfor` (
   PRIMARY KEY (`info_id`) USING BTREE,
   KEY `idx_sys_logininfor_s` (`status`) USING BTREE,
   KEY `idx_sys_logininfor_lt` (`login_time`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=327 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='系统访问记录';
+) ENGINE=InnoDB AUTO_INCREMENT=333 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='系统访问记录';
 
 -- ----------------------------
 -- Records of sys_logininfor
@@ -50239,6 +50526,12 @@ INSERT INTO `sys_logininfor` VALUES ('323', 'aaa', '127.0.0.1', '内网IP', 'Chr
 INSERT INTO `sys_logininfor` VALUES ('324', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-24 14:33:34');
 INSERT INTO `sys_logininfor` VALUES ('325', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-24 17:09:49');
 INSERT INTO `sys_logininfor` VALUES ('326', 'aaa', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-24 23:02:44');
+INSERT INTO `sys_logininfor` VALUES ('327', 'aaa', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '1', '验证码已失效', '2025-12-26 12:07:58');
+INSERT INTO `sys_logininfor` VALUES ('328', 'aaa', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-26 12:08:02');
+INSERT INTO `sys_logininfor` VALUES ('329', 'aaa', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-26 13:13:15');
+INSERT INTO `sys_logininfor` VALUES ('330', 'aaa', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '退出成功', '2025-12-26 13:18:13');
+INSERT INTO `sys_logininfor` VALUES ('331', 'aaa', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-26 13:18:28');
+INSERT INTO `sys_logininfor` VALUES ('332', 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-26 13:42:15');
 
 -- ----------------------------
 -- Table structure for sys_menu
@@ -50265,7 +50558,7 @@ CREATE TABLE `sys_menu` (
   `update_time` datetime DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT '' COMMENT '备注',
   PRIMARY KEY (`menu_id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=2052 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='菜单权限表';
+) ENGINE=InnoDB AUTO_INCREMENT=2080 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='菜单权限表';
 
 -- ----------------------------
 -- Records of sys_menu
@@ -50355,13 +50648,41 @@ INSERT INTO `sys_menu` VALUES ('1058', '导入代码', '116', '4', '#', '', '', 
 INSERT INTO `sys_menu` VALUES ('1059', '预览代码', '116', '5', '#', '', '', '1', '0', 'F', '0', '0', 'tool:gen:preview', '#', 'admin', '2024-06-12 11:14:27', '', null, '');
 INSERT INTO `sys_menu` VALUES ('1060', '生成代码', '116', '6', '#', '', '', '1', '0', 'F', '0', '0', 'tool:gen:code', '#', 'admin', '2024-06-12 11:14:27', '', null, '');
 INSERT INTO `sys_menu` VALUES ('2034', 'mybatis在线接口', '3', '1', 'mb', 'online/mb/index', null, '1', '0', 'C', '0', '0', 'online:mb:list', 'code', 'admin', '2024-06-12 15:24:40', 'admin', '2024-06-12 15:27:30', 'mybatis在线接口菜单');
-INSERT INTO `sys_menu` VALUES ('2045', '商品管理', '0', '4', 'shopping', null, null, '1', '0', 'M', '0', '0', null, 'shopping', 'admin', '2025-12-23 14:59:21', '', null, '');
-INSERT INTO `sys_menu` VALUES ('2046', '商品', '2045', '1', 'product', 'system/product/index', null, '1', '0', 'C', '0', '0', 'system:product:list', '#', 'admin', '2025-12-23 15:00:50', '', null, '商品菜单');
-INSERT INTO `sys_menu` VALUES ('2047', '商品查询', '2046', '1', '#', '', null, '1', '0', 'F', '0', '0', 'system:product:query', '#', 'admin', '2025-12-23 15:00:50', '', null, '');
-INSERT INTO `sys_menu` VALUES ('2048', '商品新增', '2046', '2', '#', '', null, '1', '0', 'F', '0', '0', 'system:product:add', '#', 'admin', '2025-12-23 15:00:50', '', null, '');
-INSERT INTO `sys_menu` VALUES ('2049', '商品修改', '2046', '3', '#', '', null, '1', '0', 'F', '0', '0', 'system:product:edit', '#', 'admin', '2025-12-23 15:00:50', '', null, '');
-INSERT INTO `sys_menu` VALUES ('2050', '商品删除', '2046', '4', '#', '', null, '1', '0', 'F', '0', '0', 'system:product:remove', '#', 'admin', '2025-12-23 15:00:50', '', null, '');
-INSERT INTO `sys_menu` VALUES ('2051', '商品导出', '2046', '5', '#', '', null, '1', '0', 'F', '0', '0', 'system:product:export', '#', 'admin', '2025-12-23 15:00:50', '', null, '');
+INSERT INTO `sys_menu` VALUES ('2045', '商品', '0', '4', 'shopping', null, null, '1', '0', 'M', '0', '0', null, 'shopping', 'admin', '2025-12-20 11:23:37', '', null, '');
+INSERT INTO `sys_menu` VALUES ('2046', '商品', '2045', '1', 'product', 'system/product/index', null, '1', '0', 'C', '0', '0', 'system:product:list', '#', 'admin', '2025-12-20 11:27:23', '', null, '商品菜单');
+INSERT INTO `sys_menu` VALUES ('2047', '商品查询', '2046', '1', '#', '', null, '1', '0', 'F', '0', '0', 'system:product:query', '#', 'admin', '2025-12-20 11:27:23', '', null, '');
+INSERT INTO `sys_menu` VALUES ('2048', '商品新增', '2046', '2', '#', '', null, '1', '0', 'F', '0', '0', 'system:product:add', '#', 'admin', '2025-12-20 11:27:23', '', null, '');
+INSERT INTO `sys_menu` VALUES ('2049', '商品修改', '2046', '3', '#', '', null, '1', '0', 'F', '0', '0', 'system:product:edit', '#', 'admin', '2025-12-20 11:27:23', '', null, '');
+INSERT INTO `sys_menu` VALUES ('2050', '商品删除', '2046', '4', '#', '', null, '1', '0', 'F', '0', '0', 'system:product:remove', '#', 'admin', '2025-12-20 11:27:23', '', null, '');
+INSERT INTO `sys_menu` VALUES ('2051', '商品导出', '2046', '5', '#', '', null, '1', '0', 'F', '0', '0', 'system:product:export', '#', 'admin', '2025-12-20 11:27:23', '', null, '');
+INSERT INTO `sys_menu` VALUES ('2052', '店铺', '0', '5', 'store', null, null, '1', '0', 'M', '0', '0', null, 'list', 'admin', '2025-12-23 17:08:03', '', null, '');
+INSERT INTO `sys_menu` VALUES ('2053', '店铺信息', '2052', '1', 'store', 'system/store/index', null, '1', '0', 'C', '0', '0', 'system:store:list', '#', 'admin', '2025-12-23 17:37:04', '', null, '店铺信息菜单');
+INSERT INTO `sys_menu` VALUES ('2054', '店铺信息查询', '2053', '1', '#', '', null, '1', '0', 'F', '0', '0', 'system:store:query', '#', 'admin', '2025-12-23 17:37:04', '', null, '');
+INSERT INTO `sys_menu` VALUES ('2055', '店铺信息新增', '2053', '2', '#', '', null, '1', '0', 'F', '0', '0', 'system:store:add', '#', 'admin', '2025-12-23 17:37:04', '', null, '');
+INSERT INTO `sys_menu` VALUES ('2056', '店铺信息修改', '2053', '3', '#', '', null, '1', '0', 'F', '0', '0', 'system:store:edit', '#', 'admin', '2025-12-23 17:37:04', '', null, '');
+INSERT INTO `sys_menu` VALUES ('2057', '店铺信息删除', '2053', '4', '#', '', null, '1', '0', 'F', '0', '0', 'system:store:remove', '#', 'admin', '2025-12-23 17:37:04', '', null, '');
+INSERT INTO `sys_menu` VALUES ('2058', '店铺信息导出', '2053', '5', '#', '', null, '1', '0', 'F', '0', '0', 'system:store:export', '#', 'admin', '2025-12-23 17:37:04', '', null, '');
+INSERT INTO `sys_menu` VALUES ('2059', '订单', '0', '6', 'order', null, null, '1', '0', 'M', '0', '0', null, 'form', 'admin', '2025-12-24 16:04:13', '', null, '');
+INSERT INTO `sys_menu` VALUES ('2060', '订单', '2059', '1', 'info', 'system/info/index', null, '1', '0', 'C', '0', '0', 'system:info:list', '#', 'admin', '2025-12-24 16:57:49', '', null, '订单菜单');
+INSERT INTO `sys_menu` VALUES ('2061', '订单查询', '2060', '1', '#', '', null, '1', '0', 'F', '0', '0', 'system:info:query', '#', 'admin', '2025-12-24 16:57:49', '', null, '');
+INSERT INTO `sys_menu` VALUES ('2062', '订单新增', '2060', '2', '#', '', null, '1', '0', 'F', '0', '0', 'system:info:add', '#', 'admin', '2025-12-24 16:57:49', '', null, '');
+INSERT INTO `sys_menu` VALUES ('2063', '订单修改', '2060', '3', '#', '', null, '1', '0', 'F', '0', '0', 'system:info:edit', '#', 'admin', '2025-12-24 16:57:49', '', null, '');
+INSERT INTO `sys_menu` VALUES ('2064', '订单删除', '2060', '4', '#', '', null, '1', '0', 'F', '0', '0', 'system:info:remove', '#', 'admin', '2025-12-24 16:57:49', '', null, '');
+INSERT INTO `sys_menu` VALUES ('2065', '订单导出', '2060', '5', '#', '', null, '1', '0', 'F', '0', '0', 'system:info:export', '#', 'admin', '2025-12-24 16:57:49', '', null, '');
+INSERT INTO `sys_menu` VALUES ('2066', '分类', '0', '7', 'classify', null, null, '1', '0', 'M', '0', '0', null, 'drag', 'admin', '2025-12-24 17:28:14', '', null, '');
+INSERT INTO `sys_menu` VALUES ('2067', '类目', '2066', '1', 'category', 'system/category/index', null, '1', '0', 'C', '0', '0', 'system:category:list', '#', 'admin', '2025-12-24 17:42:22', '', null, '类目菜单');
+INSERT INTO `sys_menu` VALUES ('2068', '类目查询', '2067', '1', '#', '', null, '1', '0', 'F', '0', '0', 'system:category:query', '#', 'admin', '2025-12-24 17:42:22', '', null, '');
+INSERT INTO `sys_menu` VALUES ('2069', '类目新增', '2067', '2', '#', '', null, '1', '0', 'F', '0', '0', 'system:category:add', '#', 'admin', '2025-12-24 17:42:22', '', null, '');
+INSERT INTO `sys_menu` VALUES ('2070', '类目修改', '2067', '3', '#', '', null, '1', '0', 'F', '0', '0', 'system:category:edit', '#', 'admin', '2025-12-24 17:42:22', '', null, '');
+INSERT INTO `sys_menu` VALUES ('2071', '类目删除', '2067', '4', '#', '', null, '1', '0', 'F', '0', '0', 'system:category:remove', '#', 'admin', '2025-12-24 17:42:22', '', null, '');
+INSERT INTO `sys_menu` VALUES ('2072', '类目导出', '2067', '5', '#', '', null, '1', '0', 'F', '0', '0', 'system:category:export', '#', 'admin', '2025-12-24 17:42:22', '', null, '');
+INSERT INTO `sys_menu` VALUES ('2073', '活动', '0', '8', 'activity', null, null, '1', '0', 'M', '0', '0', null, 'people', 'admin', '2025-12-26 08:35:55', '', null, '');
+INSERT INTO `sys_menu` VALUES ('2074', '活动', '2073', '1', 'activity', 'system/activity/index', null, '1', '0', 'C', '0', '0', 'system:activity:list', '#', 'admin', '2025-12-26 08:40:54', '', null, '活动菜单');
+INSERT INTO `sys_menu` VALUES ('2075', '活动查询', '2074', '1', '#', '', null, '1', '0', 'F', '0', '0', 'system:activity:query', '#', 'admin', '2025-12-26 08:40:54', '', null, '');
+INSERT INTO `sys_menu` VALUES ('2076', '活动新增', '2074', '2', '#', '', null, '1', '0', 'F', '0', '0', 'system:activity:add', '#', 'admin', '2025-12-26 08:40:54', '', null, '');
+INSERT INTO `sys_menu` VALUES ('2077', '活动修改', '2074', '3', '#', '', null, '1', '0', 'F', '0', '0', 'system:activity:edit', '#', 'admin', '2025-12-26 08:40:54', '', null, '');
+INSERT INTO `sys_menu` VALUES ('2078', '活动删除', '2074', '4', '#', '', null, '1', '0', 'F', '0', '0', 'system:activity:remove', '#', 'admin', '2025-12-26 08:40:54', '', null, '');
+INSERT INTO `sys_menu` VALUES ('2079', '活动导出', '2074', '5', '#', '', null, '1', '0', 'F', '0', '0', 'system:activity:export', '#', 'admin', '2025-12-26 08:40:54', '', null, '');
 
 -- ----------------------------
 -- Table structure for sys_notice
@@ -50413,7 +50734,7 @@ CREATE TABLE `sys_oper_log` (
   KEY `idx_sys_oper_log_bt` (`business_type`) USING BTREE,
   KEY `idx_sys_oper_log_s` (`status`) USING BTREE,
   KEY `idx_sys_oper_log_ot` (`oper_time`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=374 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='操作日志记录';
+) ENGINE=InnoDB AUTO_INCREMENT=387 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='操作日志记录';
 
 -- ----------------------------
 -- Records of sys_oper_log
@@ -50502,6 +50823,19 @@ INSERT INTO `sys_oper_log` VALUES ('370', '商品', '1', 'com.neuedu.system.cont
 INSERT INTO `sys_oper_log` VALUES ('371', '商品', '2', 'com.neuedu.system.controller.ProductController.updateStatus()', 'PUT', '1', 'admin', null, '/system/product/21/status', '127.0.0.1', '内网IP', '21 0', '{\"msg\":\"操作成功\",\"code\":200}', '0', null, '2025-12-24 10:51:48', '0');
 INSERT INTO `sys_oper_log` VALUES ('372', '商品', '2', 'com.neuedu.system.controller.ProductController.updateStatus()', 'PUT', '1', 'admin', null, '/system/product/21/status', '127.0.0.1', '内网IP', '21 1', '{\"msg\":\"操作成功\",\"code\":200}', '0', null, '2025-12-24 10:51:59', '0');
 INSERT INTO `sys_oper_log` VALUES ('373', '购物车', '1', 'com.neuedu.system.controller.CartController.add()', 'POST', '1', 'aaa', null, '/system/cart', '127.0.0.1', '内网IP', '{\"createTime\":\"2025-12-24 15:57:25\",\"createUser\":100,\"deleteFlag\":0,\"deleted\":0,\"id\":265,\"params\":{},\"productId\":13,\"productMainImage\":\"/profile/file/pic/7b18fef2-8d03-42a1-a87b-d0391e2e7070_source.jpg\",\"productName\":\"小米(MI) 红米 4A\",\"productSubtitle\":\"超长续航，玩得更久\",\"productTotalPrice\":1198,\"productUnitPrice\":599,\"quantity\":2,\"selected\":1,\"userId\":100}', '{\"msg\":\"操作成功\",\"code\":200}', '0', null, '2025-12-24 15:57:26', '0');
+INSERT INTO `sys_oper_log` VALUES ('374', '订单', '1', 'com.neuedu.system.controller.OrderInfoController.createDirectOrder()', 'POST', '1', 'aaa', null, '/system/orderInfo/direct', '127.0.0.1', '内网IP', '{\"productId\":53,\"quantity\":1,\"addressId\":83}', '{\"msg\":\"操作成功\",\"code\":200,\"data\":{\"addressId\":83,\"area\":\"大冶市\",\"city\":\"黄石市\",\"createTime\":\"2025-12-26 13:15:46\",\"createUser\":100,\"deleteFlag\":0,\"deleted\":0,\"expireTime\":\"2025-12-26 13:45:46\",\"id\":97,\"orderDetails\":[{\"createTime\":\"2025-12-26 13:15:46\",\"createUser\":100,\"currentUnitPrice\":6990.00,\"deleteFlag\":0,\"deleted\":0,\"id\":540,\"orderDetailNo\":\"D2a36c5b366ea4663\",\"orderNo\":\"O20251226131546961052\",\"params\":{},\"productId\":53,\"productMainImage\":\"/profile/file/pic/aab74237-8040-4cca-85d7-f99a0b0d2556_source.jpg\",\"productName\":\"海尔(Haier) 家用空调\",\"quantity\":1,\"status\":10,\"statusDesc\":\"待付款\",\"totalPrice\":6990.00,\"userId\":100}],\"orderNo\":\"O20251226131546961052\",\"params\":{},\"payment\":6990.00,\"postage\":0,\"postalCode\":\"597329\",\"province\":\"湖北省\",\"receiveName\":\"222\",\"receivePhone\":\"13407266853\",\"status\":10,\"statusDesc\":\"待付款\",\"street\":\"湖北省潜江市泰丰办事处白窑村七组\",\"userId\":100}}', '0', null, '2025-12-26 13:15:46', '0');
+INSERT INTO `sys_oper_log` VALUES ('375', '订单', '1', 'com.neuedu.system.controller.OrderInfoController.createDirectOrder()', 'POST', '1', 'aaa', null, '/system/orderInfo/direct', '127.0.0.1', '内网IP', '{\"productId\":53,\"quantity\":1,\"addressId\":83}', '{\"msg\":\"操作成功\",\"code\":200,\"data\":{\"addressId\":83,\"area\":\"大冶市\",\"city\":\"黄石市\",\"createTime\":\"2025-12-26 13:17:58\",\"createUser\":100,\"deleteFlag\":0,\"deleted\":0,\"expireTime\":\"2025-12-26 13:47:58\",\"id\":98,\"orderDetails\":[{\"createTime\":\"2025-12-26 13:17:58\",\"createUser\":100,\"currentUnitPrice\":6990.00,\"deleteFlag\":0,\"deleted\":0,\"id\":541,\"orderDetailNo\":\"D3f52b09bb1394a5f\",\"orderNo\":\"O20251226131758417398\",\"params\":{},\"productId\":53,\"productMainImage\":\"/profile/file/pic/aab74237-8040-4cca-85d7-f99a0b0d2556_source.jpg\",\"productName\":\"海尔(Haier) 家用空调\",\"quantity\":1,\"status\":10,\"statusDesc\":\"待付款\",\"totalPrice\":6990.00,\"userId\":100}],\"orderNo\":\"O20251226131758417398\",\"params\":{},\"payment\":6990.00,\"postage\":0,\"postalCode\":\"597329\",\"province\":\"湖北省\",\"receiveName\":\"222\",\"receivePhone\":\"13407266853\",\"status\":10,\"statusDesc\":\"待付款\",\"street\":\"湖北省潜江市泰丰办事处白窑村七组\",\"userId\":100}}', '0', null, '2025-12-26 13:17:59', '0');
+INSERT INTO `sys_oper_log` VALUES ('376', '订单', '2', 'com.neuedu.system.controller.OrderInfoController.payOrder()', 'PUT', '1', 'aaa', null, '/system/orderInfo/O20251226131758417398/pay', '127.0.0.1', '内网IP', '\"O20251226131758417398\" 4', '{\"msg\":\"余额不足，当前余额0元，需支付6990.00元\",\"code\":500}', '0', null, '2025-12-26 13:18:05', '0');
+INSERT INTO `sys_oper_log` VALUES ('377', '订单', '1', 'com.neuedu.system.controller.OrderInfoController.createDirectOrder()', 'POST', '1', 'aaa', null, '/system/orderInfo/direct', '127.0.0.1', '内网IP', '{\"productId\":53,\"quantity\":1,\"addressId\":83}', '{\"msg\":\"操作成功\",\"code\":200,\"data\":{\"addressId\":83,\"area\":\"大冶市\",\"city\":\"黄石市\",\"createTime\":\"2025-12-26 13:20:56\",\"createUser\":100,\"deleteFlag\":0,\"deleted\":0,\"expireTime\":\"2025-12-26 13:50:56\",\"id\":99,\"orderDetails\":[{\"createTime\":\"2025-12-26 13:20:56\",\"createUser\":100,\"currentUnitPrice\":6990.00,\"deleteFlag\":0,\"deleted\":0,\"id\":542,\"orderDetailNo\":\"D0e5e8c552f1b4233\",\"orderNo\":\"O20251226132056301014\",\"params\":{},\"productId\":53,\"productMainImage\":\"/profile/file/pic/aab74237-8040-4cca-85d7-f99a0b0d2556_source.jpg\",\"productName\":\"海尔(Haier) 家用空调\",\"quantity\":1,\"status\":10,\"statusDesc\":\"待付款\",\"totalPrice\":6990.00,\"userId\":100}],\"orderNo\":\"O20251226132056301014\",\"params\":{},\"payment\":6990.00,\"postage\":0,\"postalCode\":\"597329\",\"province\":\"湖北省\",\"receiveName\":\"222\",\"receivePhone\":\"13407266853\",\"status\":10,\"statusDesc\":\"待付款\",\"street\":\"湖北省潜江市泰丰办事处白窑村七组\",\"userId\":100}}', '0', null, '2025-12-26 13:20:56', '0');
+INSERT INTO `sys_oper_log` VALUES ('378', '订单', '2', 'com.neuedu.system.controller.OrderInfoController.payOrder()', 'PUT', '1', 'aaa', null, '/system/orderInfo/O20251226132056301014/pay', '127.0.0.1', '内网IP', '\"O20251226132056301014\" 4', '{\"msg\":\"操作成功\",\"code\":200}', '0', null, '2025-12-26 13:21:00', '0');
+INSERT INTO `sys_oper_log` VALUES ('379', '订单', '1', 'com.neuedu.system.controller.OrderInfoController.createOrder()', 'POST', '1', 'aaa', null, '/system/orderInfo', '127.0.0.1', '内网IP', '83', '{\"msg\":\"操作成功\",\"code\":200,\"data\":{\"addressId\":83,\"area\":\"大冶市\",\"city\":\"黄石市\",\"createTime\":\"2025-12-26 13:27:55\",\"createUser\":100,\"deleteFlag\":0,\"deleted\":0,\"expireTime\":\"2025-12-26 13:57:55\",\"id\":100,\"orderNo\":\"O20251226132755319264\",\"params\":{},\"payment\":11068.00,\"postage\":0,\"postalCode\":\"597329\",\"province\":\"湖北省\",\"receiveName\":\"222\",\"receivePhone\":\"13407266853\",\"status\":10,\"statusDesc\":\"待付款\",\"street\":\"湖北省潜江市泰丰办事处白窑村七组\",\"userId\":100}}', '0', null, '2025-12-26 13:27:55', '0');
+INSERT INTO `sys_oper_log` VALUES ('380', '购物车', '1', 'com.neuedu.system.controller.CartController.add()', 'POST', '1', 'aaa', null, '/system/cart', '127.0.0.1', '内网IP', '{\"createTime\":\"2025-12-26 13:28:18\",\"createUser\":100,\"deleteFlag\":0,\"deleted\":0,\"id\":266,\"params\":{},\"productId\":77,\"productMainImage\":\"/profile/file/pic/4d0d7a9a-9150-40f5-8c4f-39aa1e048d70_source.jpg\",\"productName\":\"未风(WIFING) 秋冬季打底连衣裙\",\"productSubtitle\":\"针织袖拼接\",\"productTotalPrice\":349,\"productUnitPrice\":349,\"quantity\":1,\"selected\":1,\"userId\":100}', '{\"msg\":\"操作成功\",\"code\":200}', '0', null, '2025-12-26 13:28:18', '0');
+INSERT INTO `sys_oper_log` VALUES ('381', '购物车', '1', 'com.neuedu.system.controller.CartController.add()', 'POST', '1', 'aaa', null, '/system/cart', '127.0.0.1', '内网IP', '{\"createTime\":\"2025-12-26 13:28:24\",\"createUser\":100,\"deleteFlag\":0,\"deleted\":0,\"id\":267,\"params\":{},\"productId\":53,\"productMainImage\":\"/profile/file/pic/aab74237-8040-4cca-85d7-f99a0b0d2556_source.jpg\",\"productName\":\"海尔(Haier) 家用空调\",\"productSubtitle\":\"智能智控，净化脏空气\",\"productTotalPrice\":6990,\"productUnitPrice\":6990,\"quantity\":1,\"selected\":1,\"userId\":100}', '{\"msg\":\"操作成功\",\"code\":200}', '0', null, '2025-12-26 13:28:24', '0');
+INSERT INTO `sys_oper_log` VALUES ('382', '订单', '1', 'com.neuedu.system.controller.OrderInfoController.createOrder()', 'POST', '1', 'aaa', null, '/system/orderInfo', '127.0.0.1', '内网IP', '83', '{\"msg\":\"操作成功\",\"code\":200,\"data\":{\"addressId\":83,\"area\":\"大冶市\",\"city\":\"黄石市\",\"createTime\":\"2025-12-26 13:28:37\",\"createUser\":100,\"deleteFlag\":0,\"deleted\":0,\"expireTime\":\"2025-12-26 13:58:37\",\"id\":101,\"orderNo\":\"O20251226132837463168\",\"params\":{},\"payment\":7339.00,\"postage\":0,\"postalCode\":\"597329\",\"province\":\"湖北省\",\"receiveName\":\"222\",\"receivePhone\":\"13407266853\",\"status\":10,\"statusDesc\":\"待付款\",\"street\":\"湖北省潜江市泰丰办事处白窑村七组\",\"userId\":100}}', '0', null, '2025-12-26 13:28:37', '0');
+INSERT INTO `sys_oper_log` VALUES ('383', '购物车', '1', 'com.neuedu.system.controller.CartController.add()', 'POST', '1', 'aaa', null, '/system/cart', '127.0.0.1', '内网IP', '{\"createTime\":\"2025-12-26 13:31:21\",\"createUser\":100,\"deleteFlag\":0,\"deleted\":0,\"id\":268,\"params\":{},\"productId\":53,\"productMainImage\":\"/profile/file/pic/aab74237-8040-4cca-85d7-f99a0b0d2556_source.jpg\",\"productName\":\"海尔(Haier) 家用空调\",\"productSubtitle\":\"智能智控，净化脏空气\",\"productTotalPrice\":6990,\"productUnitPrice\":6990,\"quantity\":1,\"selected\":1,\"userId\":100}', '{\"msg\":\"操作成功\",\"code\":200}', '0', null, '2025-12-26 13:31:21', '0');
+INSERT INTO `sys_oper_log` VALUES ('384', '角色管理', '1', 'com.neuedu.web.controller.system.SysRoleController.add()', 'POST', '1', 'admin', null, '/system/role', '127.0.0.1', '内网IP', '{\"admin\":false,\"createBy\":\"admin\",\"deptCheckStrictly\":true,\"deptIds\":[],\"flag\":false,\"menuCheckStrictly\":true,\"menuIds\":[2045,2046,2047,2048,2049,2050,2051,2052,2053,2054,2055,2056,2057,2058,2059,2060,2061,2062,2063,2064,2065,2066,2067,2068,2069,2070,2071,2072,2073,2074,2075,2076,2077,2078,2079],\"params\":{},\"roleId\":100,\"roleKey\":\"shang\",\"roleName\":\"商家\",\"roleSort\":0,\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', '0', null, '2025-12-26 13:52:51', '0');
+INSERT INTO `sys_oper_log` VALUES ('385', '角色管理', '2', 'com.neuedu.web.controller.system.SysRoleController.edit()', 'PUT', '1', 'admin', null, '/system/role', '127.0.0.1', '内网IP', '{\"admin\":false,\"createTime\":\"2025-12-26 13:52:50\",\"dataScope\":\"1\",\"delFlag\":\"0\",\"deptCheckStrictly\":true,\"flag\":false,\"menuCheckStrictly\":true,\"menuIds\":[2045,2046,2047,2048,2049,2050,2051,2052,2053,2054,2055,2056,2057,2058,2059,2060,2061,2062,2063,2064,2065,2066,2067,2068,2069,2070,2071,2072,2073,2074,2075,2076,2077,2078,2079],\"params\":{},\"roleId\":100,\"roleKey\":\"shang\",\"roleName\":\"商家\",\"roleSort\":1,\"status\":\"0\",\"updateBy\":\"admin\"}', '{\"msg\":\"操作成功\",\"code\":200}', '0', null, '2025-12-26 13:52:56', '0');
+INSERT INTO `sys_oper_log` VALUES ('386', '用户管理', '2', 'com.neuedu.web.controller.system.SysUserController.edit()', 'PUT', '1', 'admin', null, '/system/user', '127.0.0.1', '内网IP', '{\"admin\":false,\"avatar\":\"/profile/file/avatar/VCG41N1474126084.jpg\",\"balance\":0,\"createBy\":\"\",\"createTime\":\"2024-06-12 11:14:17\",\"delFlag\":\"0\",\"dept\":{\"ancestors\":\"0,100,101\",\"children\":[],\"deptId\":105,\"deptName\":\"测试部门\",\"leader\":\"若依\",\"orderNum\":3,\"params\":{},\"parentId\":101,\"status\":\"0\"},\"deptId\":105,\"email\":\"ry@qq.com\",\"loginDate\":\"2025-12-22 20:51:13\",\"loginIp\":\"127.0.0.1\",\"nickName\":\"若依\",\"params\":{},\"phonenumber\":\"15666666666\",\"postIds\":[2],\"remark\":\"测试员\",\"roleIds\":[100],\"roles\":[{\"admin\":false,\"dataScope\":\"2\",\"deptCheckStrictly\":false,\"flag\":false,\"menuCheckStrictly\":false,\"params\":{},\"roleId\":2,\"roleKey\":\"common\",\"roleName\":\"普通用户\",\"roleSort\":2,\"status\":\"0\"}],\"sex\":\"1\",\"status\":\"0\",\"updateBy\":\"admin\",\"userId\":2,\"userName\":\"ry\",\"userType\":1}', '{\"msg\":\"操作成功\",\"code\":200}', '0', null, '2025-12-26 13:53:09', '0');
 
 -- ----------------------------
 -- Table structure for sys_post
@@ -50549,13 +50883,14 @@ CREATE TABLE `sys_role` (
   `update_time` datetime DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`role_id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=100 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='角色信息表';
+) ENGINE=InnoDB AUTO_INCREMENT=101 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='角色信息表';
 
 -- ----------------------------
 -- Records of sys_role
 -- ----------------------------
 INSERT INTO `sys_role` VALUES ('1', '超级管理员', 'admin', '1', '1', '1', '1', '0', '0', 'admin', '2024-06-12 11:14:17', '', null, '超级管理员');
 INSERT INTO `sys_role` VALUES ('2', '普通用户', 'common', '2', '2', '1', '1', '0', '0', 'admin', '2024-06-12 11:14:17', '', null, '普通用户');
+INSERT INTO `sys_role` VALUES ('100', '商家', 'shang', '1', '1', '1', '1', '0', '0', 'admin', '2025-12-26 13:52:50', 'admin', '2025-12-26 13:52:56', null);
 
 -- ----------------------------
 -- Table structure for sys_role_dept
@@ -50672,6 +51007,41 @@ INSERT INTO `sys_role_menu` VALUES ('2', '1057');
 INSERT INTO `sys_role_menu` VALUES ('2', '1058');
 INSERT INTO `sys_role_menu` VALUES ('2', '1059');
 INSERT INTO `sys_role_menu` VALUES ('2', '1060');
+INSERT INTO `sys_role_menu` VALUES ('100', '2045');
+INSERT INTO `sys_role_menu` VALUES ('100', '2046');
+INSERT INTO `sys_role_menu` VALUES ('100', '2047');
+INSERT INTO `sys_role_menu` VALUES ('100', '2048');
+INSERT INTO `sys_role_menu` VALUES ('100', '2049');
+INSERT INTO `sys_role_menu` VALUES ('100', '2050');
+INSERT INTO `sys_role_menu` VALUES ('100', '2051');
+INSERT INTO `sys_role_menu` VALUES ('100', '2052');
+INSERT INTO `sys_role_menu` VALUES ('100', '2053');
+INSERT INTO `sys_role_menu` VALUES ('100', '2054');
+INSERT INTO `sys_role_menu` VALUES ('100', '2055');
+INSERT INTO `sys_role_menu` VALUES ('100', '2056');
+INSERT INTO `sys_role_menu` VALUES ('100', '2057');
+INSERT INTO `sys_role_menu` VALUES ('100', '2058');
+INSERT INTO `sys_role_menu` VALUES ('100', '2059');
+INSERT INTO `sys_role_menu` VALUES ('100', '2060');
+INSERT INTO `sys_role_menu` VALUES ('100', '2061');
+INSERT INTO `sys_role_menu` VALUES ('100', '2062');
+INSERT INTO `sys_role_menu` VALUES ('100', '2063');
+INSERT INTO `sys_role_menu` VALUES ('100', '2064');
+INSERT INTO `sys_role_menu` VALUES ('100', '2065');
+INSERT INTO `sys_role_menu` VALUES ('100', '2066');
+INSERT INTO `sys_role_menu` VALUES ('100', '2067');
+INSERT INTO `sys_role_menu` VALUES ('100', '2068');
+INSERT INTO `sys_role_menu` VALUES ('100', '2069');
+INSERT INTO `sys_role_menu` VALUES ('100', '2070');
+INSERT INTO `sys_role_menu` VALUES ('100', '2071');
+INSERT INTO `sys_role_menu` VALUES ('100', '2072');
+INSERT INTO `sys_role_menu` VALUES ('100', '2073');
+INSERT INTO `sys_role_menu` VALUES ('100', '2074');
+INSERT INTO `sys_role_menu` VALUES ('100', '2075');
+INSERT INTO `sys_role_menu` VALUES ('100', '2076');
+INSERT INTO `sys_role_menu` VALUES ('100', '2077');
+INSERT INTO `sys_role_menu` VALUES ('100', '2078');
+INSERT INTO `sys_role_menu` VALUES ('100', '2079');
 
 -- ----------------------------
 -- Table structure for sys_user
@@ -50698,16 +51068,17 @@ CREATE TABLE `sys_user` (
   `update_time` datetime DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT NULL COMMENT '备注',
   `image` varchar(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT NULL COMMENT '头像',
+  `balance` decimal(10,2) unsigned NOT NULL DEFAULT '0.00' COMMENT '用户余额，范围0-30000',
   PRIMARY KEY (`user_id`) USING BTREE
 ) ENGINE=InnoDB AUTO_INCREMENT=102 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='用户信息表';
 
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES ('1', '103', 'admin', '若依', '1', 'ry@163.com', '15888888888', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2025-12-24 17:09:50', 'admin', '2024-06-12 11:14:17', '', '2025-12-24 17:09:49', '管理员', null);
-INSERT INTO `sys_user` VALUES ('2', '105', 'ry', '若依', '0', 'ry@qq.com', '15666666666', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2025-12-22 20:51:13', '', '2024-06-12 11:14:17', '', '2025-12-22 20:51:13', '测试员', null);
-INSERT INTO `sys_user` VALUES ('100', null, 'aaa', 'aaa', '0', '', '', '0', '', '$2a$10$Ry5K9MRkA8j84nLOqlQI8OhpQjlYXQMFYGl6GHuQz9v9Am0t56wrW', '0', '0', '127.0.0.1', '2025-12-24 23:02:44', '', '2025-12-22 15:14:10', 'admin', '2025-12-24 23:02:44', null, null);
-INSERT INTO `sys_user` VALUES ('101', null, 'yyy', 'yyy', '0', '', '', '0', '', '$2a$10$Q.WvPlfCICJZ/Ma5u8oDQOF84tBdcdeMWnO/lTPkF.kw2Y8YurhvS', '0', '0', '127.0.0.1', '2025-12-24 12:14:01', '', '2025-12-22 19:22:34', 'admin', '2025-12-24 12:14:01', null, null);
+INSERT INTO `sys_user` VALUES ('1', '103', 'admin', '若依', '2', 'ry@163.com', '15888888888', '1', '/profile/file/avatar/VCG211557346952.png', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2025-12-26 13:42:16', 'admin', '2024-06-12 11:14:17', '', '2025-12-26 13:42:15', '管理员', null, '0.00');
+INSERT INTO `sys_user` VALUES ('2', '105', 'ry', '若依', '1', 'ry@qq.com', '15666666666', '1', '/profile/file/avatar/VCG41N1474126084.jpg', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2025-12-22 20:51:13', '', '2024-06-12 11:14:17', 'admin', '2025-12-26 13:53:09', '测试员', null, '0.00');
+INSERT INTO `sys_user` VALUES ('100', null, 'aaa', 'aaa', '0', '', '', '0', '/profile/file/avatar/VCG211514062079.jpg', '$2a$10$Ry5K9MRkA8j84nLOqlQI8OhpQjlYXQMFYGl6GHuQz9v9Am0t56wrW', '0', '0', '127.0.0.1', '2025-12-26 13:18:28', '', '2025-12-22 15:14:10', 'admin', '2025-12-26 13:21:00', null, null, '23010.00');
+INSERT INTO `sys_user` VALUES ('101', null, 'yyy', 'yyy', '0', '', '', '0', '/profile/file/avatar/VCG211563023538.jpg', '$2a$10$Q.WvPlfCICJZ/Ma5u8oDQOF84tBdcdeMWnO/lTPkF.kw2Y8YurhvS', '0', '0', '127.0.0.1', '2025-12-24 12:14:01', '', '2025-12-22 19:22:34', 'admin', '2025-12-24 12:14:01', null, null, '0.00');
 
 -- ----------------------------
 -- Table structure for sys_user_post
@@ -50739,7 +51110,7 @@ CREATE TABLE `sys_user_role` (
 -- Records of sys_user_role
 -- ----------------------------
 INSERT INTO `sys_user_role` VALUES ('1', '1');
-INSERT INTO `sys_user_role` VALUES ('2', '2');
+INSERT INTO `sys_user_role` VALUES ('2', '100');
 INSERT INTO `sys_user_role` VALUES ('100', '2');
 INSERT INTO `sys_user_role` VALUES ('101', '2');
 
@@ -54381,7 +54752,7 @@ CREATE TABLE `user_footprint` (
   KEY `idx_target_type_id` (`target_type`,`target_id`) USING BTREE,
   KEY `idx_last_browse_time` (`last_browse_time`) USING BTREE,
   KEY `idx_user_browse_time` (`user_id`,`last_browse_time`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC COMMENT='用户足迹表';
+) ENGINE=InnoDB AUTO_INCREMENT=24 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC COMMENT='用户足迹表';
 
 -- ----------------------------
 -- Records of user_footprint
@@ -54404,3 +54775,6 @@ INSERT INTO `user_footprint` VALUES ('15', '2025-12-21 13:10:10', '2025-12-24 15
 INSERT INTO `user_footprint` VALUES ('18', '2025-12-24 16:54:55', '2025-12-24 17:37:56', '100', '100', '0', '100', '1', '157', '丹迪(Dante) 时尚休闲包', '/profile/file/pic/d7e4b63c-0102-4893-babf-8d120824aedc_source.jpg', '238.00', '27', '', '2', '2025-12-24 17:37:56');
 INSERT INTO `user_footprint` VALUES ('19', '2025-12-24 23:08:26', '2025-12-24 23:08:26', '100', '100', '0', '100', '1', '61', '蜜之姻 一字肩婚纱礼服', '/profile/file/pic/776013fe-cc34-41ac-958d-7b0b525db26b_source.jpg', '380.00', '23', '', '1', '2025-12-24 23:08:26');
 INSERT INTO `user_footprint` VALUES ('20', '2025-12-24 23:17:36', '2025-12-24 23:19:21', '100', '100', '0', '100', '1', '13', '小米(MI) 红米 4A', '/profile/file/pic/7b18fef2-8d03-42a1-a87b-d0391e2e7070_source.jpg', '599.00', '7', '', '3', '2025-12-24 23:19:22');
+INSERT INTO `user_footprint` VALUES ('21', '2025-12-26 12:08:04', '2025-12-26 12:20:57', '100', '100', '0', '100', '1', '21', '三星(SAMSUNG) Galaxy S6', '/profile/file/pic/f14f32ca-9666-4824-8ca3-570cc167c222_source.jpg', '2499.00', '7', '', '5', '2025-12-26 12:20:58');
+INSERT INTO `user_footprint` VALUES ('22', '2025-12-26 13:13:18', '2025-12-26 13:31:20', '100', '100', '0', '100', '1', '53', '海尔(Haier) 家用空调', '/profile/file/pic/aab74237-8040-4cca-85d7-f99a0b0d2556_source.jpg', '6990.00', '18', '', '4', '2025-12-26 13:31:21');
+INSERT INTO `user_footprint` VALUES ('23', '2025-12-26 13:22:37', '2025-12-26 13:28:17', '100', '100', '0', '100', '1', '77', '未风(WIFING) 秋冬季打底连衣裙', '/profile/file/pic/4d0d7a9a-9150-40f5-8c4f-39aa1e048d70_source.jpg', '349.00', '23', '', '2', '2025-12-26 13:28:17');
