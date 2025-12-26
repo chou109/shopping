@@ -252,16 +252,16 @@ class OrderInfoAdminController extends BaseController
 {
     private final IOrderInfoService orderInfoService;
 
-    /**
-     * 查询订单列表（管理员端）
-     */
     @Operation(summary = "查询订单列表（管理员）")
     @PreAuthorize("@ss.hasPermi('system:order:list')")
     @GetMapping("/list")
     public TableDataInfo list(OrderInfo orderInfo)
     {
+        // startPage() 会自动从请求中获取 pageNum 和 pageSize
         startPage();
         List<OrderInfo> list = orderInfoService.selectOrderInfoList(orderInfo);
+
+        // getDataTable() 会返回包含 total、rows 等信息的 TableDataInfo
         return getDataTable(list);
     }
 

@@ -15,7 +15,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
  * 店铺信息对象 shop
- * 
+ *
  * @author ruoyi
  * @date 2025-12-21
  */
@@ -134,9 +134,9 @@ public class Shop extends BaseEntity
     /**
      * 判断店铺是否已删除
      */
-    public boolean isDeleted() {
-        return deleteFlag != null && deleteFlag == 1;
-    }
+//    public boolean isDeleted() {
+//        return deleteFlag != null && deleteFlag == 1;
+//    }
 
     /**
      * 获取状态描述

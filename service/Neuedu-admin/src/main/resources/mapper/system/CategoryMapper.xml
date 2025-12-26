@@ -35,10 +35,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="hotFlag != null "> and hot_flag = #{hotFlag}</if>
         </where>
     </select>
-    
+
     <select id="selectCategoryById" parameterType="Long" resultMap="CategoryResult">
         <include refid="selectCategoryVo"/>
-        where category.id = #{id}
+        where id = #{id} and delete_flag = 0  <!-- 使用delete_flag而不是deleted -->
     </select>
         
     <insert id="insertCategory" parameterType="Category" useGeneratedKeys="true" keyProperty="id">

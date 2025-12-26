@@ -3,7 +3,7 @@
 PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.neuedu.system.mapper.ShopMapper">
-    
+
     <resultMap type="Shop" id="ShopResult">
         <result property="id"    column="id"    />
         <result property="createTime"    column="create_time"    />
@@ -26,12 +26,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectShopVo">
-        select id, create_time, update_time, create_user, update_user, delete_flag, user_id, shop_name, shop_logo, shop_banner, description, contact_phone, contact_address, shop_score, sales_count, product_count, follower_count, status from shop
+        select id, create_time, update_time, create_user, update_user, delete_flag,
+               user_id, shop_name, shop_logo, shop_banner, description, contact_phone,
+               contact_address, shop_score, sales_count, product_count, follower_count, status from shop
+        where delete_flag = 0
     </sql>
 
     <select id="selectShopList" parameterType="Shop" resultMap="ShopResult">
         <include refid="selectShopVo"/>
-        <where>  
+        <where>
             <if test="createUser != null "> and create_user = #{createUser}</if>
             <if test="updateUser != null "> and update_user = #{updateUser}</if>
             <if test="deleteFlag != null "> and delete_flag = #{deleteFlag}</if>
@@ -49,10 +52,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="status != null "> and status = #{status}</if>
         </where>
     </select>
-    
+
     <select id="selectShopById" parameterType="Long" resultMap="ShopResult">
         <include refid="selectShopVo"/>
-        where shop.id = #{id}
+        where shop.id = #{id}  and p.delete_flag = 0
     </select>
 
     <!-- 新增：根据用户ID查询店铺 -->
