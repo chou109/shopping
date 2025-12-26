@@ -41,6 +41,15 @@ server:
       # Tomcat启动初始化的线程数，默认值10
       min-spare: 100
 
+      # WebSocket配置
+      websocket:
+        enabled: true
+        path: /ai/chat
+        allowed-origins: "*"
+        max-text-message-buffer-size: 8192000
+        max-binary-message-buffer-size: 8192000
+        idle-timeout: 600000
+
 # 日志配置
 logging:
   level:

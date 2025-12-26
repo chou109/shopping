@@ -95,13 +95,7 @@ public interface IUserAddressService extends IService<UserAddress>
     int setDefaultAddress(Long addressId, Long userId);
 
 
-    /**
-     * 验证地址信息是否完整
-     *
-     * @param userAddress 地址信息
-     * @return 验证结果
-     */
-    boolean validateAddress(UserAddress userAddress);
+
 
     /**
      * 获取用户的地址数量
@@ -110,5 +104,38 @@ public interface IUserAddressService extends IService<UserAddress>
      * @return 地址数量
      */
     int countUserAddress(Long userId);
+
+    /**
+     * 验证地址信息是否完整（严格模式，要求省市区）
+     *
+     * @param userAddress 地址信息
+     * @return 验证结果
+     */
+    boolean validateAddress(UserAddress userAddress);
+
+    /**
+     * 验证地址信息是否完整（灵活模式，根据实际情况验证）
+     *
+     * @param userAddress 地址信息
+     * @return 验证结果
+     */
+    boolean validateAddressFlexible(UserAddress userAddress);
+
+    /**
+     * 检查是否为直辖市
+     *
+     * @param province 省份名称
+     * @return 是否为直辖市
+     */
+    boolean isMunicipality(String province);
+
+    /**
+     * 获取地址的完整格式
+     *
+     * @param userAddress 地址信息
+     * @return 完整地址字符串
+     */
+    String getFullAddress(UserAddress userAddress);
+
 
 }

@@ -49,6 +49,23 @@ export const constantRoutes = [
       }
     ]
   },
+    // AI客服聊天页面
+  {
+    path: '/chat',
+    component: Layout,
+    children: [
+      {
+        path: '',
+        name: 'Chat',
+        component: () => import('@/views/chat/index.vue'),
+        meta: { 
+          title: 'AI客服',
+          icon: 'chat-dot-round',
+          requiresAuth: true
+        }
+      }
+    ]
+  },
   // 用户中心统一路由 - 使用动态参数
   {
     path: '/user/:page?',

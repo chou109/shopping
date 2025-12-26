@@ -41,7 +41,7 @@
                 :class="{ 'shop-item': item.targetType === 2, 'product-item': item.targetType === 1 }">
                 <!-- 图片区域 -->
                 <div class="item-image" @click="handleItemClick(item)">
-                  <img :src="item.targetImage" alt="">
+                  <img :src="getProductImageUrl(item.targetImage)" alt="" @error="handleImageError">
                   <!-- 类型标签 -->
                   <div class="type-badge" :class="getTypeBadgeClass(item.targetType)">
                     {{ getTypeText(item.targetType) }}
