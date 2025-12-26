@@ -21,7 +21,8 @@ public class OrderStatusConstants {
     // 支付类型
     public static final Integer PAYMENT_ALIPAY = 1;   // 支付宝
     public static final Integer PAYMENT_WECHAT = 2;   // 微信支付
-    public static final Integer PAYMENT_BALANCE = 3;  // 余额支付
+    public static final Integer PAYMENT_BANKCARD = 3; // 银行卡支付
+    public static final Integer PAYMENT_BALANCE = 4;  // 余额支付
 
     // 退款状态
     public static final Integer REFUND_APPLYING = 1;  // 申请中
@@ -59,7 +60,8 @@ public class OrderStatusConstants {
         switch (paymentType) {
             case 1: return "支付宝";
             case 2: return "微信支付";
-            case 3: return "余额支付";
+            case 3: return "银行卡支付";
+            case 4: return "余额支付";
             default: return "未知支付方式";
         }
     }

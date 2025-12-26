@@ -8,12 +8,10 @@
           <div class="profile-card">
             <div class="avatar-section">
               <div class="avatar-wrapper">
-
+                <img :src="avatarUrl" alt="头像" class="user-avatar-img" />
                 <div class="avatar-upload" @click="openAvatarDialog">
-                  <el-icon>
-                    <Camera />
-                  </el-icon>
-                  <span>更换头像</span>
+                  <el-icon><Camera /></el-icon>
+                  <span>更换</span>
                 </div>
               </div>
               <h3 class="user-name">{{ userInfo.nickName || userInfo.userName || '用户' }}</h3>
@@ -24,7 +22,7 @@
             <div class="stats-section">
               <div class="stat-item" @click="$router.push('/user/orders')">
                 <div class="stat-value">{{ userStats.orderCount || 0 }}</div>
-                <div class="stat-label">总订单</div>
+                <div class="stat-label">订单</div>
               </div>
               <div class="stat-item" @click="$router.push('/user/favorite/product')">
                 <div class="stat-value">{{ userStats.favoriteCount || 0 }}</div>
@@ -39,22 +37,18 @@
             <div class="balance-section">
               <div class="balance-label">账户余额</div>
               <div class="balance-amount">¥{{ formatPrice(userInfo.balance || 0) }}</div>
-              <el-button type="primary" size="small" @click="handleRecharge" class="recharge-btn">
+              <el-button type="danger" round size="small" @click="handleRecharge" class="recharge-btn">
                 立即充值
               </el-button>
             </div>
 
             <div class="quick-actions">
-              <el-button type="primary" plain @click="$router.push('/user/orders')">
-                <el-icon>
-                  <List />
-                </el-icon>
+              <el-button type="danger" plain round @click="$router.push('/user/orders')">
+                <el-icon><List /></el-icon>
                 我的订单
               </el-button>
-              <el-button type="success" plain @click="$router.push('/user/cart')">
-                <el-icon>
-                  <ShoppingCart />
-                </el-icon>
+              <el-button type="warning" plain round @click="$router.push('/user/cart')">
+                <el-icon><ShoppingCart /></el-icon>
                 购物车
               </el-button>
             </div>
@@ -339,6 +333,64 @@
         </el-button>
       </template>
     </el-dialog>
+
+    <!-- 充值弹窗 -->
+    <el-dialog v-model="rechargeDialogVisible" title="账户充值" width="480px" :close-on-click-modal="false">
+      <el-form ref="rechargeFormRef" :model="rechargeForm" :rules="rechargeRules" label-width="100px">
+        <el-form-item label="充值金额" prop="amount">
+          <el-input-number v-model="rechargeForm.amount" :min="1" :max="30000" :step="100" :precision="2"
+            placeholder="请输入充值金额" style="width: 100%;" @change="handleAmountChange" />
+          <div class="recharge-tips">充值金额范围：1 - 30000 元</div>
+        </el-form-item>
+
+        <el-form-item label="快捷金额">
+          <div class="quick-amount-btns">
+            <el-button v-for="amount in [50, 100, 200, 500, 1000]" :key="amount" size="small"
+              :type="rechargeForm.amount === amount ? 'danger' : 'default'" @click="rechargeForm.amount = amount">
+              ¥{{ amount }}
+            </el-button>
+          </div>
+        </el-form-item>
+
+        <el-form-item label="支付方式" prop="paymentType">
+          <el-radio-group v-model="rechargeForm.paymentType">
+            <el-radio :label="1" class="payment-radio">
+              <span class="payment-option">
+                <i class="payment-icon alipay"></i>
+                支付宝
+              </span>
+            </el-radio>
+            <el-radio :label="2" class="payment-radio">
+              <span class="payment-option">
+                <i class="payment-icon wechat"></i>
+                微信支付
+              </span>
+            </el-radio>
+            <el-radio :label="4" class="payment-radio">
+              <span class="payment-option">
+                <i class="payment-icon bank"></i>
+                银行卡
+              </span>
+            </el-radio>
+          </el-radio-group>
+        </el-form-item>
+
+        <el-form-item label="当前余额">
+          <span class="current-balance">¥{{ formatPrice(userInfo.balance || 0) }}</span>
+        </el-form-item>
+
+        <el-form-item label="充值后余额">
+          <span class="after-balance">¥{{ formatPrice((parseFloat(userInfo.balance || 0) + parseFloat(rechargeForm.amount || 0)).toFixed(2)) }}</span>
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <el-button @click="rechargeDialogVisible = false">取消</el-button>
+        <el-button type="danger" @click="handleRechargeSubmit" :loading="rechargeLoading">
+          立即充值
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -349,9 +401,10 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Camera, Plus, Refresh, List, ShoppingCart } from '@element-plus/icons-vue'
 import { getCurrentUser, updateUser, updateUserPwd, updateAvatar, getUserStats } from '@/api/system/customer'
-import { getUserOrderStats, getUserFavoriteStats, getUserFootprintStats, getUserCartStats } from '@/api/system/stats'
 import { getUsers, getUser, updateCurrentUserPassword } from '@/api/system/user'
+import { createRechargeOrder, paymentSuccess } from '@/api/system/rechargeInfo'
 import { getToken } from '@/utils/auth'
+import { getProductImageUrl } from '@/utils/image'
 // 导入地址管理相关的API
 import {
   listAddressByUserId,
@@ -369,9 +422,11 @@ const loading = ref(false)
 const activeTab = ref('basic')
 const avatarDialogVisible = ref(false)
 const passwordDialogVisible = ref(false)
+const rechargeDialogVisible = ref(false)
 const avatarLoading = ref(false)
 const basicLoading = ref(false)
 const passwordLoading = ref(false)
+const rechargeLoading = ref(false)
 const isLoadingEditData = ref(false) // 标记是否正在加载编辑数据
 
 // 用户信息
@@ -381,6 +436,14 @@ const userStats = ref({
   favoriteCount: 0,
   footprintCount: 0,
   cartCount: 0
+})
+
+// 头像URL计算属性
+const avatarUrl = computed(() => {
+  if (userInfo.value.avatar) {
+    return getProductImageUrl(userInfo.value.avatar)
+  }
+  return '/src/assets/images/default-avatar.png'
 })
 
 // 表单引用
@@ -451,6 +514,33 @@ const passwordRules = {
   ]
 }
 
+// 充值表单数据
+const rechargeFormRef = ref(null)
+const rechargeForm = reactive({
+  amount: 100,
+  paymentType: 1
+})
+
+// 充值验证规则
+const rechargeRules = {
+  amount: [
+    { required: true, message: '请输入充值金额', trigger: 'blur' },
+    { 
+      validator: (rule, value, callback) => {
+        if (value < 1 || value > 30000) {
+          callback(new Error('充值金额必须在1-30000元之间'))
+        } else {
+          callback()
+        }
+      }, 
+      trigger: 'change' 
+    }
+  ],
+  paymentType: [
+    { required: true, message: '请选择支付方式', trigger: 'change' }
+  ]
+}
+
 // 省市区数据相关
 const provinces = ref([])
 const cities = ref([])
@@ -518,9 +608,10 @@ const loadUserInfo = async () => {
       // const res = await getUser()
       // console.log('getUser接口返回:', res)
       // 同步更新store中的用户信息
-      if (store.state.user) {
-        store.commit('SET_USER', userInfo.value)
-      }
+      store.commit('SET_NAME', userInfo.value.userName)
+      store.commit('SET_AVATAR', userInfo.value.avatar)
+      store.commit('SET_USERID', userInfo.value.userId)
+      store.commit('SET_REALNAME', userInfo.value.nickName)
 
       // 填充表单数据
       Object.keys(basicForm).forEach(key => {
@@ -542,35 +633,14 @@ const loadUserInfo = async () => {
   }
 }
 
-// 加载用户统计信息
+// 加载用户统计信息 - 使用默认值，统计接口暂不可用
 const loadUserStats = async () => {
-  try {
-    const userId = currentUserId.value
-    if (!userId) return
-
-    // 并行加载所有统计信息
-    const [orderStats, favoriteStats, footprintStats, cartStats] = await Promise.all([
-      getUserOrderStats(userId),
-      getUserFavoriteStats(userId),
-      getUserFootprintStats(userId),
-      getUserCartStats(userId)
-    ])
-
-    userStats.value = {
-      orderCount: orderStats.code === 200 ? (orderStats.data || 0) : 0,
-      favoriteCount: favoriteStats.code === 200 ? (favoriteStats.data || 0) : 0,
-      footprintCount: footprintStats.code === 200 ? (footprintStats.data || 0) : 0,
-      cartCount: cartStats.code === 200 ? (cartStats.data || 0) : 0
-    }
-  } catch (error) {
-    console.error('加载用户统计信息失败:', error)
-    // 如果接口不存在，使用模拟数据
-    userStats.value = {
-      orderCount: 0,
-      favoriteCount: 0,
-      footprintCount: 0,
-      cartCount: 0
-    }
+  // 统计接口不存在，使用默认值
+  userStats.value = {
+    orderCount: 0,
+    favoriteCount: 0,
+    footprintCount: 0,
+    cartCount: 0
   }
 }
 
@@ -652,7 +722,7 @@ const submitAvatar = async () => {
   try {
     avatarLoading.value = true
     const formData = new FormData()
-    formData.append('avatar', uploadFile.value)
+    formData.append('avatarfile', uploadFile.value)
 
     const response = await updateAvatar(formData)
     if (response.code === 200) {
@@ -736,7 +806,101 @@ const handleEmailBind = () => {
 
 // 处理充值
 const handleRecharge = () => {
-  router.push('/recharge')
+  // 检查用户类型，只有type为0的普通用户才能充值
+  const userType = userInfo.value.type || userInfo.value.userType
+  if (userType && userType !== '0' && userType !== 0) {
+    ElMessage.warning('当前用户类型不支持充值功能')
+    return
+  }
+  // 打开充值弹窗
+  rechargeDialogVisible.value = true
+  rechargeForm.amount = 100
+  rechargeForm.paymentType = 1
+}
+
+// 处理充值金额变化
+const handleAmountChange = (value) => {
+  if (value === null || value === undefined) {
+    rechargeForm.amount = 1
+    return
+  }
+  
+  // 计算当前最大可充值金额
+  const currentBalance = parseFloat(userInfo.value.balance || 0)
+  const maxBalance = 30000
+  const maxRecharge = maxBalance - currentBalance
+  
+  if (maxRecharge <= 0) {
+    ElMessage.warning('您的账户余额已达上限' + maxBalance + '元，无法继续充值')
+    rechargeForm.amount = 0
+    return
+  }
+  
+  if (value > maxRecharge) {
+    ElMessage.warning('当前账户余额为' + currentBalance + '元，当前最大充值金额为' + maxRecharge + '元')
+    rechargeForm.amount = maxRecharge
+  } else if (value < 1) {
+    ElMessage.warning('充值金额不能小于1元，已自动调整为最低金额')
+    rechargeForm.amount = 1
+  }
+}
+
+// 充值提交
+const handleRechargeSubmit = async () => {
+  if (!rechargeFormRef.value) return
+
+  try {
+    await rechargeFormRef.value.validate()
+  } catch (err) {
+    return
+  }
+
+  // 再次验证金额范围
+  const currentBalance = parseFloat(userInfo.value.balance || 0)
+  const maxBalance = 30000
+  const maxRecharge = maxBalance - currentBalance
+  
+  if (rechargeForm.amount < 1 || rechargeForm.amount > maxRecharge) {
+    ElMessage.warning('充值金额必须在1-' + maxRecharge + '元之间')
+    return
+  }
+
+  rechargeLoading.value = true
+  try {
+    // 创建充值订单
+    const userId = currentUserId.value
+    const rechargeData = {
+      userId: userId,
+      balance: rechargeForm.amount,
+      paymentType: rechargeForm.paymentType
+    }
+
+    const orderRes = await createRechargeOrder(rechargeData)
+    if (orderRes.code === 200 && orderRes.data) {
+      const orderNo = orderRes.data.orderNo
+
+      // 模拟支付成功（暂时不做验证）
+      const paymentNo = 'PAY' + Date.now()
+      const payRes = await paymentSuccess(orderNo, paymentNo, rechargeForm.paymentType)
+
+      if (payRes.code === 200) {
+        ElMessage.success('充值成功！充值金额：¥' + rechargeForm.amount)
+        rechargeDialogVisible.value = false
+        
+        // 刷新用户信息以更新余额
+        await loadUserInfo()
+      } else {
+        ElMessage.error(payRes.msg || '支付处理失败')
+      }
+    } else {
+      ElMessage.error(orderRes.msg || '创建充值订单失败')
+    }
+  } catch (error) {
+    console.error('充值失败:', error)
+    ElMessage.error('充值失败，请稍后重试')
+  } finally {
+    rechargeLoading.value = false
+  }
 }
 
 // 处理提现
@@ -1528,12 +1692,12 @@ onMounted(() => {
   min-height: 500px;
 }
 
-/* 个人信息卡片样式 */
+/* 个人信息卡片样式 - 淘宝红风格 */
 .profile-card {
   background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  padding: 30px 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  padding: 25px 20px;
   text-align: center;
   height: fit-content;
   position: sticky;
@@ -1541,64 +1705,61 @@ onMounted(() => {
 }
 
 .avatar-section {
-  margin-bottom: 25px;
+  margin-bottom: 20px;
 }
 
 .avatar-wrapper {
   position: relative;
   display: inline-block;
   margin-bottom: 15px;
+  width: 90px;
+  height: 90px;
 }
 
-.avatar-image {
-  width: 100px;
-  height: 100px;
+.user-avatar-img {
+  width: 90px;
+  height: 90px;
   border-radius: 50%;
   object-fit: cover;
   border: 3px solid #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 40px;
-  font-weight: bold;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+  display: block;
 }
 
 .avatar-upload {
   position: absolute;
   bottom: 0;
-  right: 0;
-  background: #409eff;
+  right: -5px;
+  background: linear-gradient(135deg, #ff6034 0%, #ee0a24 100%);
   color: white;
-  border-radius: 20px;
-  padding: 4px 8px;
-  font-size: 12px;
+  border-radius: 15px;
+  padding: 4px 10px;
+  font-size: 11px;
   cursor: pointer;
   transition: all 0.3s;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   white-space: nowrap;
 }
 
 .avatar-upload:hover {
-  background: #66b1ff;
-  transform: translateY(-2px);
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(238, 10, 36, 0.4);
 }
 
 .user-name {
-  margin: 0 0 5px 0;
+  margin: 0 0 6px 0;
   font-size: 18px;
   color: #333;
   font-weight: 600;
 }
 
 .user-role {
-  margin: 0 0 5px 0;
-  font-size: 14px;
-  color: #666;
+  margin: 0 0 4px 0;
+  font-size: 13px;
+  color: #ff6034;
+  font-weight: 500;
 }
 
 .user-id {
@@ -1611,30 +1772,30 @@ onMounted(() => {
 .stats-section {
   display: flex;
   justify-content: space-around;
-  margin: 25px 0;
-  padding: 20px 0;
-  border-top: 1px solid #f0f0f0;
-  border-bottom: 1px solid #f0f0f0;
+  margin: 20px 0;
+  padding: 18px 0;
+  border-top: 1px solid #f5f5f5;
+  border-bottom: 1px solid #f5f5f5;
 }
 
 .stat-item {
   text-align: center;
   cursor: pointer;
   transition: all 0.3s;
-  padding: 5px;
-  border-radius: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
 }
 
 .stat-item:hover {
-  background-color: #f5f7fa;
+  background-color: #fff5f5;
   transform: translateY(-2px);
 }
 
 .stat-value {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: bold;
-  color: #409eff;
-  margin-bottom: 5px;
+  color: #ff6034;
+  margin-bottom: 4px;
 }
 
 .stat-label {
@@ -1644,15 +1805,15 @@ onMounted(() => {
 
 /* 余额样式 */
 .balance-section {
-  margin: 25px 0;
+  margin: 20px 0;
   padding: 20px;
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  border-radius: 8px;
+  background: linear-gradient(135deg, #ff6034 0%, #ee0a24 100%);
+  border-radius: 12px;
   color: white;
 }
 
 .balance-label {
-  font-size: 14px;
+  font-size: 13px;
   margin-bottom: 8px;
   opacity: 0.9;
 }
@@ -1663,17 +1824,15 @@ onMounted(() => {
   margin-bottom: 15px;
 }
 
-.recharge-btn {
+.balance-section .recharge-btn {
   width: 100%;
   background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.4);
   color: white;
-  transition: all 0.3s;
 }
 
-.recharge-btn:hover {
+.balance-section .recharge-btn:hover {
   background: rgba(255, 255, 255, 0.3);
-  transform: translateY(-2px);
 }
 
 /* 快捷操作样式 */
@@ -1681,7 +1840,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin-top: 20px;
+  margin-top: 15px;
 }
 
 .quick-actions .el-button {
@@ -1691,9 +1850,9 @@ onMounted(() => {
 /* 信息编辑区域样式 */
 .info-edit-section {
   background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  padding: 25px;
   min-height: 500px;
 }
 
@@ -1702,15 +1861,30 @@ onMounted(() => {
 }
 
 :deep(.profile-tabs .el-tabs__header) {
-  margin-bottom: 30px;
+  margin-bottom: 25px;
 }
 
 :deep(.profile-tabs .el-tabs__nav-wrap::after) {
   background-color: #f0f0f0;
 }
 
+:deep(.profile-tabs .el-tabs__item) {
+  font-size: 14px;
+}
+
+:deep(.profile-tabs .el-tabs__item.is-active) {
+  color: #ff6034;
+  font-weight: 600;
+}
+
+:deep(.profile-tabs .el-tabs__item:hover) {
+  color: #ff6034;
+}
+
 :deep(.profile-tabs .el-tabs__active-bar) {
-  background: linear-gradient(135deg, #409eff 0%, #66b1ff 100%);
+  background: linear-gradient(135deg, #ff6034 0%, #ee0a24 100%);
+  height: 3px;
+  border-radius: 2px;
 }
 
 .basic-form {
@@ -2027,7 +2201,7 @@ onMounted(() => {
   }
 
   .stat-value {
-    font-size: 20px;
+    font-size: 18px;
   }
 
   .balance-amount {
@@ -2187,30 +2361,39 @@ onMounted(() => {
   margin-right: 0;
 }
 
-/* 按钮样式优化 */
+/* 按钮样式优化 - 淘宝红 */
 :deep(.el-button) {
-  border-radius: 6px;
+  border-radius: 20px;
   transition: all 0.3s;
 }
 
-:deep(.el-button--primary) {
-  background: linear-gradient(135deg, #409eff 0%, #66b1ff 100%);
+:deep(.el-button--danger) {
+  background: linear-gradient(135deg, #ff6034 0%, #ee0a24 100%);
   border: none;
 }
 
-:deep(.el-button--primary:hover) {
+:deep(.el-button--danger:hover) {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(238, 10, 36, 0.3);
 }
 
-:deep(.el-button--success) {
-  background: linear-gradient(135deg, #67c23a 0%, #85ce61 100%);
-  border: none;
+:deep(.el-button--danger.is-plain) {
+  background: transparent;
+  border: 1px solid #ff6034;
+  color: #ff6034;
 }
 
-:deep(.el-button--success:hover) {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(103, 194, 58, 0.3);
+:deep(.el-button--danger.is-plain:hover) {
+  background: #fff5f5;
+}
+
+:deep(.el-button--warning.is-plain) {
+  border: 1px solid #ff9500;
+  color: #ff9500;
+}
+
+:deep(.el-button--warning.is-plain:hover) {
+  background: #fffaf0;
 }
 
 /* 标签样式优化 */
@@ -2674,5 +2857,63 @@ onMounted(() => {
   .hidden-desktop {
     display: none;
   }
+}
+
+/* 充值弹窗样式 */
+.recharge-tips {
+  font-size: 12px;
+  color: #999;
+  margin-top: 5px;
+}
+
+.quick-amount-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.quick-amount-btns .el-button {
+  min-width: 70px;
+}
+
+.payment-radio {
+  margin-right: 20px;
+  margin-bottom: 10px;
+}
+
+.payment-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.payment-icon {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+}
+
+.payment-icon.alipay {
+  background: linear-gradient(135deg, #1677ff 0%, #0958d9 100%);
+}
+
+.payment-icon.wechat {
+  background: linear-gradient(135deg, #07c160 0%, #05a14a 100%);
+}
+
+.payment-icon.bank {
+  background: linear-gradient(135deg, #ff9500 0%, #ff6b00 100%);
+}
+
+.current-balance {
+  font-size: 16px;
+  color: #999;
+}
+
+.after-balance {
+  font-size: 20px;
+  font-weight: bold;
+  color: #ff6034;
 }
 </style>

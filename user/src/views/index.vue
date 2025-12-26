@@ -57,12 +57,12 @@
     <span v-if="orderCount > 0" class="count-badge">{{ formatCount(orderCount) }}</span>
   </router-link>
   
-  <router-link :to="{ path: '/user/favorite/shop' }" class="nav-link">
+  <router-link :to="{ path: '/user/favoriteShop' }" class="nav-link">
     <span class="link-text">收藏店铺</span>
     <span v-if="shopFavoriteCount > 0" class="count-badge">{{ formatCount(shopFavoriteCount) }}</span>
   </router-link>
   
-  <router-link :to="{ path: '/user/favorite/product' }" class="nav-link">
+  <router-link :to="{ path: '/user/favoriteProduct' }" class="nav-link">
     <span class="link-text">收藏商品</span>
     <span v-if="productFavoriteCount > 0" class="count-badge">{{ formatCount(productFavoriteCount) }}</span>
   </router-link>

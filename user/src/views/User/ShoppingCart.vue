@@ -143,6 +143,17 @@
       </div>
     </div>
   </div>
+
+  <!-- 购买弹窗 -->
+  <PurchaseDialog
+    v-model="purchaseDialogVisible"
+    :products="purchaseProducts"
+    :order="purchaseOrder"
+    :need-create-order="false"
+    @pay-later="handlePayLater"
+    @pay-now="handlePayNow"
+    @cancel="purchaseDialogVisible = false"
+  />
 </template>
 
 <script setup>
@@ -153,6 +164,9 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Lock } from '@element-plus/icons-vue'
 import { getProductImageUrl, handleImageError } from '@/utils/image'
 import { listCart, updateCart, delCart, clearCart } from '@/api/system/cart'
+import { createOrderFromCart, payOrder } from '@/api/system/orderInfo'
+import { getMyAddressList } from '@/api/system/address'
+import PurchaseDialog from '@/components/PurchaseDialog/index.vue'
 
 const router = useRouter()
 const store = useStore()
@@ -160,6 +174,11 @@ const loading = ref(false)
 
 // 购物车数据
 const cartItems = ref([])
+
+// 购买弹窗相关
+const purchaseDialogVisible = ref(false)
+const purchaseProducts = ref([])
+const purchaseOrder = ref({})
 
 // 计算属性
 const selectedItems = computed(() => {
@@ -427,18 +446,72 @@ const handleClearCart = async () => {
 }
 
 // 去结算
-const handleCheckout = () => {
+const handleCheckout = async () => {
   if (selectedCount.value === 0) {
     ElMessage.warning('请先选择要结算的商品')
     return
   }
 
-  router.push({
-    path: '/order/confirm',
-    query: {
-      cartItems: JSON.stringify(selectedItems.value)
+  // 获取用户地址列表
+  try {
+    const addressRes = await getMyAddressList()
+    const addressData = addressRes.data || addressRes.rows || []
+    if (addressRes.code === 200 && addressData.length > 0) {
+      // 选择默认地址或第一个地址
+      const defaultAddr = addressData.find(a => a.isDefault === 1 || a.defaultFlag === 1) || addressData[0]
+      
+      // 创建订单 - 使用主键id
+      const orderRes = await createOrderFromCart(defaultAddr.id)
+      
+      if (orderRes.code === 200 && orderRes.data) {
+        // 设置购买弹窗数据
+        purchaseProducts.value = selectedItems.value.map(item => ({
+          name: item.productName,
+          mainImage: item.productMainImage,
+          price: item.productUnitPrice,
+          quantity: item.quantity
+        }))
+        purchaseOrder.value = orderRes.data
+        purchaseDialogVisible.value = true
+      } else {
+        ElMessage.error(orderRes.msg || '创建订单失败')
+      }
+    } else {
+      ElMessage.warning('请先添加收货地址')
+      router.push('/user/profile')
     }
-  })
+  } catch (error) {
+    console.error('结算失败:', error)
+    ElMessage.error(error.message || '结算失败，请稍后重试')
+  }
+}
+
+// 稍后支付
+const handlePayLater = (orderData) => {
+  ElMessage.success('订单已创建，请尽快完成支付')
+  purchaseDialogVisible.value = false
+  // 刷新购物车
+  loadCartData()
+  router.push('/user/orders')
+}
+
+// 立即支付
+const handlePayNow = async (orderData) => {
+  try {
+    const payRes = await payOrder(orderData.orderNo, orderData.paymentType)
+    if (payRes.code === 200) {
+      ElMessage.success('支付成功')
+      purchaseDialogVisible.value = false
+      // 刷新购物车
+      loadCartData()
+      router.push('/user/orders')
+    } else {
+      ElMessage.error(payRes.msg || '支付失败')
+    }
+  } catch (error) {
+    console.error('支付失败:', error)
+    ElMessage.error(error.message || '支付失败，请稍后重试')
+  }
 }
 
 // 添加到收藏

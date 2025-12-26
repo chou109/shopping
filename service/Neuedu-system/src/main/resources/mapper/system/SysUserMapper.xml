@@ -23,7 +23,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="updateBy"     column="update_by"    />
         <result property="updateTime"   column="update_time"  />
         <result property="remark"       column="remark"       />
-		<result property="userType"       column="userType"       />
+        <result property="balance"      column="balance"      />
+        <result property="userType"     column="user_type"    />
         <association property="dept"    column="dept_id" javaType="SysDept" resultMap="deptResult" />
         <collection  property="roles"   javaType="java.util.List"           resultMap="RoleResult" />
     </resultMap>
@@ -206,6 +207,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 	
 	<update id="resetUserPwd" parameterType="SysUser">
  		update sys_user set password = #{password} where user_name = #{userName}
+	</update>
+
+	<update id="updateUserBalance">
+		update sys_user set balance = #{balance}, update_time = sysdate() where user_id = #{userId}
 	</update>
 	
 	<delete id="deleteUserById" parameterType="Long">
