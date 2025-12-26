@@ -54,7 +54,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectShopById" parameterType="Long" resultMap="ShopResult">
         <include refid="selectShopVo"/>
-        and shop.id = #{id}
+        where shop.id = #{id}
     </select>
 
     <!-- 新增：根据用户ID查询店铺 -->

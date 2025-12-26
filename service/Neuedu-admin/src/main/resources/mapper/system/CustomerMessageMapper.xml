@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.neuedu.system.mapper.CustomerMessageMapper">
+    
+    <resultMap type="CustomerMessage" id="CustomerMessageResult">
+        <result property="id"           column="id"             />
+        <result property="sessionId"    column="session_id"     />
+        <result property="senderId"     column="sender_id"      />
+        <result property="senderType"   column="sender_type"    />
+        <result property="senderName"   column="sender_name"    />
+        <result property="senderAvatar" column="sender_avatar"  />
+        <result property="receiverId"   column="receiver_id"    />
+        <result property="receiverType" column="receiver_type"  />
+        <result property="content"      column="content"        />
+        <result property="messageType"  column="message_type"   />
+        <result property="orderId"      column="order_id"       />
+        <result property="productId"    column="product_id"     />
+        <result property="isRead"       column="is_read"        />
+        <result property="readTime"     column="read_time"      />
+        <result property="status"       column="status"         />
+        <result property="createTime"   column="create_time"    />
+        <result property="updateTime"   column="update_time"    />
+    </resultMap>
+
+    <sql id="selectCustomerMessageVo">
+        select id, session_id, sender_id, sender_type, sender_name, sender_avatar, 
+               receiver_id, receiver_type, content, message_type, order_id, product_id, 
+               is_read, read_time, status, create_time, update_time 
+        from customer_message
+    </sql>
+
+    <select id="selectCustomerMessageList" parameterType="CustomerMessage" resultMap="CustomerMessageResult">
+        <include refid="selectCustomerMessageVo"/>
+        <where>
+            <if test="sessionId != null and sessionId != ''"> and session_id = #{sessionId}</if>
+            <if test="senderId != null"> and sender_id = #{senderId}</if>
+            <if test="senderType != null"> and sender_type = #{senderType}</if>
+            <if test="receiverId != null"> and receiver_id = #{receiverId}</if>
+            <if test="receiverType != null"> and receiver_type = #{receiverType}</if>
+            <if test="content != null and content != ''"> and content like concat('%', #{content}, '%')</if>
+            <if test="messageType != null"> and message_type = #{messageType}</if>
+            <if test="isRead != null"> and is_read = #{isRead}</if>
+            <if test="status != null"> and status = #{status}</if>
+        </where>
+        order by create_time asc
+    </select>
+    
+    <select id="selectCustomerMessageById" parameterType="Long" resultMap="CustomerMessageResult">
+        <include refid="selectCustomerMessageVo"/>
+        where id = #{id}
+    </select>
+
+    <!-- 根据会话ID查询消息列表 -->
+    <select id="selectMessagesBySessionId" resultMap="CustomerMessageResult">
+        <include refid="selectCustomerMessageVo"/>
+        where session_id = #{sessionId}
+        <if test="status != null">
+            and status = #{status}
+        </if>
+        order by create_time asc
+    </select>
+
+    <!-- 查询用户的会话列表（去重） -->
+    <select id="selectUserSessionList" resultType="java.util.HashMap">
+        SELECT 
+            session_id as sessionId,
+            MAX(CASE WHEN sender_type = 2 THEN sender_name ELSE NULL END) as adminName,
+            MAX(create_time) as lastMessageTime,
+            (SELECT content FROM customer_message cm2 
+             WHERE cm2.session_id = cm.session_id 
+             ORDER BY create_time DESC LIMIT 1) as lastMessage,
+            SUM(CASE WHEN is_read = 0 AND receiver_type = 1 AND receiver_id = #{userId} THEN 1 ELSE 0 END) as unreadCount
+        FROM customer_message cm
+        WHERE (sender_id = #{userId} AND sender_type = 1) 
+           OR (receiver_id = #{userId} AND receiver_type = 1)
+        GROUP BY session_id
+        ORDER BY lastMessageTime DESC
+    </select>
+
+    <!-- 查询商家收到的会话列表（按接收者ID筛选，只显示发给该商家的消息） -->
+    <select id="selectAdminSessionList" resultType="java.util.HashMap">
+        SELECT 
+            session_id as sessionId,
+            MAX(CASE WHEN sender_type = 1 THEN sender_id ELSE NULL END) as userId,
+            MAX(CASE WHEN sender_type = 1 THEN sender_name ELSE NULL END) as userName,
+            MAX(CASE WHEN sender_type = 1 THEN sender_avatar ELSE NULL END) as userAvatar,
+            MAX(create_time) as lastMessageTime,
+            (SELECT content FROM customer_message cm2 
+             WHERE cm2.session_id = cm.session_id 
+             ORDER BY create_time DESC LIMIT 1) as lastMessage,
+            SUM(CASE WHEN is_read = 0 AND receiver_type = 2 THEN 1 ELSE 0 END) as unreadCount
+        FROM customer_message cm
+        WHERE status = 1
+        <if test="adminId != null">
+            AND (receiver_id = #{adminId} OR session_id LIKE CONCAT('%_TO_', #{adminId}))
+        </if>
+        GROUP BY session_id
+        ORDER BY lastMessageTime DESC
+    </select>
+
+    <!-- 统计用户未读消息数量 -->
+    <select id="countUnreadByUserId" resultType="Long">
+        SELECT COUNT(*) FROM customer_message
+        WHERE receiver_id = #{userId} 
+          AND receiver_type = 1 
+          AND is_read = 0 
+          AND status = 1
+    </select>
+
+    <!-- 统计商家未读消息数量 -->
+    <select id="countUnreadByAdmin" resultType="Long">
+        SELECT COUNT(*) FROM customer_message
+        WHERE receiver_type = 2 
+          AND is_read = 0 
+          AND status = 1
+    </select>
+
+    <!-- 统计会话未读消息数量 -->
+    <select id="countUnreadBySessionId" resultType="Long">
+        SELECT COUNT(*) FROM customer_message
+        WHERE session_id = #{sessionId} 
+          AND receiver_type = #{receiverType}
+          AND is_read = 0 
+          AND status = 1
+    </select>
+
+    <!-- 获取会话的最后一条消息 -->
+    <select id="selectLastMessageBySessionId" resultMap="CustomerMessageResult">
+        <include refid="selectCustomerMessageVo"/>
+        WHERE session_id = #{sessionId} AND status = 1
+        ORDER BY create_time DESC
+        LIMIT 1
+    </select>
+
+    <insert id="insertCustomerMessage" parameterType="CustomerMessage" useGeneratedKeys="true" keyProperty="id">
+        insert into customer_message
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="sessionId != null and sessionId != ''">session_id,</if>
+            <if test="senderId != null">sender_id,</if>
+            <if test="senderType != null">sender_type,</if>
+            <if test="senderName != null">sender_name,</if>
+            <if test="senderAvatar != null">sender_avatar,</if>
+            <if test="receiverId != null">receiver_id,</if>
+            <if test="receiverType != null">receiver_type,</if>
+            <if test="content != null and content != ''">content,</if>
+            <if test="messageType != null">message_type,</if>
+            <if test="orderId != null">order_id,</if>
+            <if test="productId != null">product_id,</if>
+            <if test="isRead != null">is_read,</if>
+            <if test="readTime != null">read_time,</if>
+            <if test="status != null">status,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateTime != null">update_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="sessionId != null and sessionId != ''">#{sessionId},</if>
+            <if test="senderId != null">#{senderId},</if>
+            <if test="senderType != null">#{senderType},</if>
+            <if test="senderName != null">#{senderName},</if>
+            <if test="senderAvatar != null">#{senderAvatar},</if>
+            <if test="receiverId != null">#{receiverId},</if>
+            <if test="receiverType != null">#{receiverType},</if>
+            <if test="content != null and content != ''">#{content},</if>
+            <if test="messageType != null">#{messageType},</if>
+            <if test="orderId != null">#{orderId},</if>
+            <if test="productId != null">#{productId},</if>
+            <if test="isRead != null">#{isRead},</if>
+            <if test="readTime != null">#{readTime},</if>
+            <if test="status != null">#{status},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+        </trim>
+    </insert>
+
+    <update id="updateCustomerMessage" parameterType="CustomerMessage">
+        update customer_message
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="sessionId != null and sessionId != ''">session_id = #{sessionId},</if>
+            <if test="senderId != null">sender_id = #{senderId},</if>
+            <if test="senderType != null">sender_type = #{senderType},</if>
+            <if test="senderName != null">sender_name = #{senderName},</if>
+            <if test="senderAvatar != null">sender_avatar = #{senderAvatar},</if>
+            <if test="receiverId != null">receiver_id = #{receiverId},</if>
+            <if test="receiverType != null">receiver_type = #{receiverType},</if>
+            <if test="content != null and content != ''">content = #{content},</if>
+            <if test="messageType != null">message_type = #{messageType},</if>
+            <if test="orderId != null">order_id = #{orderId},</if>
+            <if test="productId != null">product_id = #{productId},</if>
+            <if test="isRead != null">is_read = #{isRead},</if>
+            <if test="readTime != null">read_time = #{readTime},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <!-- 标记消息为已读 -->
+    <update id="markAsRead">
+        UPDATE customer_message
+        SET is_read = 1, read_time = NOW(), update_time = NOW()
+        WHERE session_id = #{sessionId} 
+          AND receiver_type = #{receiverType}
+          AND is_read = 0
+    </update>
+
+    <!-- 标记单条消息为已读 -->
+    <update id="markMessageAsRead">
+        UPDATE customer_message
+        SET is_read = 1, read_time = NOW(), update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteCustomerMessageById" parameterType="Long">
+        delete from customer_message where id = #{id}
+    </delete>
+
+    <delete id="deleteCustomerMessageByIds" parameterType="String">
+        delete from customer_message where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

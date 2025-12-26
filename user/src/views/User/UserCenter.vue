@@ -17,7 +17,9 @@
         </div>
         <div class="header-actions">
           <div class="action-btn" @click="$router.push('/')">
-            <el-icon><HomeFilled /></el-icon>
+            <el-icon>
+              <HomeFilled />
+            </el-icon>
             <span>返回首页</span>
           </div>
         </div>
@@ -30,12 +32,8 @@
       <div class="user-sidebar">
         <nav class="sidebar-nav">
           <ul>
-            <li 
-              v-for="item in navItems" 
-              :key="item.key"
-              :class="{ active: activeNav === item.key }"
-              @click="switchNav(item)"
-            >
+            <li v-for="item in navItems" :key="item.key" :class="{ active: activeNav === item.key }"
+              @click="switchNav(item)">
               <el-icon class="nav-icon">
                 <component :is="item.icon" />
               </el-icon>
@@ -54,11 +52,7 @@
           <h2>{{ pageTitle }}</h2>
           <div class="page-subtitle">{{ pageSubtitle }}</div>
         </div>
-        <component 
-          :is="currentComponent" 
-          :key="activeNav"
-          v-bind="componentProps"
-        />
+        <component :is="currentComponent" :key="activeNav" v-bind="componentProps" />
       </div>
     </div>
   </div>
@@ -69,7 +63,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useStore } from 'vuex'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { 
+import {
   User, List, ShoppingCart, Clock, Shop, Star, ChatDotRound, HomeFilled
 } from '@element-plus/icons-vue'
 import { getUsers } from '@/api/system/user'
@@ -83,7 +77,6 @@ import UserFootprint from '@/views/user/UserFootprint.vue'
 import FavoriteShops from '@/views/user/FavoriteShops.vue'
 import FavoriteProducts from '@/views/user/FavoriteProducts.vue'
 import UserReviews from '@/views/user/UserReviews.vue'
-
 const props = defineProps({
   page: { type: String, default: 'profile' },
   query: { type: Object, default: () => ({}) }
@@ -145,8 +138,8 @@ const pageConfig = {
   orders: { title: '我的订单', subtitle: '查看和管理您的所有订单' },
   cart: { title: '购物车', subtitle: '查看和管理购物车中的商品' },
   footprint: { title: '我的足迹', subtitle: '查看您浏览过的商品记录' },
-  favoriteShop: { title: '收藏店铺', subtitle: '查看您收藏的店铺' }, 
-  favoriteProduct: { title: '收藏商品', subtitle: '查看您收藏的商品' }, 
+  favoriteShop: { title: '收藏店铺', subtitle: '查看您收藏的店铺' },
+  favoriteProduct: { title: '收藏商品', subtitle: '查看您收藏的商品' },
   review: { title: '我的评价', subtitle: '查看和管理您的评价' }
 }
 
@@ -169,7 +162,7 @@ const pageSubtitle = computed(() => pageConfig[activeNav.value]?.subtitle || '')
 const currentComponent = computed(() => {
   const map = {
     'profile': UserProfile, 'orders': UserOrders, 'cart': ShoppingCartPage,
-    'footprint': UserFootprint, 'favoriteShop': FavoriteShops, 
+    'footprint': UserFootprint, 'favoriteShop': FavoriteShops,
     'favoriteProduct': FavoriteProducts,
   }
   return map[activeNav.value] || UserProfile
@@ -240,7 +233,7 @@ watch(() => props.page, (newPage) => {
   width: 70px;
   height: 70px;
   border-radius: 50%;
-  border: 3px solid rgba(255,255,255,0.9);
+  border: 3px solid rgba(255, 255, 255, 0.9);
   object-fit: cover;
   display: block;
 }
@@ -251,7 +244,7 @@ watch(() => props.page, (newPage) => {
   left: 0;
   right: 0;
   height: 24px;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0, 0, 0, 0.5);
   border-radius: 0 0 35px 35px;
   display: flex;
   align-items: center;
@@ -291,7 +284,7 @@ watch(() => props.page, (newPage) => {
   align-items: center;
   gap: 5px;
   padding: 8px 16px;
-  background: rgba(255,255,255,0.2);
+  background: rgba(255, 255, 255, 0.2);
   border-radius: 20px;
   color: white;
   cursor: pointer;
@@ -300,7 +293,7 @@ watch(() => props.page, (newPage) => {
 }
 
 .action-btn:hover {
-  background: rgba(255,255,255,0.3);
+  background: rgba(255, 255, 255, 0.3);
 }
 
 /* 主体内容 */
@@ -316,7 +309,7 @@ watch(() => props.page, (newPage) => {
   width: 220px;
   background: white;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   height: fit-content;
   flex-shrink: 0;
 }
@@ -376,7 +369,7 @@ watch(() => props.page, (newPage) => {
   flex: 1;
   background: white;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   padding: 25px;
   min-width: 0;
 }
@@ -405,34 +398,35 @@ watch(() => props.page, (newPage) => {
     gap: 15px;
     text-align: center;
   }
-  
+
   .user-info-section {
     flex-direction: column;
   }
-  
-  .avatar-box, .header-avatar {
+
+  .avatar-box,
+  .header-avatar {
     width: 60px;
     height: 60px;
   }
-  
+
   .user-nickname {
     font-size: 18px;
   }
-  
+
   .user-main {
     flex-direction: column;
   }
-  
+
   .user-sidebar {
     width: 100%;
   }
-  
+
   .sidebar-nav ul {
     display: flex;
     overflow-x: auto;
     padding: 10px;
   }
-  
+
   .sidebar-nav li {
     flex: 0 0 auto;
     white-space: nowrap;
@@ -440,12 +434,12 @@ watch(() => props.page, (newPage) => {
     border-bottom: 3px solid transparent;
     padding: 10px 15px;
   }
-  
+
   .sidebar-nav li.active {
     border-left: none;
     border-bottom-color: #ee0a24;
   }
-  
+
   .user-content {
     padding: 15px;
   }

@@ -1,6 +1,8 @@
 package com.neuedu.system.controller;
 
 import java.util.List;
+
+import com.neuedu.common.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -40,7 +42,22 @@ public class ProductController extends BaseController
     public TableDataInfo list(Product product)
     {
         startPage();
+        
+        // 获取当前登录用户ID
+        Long currentUserId = getUserId();
+        System.out.println("当前登录用户ID: " + currentUserId);
+
+        // 如果不是超级管理员(ID=1),则只查询该用户的商品
+        if (currentUserId != null && currentUserId != 1L) {
+            product.setCreateUser(currentUserId);
+            System.out.println("设置查询条件 shopId: " + currentUserId);
+        } else {
+            System.out.println("超级管理员登录,查询所有商品");
+        }
+        
         List<Product> list = productService.selectProductList(product);
+        System.out.println("查询到的商品数量: " + (list != null ? list.size() : 0));
+        
         return getDataTable(list);
     }
 

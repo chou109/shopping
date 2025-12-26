@@ -49,7 +49,7 @@ export const constantRoutes = [
       }
     ]
   },
-    // AI客服聊天页面
+  // AI客服聊天页面
   {
     path: '/chat',
     component: Layout,
@@ -58,9 +58,26 @@ export const constantRoutes = [
         path: '',
         name: 'Chat',
         component: () => import('@/views/chat/index.vue'),
-        meta: { 
+        meta: {
           title: 'AI客服',
           icon: 'chat-dot-round',
+          requiresAuth: true
+        }
+      }
+    ]
+  },
+  // 人工客服页面
+  {
+    path: '/customer-service',
+    component: Layout,
+    children: [
+      {
+        path: '',
+        name: 'CustomerService',
+        component: () => import('@/views/message/CustomerService.vue'),
+        meta: {
+          title: '人工客服',
+          icon: 'service',
           requiresAuth: true
         }
       }
@@ -71,16 +88,16 @@ export const constantRoutes = [
     path: '/user/:page?',
     component: Layout,
     meta: { requiresAuth: true },
-    props: (route) => ({ 
+    props: (route) => ({
       page: route.params.page || 'profile',
-      query: route.query 
+      query: route.query
     }),
     children: [
       {
         path: '',
         name: 'UserCenter',
         component: () => import('@/views/user/UserCenter.vue'),
-        meta: { 
+        meta: {
           title: '用户中心',
           pageTitles: {
             profile: '个人中心',

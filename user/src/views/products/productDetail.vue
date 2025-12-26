@@ -32,9 +32,6 @@ import {
 } from '@/api/system/productComment'
 import { getProductImageUrl, handleImageError } from '@/utils/image'
 import { listFootprintByUser, deleteFootprint, recordFootprint } from '@/api/system/footprint'
-import { createDirectOrder, payOrder } from '@/api/system/orderInfo'
-import { getMyAddressList } from '@/api/system/address'
-import PurchaseDialog from '@/components/PurchaseDialog/index.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -57,6 +54,7 @@ const product = ref({
 // 店铺信息
 const shopInfo = ref({
   id: 0,
+  userId: 0, // 店铺主人ID，用于发送消息
   shopName: '',
   shopLogo: '',
   shopBanner: '',
@@ -103,13 +101,6 @@ const productSpecs = ref([
   { name: '尺寸', options: ['S', 'M', 'L', 'XL'] },
   { name: '版本', options: ['标准版', '旗舰版', '尊享版'] }
 ])
-
-// 购买弹窗相关
-const purchaseDialogVisible = ref(false)
-const purchaseProducts = ref([])
-const purchaseOrder = ref({})
-const addressList = ref([])
-const selectedAddressId = ref(null)
 
 // 加载商品数据
 const loadProductData = async () => {
@@ -162,6 +153,7 @@ const loadShopInfo = async (shopId) => {
     if (response.code === 200 && response.data) {
       shopInfo.value = {
         id: response.data.id || response.data.shopId || 0,
+        userId: response.data.userId || 0, // 店铺主人ID
         shopName: response.data.shopName || response.data.name || '官方旗舰店',
         shopLogo: response.data.shopLogo || response.data.logo || '',
         shopBanner: response.data.shopBanner || response.data.banner || '',
@@ -177,6 +169,7 @@ const loadShopInfo = async (shopId) => {
     } else {
       shopInfo.value = {
         id: shopId,
+        userId: 0, // 店铺主人ID
         shopName: '官方旗舰店',
         shopLogo: '',
         shopBanner: '',
@@ -194,6 +187,7 @@ const loadShopInfo = async (shopId) => {
     console.error('加载店铺信息失败:', error)
     shopInfo.value = {
       id: shopId,
+      userId: 0, // 店铺主人ID
       shopName: '官方旗舰店',
       shopLogo: '',
       shopBanner: '',
@@ -207,6 +201,31 @@ const loadShopInfo = async (shopId) => {
       status: 1
     }
   }
+}
+
+// 跳转到店铺页面
+const goToShopPage = () => {
+  if (shopInfo.value.id) {
+    router.push({
+      path: '/shop',
+      query: { id: shopInfo.value.id }
+    })
+  }
+}
+
+// 联系客服（跳转到人工客服页面，传递店铺主人ID）
+const contactCustomerService = () => {
+  // 获取店铺主人ID作为消息接收者
+  const receiverId = shopInfo.value.userId || 0
+  console.log('联系客服 - 店铺主人ID:', receiverId, 'shopInfo:', shopInfo.value)
+  router.push({
+    path: '/customer-service',
+    query: {
+      shopId: shopInfo.value.id,
+      receiverId: receiverId,
+      shopName: shopInfo.value.shopName
+    }
+  })
 }
 
 // 加载商品评价
@@ -228,42 +247,10 @@ const loadProductComments = async () => {
         comments = response
       }
 
-      // 转换后端返回的数据格式为前端需要的格式
-      productComments.value = comments.map(comment => ({
-        commentId: comment.id || comment.commentId,
-        productId: product.value.id,
-        userId: comment.userId,
-        parentId: comment.parentId || 0,
-        nickName: comment.userName || '匿名用户',
-        avatar: comment.userAvatar || '/src/assets/images/default-avatar.png',
-        content: comment.content,
-        score: comment.score || 0,
-        images: comment.images ? (Array.isArray(comment.images) ? comment.images : []) : [],
-        likeCount: comment.likeCount || 0,
-        replyCount: comment.children ? comment.children.length : 0,
-        createTime: comment.createTime,
-        isAnonymous: 0,
-        children: comment.children ? comment.children.map(reply => ({
-          commentId: reply.id || reply.commentId,
-          productId: product.value.id,
-          userId: reply.userId,
-          parentId: comment.id || comment.commentId,
-          nickName: reply.userName || '匿名用户',
-          avatar: reply.userAvatar || '/src/assets/images/default-avatar.png',
-          content: reply.content,
-          score: 0,
-          images: reply.images ? (Array.isArray(reply.images) ? reply.images : []) : [],
-          likeCount: reply.likeCount || 0,
-          replyCount: reply.children ? reply.children.length : 0,
-          createTime: reply.createTime,
-          isAnonymous: 0,
-          children: reply.children || []
-        })) : []
-      }))
-      commentPageParams.value.total = productComments.value.length
+      productComments.value = comments
+      commentPageParams.value.total = response.total || comments.length
 
-      // 如果没有评论,使用模拟数据
-      if (productComments.value.length === 0) {
+      if (comments.length === 0) {
         productComments.value = getMockComments()
         commentPageParams.value.total = productComments.value.length
       }
@@ -626,74 +613,24 @@ const handleAddToCart = async () => {
 }
 
 // 立即购买
-const handleBuyNow = async () => {
+const handleBuyNow = () => {
   if (!product.value.id) {
     ElMessage.warning('商品信息不完整')
     return
   }
 
-  // 获取用户地址列表
-  try {
-    const addressRes = await getMyAddressList()
-    const addressData = addressRes.data || addressRes.rows || []
-    if (addressRes.code === 200 && addressData.length > 0) {
-      addressList.value = addressData
-      // 选择默认地址或第一个地址
-      const defaultAddr = addressData.find(a => a.isDefault === 1 || a.defaultFlag === 1) || addressData[0]
-      selectedAddressId.value = defaultAddr.id
-      
-      // 创建订单 - 使用主键id
-      const orderRes = await createDirectOrder({
-        productId: product.value.id,
-        quantity: quantity.value,
-        addressId: defaultAddr.id
-      })
-      
-      if (orderRes.code === 200 && orderRes.data) {
-        // 设置购买弹窗数据
-        purchaseProducts.value = [{
-          name: product.value.name,
-          mainImage: product.value.mainImage,
-          price: product.value.price,
-          quantity: quantity.value
-        }]
-        purchaseOrder.value = orderRes.data
-        purchaseDialogVisible.value = true
-      } else {
-        ElMessage.error(orderRes.msg || '创建订单失败')
-      }
-    } else {
-      ElMessage.warning('请先添加收货地址')
-      router.push('/user/profile')
-    }
-  } catch (error) {
-    console.error('购买失败:', error)
-    ElMessage.error(error.message || '购买失败，请稍后重试')
+  const orderData = {
+    productId: product.value.id,
+    quantity: quantity.value,
+    productName: product.value.name,
+    price: product.value.price,
+    mainImage: product.value.mainImage
   }
-}
 
-// 稍后支付
-const handlePayLater = (orderData) => {
-  ElMessage.success('订单已创建，请尽快完成支付')
-  purchaseDialogVisible.value = false
-  router.push('/user/orders')
-}
-
-// 立即支付
-const handlePayNow = async (orderData) => {
-  try {
-    const payRes = await payOrder(orderData.orderNo, orderData.paymentType)
-    if (payRes.code === 200) {
-      ElMessage.success('支付成功')
-      purchaseDialogVisible.value = false
-      router.push('/user/orders')
-    } else {
-      ElMessage.error(payRes.msg || '支付失败')
-    }
-  } catch (error) {
-    console.error('支付失败:', error)
-    ElMessage.error(error.message || '支付失败，请稍后重试')
-  }
+  router.push({
+    path: '/order/confirm',
+    query: orderData
+  })
 }
 
 // 收藏商品
@@ -791,8 +728,8 @@ onMounted(() => {
               <div class="shop-card">
                 <div class="shop-header">
                   <div class="shop-logo">
-                    <img :src="getProductImageUrl(shopInfo.shopLogo) || '/src/assets/images/default-shop.png'"
-                      :alt="shopInfo.shopName" @error="handleImageError" />
+                    <img :src="shopInfo.shopLogo || '/src/assets/images/default-shop.png'" :alt="shopInfo.shopName"
+                      @error="handleImageError" />
                   </div>
                   <div class="shop-info">
                     <div class="shop-name">{{ shopInfo.shopName }}</div>
@@ -872,7 +809,7 @@ onMounted(() => {
                         <div class="comment-item">
                           <!-- 评论内容 -->
                           <div class="comment-header">
-                            <img :src="getProductImageUrl(comment.avatar)" :alt="comment.nickName" class="user-avatar"
+                            <img :src="comment.avatar" :alt="comment.nickName" class="user-avatar"
                               @error="handleImageError" />
                             <div class="user-info">
                               <div class="user-name">{{ comment.isAnonymous ? '匿名用户' : comment.nickName }}</div>
@@ -900,7 +837,7 @@ onMounted(() => {
                           <div v-if="comment.children && comment.children.length > 0" class="comment-replies">
                             <div v-for="reply in comment.children" :key="reply.commentId" class="reply-item">
                               <div class="reply-header">
-                                <img :src="getProductImageUrl(reply.avatar)" :alt="reply.nickName" class="reply-avatar"
+                                <img :src="reply.avatar" :alt="reply.nickName" class="reply-avatar"
                                   @error="handleImageError" />
                                 <div class="reply-user-info">
                                   <div class="reply-user-name">
@@ -1077,17 +1014,6 @@ onMounted(() => {
       </div>
     </div>
   </div>
-
-  <!-- 购买弹窗 -->
-  <PurchaseDialog
-    v-model="purchaseDialogVisible"
-    :products="purchaseProducts"
-    :order="purchaseOrder"
-    :need-create-order="false"
-    @pay-later="handlePayLater"
-    @pay-now="handlePayNow"
-    @cancel="purchaseDialogVisible = false"
-  />
 </template>
 
 <style scoped>
@@ -1526,70 +1452,6 @@ onMounted(() => {
   border: 1px solid #e5e5e5;
   border-radius: 8px;
   background: #fff;
-}
-
-.comment-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.user-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  object-fit: cover;
-  flex-shrink: 0;
-}
-
-.user-info {
-  flex: 1;
-}
-
-.user-name {
-  font-size: 14px;
-  font-weight: 500;
-  color: #333;
-  margin-bottom: 4px;
-}
-
-.comment-time {
-  font-size: 12px;
-  color: #999;
-}
-
-.comment-rating {
-  margin-bottom: 12px;
-}
-
-.comment-content {
-  font-size: 14px;
-  color: #333;
-  line-height: 1.6;
-  margin-bottom: 12px;
-}
-
-.comment-images {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 12px;
-}
-
-.comment-image {
-  width: 80px;
-  height: 80px;
-  border-radius: 4px;
-  overflow: hidden;
-  border: 1px solid #e5e5e5;
-  cursor: pointer;
-}
-
-.comment-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
 }
 
 /* 在 style 部分添加以下样式 */

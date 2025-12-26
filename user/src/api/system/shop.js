@@ -1,9 +1,9 @@
 import request from '@/utils/request'
 
-// 获取店铺信息
+// 获取店铺信息（公开接口，无需权限）
 export function getShopInfo(id) {
   return request({
-    url: `/system/shop/${id}`,
+    url: `/system/shop/public/${id}`,
     method: 'get'
   })
 }
