@@ -87,8 +87,8 @@ export const constantRoutes = [
             orders: '我的订单',
             cart: '购物车',
             footprint: '我的足迹',
-            'favorite/shop': '收藏店铺',
-            'favorite/product': '收藏商品',
+            favoriteShop: '收藏店铺',
+            favoriteProduct: '收藏商品',
             review: '我的评价',
           }
         }

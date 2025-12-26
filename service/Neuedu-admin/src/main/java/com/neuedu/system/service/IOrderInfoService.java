@@ -59,6 +59,17 @@ public interface IOrderInfoService extends IService<OrderInfo>
     public OrderInfo createOrderFromCart(Long userId, Long addressId);
 
     /**
+     * 直接购买创建订单（单个商品）
+     *
+     * @param userId 用户ID
+     * @param productId 商品ID
+     * @param quantity 数量
+     * @param addressId 地址ID
+     * @return 订单信息
+     */
+    public OrderInfo createDirectOrder(Long userId, Long productId, Integer quantity, Long addressId);
+
+    /**
      * 支付订单
      *
      * @param orderNo 订单编号

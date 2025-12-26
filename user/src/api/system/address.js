@@ -9,6 +9,14 @@ export function listAddress(query) {
   })
 }
 
+// 获取当前用户的地址列表
+export function getMyAddressList() {
+  return request({
+    url: '/system/address/my',
+    method: 'get'
+  })
+}
+
 // 查询用户地址详细
 export function getAddress(id) {
   return request({

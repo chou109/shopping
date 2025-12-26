@@ -1,16 +1,28 @@
 <template>
   <div class="user-center">
-    <!-- 顶部导航栏 -->
-    <header class="user-header">
-      <div class="header-content">
-        <div class="logo" @click="$router.push('/')">
-          <span class="brand-name">ESHOP</span>
+    <!-- 顶部用户信息卡片 -->
+    <div class="user-header-card">
+      <div class="header-card-content">
+        <div class="user-info-section">
+          <div class="avatar-box" @click="goToProfile">
+            <img :src="avatarUrl" alt="头像" class="header-avatar" />
+            <div class="avatar-overlay">
+              <span>个人中心</span>
+            </div>
+          </div>
+          <div class="user-text">
+            <div class="user-nickname">{{ userInfo.name || '用户' }}</div>
+            <div class="user-id">ID: {{ userInfo.userId || '--' }}</div>
+          </div>
         </div>
-        <div class="user-welcome">
-          欢迎回来，{{ userInfo.name || '用户' }}
+        <div class="header-actions">
+          <div class="action-btn" @click="$router.push('/')">
+            <el-icon><HomeFilled /></el-icon>
+            <span>返回首页</span>
+          </div>
         </div>
       </div>
-    </header>
+    </div>
 
     <!-- 主体内容 -->
     <div class="user-main">
@@ -28,7 +40,6 @@
                 <component :is="item.icon" />
               </el-icon>
               <span class="nav-text">{{ item.text }}</span>
-              <!-- 数量徽章 -->
               <span v-if="getBadgeCount(item.key)" class="sidebar-badge">
                 {{ formatCount(getBadgeCount(item.key)) }}
               </span>
@@ -57,15 +68,12 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useStore } from 'vuex'
 import { useRoute, useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import { 
-  User, 
-  List, 
-  ShoppingCart, 
-  Clock, 
-  Shop, 
-  Star, 
-  ChatDotRound 
+  User, List, ShoppingCart, Clock, Shop, Star, ChatDotRound, HomeFilled
 } from '@element-plus/icons-vue'
+import { getUsers } from '@/api/system/user'
+import { getProductImageUrl } from '@/utils/image'
 
 // 导入各个功能组件
 import UserProfile from '@/views/user/UserProfile.vue'
@@ -76,16 +84,9 @@ import FavoriteShops from '@/views/user/FavoriteShops.vue'
 import FavoriteProducts from '@/views/user/FavoriteProducts.vue'
 import UserReviews from '@/views/user/UserReviews.vue'
 
-// 定义 props
 const props = defineProps({
-  page: {
-    type: String,
-    default: 'profile'
-  },
-  query: {
-    type: Object,
-    default: () => ({})
-  }
+  page: { type: String, default: 'profile' },
+  query: { type: Object, default: () => ({}) }
 })
 
 const store = useStore()
@@ -93,211 +94,112 @@ const route = useRoute()
 const router = useRouter()
 
 // 用户信息
-const userInfo = computed(() => {
-  if (store.state.user && store.state.user.name) {
-    return {
-      name: store.state.user.name
-    }
-  } else {
-    const userInfoStr = localStorage.getItem('userInfo')
-    if (userInfoStr) {
-      try {
-        const user = JSON.parse(userInfoStr)
-        return {
-          name: user.name || user.userName || user.username || ''
-        }
-      } catch (e) {
-        console.error('解析用户信息失败:', e)
-        return {}
-      }
-    }
-  }
-  return {}
+const userInfo = ref({
+  userId: null, userName: '', name: '', nickName: '', avatar: '', email: '', phonenumber: '', sex: ''
 })
 
-// 页面标题配置
+// 头像点击跳转到个人中心
+const goToProfile = () => {
+  if (activeNav.value !== 'profile') {
+    activeNav.value = 'profile'
+    router.push({ path: '/user/profile' })
+  }
+}
+
+const avatarUrl = computed(() => {
+  if (userInfo.value.avatar) {
+    return getProductImageUrl(userInfo.value.avatar)
+  }
+  return '/src/assets/images/default-avatar.png'
+})
+
+const loadUserInfo = async () => {
+  try {
+    const response = await getUsers()
+    if (response.code === 200) {
+      const userData = response.data
+      userInfo.value = {
+        userId: userData.userId,
+        userName: userData.userName,
+        name: userData.nickName || userData.userName,
+        nickName: userData.nickName,
+        avatar: userData.avatar,
+        email: userData.email,
+        phonenumber: userData.phonenumber,
+        sex: userData.sex
+      }
+      store.commit('SET_NAME', userData.userName)
+      store.commit('SET_AVATAR', userData.avatar)
+      store.commit('SET_USERID', userData.userId)
+      store.commit('SET_REALNAME', userData.nickName)
+    }
+  } catch (error) {
+    console.error('加载用户信息失败:', error)
+  }
+}
+
+
+// 页面配置
 const pageConfig = {
   profile: { title: '个人中心', subtitle: '管理您的个人信息和账户设置' },
   orders: { title: '我的订单', subtitle: '查看和管理您的所有订单' },
   cart: { title: '购物车', subtitle: '查看和管理购物车中的商品' },
   footprint: { title: '我的足迹', subtitle: '查看您浏览过的商品记录' },
-  'favorite/shop': { title: '收藏店铺', subtitle: '查看您收藏的店铺' },
-  'favorite/product': { title: '收藏商品', subtitle: '查看您收藏的商品' },
+  favoriteShop: { title: '收藏店铺', subtitle: '查看您收藏的店铺' }, 
+  favoriteProduct: { title: '收藏商品', subtitle: '查看您收藏的商品' }, 
   review: { title: '我的评价', subtitle: '查看和管理您的评价' }
 }
 
-// 导航菜单项
 const navItems = [
-  { 
-    key: 'profile', 
-    text: '个人主页', 
-    icon: User, 
-    route: '/user/profile',
-    badgeKey: null
-  },
-  { 
-    key: 'orders', 
-    text: '我的订单', 
-    icon: List, 
-    route: '/user/orders',
-    badgeKey: 'orderCount'
-  },
-  { 
-    key: 'cart', 
-    text: '购物车', 
-    icon: ShoppingCart, 
-    route: '/user/cart',
-    badgeKey: 'cartCount'
-  },
-  { 
-    key: 'footprint', 
-    text: '我的足迹', 
-    icon: Clock, 
-    route: '/user/footprint',
-    badgeKey: null
-  },
-  { 
-    key: 'favorite/shop', 
-    text: '收藏店铺', 
-    icon: Shop, 
-    route: '/user/favorite/shop',
-    badgeKey: 'shopFavoriteCount'
-  },
-  { 
-    key: 'favorite/product', 
-    text: '收藏商品', 
-    icon: Star, 
-    route: '/user/favorite/product',
-    badgeKey: 'productFavoriteCount'
-  },
-  { 
-    key: 'review', 
-    text: '我的评价', 
-    icon: ChatDotRound, 
-    route: '/user/review',
-    badgeKey: 'reviewCount'
-  }
+  { key: 'profile', text: '个人主页', icon: User, route: '/user/profile', badgeKey: null },
+  { key: 'orders', text: '我的订单', icon: List, route: '/user/orders', badgeKey: 'orderCount' },
+  { key: 'cart', text: '购物车', icon: ShoppingCart, route: '/user/cart', badgeKey: 'cartCount' },
+  { key: 'footprint', text: '我的足迹', icon: Clock, route: '/user/footprint', badgeKey: null },
+  { key: 'favoriteShop', text: '收藏店铺', icon: Shop, route: '/user/favoriteShop', badgeKey: 'shopFavoriteCount' },
+  { key: 'favoriteProduct', text: '收藏商品', icon: Star, route: '/user/favoriteProduct', badgeKey: 'productFavoriteCount' },
+  { key: 'review', text: '我的评价', icon: ChatDotRound, route: '/user/review', badgeKey: 'reviewCount' }
 ]
 
-// 响应式数据
 const activeNav = ref(props.page)
-const badgeCounts = ref({
-  cartCount: 0,
-  orderCount: 0,
-  productFavoriteCount: 0,
-  shopFavoriteCount: 0,
-  reviewCount: 0
-})
+const badgeCounts = ref({ cartCount: 0, orderCount: 0, productFavoriteCount: 0, shopFavoriteCount: 0, reviewCount: 0 })
 
-// 计算属性
-const pageTitle = computed(() => {
-  return pageConfig[activeNav.value]?.title || '用户中心'
-})
-
-const pageSubtitle = computed(() => {
-  return pageConfig[activeNav.value]?.subtitle || '管理您的账户和购物信息'
-})
+const pageTitle = computed(() => pageConfig[activeNav.value]?.title || '用户中心')
+const pageSubtitle = computed(() => pageConfig[activeNav.value]?.subtitle || '')
 
 const currentComponent = computed(() => {
-  const componentMap = {
-    'profile': UserProfile,
-    'orders': UserOrders,
-    'cart': ShoppingCartPage,
-    'footprint': UserFootprint,
-    'favorite/shop': FavoriteShops,
-    'favorite/product': FavoriteProducts,
-    'review': UserReviews
+  const map = {
+    'profile': UserProfile, 'orders': UserOrders, 'cart': ShoppingCartPage,
+    'footprint': UserFootprint, 'favoriteShop': FavoriteShops, 
+    'favoriteProduct': FavoriteProducts,
   }
-  return componentMap[activeNav.value] || UserProfile
+  return map[activeNav.value] || UserProfile
 })
 
 const componentProps = computed(() => {
-  // 可以根据不同的组件传递不同的 props
-  const propsMap = {
-    'orders': { query: props.query },
-    'cart': { query: props.query },
-    // 其他组件的 props
-  }
-  return propsMap[activeNav.value] || {}
+  const map = { 'orders': { query: props.query }, 'cart': { query: props.query } }
+  return map[activeNav.value] || {}
 })
 
-// 方法
 const switchNav = (navItem) => {
   if (activeNav.value === navItem.key) return
-  
   activeNav.value = navItem.key
-  
-  // 更新 URL 但不触发路由跳转（因为已经是 /user/:page 路由）
-  router.push({ 
-    path: navItem.route,
-    query: {} // 清空查询参数
-  })
+  router.push({ path: navItem.route, query: {} })
 }
 
-const formatCount = (count) => {
-  if (count > 99) return '99+'
-  return count.toString()
-}
-
+const formatCount = (count) => count > 99 ? '99+' : count.toString()
 const getBadgeCount = (navKey) => {
-  const navItem = navItems.find(item => item.key === navKey)
-  if (navItem?.badgeKey) {
-    return badgeCounts.value[navItem.badgeKey] || 0
-  }
-  return 0
+  const item = navItems.find(i => i.key === navKey)
+  return item?.badgeKey ? (badgeCounts.value[item.badgeKey] || 0) : 0
 }
 
-// 加载徽章数量
-const loadBadgeCounts = async () => {
-  try {
-    // 模拟 API 调用
-    badgeCounts.value = {
-      cartCount: 3,
-      orderCount: 5,
-      productFavoriteCount: 12,
-      shopFavoriteCount: 3,
-      reviewCount: 7
-    }
-  } catch (error) {
-    console.error('加载徽章数量失败:', error)
-  }
-}
-
-// 生命周期
-onMounted(() => {
-  // 检查用户登录状态
-  if (!userInfo.value.name) {
-    router.push('/login')
-    return
-  }
-  
-  // 加载徽章数据
-  loadBadgeCounts()
-  
-  console.log('用户中心初始化，页面参数:', props.page)
+onMounted(async () => {
+  await loadUserInfo()
+  if (!userInfo.value.name) { router.push('/login'); return }
 })
 
-// 监听路由参数变化
-watch(
-  () => props.page,
-  (newPage) => {
-    console.log('页面参数变化:', newPage)
-    if (newPage && newPage !== activeNav.value) {
-      activeNav.value = newPage
-    }
-  },
-  { immediate: true }
-)
-
-// 监听 route.query 变化（用于处理从外部带参数跳转）
-watch(
-  () => route.query,
-  (newQuery) => {
-    console.log('查询参数变化:', newQuery)
-    // 可以根据查询参数执行特定操作
-  },
-  { immediate: true }
-)
+watch(() => props.page, (newPage) => {
+  if (newPage && newPage !== activeNav.value) activeNav.value = newPage
+}, { immediate: true })
 </script>
 
 <style scoped>
@@ -306,84 +208,145 @@ watch(
   background-color: #f5f5f5;
 }
 
-.user-header {
-  background: white;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-  padding: 0 20px;
+/* 顶部用户卡片 */
+.user-header-card {
+  background: linear-gradient(135deg, #ff6034 0%, #ee0a24 100%);
+  padding: 30px 20px;
 }
 
-.header-content {
-  max-width: 1500px;
+.header-card-content {
+  max-width: 1200px;
   margin: 0 auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: 70px;
 }
 
-.logo {
+.user-info-section {
   display: flex;
   align-items: center;
+  gap: 20px;
+}
+
+.avatar-box {
+  position: relative;
+  width: 70px;
+  height: 70px;
   cursor: pointer;
+  flex-shrink: 0;
+}
+
+.header-avatar {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  border: 3px solid rgba(255,255,255,0.9);
+  object-fit: cover;
+  display: block;
+}
+
+.avatar-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 24px;
+  background: rgba(0,0,0,0.5);
+  border-radius: 0 0 35px 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 12px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.avatar-box:hover .avatar-overlay {
+  opacity: 1;
+}
+
+.user-text {
+  color: white;
+}
+
+.user-nickname {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+.user-id {
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+.header-actions {
+  display: flex;
   gap: 10px;
 }
 
-.brand-name {
-  font-size: 24px;
-  font-weight: bold;
-  background: linear-gradient(135deg, #ff5500 0%, #ff9900 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.user-welcome {
-  font-size: 16px;
-  color: #666;
-  font-weight: 500;
-}
-
-.user-main {
-  max-width: 1500px;
-  margin: 20px auto;
+.action-btn {
   display: flex;
-  min-height: calc(100vh - 110px);
+  align-items: center;
+  gap: 5px;
+  padding: 8px 16px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 20px;
+  color: white;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.3s;
+}
+
+.action-btn:hover {
+  background: rgba(255,255,255,0.3);
+}
+
+/* 主体内容 */
+.user-main {
+  max-width: 1200px;
+  margin: 20px auto;
+  padding: 0 20px;
+  display: flex;
+  gap: 20px;
 }
 
 .user-sidebar {
-  width: 250px;
+  width: 220px;
   background: white;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  margin-right: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
   height: fit-content;
+  flex-shrink: 0;
 }
 
 .sidebar-nav ul {
   list-style: none;
-  padding: 0;
+  padding: 10px 0;
   margin: 0;
 }
 
 .sidebar-nav li {
-  position: relative;
-  padding: 15px 20px;
+  padding: 14px 20px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  transition: all 0.3s ease;
+  transition: all 0.2s;
   border-left: 3px solid transparent;
+  color: #666;
 }
 
 .sidebar-nav li:hover {
-  background-color: #f8f9fa;
-  color: #ff5500;
+  background-color: #fff5f5;
+  color: #ee0a24;
 }
 
 .sidebar-nav li.active {
-  background-color: #fff5f0;
-  color: #ff5500;
-  border-left-color: #ff5500;
+  background-color: #fff1f0;
+  color: #ee0a24;
+  border-left-color: #ee0a24;
+  font-weight: 500;
 }
 
 .nav-icon {
@@ -392,14 +355,12 @@ watch(
 }
 
 .nav-text {
-  font-size: 14px;
-  font-weight: 500;
   flex: 1;
+  font-size: 14px;
 }
 
-/* 侧边栏徽章 */
 .sidebar-badge {
-  background: #ff5500;
+  background: #ee0a24;
   color: white;
   border-radius: 10px;
   min-width: 20px;
@@ -409,44 +370,61 @@ watch(
   align-items: center;
   justify-content: center;
   padding: 0 6px;
-  font-weight: bold;
 }
 
 .user-content {
   flex: 1;
   background: white;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  padding: 30px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  padding: 25px;
+  min-width: 0;
 }
 
 .page-header {
-  margin-bottom: 30px;
-  padding-bottom: 20px;
+  margin-bottom: 25px;
+  padding-bottom: 15px;
   border-bottom: 1px solid #f0f0f0;
 }
 
 .page-header h2 {
-  margin: 0 0 8px 0;
-  font-size: 24px;
+  margin: 0 0 6px 0;
+  font-size: 20px;
   color: #333;
 }
 
 .page-subtitle {
-  font-size: 14px;
+  font-size: 13px;
   color: #999;
 }
 
-/* 响应式设计 */
+/* 响应式 */
 @media (max-width: 768px) {
+  .header-card-content {
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+  }
+  
+  .user-info-section {
+    flex-direction: column;
+  }
+  
+  .avatar-box, .header-avatar {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .user-nickname {
+    font-size: 18px;
+  }
+  
   .user-main {
     flex-direction: column;
   }
   
   .user-sidebar {
     width: 100%;
-    margin-right: 0;
-    margin-bottom: 20px;
   }
   
   .sidebar-nav ul {
@@ -465,24 +443,11 @@ watch(
   
   .sidebar-nav li.active {
     border-left: none;
-    border-bottom-color: #ff5500;
+    border-bottom-color: #ee0a24;
   }
   
   .user-content {
-    padding: 20px;
+    padding: 15px;
   }
-}
-
-/* 动画效果 */
-.sidebar-nav li {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.sidebar-nav li:hover {
-  transform: translateX(5px);
-}
-
-.sidebar-nav li.active:hover {
-  transform: translateX(0);
 }
 </style>

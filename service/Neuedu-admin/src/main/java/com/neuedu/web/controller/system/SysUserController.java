@@ -248,6 +248,8 @@ public class SysUserController extends BaseController
         profile.put("sex", sysUser.getSex());
         profile.put("avatar", sysUser.getAvatar());
         profile.put("status", sysUser.getStatus());
+        profile.put("balance", sysUser.getBalance());
+        profile.put("userType", sysUser.getUserType());
 
         System.out.println("=== 成功获取用户信息 ===");
         return success(profile);

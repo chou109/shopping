@@ -71,6 +71,30 @@ public class OrderInfoController extends BaseController {
     }
 
     /**
+     * 直接购买创建订单（单个商品，用户端）
+     */
+    @Operation(summary = "直接购买创建订单")
+    @Log(title = "订单", businessType = BusinessType.INSERT)
+    @PostMapping("/direct")
+    public AjaxResult createDirectOrder(@RequestBody Map<String, Object> params) {
+        Long userId = SecurityUtils.getUserId();
+        if (userId == null) {
+            return error("用户未登录");
+        }
+
+        try {
+            Long productId = Long.valueOf(params.get("productId").toString());
+            Integer quantity = Integer.valueOf(params.get("quantity").toString());
+            Long addressId = Long.valueOf(params.get("addressId").toString());
+            
+            OrderInfo orderInfo = orderInfoService.createDirectOrder(userId, productId, quantity, addressId);
+            return success(orderInfo);
+        } catch (RuntimeException e) {
+            return error(e.getMessage());
+        }
+    }
+
+    /**
      * 获取订单详情（用户端）
      */
     @Operation(summary = "获取订单详情")

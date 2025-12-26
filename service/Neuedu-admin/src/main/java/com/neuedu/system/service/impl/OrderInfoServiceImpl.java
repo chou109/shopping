@@ -3,6 +3,7 @@ import com.neuedu.system.constants.OrderStatusConstants;
 import com.neuedu.system.domain.*;
 import com.neuedu.system.service.*;
 import com.neuedu.system.util.OrderStatusUtil;
+import com.neuedu.common.core.domain.entity.SysUser;
 import lombok.RequiredArgsConstructor;
 
 import java.math.BigDecimal;
@@ -45,6 +46,9 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
 
     @Autowired
     private IUserService userService;
+
+    @Autowired
+    private ISysUserService sysUserService;
 
     @Autowired(required = false)
     private IOrderStatusRecordService orderStatusRecordService;
@@ -141,18 +145,18 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
     public OrderInfo createOrderFromCart(Long userId, Long addressId)
     {
         // 1. 验证用户
-        User user = userService.getById(userId);
-        if (user == null) {
+        SysUser sysUser = sysUserService.selectUserById(userId);
+        if (sysUser == null) {
             throw new RuntimeException("用户不存在");
         }
 
         // 2. 验证地址
-        UserAddress address = userAddressService.selectUserAddressByAddressId(addressId);
+        UserAddress address = userAddressService.selectUserAddressById(addressId);
         if (address == null) {
             throw new RuntimeException("收货地址不存在");
         }
         // 检查地址是否属于该用户
-        if (!userId.equals(address.getUserId())) {
+        if (!userId.equals(address.getCreateUser())) {
             throw new RuntimeException("收货地址不属于当前用户");
         }
 
@@ -277,6 +281,126 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
     }
 
     /**
+     * 直接购买创建订单（单个商品）
+     *
+     * @param userId 用户ID
+     * @param productId 商品ID
+     * @param quantity 数量
+     * @param addressId 地址ID
+     * @return 订单信息
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public OrderInfo createDirectOrder(Long userId, Long productId, Integer quantity, Long addressId)
+    {
+        // 1. 验证用户
+        SysUser sysUser = sysUserService.selectUserById(userId);
+        if (sysUser == null) {
+            throw new RuntimeException("用户不存在");
+        }
+
+        // 2. 验证地址
+        UserAddress address = userAddressService.selectUserAddressById(addressId);
+        if (address == null) {
+            throw new RuntimeException("收货地址不存在");
+        }
+        // 检查地址是否属于该用户
+        if (!userId.equals(address.getCreateUser())) {
+            throw new RuntimeException("收货地址不属于当前用户");
+        }
+
+        // 3. 验证商品
+        Product product = productService.selectProductById(productId);
+        if (product == null) {
+            throw new RuntimeException("商品不存在");
+        }
+        if (product.getStatus() != 1) {
+            throw new RuntimeException("商品已下架");
+        }
+        if (product.getStock() < quantity) {
+            throw new RuntimeException("商品库存不足");
+        }
+
+        // 4. 计算总金额
+        BigDecimal totalAmount = product.getPrice().multiply(new BigDecimal(quantity));
+
+        // 5. 生成订单号
+        String orderNo = generateOrderNo();
+
+        // 6. 创建订单主信息
+        OrderInfo orderInfo = new OrderInfo();
+        orderInfo.setOrderNo(orderNo);
+        orderInfo.setUserId(userId);
+        orderInfo.setCreateUser(userId);
+        orderInfo.setDeleteFlag(0);
+        orderInfo.setStatus(OrderStatusConstants.WAIT_PAY);
+        orderInfo.setStatusDesc(OrderStatusConstants.getOrderStatusDesc(OrderStatusConstants.WAIT_PAY));
+
+        // 设置地址信息
+        orderInfo.setAddressId(addressId);
+        orderInfo.setReceiveName(address.getReceiveName());
+        orderInfo.setReceivePhone(address.getReceivePhone());
+        orderInfo.setProvince(address.getProvince());
+        orderInfo.setCity(address.getCity());
+        orderInfo.setArea(address.getArea());
+        orderInfo.setStreet(address.getStreet());
+        orderInfo.setPostalCode(address.getPostalCode());
+
+        // 计算总金额
+        orderInfo.setPayment(totalAmount);
+        orderInfo.setPostage(BigDecimal.ZERO);
+
+        // 设置订单超时时间（30分钟后）
+        Date expireTime = DateUtils.addMinutes(DateUtils.getNowDate(), ORDER_EXPIRE_MINUTES);
+        orderInfo.setExpireTime(expireTime);
+
+        orderInfo.setCreateTime(DateUtils.getNowDate());
+        orderInfoMapper.insertOrderInfo(orderInfo);
+
+        // 7. 创建订单明细
+        OrderDetail orderDetail = new OrderDetail();
+        orderDetail.setOrderNo(orderNo);
+        orderDetail.setOrderDetailNo(generateOrderDetailNo());
+        orderDetail.setProductId(productId);
+        orderDetail.setProductName(product.getName());
+        orderDetail.setProductMainImage(product.getMainImage());
+        orderDetail.setCurrentUnitPrice(product.getPrice());
+        orderDetail.setQuantity(quantity.longValue());
+        orderDetail.setTotalPrice(totalAmount);
+        orderDetail.setUserId(userId);
+        orderDetail.setCreateUser(userId);
+        orderDetail.setDeleteFlag(0);
+        orderDetail.setStatus(OrderStatusConstants.WAIT_PAY);
+        orderDetail.setStatusDesc(OrderStatusConstants.getOrderStatusDesc(OrderStatusConstants.WAIT_PAY));
+        orderDetail.setCreateTime(DateUtils.getNowDate());
+
+        orderDetailService.insertOrderDetail(orderDetail);
+
+        // 记录状态变更
+        if (orderStatusRecordService != null) {
+            orderStatusRecordService.recordOrderStatus(
+                    orderNo,
+                    orderDetail.getOrderDetailNo(),
+                    productId,
+                    product.getName(),
+                    OrderStatusConstants.WAIT_PAY,
+                    OrderStatusConstants.getOrderStatusDesc(OrderStatusConstants.WAIT_PAY),
+                    "创建订单"
+            );
+        }
+
+        // 8. 扣减商品库存（预扣）
+        productService.updateProductStock(productId, -quantity.longValue());
+
+        // 设置订单明细列表
+        List<OrderDetail> orderDetails = new ArrayList<>();
+        orderDetails.add(orderDetail);
+        orderInfo.setOrderDetails(orderDetails);
+
+        return orderInfo;
+    }
+
+    /**
      * 支付订单
      *
      * @param orderNo 订单编号
@@ -306,13 +430,17 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
 
         // 如果是余额支付，需要扣减用户余额
         if (paymentType.equals(OrderStatusConstants.PAYMENT_BALANCE)) {
-            User user = userService.getById(orderInfo.getUserId());
-            if (user.getBalance().compareTo(orderInfo.getPayment()) < 0) {
-                throw new RuntimeException("余额不足");
+            SysUser sysUser = sysUserService.selectUserById(orderInfo.getUserId());
+            if (sysUser == null) {
+                throw new RuntimeException("用户不存在");
+            }
+            BigDecimal userBalance = sysUser.getBalance() != null ? sysUser.getBalance() : BigDecimal.ZERO;
+            if (userBalance.compareTo(orderInfo.getPayment()) < 0) {
+                throw new RuntimeException("余额不足，当前余额" + userBalance + "元，需支付" + orderInfo.getPayment() + "元");
             }
             // 扣减余额
-            user.setBalance(user.getBalance().subtract(orderInfo.getPayment()));
-            userService.updateById(user);
+            BigDecimal newBalance = userBalance.subtract(orderInfo.getPayment());
+            sysUserService.updateUserBalance(orderInfo.getUserId(), orderInfo.getPayment().negate());
         }
 
         // 更新订单状态

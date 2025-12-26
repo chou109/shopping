@@ -2,7 +2,7 @@ package com.neuedu.system.service.impl;
 import com.neuedu.common.exception.ServiceException;
 import com.neuedu.common.utils.StringUtils;
 import com.neuedu.system.constants.RechargeConstants;
-import com.neuedu.system.service.IUserService;
+import com.neuedu.system.service.ISysUserService;
 import lombok.RequiredArgsConstructor;
 
 import java.math.BigDecimal;
@@ -29,7 +29,7 @@ public class RechargeInfoServiceImpl extends ServiceImpl<RechargeInfoMapper, Rec
     private final RechargeInfoMapper rechargeInfoMapper;
 
     @Autowired
-    private IUserService userService; // 用户服务，用于更新余额
+    private ISysUserService sysUserService; // 用户服务，用于更新余额
 
     /**
      * 查询【请填写功能名称】
@@ -157,7 +157,7 @@ public class RechargeInfoServiceImpl extends ServiceImpl<RechargeInfoMapper, Rec
         if (result > 0) {
             // 更新用户余额
             try {
-                boolean updateBalance = userService.updateUserBalance(
+                boolean updateBalance = sysUserService.updateUserBalance(
                         rechargeInfo.getUserId(),
                         rechargeInfo.getBalance()
                 );
@@ -220,7 +220,7 @@ public class RechargeInfoServiceImpl extends ServiceImpl<RechargeInfoMapper, Rec
         }
 
         // 检查用户余额是否足够
-        BigDecimal currentBalance = userService.getUserBalance(rechargeInfo.getUserId());
+        BigDecimal currentBalance = sysUserService.getUserBalance(rechargeInfo.getUserId());
         if (currentBalance.compareTo(rechargeInfo.getBalance()) < 0) {
             throw new ServiceException("用户余额不足，无法退款");
         }
@@ -236,7 +236,7 @@ public class RechargeInfoServiceImpl extends ServiceImpl<RechargeInfoMapper, Rec
         if (result > 0) {
             // 扣除用户余额
             try {
-                boolean updateBalance = userService.updateUserBalance(
+                boolean updateBalance = sysUserService.updateUserBalance(
                         rechargeInfo.getUserId(),
                         rechargeInfo.getBalance().negate() // 负值表示扣除
                 );
