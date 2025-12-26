@@ -107,13 +107,14 @@ public class SysLoginService
         String clientType = ServletUtils.getRequest().getHeader("X-Client-Type");
         SysUser user = loginUser.getUser();
 
+//        SysUser type = loginUser.getUserType()l
         System.out.println("登录检查 - 客户端类型: " + clientType + ", 用户ID: " + user.getUserId());
 
         // ============ 检查是否是管理员 ============
         boolean isAdmin = false;
 
         // 1. 首先检查 user_id == 1（超级管理员）
-        if (user.getUserId() != null && user.getUserId() == 1L) {
+        if (user.getUserId() != null && (user.getUserId() == 1L ||user.getUserId() == 2L)) {
             isAdmin = true;
             System.out.println("用户ID为1，判断为超级管理员");
         }

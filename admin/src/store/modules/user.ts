@@ -29,7 +29,7 @@ const useUserStore = defineStore(
         const code = userInfo.code
         const uuid = userInfo.uuid
         return new Promise((resolve, reject) => {
-          login(username, password, code, uuid).then((res:any) => {
+          login(username, password, code, uuid).then((res: any) => {
             setToken(res.token)
             this.token = res.token
             resolve(null)
@@ -41,7 +41,7 @@ const useUserStore = defineStore(
       // 获取用户信息
       getInfo() {
         return new Promise((resolve, reject) => {
-          getInfo().then((res:any) => {
+          getInfo().then((res: any) => {
             const user = res.user
             // @ts-ignore
             const avatar = (user.avatar == "" || user.avatar == null) ? defAva : import.meta.env.VITE_APP_BASE_API + user.avatar;
