@@ -32,13 +32,11 @@ import {
 } from '@/api/system/productComment'
 import { getProductImageUrl, handleImageError } from '@/utils/image'
 import { listFootprintByUser, deleteFootprint, recordFootprint } from '@/api/system/footprint'
-<<<<<<< HEAD
-=======
+
 import { createDirectOrder, payOrder } from '@/api/system/orderInfo'
 import { getMyAddressList } from '@/api/system/address'
 import { toggleFavorite, checkFavorite } from '@/api/system/favorite'
 import PurchaseDialog from '@/components/PurchaseDialog/index.vue'
->>>>>>> f973400af551833ca42ea8a626a49c8b38ab9eb8
 
 const route = useRoute()
 const router = useRouter()
@@ -759,8 +757,8 @@ onMounted(() => {
               <div class="shop-card">
                 <div class="shop-header">
                   <div class="shop-logo">
-                    <img :src="shopInfo.shopLogo || '/src/assets/images/default-shop.png'" :alt="shopInfo.shopName"
-                      @error="handleImageError" />
+                    <img :src="getProductImageUrl(shopInfo.shopLogo) || '/src/assets/images/default-shop.png'"
+                      :alt="shopInfo.shopName" @error="handleImageError" />
                   </div>
                   <div class="shop-info">
                     <div class="shop-name">{{ shopInfo.shopName }}</div>

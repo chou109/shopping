@@ -65,17 +65,22 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <!-- 查询用户的会话列表（去重） -->
     <select id="selectUserSessionList" resultType="java.util.HashMap">
         SELECT 
-            session_id as sessionId,
-            MAX(CASE WHEN sender_type = 2 THEN sender_name ELSE NULL END) as adminName,
-            MAX(create_time) as lastMessageTime,
-            (SELECT content FROM customer_message cm2 
-             WHERE cm2.session_id = cm.session_id 
-             ORDER BY create_time DESC LIMIT 1) as lastMessage,
-            SUM(CASE WHEN is_read = 0 AND receiver_type = 1 AND receiver_id = #{userId} THEN 1 ELSE 0 END) as unreadCount
+            cm.session_id as sessionId,
+            MAX(CASE WHEN cm.sender_type = 2 THEN cm.sender_name ELSE NULL END) as shopName,
+            MAX(CASE WHEN cm.sender_type = 2 THEN cm.sender_id ELSE cm.receiver_id END) as receiverId,
+            MAX(CASE WHEN cm.sender_type = 2 THEN cm.sender_id ELSE cm.receiver_id END) as shopUserId,
+            (SELECT cm3.create_time FROM customer_message cm3 
+             WHERE cm3.session_id = cm.session_id AND cm3.status = 1
+             ORDER BY cm3.create_time DESC LIMIT 1) as lastMessageTime,
+            (SELECT cm2.content FROM customer_message cm2 
+             WHERE cm2.session_id = cm.session_id AND cm2.status = 1
+             ORDER BY cm2.create_time DESC LIMIT 1) as lastMessage,
+            SUM(CASE WHEN cm.is_read = 0 AND cm.receiver_type = 1 AND cm.receiver_id = #{userId} THEN 1 ELSE 0 END) as unreadCount
         FROM customer_message cm
-        WHERE (sender_id = #{userId} AND sender_type = 1) 
-           OR (receiver_id = #{userId} AND receiver_type = 1)
-        GROUP BY session_id
+        WHERE ((cm.sender_id = #{userId} AND cm.sender_type = 1) 
+           OR (cm.receiver_id = #{userId} AND cm.receiver_type = 1))
+          AND cm.status = 1
+        GROUP BY cm.session_id
         ORDER BY lastMessageTime DESC
     </select>
 

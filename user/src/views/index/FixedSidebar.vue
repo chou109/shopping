@@ -82,6 +82,8 @@ import {
   Message,
   ChatDotRound
 } from '@element-plus/icons-vue'
+import { getUnreadCount } from '@/api/system/customerMessage'
+import { getToken } from '@/utils/auth'
 
 const route = useRoute()
 const router = useRouter()
@@ -90,7 +92,7 @@ const router = useRouter()
 const isHidden = ref(false)
 const scrollY = ref(0)
 const cartCount = ref(0)
-const messageCount = ref(5) // 模拟消息数量
+const messageCount = ref(0) // 未读消息数量
 const chatUnreadCount = ref(0) // AI助手未读消息数量
 
 // 计算当前路由路径
@@ -197,6 +199,26 @@ const getCartCount = () => {
   cartCount.value = 3 // 模拟数据
 }
 
+// 获取未读消息数量
+const getMessageCount = async () => {
+  // 未登录时不调用API
+  if (!getToken()) {
+    messageCount.value = 0
+    return
+  }
+  try {
+    const response = await getUnreadCount()
+    console.log('未读消息数量API响应:', response)
+    if (response.code === 200) {
+      messageCount.value = response.data || 0
+      console.log('未读消息数量:', messageCount.value)
+    }
+  } catch (error) {
+    console.error('获取未读消息数量失败:', error)
+    messageCount.value = 0
+  }
+}
+
 // 获取AI助手未读消息数量（模拟数据）
 const getChatUnreadCount = () => {
   chatUnreadCount.value = 2 // 模拟未读消息数量
@@ -206,10 +228,16 @@ const getChatUnreadCount = () => {
 onMounted(() => {
   window.addEventListener('scroll', handleScroll, { passive: true })
   getCartCount()
+  getMessageCount()
   getChatUnreadCount()
 
   // 初始化滚动位置
   scrollY.value = window.scrollY || document.documentElement.scrollTop
+
+  // 定时刷新未读消息数量
+  const refreshInterval = setInterval(() => {
+    getMessageCount()
+  }, 2000) // 每2秒刷新一次
 })
 
 onUnmounted(() => {

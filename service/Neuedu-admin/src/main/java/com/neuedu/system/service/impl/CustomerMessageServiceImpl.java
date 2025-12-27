@@ -253,11 +253,17 @@ public class CustomerMessageServiceImpl extends ServiceImpl<CustomerMessageMappe
 
     /**
      * 从会话ID中提取用户ID
+     * 支持格式: CS_{userId} 或 CS_{userId}_TO_{receiverId}
      */
     private Long extractUserIdFromSession(String sessionId) {
         if (sessionId != null && sessionId.startsWith("CS_")) {
             try {
-                return Long.parseLong(sessionId.substring(3));
+                String idPart = sessionId.substring(3);
+                // 处理新格式 CS_{userId}_TO_{receiverId}
+                if (idPart.contains("_TO_")) {
+                    idPart = idPart.split("_TO_")[0];
+                }
+                return Long.parseLong(idPart);
             } catch (NumberFormatException e) {
                 return null;
             }

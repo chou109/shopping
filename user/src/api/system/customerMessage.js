@@ -33,9 +33,18 @@ export function getUnreadCount() {
 }
 
 // 标记消息为已读
-export function markAsRead() {
+export function markAsRead(receiverId = null) {
   return request({
     url: '/system/customerMessage/user/read',
-    method: 'put'
+    method: 'put',
+    params: { receiverId }
+  })
+}
+
+// 获取用户的会话列表
+export function getUserSessions() {
+  return request({
+    url: '/system/customerMessage/user/sessions',
+    method: 'get'
   })
 }

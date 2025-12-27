@@ -120,12 +120,29 @@ public class CustomerMessageController extends BaseController
      */
     @Operation(summary = "用户标记消息为已读")
     @PutMapping("/user/read")
-    public AjaxResult userMarkAsRead()
+    public AjaxResult userMarkAsRead(@RequestParam(required = false) Long receiverId)
     {
         Long userId = getUserId();
-        String sessionId = customerMessageService.generateSessionId(userId);
+        String sessionId;
+        if (receiverId != null && receiverId > 0) {
+            sessionId = "CS_" + userId + "_TO_" + receiverId;
+        } else {
+            sessionId = customerMessageService.generateSessionId(userId);
+        }
         int result = customerMessageService.markAsRead(sessionId, CustomerMessage.SENDER_TYPE_USER);
         return success(result);
+    }
+
+    /**
+     * 获取用户的会话列表
+     */
+    @Operation(summary = "获取用户的会话列表")
+    @GetMapping("/user/sessions")
+    public AjaxResult getUserSessions()
+    {
+        Long userId = getUserId();
+        List<Map<String, Object>> sessions = customerMessageService.getUserSessionList(userId);
+        return success(sessions);
     }
 
     // ============ 商家端接口 ============

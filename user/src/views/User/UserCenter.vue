@@ -54,11 +54,13 @@
         </div>
         <component :is="currentComponent" :key="activeNav" v-bind="componentProps" />
       </div>
-      
+
       <!-- 回到顶部按钮 -->
       <transition name="fade">
         <div v-show="showBackTop" class="back-to-top" @click="scrollToTop">
-          <el-icon><Top /></el-icon>
+          <el-icon>
+            <Top />
+          </el-icon>
         </div>
       </transition>
     </div>
@@ -70,13 +72,9 @@ import { ref, computed, onMounted, onUnmounted, watch, provide } from 'vue'
 import { useStore } from 'vuex'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-<<<<<<< HEAD
+
 import {
-  User, List, ShoppingCart, Clock, Shop, Star, ChatDotRound, HomeFilled
-=======
-import { 
-  User, List, ShoppingCart, Clock, Shop, Star, ChatDotRound, HomeFilled, Top
->>>>>>> f973400af551833ca42ea8a626a49c8b38ab9eb8
+  User, List, ShoppingCart, Clock, Shop, Star, ChatDotRound, HomeFilled, Top, Message
 } from '@element-plus/icons-vue'
 import { getUsers } from '@/api/system/user'
 import { getProductImageUrl } from '@/utils/image'
@@ -89,6 +87,7 @@ import UserFootprint from '@/views/user/UserFootprint.vue'
 import FavoriteShops from '@/views/user/FavoriteShops.vue'
 import FavoriteProducts from '@/views/user/FavoriteProducts.vue'
 import UserReviews from '@/views/user/UserReviews.vue'
+import UserMessage from '@/views/user/UserMessage.vue'
 const props = defineProps({
   page: { type: String, default: 'profile' },
   query: { type: Object, default: () => ({}) }
@@ -152,13 +151,15 @@ const pageConfig = {
   footprint: { title: '我的足迹', subtitle: '查看您浏览过的商品记录' },
   favoriteShop: { title: '收藏店铺', subtitle: '查看您收藏的店铺' },
   favoriteProduct: { title: '收藏商品', subtitle: '查看您收藏的商品' },
-  review: { title: '我的评价', subtitle: '查看和管理您的评价' }
+  review: { title: '我的评价', subtitle: '查看和管理您的评价' },
+  message: { title: '我的消息', subtitle: '查看您与客服的对话记录' }
 }
 
 const navItems = [
   { key: 'profile', text: '个人主页', icon: User, route: '/user/profile', badgeKey: null },
   { key: 'orders', text: '我的订单', icon: List, route: '/user/orders', badgeKey: 'orderCount' },
   { key: 'cart', text: '购物车', icon: ShoppingCart, route: '/user/cart', badgeKey: 'cartCount' },
+  { key: 'message', text: '我的消息', icon: Message, route: '/user/message', badgeKey: 'messageCount' },
   { key: 'footprint', text: '我的足迹', icon: Clock, route: '/user/footprint', badgeKey: null },
   { key: 'favoriteShop', text: '收藏店铺', icon: Shop, route: '/user/favoriteShop', badgeKey: 'shopFavoriteCount' },
   { key: 'favoriteProduct', text: '收藏商品', icon: Star, route: '/user/favoriteProduct', badgeKey: 'productFavoriteCount' },
@@ -174,13 +175,8 @@ const pageSubtitle = computed(() => pageConfig[activeNav.value]?.subtitle || '')
 const currentComponent = computed(() => {
   const map = {
     'profile': UserProfile, 'orders': UserOrders, 'cart': ShoppingCartPage,
-<<<<<<< HEAD
     'footprint': UserFootprint, 'favoriteShop': FavoriteShops,
-    'favoriteProduct': FavoriteProducts,
-=======
-    'footprint': UserFootprint, 'favoriteShop': FavoriteShops, 
-    'favoriteProduct': FavoriteProducts, 'review': UserReviews
->>>>>>> f973400af551833ca42ea8a626a49c8b38ab9eb8
+    'favoriteProduct': FavoriteProducts, 'review': UserReviews, 'message': UserMessage
   }
   return map[activeNav.value] || UserProfile
 })
@@ -234,7 +230,7 @@ onMounted(async () => {
   // 禁用 body 滚动
   document.body.style.overflow = 'hidden'
   document.documentElement.style.overflow = 'hidden'
-  
+
   await loadUserInfo()
   if (!userInfo.value.name) { router.push('/login'); return }
 })
@@ -372,12 +368,8 @@ watch(() => props.page, (newPage) => {
   width: 220px;
   background: white;
   border-radius: 8px;
-<<<<<<< HEAD
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   height: fit-content;
-=======
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
->>>>>>> f973400af551833ca42ea8a626a49c8b38ab9eb8
   flex-shrink: 0;
   height: fit-content;
   max-height: 100%;
@@ -470,6 +462,7 @@ watch(() => props.page, (newPage) => {
 
 /* 响应式 - 大屏幕 */
 @media (min-width: 1600px) {
+
   .header-card-content,
   .user-main {
     max-width: 1600px;
@@ -478,16 +471,17 @@ watch(() => props.page, (newPage) => {
 
 /* 响应式 - 中等屏幕 */
 @media (max-width: 1200px) {
+
   .header-card-content,
   .user-main {
     max-width: 100%;
     padding: 15px;
   }
-  
+
   .user-sidebar {
     width: 180px;
   }
-  
+
   .user-content {
     max-width: calc(100% - 200px);
   }
@@ -500,7 +494,7 @@ watch(() => props.page, (newPage) => {
     min-height: 100vh;
     overflow: auto;
   }
-  
+
   .header-card-content {
     flex-direction: column;
     gap: 15px;

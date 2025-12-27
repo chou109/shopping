@@ -170,8 +170,8 @@ const loadMessages = async () => {
       messages.value = response.data || []
       await nextTick()
       scrollToBottom()
-      // 标记已读
-      markAsRead()
+      // 标记已读，传递receiverId
+      markAsRead(receiverId.value)
     }
   } catch (error) {
     console.error('加载消息失败:', error)

@@ -103,6 +103,7 @@ export const constantRoutes = [
             profile: '个人中心',
             orders: '我的订单',
             cart: '购物车',
+            message: '我的消息',
             footprint: '我的足迹',
             favoriteShop: '收藏店铺',
             favoriteProduct: '收藏商品',
