@@ -94,6 +94,11 @@ const addingToCart = ref(false)
 const isFavorite = ref(false)
 const activeTab = ref('detail')
 
+// 购买弹窗相关
+const purchaseDialogVisible = ref(false)
+const purchaseProducts = ref([])
+const purchaseOrder = ref({})
+
 // 放大镜相关
 const zoomVisible = ref(false)
 const zoomPosition = ref({ x: 0, y: 0 })
@@ -241,22 +246,55 @@ const loadProductComments = async () => {
   commentLoading.value = true
   try {
     const response = await getCommentTree(product.value.id)
+    console.log('评论API响应:', response)
 
     if (response.code === 200) {
       let comments = []
 
+      // 增强数据解析逻辑，处理更多可能的响应格式
       if (response.rows && Array.isArray(response.rows)) {
         comments = response.rows
       } else if (response.data && Array.isArray(response.data)) {
         comments = response.data
+      } else if (response.data && response.data.comments && Array.isArray(response.data.comments)) {
+        comments = response.data.comments
       } else if (Array.isArray(response)) {
         comments = response
+      } else if (response.data && typeof response.data === 'object') {
+        // 处理可能的单条评论对象
+        comments = [response.data]
+      } else {
+        console.warn('未识别的评论数据格式:', response)
       }
 
-      productComments.value = comments
-      commentPageParams.value.total = response.total || comments.length
+      // 确保评论数组格式正确
+      if (Array.isArray(comments)) {
+        // 标准化评论数据结构，确保必要字段存在
+        const normalizedComments = comments.map(comment => ({
+          commentId: comment.commentId || comment.id || 0,
+          productId: comment.productId || product.value.id,
+          userId: comment.userId || 0,
+          parentId: comment.parentId || comment.pid || 0,
+          nickName: comment.nickName || comment.username || '匿名用户',
+          avatar: comment.avatar || '/src/assets/images/default-avatar.png',
+          content: comment.content || '',
+          score: comment.score || 0,
+          images: comment.images || comment.imgs || [],
+          likeCount: comment.likeCount || 0,
+          replyCount: comment.replyCount || 0,
+          createTime: comment.createTime || comment.time || new Date().toISOString(),
+          isAnonymous: comment.isAnonymous || 0,
+          children: comment.children || comment.replies || []
+        }))
+        
+        productComments.value = normalizedComments
+        commentPageParams.value.total = response.total || response.data?.total || normalizedComments.length
+      } else {
+        console.error('评论数据不是数组:', comments)
+        productComments.value = []
+      }
 
-      if (comments.length === 0) {
+      if (productComments.value.length === 0) {
         productComments.value = getMockComments()
         commentPageParams.value.total = productComments.value.length
       }
@@ -264,6 +302,7 @@ const loadProductComments = async () => {
       // 评论加载完成后，重新计算统计
       commentStats.value = calculateCommentStatsFromData()
     } else {
+      console.warn('评论API返回错误:', response.msg || '未知错误')
       productComments.value = getMockComments()
       commentPageParams.value.total = productComments.value.length
       commentStats.value = calculateCommentStatsFromData()
@@ -590,6 +629,18 @@ const handleAddToCart = async () => {
     return
   }
 
+  // 验证是否选择了所有规格
+  if (productSpecs.value.length > 0 && selectedSpecs.value.length < productSpecs.value.length) {
+    ElMessage.warning('请选择所有商品规格')
+    return
+  }
+
+  // 验证库存
+  if (quantity.value > (product.value.stock || 0)) {
+    ElMessage.warning('库存不足')
+    return
+  }
+
   addingToCart.value = true
   try {
     const cartData = {
@@ -600,7 +651,9 @@ const handleAddToCart = async () => {
       quantity: quantity.value,
       productUnitPrice: product.value.price,
       selected: 1,
-      productTotalPrice: product.value.price * quantity.value
+      productTotalPrice: product.value.price * quantity.value,
+      specs: selectedSpecs.value.join(','), // 传递规格信息
+      shopId: product.value.shopId
     }
 
     const response = await addCart(cartData)
@@ -619,24 +672,88 @@ const handleAddToCart = async () => {
 }
 
 // 立即购买
-const handleBuyNow = () => {
+const handleBuyNow = async () => {
   if (!product.value.id) {
     ElMessage.warning('商品信息不完整')
     return
   }
 
-  const orderData = {
-    productId: product.value.id,
-    quantity: quantity.value,
-    productName: product.value.name,
-    price: product.value.price,
-    mainImage: product.value.mainImage
+  // 验证是否选择了所有规格
+  if (productSpecs.value.length > 0 && selectedSpecs.value.length < productSpecs.value.length) {
+    ElMessage.warning('请选择所有商品规格')
+    return
   }
 
-  router.push({
-    path: '/order/confirm',
-    query: orderData
-  })
+  // 验证库存
+  if (quantity.value > (product.value.stock || 0)) {
+    ElMessage.warning('库存不足')
+    return
+  }
+
+  try {
+    // 获取用户地址列表
+    const addressRes = await getMyAddressList()
+    const addressData = addressRes.data || addressRes.rows || []
+    
+    if (addressRes.code !== 200 || addressData.length === 0) {
+      ElMessage.warning('请先添加收货地址')
+      router.push('/user/profile')
+      return
+    }
+
+    // 选择默认地址或第一个地址
+    const defaultAddr = addressData.find(a => a.isDefault === 1 || a.defaultFlag === 1) || addressData[0]
+    
+    // 创建直接购买订单
+    const orderData = {
+      productId: product.value.id,
+      quantity: quantity.value,
+      addressId: defaultAddr.id
+    }
+    
+    const orderRes = await createDirectOrder(orderData)
+    
+    if (orderRes.code === 200 && orderRes.data) {
+      // 设置购买弹窗数据
+      purchaseProducts.value = [{
+        name: product.value.name,
+        mainImage: product.value.mainImage,
+        price: product.value.price,
+        quantity: quantity.value
+      }]
+      purchaseOrder.value = orderRes.data
+      purchaseDialogVisible.value = true
+    } else {
+      ElMessage.error(orderRes.msg || '创建订单失败')
+    }
+  } catch (error) {
+    console.error('购买失败:', error)
+    ElMessage.error('购买失败，请稍后重试')
+  }
+}
+
+// 稍后支付
+const handlePayLater = (orderData) => {
+  ElMessage.success('订单已创建，请尽快完成支付')
+  purchaseDialogVisible.value = false
+  router.push('/user/orders')
+}
+
+// 立即支付
+const handlePayNow = async (orderData) => {
+  try {
+    const payRes = await payOrder(orderData.orderNo, orderData.paymentType)
+    if (payRes.code === 200) {
+      ElMessage.success('支付成功')
+      purchaseDialogVisible.value = false
+      router.push('/user/orders')
+    } else {
+      ElMessage.error(payRes.msg || '支付失败')
+    }
+  } catch (error) {
+    console.error('支付失败:', error)
+    ElMessage.error(error.message || '支付失败，请稍后重试')
+  }
 }
 
 // 检查商品是否已收藏
@@ -1043,6 +1160,17 @@ onMounted(() => {
       </div>
     </div>
   </div>
+
+  <!-- 购买弹窗 -->
+  <PurchaseDialog
+    v-model="purchaseDialogVisible"
+    :products="purchaseProducts"
+    :order="purchaseOrder"
+    :need-create-order="false"
+    @pay-later="handlePayLater"
+    @pay-now="handlePayNow"
+    @cancel="purchaseDialogVisible = false"
+  />
 </template>
 
 <style scoped>

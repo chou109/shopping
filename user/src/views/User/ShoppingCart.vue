@@ -30,8 +30,8 @@
           </div>
 
           <!-- 商品列表 -->
-          <div class="cart-items" ref="cartListRef">
-            <div v-for="item in displayedItems" :key="item.id" class="cart-item" :class="{ selected: item.selected }">
+          <div class="cart-items">
+            <div v-for="item in cartItems" :key="item.id" class="cart-item" :class="{ selected: item.selected }">
               <div class="item-select">
                 <el-checkbox v-model="item.selected" @change="handleItemSelect(item)" />
               </div>
@@ -89,16 +89,6 @@
                 </div>
               </div>
             </div>
-            <!-- 加载更多提示 -->
-            <div v-if="hasMore" class="load-more">
-              <el-icon class="loading-icon" v-if="loadingMore">
-                <Loading />
-              </el-icon>
-              <span v-else>下滑加载更多</span>
-            </div>
-            <div v-else-if="displayedItems.length > 0" class="no-more">
-              已加载全部商品
-            </div>
           </div>
         </div>
 
@@ -153,69 +143,37 @@
       </div>
     </div>
   </div>
+
+  <!-- 购买弹窗 -->
+  <PurchaseDialog
+    v-model="purchaseDialogVisible"
+    :products="purchaseProducts"
+    :order="purchaseOrder"
+    :need-create-order="false"
+    @pay-later="handlePayLater"
+    @pay-now="handlePayNow"
+    @cancel="purchaseDialogVisible = false"
+  />
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, inject, nextTick } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useStore } from 'vuex'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Lock, Loading } from '@element-plus/icons-vue'
+import { Lock } from '@element-plus/icons-vue'
 import { getProductImageUrl, handleImageError } from '@/utils/image'
 import { listCart, updateCart, delCart, clearCart, batchSelectCart } from '@/api/system/cart'
 import { createOrderFromCart, payOrder } from '@/api/system/orderInfo'
 import { getMyAddressList } from '@/api/system/address'
 import PurchaseDialog from '@/components/PurchaseDialog/index.vue'
 
-
 const router = useRouter()
 const store = useStore()
-
-// 注入父组件的滚动容器引用
-const scrollContainer = inject('scrollContainer', null)
 const loading = ref(false)
 
 // 购物车数据
 const cartItems = ref([])
-
-// 懒加载相关
-const cartListRef = ref(null)
-const pageSize = 10 // 每次加载数量
-const displayCount = ref(10) // 当前显示数量
-const loadingMore = ref(false)
-
-// 显示的商品列表（懒加载）
-const displayedItems = computed(() => {
-  return cartItems.value.slice(0, displayCount.value)
-})
-
-// 是否还有更多
-const hasMore = computed(() => {
-  return displayCount.value < cartItems.value.length
-})
-
-// 滚动加载更多（监听父容器 .user-content 的滚动事件）
-const handleScroll = () => {
-  if (!scrollContainer || !scrollContainer.value) return
-
-  const { scrollTop, scrollHeight, clientHeight } = scrollContainer.value
-
-  // 滚动到底部时加载更多
-  if (scrollHeight - scrollTop - clientHeight < 100 && hasMore.value && !loadingMore.value) {
-    loadMore()
-  }
-}
-
-// 加载更多
-const loadMore = () => {
-  if (loadingMore.value || !hasMore.value) return
-
-  loadingMore.value = true
-  setTimeout(() => {
-    displayCount.value += pageSize
-    loadingMore.value = false
-  }, 300)
-}
 
 // 购买弹窗相关
 const purchaseDialogVisible = ref(false)
@@ -295,19 +253,12 @@ const availablePromotions = computed(() => {
   return promotions
 })
 
-// 重置懒加载
-const resetLazyLoad = () => {
-  displayCount.value = pageSize
-}
-
 // 方法
 const formatPrice = (price) => {
   if (!price) return '0.00'
   return parseFloat(price).toFixed(2)
 }
 
-// 加载购物车数据
-// 加载购物车数据
 // 加载购物车数据
 const loadCartData = async () => {
   loading.value = true
@@ -323,23 +274,15 @@ const loadCartData = async () => {
     console.log("购物车数据:", response)
     if (response.code === 200) {
       cartItems.value = response.data || []
-      // 强制设置所有商品为未选中状态
+      // 计算小计并转换selected为布尔值
       cartItems.value.forEach(item => {
-        // 确保selected字段有值且为false
-        item.selected = false
+        // 后端返回的selected是数字(0/1)，需要转换为布尔值
+        item.selected = item.selected === 1 || item.selected === true
         // 计算小计
         if (item.productUnitPrice && item.quantity && !item.productTotalPrice) {
           item.productTotalPrice = item.productUnitPrice * item.quantity
         }
       })
-      // 同步未选中状态到后端
-      try {
-        await batchSelectCart(0)
-      } catch (error) {
-        console.error('同步未选中状态失败:', error)
-      }
-      // 重置懒加载
-      resetLazyLoad()
     } else {
       ElMessage.error('获取购物车数据失败')
       cartItems.value = []
@@ -356,39 +299,34 @@ const loadCartData = async () => {
 
 // 全选/取消全选
 const handleSelectAll = async (selected) => {
-  cartItems.value.forEach(item => {
-    item.selected = selected
-  })
-  // 同步选中状态到后端
   try {
-    const response = await batchSelectCart(selected ? 1 : 0)
-    if (response.code !== 200) {
-      ElMessage.error('更新选中状态失败')
-    }
+    // 更新前端状态
+    cartItems.value.forEach(item => {
+      item.selected = selected
+    })
+    // 调用API更新后端状态
+    await batchSelectCart(selected ? 1 : 0)
+    ElMessage.success('选择状态已更新')
   } catch (error) {
-    console.error('更新选中状态失败:', error)
-    ElMessage.error('更新选中状态失败')
+    console.error('更新全选状态失败:', error)
+    ElMessage.error('更新失败')
   }
 }
 
 // 单个商品选择
 const handleItemSelect = async (item) => {
-  console.log('商品选择状态变化:', item.productName, item.selected)
   try {
-    // 同步选中状态到后端
-    const response = await updateCart(item.id, {
+    // 调用API更新后端状态
+    await updateCart(item.id, {
       selected: item.selected ? 1 : 0
     })
-    if (response.code !== 200) {
-      // 如果更新失败，恢复原来的状态
-      item.selected = !item.selected
-      ElMessage.error('更新选中状态失败')
-    }
+    console.log('商品选择状态变化:', item.productName, item.selected)
+    ElMessage.success('选择状态已更新')
   } catch (error) {
-    console.error('更新选中状态失败:', error)
-    // 如果更新失败，恢复原来的状态
+    console.error('更新商品选择状态失败:', error)
+    ElMessage.error('更新失败')
+    // 恢复原状态
     item.selected = !item.selected
-    ElMessage.error('更新选中状态失败')
   }
 }
 
@@ -528,18 +466,83 @@ const handleClearCart = async () => {
 }
 
 // 去结算
-const handleCheckout = () => {
+const handleCheckout = async () => {
   if (selectedCount.value === 0) {
     ElMessage.warning('请先选择要结算的商品')
     return
   }
 
-  router.push({
-    path: '/order/confirm',
-    query: {
-      cartItems: JSON.stringify(selectedItems.value)
+  // 检查是否有选中的商品
+  const selected = selectedItems.value
+  console.log('选中的商品:', selected, '数量:', selected.length)
+  
+  if (selected.length === 0) {
+    ElMessage.warning('请先选择要结算的商品')
+    return
+  }
+
+  // 获取用户地址列表
+  try {
+    const addressRes = await getMyAddressList()
+    const addressData = addressRes.data || addressRes.rows || []
+    if (addressRes.code === 200 && addressData.length > 0) {
+      // 选择默认地址或第一个地址
+      const defaultAddr = addressData.find(a => a.isDefault === 1 || a.defaultFlag === 1) || addressData[0]
+      console.log('使用地址:', defaultAddr)
+      
+      // 创建订单 - 使用主键id
+      const orderRes = await createOrderFromCart(defaultAddr.id)
+      console.log('创建订单响应:', orderRes)
+      
+      if (orderRes.code === 200 && orderRes.data) {
+        // 设置购买弹窗数据
+        purchaseProducts.value = selected.map(item => ({
+          name: item.productName,
+          mainImage: item.productMainImage,
+          price: item.productUnitPrice,
+          quantity: item.quantity
+        }))
+        purchaseOrder.value = orderRes.data
+        purchaseDialogVisible.value = true
+      } else {
+        ElMessage.error(orderRes.msg || '创建订单失败')
+      }
+    } else {
+      ElMessage.warning('请先添加收货地址')
+      router.push('/user/profile')
     }
-  })
+  } catch (error) {
+    console.error('结算失败:', error)
+    ElMessage.error(error.message || '结算失败，请稍后重试')
+  }
+}
+
+// 稍后支付
+const handlePayLater = (orderData) => {
+  ElMessage.success('订单已创建，请尽快完成支付')
+  purchaseDialogVisible.value = false
+  // 刷新购物车
+  loadCartData()
+  router.push('/user/orders')
+}
+
+// 立即支付
+const handlePayNow = async (orderData) => {
+  try {
+    const payRes = await payOrder(orderData.orderNo, orderData.paymentType)
+    if (payRes.code === 200) {
+      ElMessage.success('支付成功')
+      purchaseDialogVisible.value = false
+      // 刷新购物车
+      loadCartData()
+      router.push('/user/orders')
+    } else {
+      ElMessage.error(payRes.msg || '支付失败')
+    }
+  } catch (error) {
+    console.error('支付失败:', error)
+    ElMessage.error(error.message || '支付失败，请稍后重试')
+  }
 }
 
 // 添加到收藏
@@ -567,26 +570,14 @@ const goShopping = () => {
 
 onMounted(() => {
   loadCartData()
-  // 使用 nextTick 等待父容器准备完毕
-  nextTick(() => {
-    if (scrollContainer && scrollContainer.value) {
-      scrollContainer.value.addEventListener('scroll', handleScroll)
-    }
-  })
-})
-
-onUnmounted(() => {
-  if (scrollContainer && scrollContainer.value) {
-    scrollContainer.value.removeEventListener('scroll', handleScroll)
-  }
 })
 </script>
 
 <style scoped>
 .shopping-cart {
-  padding: 0;
-  display: flex;
-  flex-direction: column;
+  min-height: 100vh;
+  background: #f5f5f5;
+  padding: 20px 0;
 }
 
 .page-header {
@@ -594,14 +585,10 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
-  padding: 15px 20px;
+  padding: 0 20px;
   max-width: 1500px;
   margin-left: auto;
   margin-right: auto;
-  position: sticky;
-  top: 70px;
-  background: white;
-  z-index: 10;
 }
 
 .cart-content {
@@ -621,8 +608,10 @@ onUnmounted(() => {
   flex: 1;
   min-width: 0;
   /* 防止flex元素溢出 */
-  background: transparent;
+  background: white;
   border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
 }
 
 .cart-toolbar {
@@ -631,10 +620,7 @@ onUnmounted(() => {
   align-items: center;
   padding: 15px 20px;
   border-bottom: 1px solid #f0f0f0;
-  background: white;
-  position: sticky;
-  top: 130px;
-  z-index: 9;
+  background: #fafafa;
 }
 
 .toolbar-left {
@@ -649,30 +635,8 @@ onUnmounted(() => {
 }
 
 .cart-items {
-  /* 不设置滚动，让内容自然擑开 */
-}
-
-/* 加载更多提示 */
-.load-more,
-.no-more {
-  padding: 20px;
-  text-align: center;
-  color: #999;
-  font-size: 14px;
-}
-
-.load-more .loading-icon {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
+  max-height: 100%;
+  overflow-y: auto;
 }
 
 .cart-item {
@@ -812,15 +776,16 @@ onUnmounted(() => {
 }
 
 .checkout-panel {
-  background: transparent;
+  background: white;
   border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   overflow: hidden;
 }
 
 .panel-header {
   padding: 15px 20px;
   border-bottom: 1px solid #f0f0f0;
-  background: transparent;
+  background: #fafafa;
 }
 
 .panel-header h3 {
@@ -893,8 +858,9 @@ onUnmounted(() => {
 
 /* 空购物车状态 */
 .empty-cart {
-  background: transparent;
+  background: white;
   border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   padding: 60px 20px;
   text-align: center;
 }
