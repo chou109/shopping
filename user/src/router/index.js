@@ -137,6 +137,18 @@ export const constantRoutes = [
         meta: { title: '商品详情' }
       }
     ]
+  },
+  {
+    path: '/product/blind-box',
+    name: 'BlindBoxDetail',
+    component: Layout,
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/products/blindBoxDetail.vue'),
+        meta: { title: '盲盒商品' }
+      }
+    ]
   }
 ]
 
