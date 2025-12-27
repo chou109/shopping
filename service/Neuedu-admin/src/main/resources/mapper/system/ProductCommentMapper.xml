@@ -19,54 +19,60 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="status"    column="status"    />
         <result property="createTime"    column="create_time"    />
         <result property="updateTime"    column="update_time"    />
+        <result property="nickName"    column="nick_name"    />
+        <result property="userAvatar"    column="avatar"    />
     </resultMap>
 
     <sql id="selectProductCommentVo">
-        select comment_id, product_id, user_id, order_id, parent_id, content, images, score, is_anonymous, like_count, reply_count, status, create_time, update_time from product_comment
+        select pc.comment_id, pc.product_id, pc.user_id, pc.order_id, pc.parent_id, pc.content, pc.images, pc.score, pc.is_anonymous, pc.like_count, pc.reply_count, pc.status, pc.create_time, pc.update_time,
+               u.nick_name, u.avatar
+        from product_comment pc
+        left join sys_user u on pc.user_id = u.user_id
     </sql>
 
     <select id="selectProductCommentList" parameterType="ProductComment" resultMap="ProductCommentResult">
         <include refid="selectProductCommentVo"/>
         <where>  
-            <if test="productId != null "> and product_id = #{productId}</if>
-            <if test="userId != null "> and user_id = #{userId}</if>
-            <if test="orderId != null "> and order_id = #{orderId}</if>
-            <if test="parentId != null "> and parent_id = #{parentId}</if>
-            <if test="content != null  and content != ''"> and content = #{content}</if>
-            <if test="images != null  and images != ''"> and images = #{images}</if>
-            <if test="score != null "> and score = #{score}</if>
-            <if test="isAnonymous != null "> and is_anonymous = #{isAnonymous}</if>
-            <if test="likeCount != null "> and like_count = #{likeCount}</if>
-            <if test="replyCount != null "> and reply_count = #{replyCount}</if>
-            <if test="status != null "> and status = #{status}</if>
+            <if test="productId != null "> and pc.product_id = #{productId}</if>
+            <if test="userId != null "> and pc.user_id = #{userId}</if>
+            <if test="orderId != null "> and pc.order_id = #{orderId}</if>
+            <if test="parentId != null "> and pc.parent_id = #{parentId}</if>
+            <if test="content != null  and content != ''"> and pc.content = #{content}</if>
+            <if test="images != null  and images != ''"> and pc.images = #{images}</if>
+            <if test="score != null "> and pc.score = #{score}</if>
+            <if test="isAnonymous != null "> and pc.is_anonymous = #{isAnonymous}</if>
+            <if test="likeCount != null "> and pc.like_count = #{likeCount}</if>
+            <if test="replyCount != null "> and pc.reply_count = #{replyCount}</if>
+            <if test="status != null "> and pc.status = #{status}</if>
         </where>
+        order by pc.create_time desc
     </select>
     
     <select id="selectProductCommentByCommentId" parameterType="Long" resultMap="ProductCommentResult">
         <include refid="selectProductCommentVo"/>
-        where product_comment.comment_id = #{commentId}
+        where pc.comment_id = #{commentId}
     </select>
 
 
     <!-- 新增：查询商品的根评论列表 -->
     <select id="selectRootCommentsByProductId" resultMap="ProductCommentResult">
         <include refid="selectProductCommentVo"/>
-        where product_id = #{productId}
-        and (parent_id is null or parent_id = 0)
+        where pc.product_id = #{productId}
+        and (pc.parent_id is null or pc.parent_id = 0)
         <if test="status != null">
-            and status = #{status}
+            and pc.status = #{status}
         </if>
-        order by create_time desc
+        order by pc.create_time desc
     </select>
 
     <!-- 新增：查询评论的回复列表 -->
     <select id="selectRepliesByParentId" resultMap="ProductCommentResult">
         <include refid="selectProductCommentVo"/>
-        where parent_id = #{parentId}
+        where pc.parent_id = #{parentId}
         <if test="status != null">
-            and status = #{status}
+            and pc.status = #{status}
         </if>
-        order by create_time asc
+        order by pc.create_time asc
     </select>
 
     <!-- 新增：统计商品评论数量 -->
@@ -110,38 +116,38 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="selectProductCommentVo"/>
         <where>
             <if test="productId != null">
-                and product_id = #{productId}
+                and pc.product_id = #{productId}
             </if>
             <if test="userId != null">
-                and user_id = #{userId}
+                and pc.user_id = #{userId}
             </if>
             <if test="score != null">
-                and score = #{score}
+                and pc.score = #{score}
             </if>
             <if test="hasImages != null and hasImages == true">
-                and images is not null and images != ''
+                and pc.images is not null and pc.images != ''
             </if>
             <if test="status != null">
-                and status = #{status}
+                and pc.status = #{status}
             </if>
         </where>
         order by
         <choose>
-            <when test="score != null">score desc, </when>
-            <otherwise>like_count desc, </otherwise>
+            <when test="score != null">pc.score desc, </when>
+            <otherwise>pc.like_count desc, </otherwise>
         </choose>
-        create_time desc
+        pc.create_time desc
     </select>
     <!-- 新增：查询用户对商品的评论 -->
     <select id="selectUserCommentOnProduct" resultMap="ProductCommentResult">
         <include refid="selectProductCommentVo"/>
-        WHERE user_id = #{userId}
-        AND product_id = #{productId}
+        WHERE pc.user_id = #{userId}
+        AND pc.product_id = #{productId}
         <if test="orderId != null">
-            AND order_id = #{orderId}
+            AND pc.order_id = #{orderId}
         </if>
-        AND status = 1
-        ORDER BY create_time DESC
+        AND pc.status = 1
+        ORDER BY pc.create_time DESC
         LIMIT 1
     </select>
 
@@ -196,7 +202,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
         </trim>
-        where product_comment.comment_id = #{commentId}
+        where comment_id = #{commentId}
     </update>
 
     <!-- 新增：增加评论点赞数 -->

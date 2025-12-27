@@ -446,9 +446,10 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
             // 获取用户信息
             SysUser user = sysUserService.selectUserById(comment.getUserId());
             if (user != null) {
-                node.put("userName", user.getNickName());
+                node.put("nickName", user.getNickName());
                 node.put("userAvatar", user.getAvatar());
             }
+            node.put("isAnonymous", comment.getIsAnonymous());
 
             nodeMap.put(comment.getCommentId(), node);
         }

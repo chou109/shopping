@@ -86,6 +86,16 @@ public class ProductComment extends BaseEntity
     @Excel(name = "状态", readConverterExp = "1=-正常，2-审核中，3-已删除")
     private Integer status;
 
+    /** 用户昵称（非数据库字段） */
+    @Schema(title = "用户昵称")
+    @TableField(exist = false)
+    private String nickName;
+
+    /** 用户头像（非数据库字段） */
+    @Schema(title = "用户头像")
+    @TableField(exist = false)
+    private String userAvatar;
+
 
     @TableField(exist = false)  // 告诉MyBatis这个字段不在数据库表中
     private String createBy;
