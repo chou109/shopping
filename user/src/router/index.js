@@ -162,6 +162,7 @@ export const constantRoutes = [
     component: Layout,
     children: [
       {
+        path: '',
         component: () => import('@/views/products/blindBoxDetail.vue'),
         meta: { title: '盲盒商品' }
       }
