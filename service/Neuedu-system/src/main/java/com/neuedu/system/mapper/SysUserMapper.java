@@ -45,6 +45,14 @@ public interface SysUserMapper
     public SysUser selectUserByUserName(String userName);
 
     /**
+     * 通过QQ OpenID查询用户
+     * 
+     * @param qqOpenid QQ开放ID
+     * @return 用户对象信息
+     */
+    public SysUser selectUserByQqOpenid(String qqOpenid);
+
+    /**
      * 通过用户ID查询用户
      * 
      * @param userId 用户ID

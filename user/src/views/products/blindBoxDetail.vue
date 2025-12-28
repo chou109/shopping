@@ -1,0 +1,1290 @@
+<script setup>
+import { ref, onMounted, nextTick } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import {
+  CircleCheck,
+  ShoppingCart,
+  ShoppingCartFull,
+  Timer,
+  Plus,
+  Minus
+} from '@element-plus/icons-vue'
+import { addCart } from '@/api/system/cart'
+import { createDirectOrder, payOrder } from '@/api/system/orderInfo'
+import { getMyAddressList } from '@/api/system/address'
+import { getShopProducts } from '@/api/system/shop'
+import { useBlindBox } from '@/composables/useBlindBox'
+import PurchaseDialog from '@/components/PurchaseDialog/index.vue'
+
+// 导入盲盒图片
+import BlindBoxImage1 from '@/assets/BlindBox/BlindBox.png'
+import BlindBoxImage2 from '@/assets/BlindBox/BlindBox (2).png'
+import BlindBoxImage3 from '@/assets/BlindBox/BlindBox (3).png'
+import BlindBoxImage4 from '@/assets/BlindBox/BlindBox (4).png'
+import BlindBoxImage5 from '@/assets/BlindBox/BlindBox (5).png'
+import BlindBoxImage6 from '@/assets/BlindBox/BlindBox (6).png'
+import BlindBoxImage7 from '@/assets/BlindBox/BlindBox (7).png'
+import BlindBoxImage8 from '@/assets/BlindBox/BlindBox (8).png'
+import BlindBoxImage9 from '@/assets/BlindBox/BlindBox (9).png'
+import BlindBoxImage10 from '@/assets/BlindBox/BlindBox (10).png'
+import BlindBoxImage11 from '@/assets/BlindBox/BlindBox (11).png'
+import BlindBoxImage12 from '@/assets/BlindBox/BlindBox (12).png'
+
+const route = useRoute()
+const router = useRouter()
+
+// 直接创建图片URL数组
+const imageUrls = [
+  BlindBoxImage1, BlindBoxImage2, BlindBoxImage3,
+  BlindBoxImage4, BlindBoxImage5, BlindBoxImage6,
+  BlindBoxImage7, BlindBoxImage8, BlindBoxImage9,
+  BlindBoxImage10, BlindBoxImage11, BlindBoxImage12
+].map(img => {
+  return img && typeof img === 'object' && 'default' in img ? img.default : img
+})
+
+// 商品数据 - 固定盲盒商品信息
+const product = ref({
+  id: 9999,
+  name: "随机商品盲盒 好货低价易购 官方正品 省钱省心",
+  price: 50,
+  stock: 9999,
+  mainImage: imageUrls[0],
+  subImages: imageUrls,
+  categoryId: 0,
+  categoryName: "盲盒商品",
+  shopId: null,
+  category: {},
+  isBlindBox: true
+})
+
+// 商品图片相关
+const currentImageIndex = ref(0)
+const quantity = ref(1)
+const addingToCart = ref(false)
+const activeTab = ref('detail')
+
+// 购买弹窗相关
+const purchaseDialogVisible = ref(false)
+const purchaseProducts = ref([])
+const purchaseOrder = ref({})
+
+// 抽奖 Hook
+const { 
+  initLotteryPool, 
+  drawPrize, 
+  isLoading: lotteryLoading,
+  isPoolReady 
+} = useBlindBox()
+
+// 抽奖弹窗相关
+const lotteryDialogVisible = ref(false)
+const lotteryResult = ref(null)
+const isDrawing = ref(false)
+const drawAnimationClass = ref('')
+
+// 放大镜相关
+const zoomVisible = ref(false)
+const zoomImageUrl = ref(imageUrls[0])
+const mainImageRef = ref(null)
+
+// 获取当前图片URL
+const getCurrentImage = () => {
+  return imageUrls[currentImageIndex.value] || imageUrls[0]
+}
+
+// 格式化价格
+const formatPrice = (price) => {
+  if (!price) return '0.00'
+  return parseFloat(price).toFixed(2)
+}
+
+// 放大镜功能 - 修复版本
+const handleImageMouseEnter = () => {
+  const currentImage = getCurrentImage()
+  if (currentImage) {
+    zoomImageUrl.value = currentImage
+    zoomVisible.value = true
+  }
+}
+
+const handleImageMouseMove = (event) => {
+  if (!zoomVisible.value || !mainImageRef.value) return
+  
+  const container = event.currentTarget
+  const rect = container.getBoundingClientRect()
+  
+  // 计算鼠标在图片上的位置百分比
+  const mouseX = event.clientX - rect.left
+  const mouseY = event.clientY - rect.top
+  
+  const width = rect.width
+  const height = rect.height
+  
+  // 确保鼠标位置在图片范围内
+  if (mouseX < 0 || mouseX > width || mouseY < 0 || mouseY > height) return
+  
+  // 计算放大镜中显示的区域
+  const xPercent = (mouseX / width) * 100
+  const yPercent = (mouseY / height) * 100
+  
+  // 更新放大镜图片的transform
+  const zoomImage = document.querySelector('.zoom-image')
+  if (zoomImage) {
+    zoomImage.style.transformOrigin = `${xPercent}% ${yPercent}%`
+    zoomImage.style.transform = 'scale(2)'
+  }
+}
+
+const handleImageMouseLeave = () => {
+  zoomVisible.value = false
+  // 重置transform
+  const zoomImage = document.querySelector('.zoom-image')
+  if (zoomImage) {
+    zoomImage.style.transform = 'scale(1)'
+  }
+}
+
+// 切换主图
+const changeMainImage = (index) => {
+  currentImageIndex.value = index
+  const newImage = getCurrentImage()
+  if (newImage) {
+    zoomImageUrl.value = newImage
+    // 重置transform
+    const zoomImage = document.querySelector('.zoom-image')
+    if (zoomImage) {
+      zoomImage.style.transform = 'scale(1)'
+    }
+  }
+}
+
+// 数量变化处理
+const handleQuantityChange = (value) => {
+  if (value > (product.value.stock || 999)) {
+    ElMessage.warning('库存不足')
+    quantity.value = product.value.stock || 1
+  }
+}
+
+const increaseQuantity = () => {
+  if (quantity.value < (product.value.stock || 999)) {
+    quantity.value++
+  }
+}
+
+const decreaseQuantity = () => {
+  if (quantity.value > 1) {
+    quantity.value--
+  }
+}
+
+// 添加到购物车
+const handleAddToCart = async () => {
+  if (!product.value.id) {
+    ElMessage.warning('商品信息不完整')
+    return
+  }
+
+  // 验证库存
+  if (quantity.value > (product.value.stock || 0)) {
+    ElMessage.warning('库存不足')
+    return
+  }
+
+  addingToCart.value = true
+  try {
+    const cartData = {
+      productId: product.value.id,
+      productName: product.value.name,
+      productMainImage: imageUrls[0],
+      quantity: quantity.value,
+      productUnitPrice: product.value.price,
+      selected: 1,
+      productTotalPrice: product.value.price * quantity.value,
+      specs: '',
+      shopId: product.value.shopId,
+      isBlindBox: true
+    }
+
+    const response = await addCart(cartData)
+
+    if (response.code === 200) {
+      ElMessage.success('已成功加入购物车')
+    } else {
+      ElMessage.error(response.msg || '加入购物车失败')
+    }
+  } catch (error) {
+    console.error('添加到购物车失败:', error)
+    ElMessage.error('添加到购物车失败，请稍后重试')
+  } finally {
+    addingToCart.value = false
+  }
+}
+
+// 立即购买
+const handleBuyNow = async () => {
+  if (!product.value.id) {
+    ElMessage.warning('商品信息不完整')
+    return
+  }
+
+  // 验证库存
+  if (quantity.value > (product.value.stock || 0)) {
+    ElMessage.warning('库存不足')
+    return
+  }
+
+  try {
+    // 获取用户地址列表
+    const addressRes = await getMyAddressList()
+    const addressData = addressRes.data || addressRes.rows || []
+
+    if (addressRes.code !== 200 || addressData.length === 0) {
+      ElMessage.warning('请先添加收货地址')
+      router.push('/user/profile')
+      return
+    }
+
+    // 选择默认地址或第一个地址
+    const defaultAddr = addressData.find(a => a.isDefault === 1 || a.defaultFlag === 1) || addressData[0]
+
+    // 准备购买数据，但不生成订单
+    purchaseOrder.value = {
+      // 创建临时订单对象
+      orderNo: 'PAY_' + Date.now(),
+      totalAmount: product.value.price * quantity.value,
+      orderStatus: 0, // 待支付状态
+      isBlindBox: true,
+      blindBoxProduct: {
+        name: product.value.name,
+        mainImage: imageUrls[0],
+        price: product.value.price,
+        quantity: quantity.value
+      },
+      addressId: defaultAddr.id // 保存地址ID用于后续订单生成
+    }
+    
+    // 设置购买弹窗数据
+    purchaseProducts.value = [{
+      name: product.value.name,
+      mainImage: imageUrls[0],
+      price: product.value.price,
+      quantity: quantity.value
+    }]
+    
+    // 显示支付弹窗而不是直接显示抽奖弹窗
+    purchaseDialogVisible.value = true
+  } catch (error) {
+    console.error('购买失败:', error)
+    ElMessage.error('购买失败，请稍后重试')
+  }
+}
+
+// 稍后支付
+const handlePayLater = (orderData) => {
+  ElMessage.success('订单已创建，请尽快完成支付')
+  purchaseDialogVisible.value = false
+  router.push('/user/orders')
+}
+
+// 立即支付
+const handlePayNow = async (orderData) => {
+  try {
+    // 记录支付方式，用于后续真实下单
+    purchaseOrder.value.paymentType = orderData.paymentType
+    
+    // 模拟支付成功，因为真实支付需要调用第三方支付接口
+    // 实际项目中应该调用真实的支付API
+    ElMessage.success('支付成功')
+    purchaseDialogVisible.value = false
+    
+    // 支付成功后显示抽奖弹窗
+    lotteryDialogVisible.value = true
+  } catch (error) {
+    console.error('支付失败:', error)
+    ElMessage.error(error.message || '支付失败，请稍后重试')
+  }
+}
+
+// 开始抽奖
+const startLottery = async () => {
+  if (!isPoolReady.value) {
+    await initLotteryPool()
+  }
+  
+  isDrawing.value = true
+  drawAnimationClass.value = 'lottery-spinning'
+  
+  try {
+    // 并行执行：抽奖逻辑 + 最小动画时间
+    const [result] = await Promise.all([
+      drawPrize(),
+      new Promise(resolve => setTimeout(resolve, 3000))
+    ])
+    
+    // 停止动画
+    drawAnimationClass.value = ''
+    
+    if (result) {
+      lotteryResult.value = {
+        ...result,
+        shopId: result.shopId,
+        productId: result.id,
+        name: result.name || result.productName,
+        price: result.price || result.productUnitPrice,
+        image: result.mainImage || result.productMainImage || imageUrls[0]
+      }
+      
+      isDrawing.value = false
+      
+      // 抽奖完成，生成订单
+      await updateOrderAfterLottery()
+    } else {
+      isDrawing.value = false
+      ElMessage.error('抽奖异常，请重试')
+    }
+  } catch (error) {
+    console.error('抽奖过程出错:', error)
+    isDrawing.value = false
+    drawAnimationClass.value = ''
+    ElMessage.error('网络异常，请重试')
+  }
+}
+
+// 抽奖后生成真实订单
+const updateOrderAfterLottery = async () => {
+  console.log('完整抽奖数据:', lotteryResult.value)
+  
+  if (!lotteryResult.value || !lotteryResult.value.productId) {
+     ElMessage.error('抽奖数据异常，无法生成订单')
+     return
+  }
+
+  try {
+    // 策略调整：
+    // 为了保证订单金额为盲盒价格(50元)，我们必须创建盲盒商品(ID: 9999)的订单。
+    // 然后将实际抽到的商品信息记录在备注(remark)和扩展属性(attributes)中。
+    // 这样后端计算价格时会使用50元，而前端显示的订单详情可以通过解析attributes展示真实奖品。
+    
+    const wonProduct = lotteryResult.value
+    
+    // 确保名字存在
+    const prizeName = wonProduct.name || wonProduct.productName || '未知奖品'
+    
+    const orderData = {
+      // 使用盲盒ID，确保价格是50   
+      productId: product.value.id, // 9999
+      quantity: quantity.value,
+      addressId: purchaseOrder.value.addressId,
+      
+      // 传递真实价格（后端可能忽略，所以主要靠神秘盲盒roductId）
+      price: product.value.price, 
+      
+      // 关键：将中奖信息写入备注
+      remark: `【盲盒中奖】${prizeName} (原价: ¥${wonProduct.price})`, 
+      
+      attributes: JSON.stringify({
+        isBlindBox: true,
+        isRefundable: false,
+        source: 'blind_box_lottery',
+        // 记录中奖商品的真实ID和信息，供前端订单列表展示使用
+        wonProductId: wonProduct.id || wonProduct.productId, // Handle both id formats
+        wonProductName: prizeName,
+        wonProductImage: wonProduct.mainImage || wonProduct.image,
+        wonShopId: wonProduct.shopId
+      })
+    }
+
+    console.log('提交订单数据:', orderData)
+
+    const orderRes = await createDirectOrder(orderData)
+
+    if (orderRes.code === 200) {
+      const orderNo = orderRes.data.orderNo || orderRes.data
+      if (orderNo) {
+        await payOrder(orderNo, purchaseOrder.value.paymentType || 1)
+      }
+      
+      ElMessage.success(`恭喜你抽到了：${prizeName}，订单已生成！`)
+      
+      setTimeout(() => {
+        lotteryDialogVisible.value = false
+        router.push('/user/orders')
+      }, 1500)
+    } else {
+      ElMessage.error(orderRes.msg || '创建订单失败')
+    }
+  } catch (error) {
+    console.error('生成订单失败:', error)
+    ElMessage.error('生成订单失败，请稍后重试')
+  }
+}
+
+onMounted(() => {
+  // 确保放大镜图片URL正确初始化
+  zoomImageUrl.value = getCurrentImage()
+  // 预热抽奖池
+  initLotteryPool()
+})
+</script>
+
+<template>
+  <div class="product-detail">
+    <!-- 面包屑导航 -->
+    <div class="breadcrumb-nav">
+      <div class="container">
+        <el-breadcrumb separator="/">
+          <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
+          <el-breadcrumb-item>{{ product.name }}</el-breadcrumb-item>
+        </el-breadcrumb>
+      </div>
+    </div>
+
+    <!-- 主商品区域 -->
+    <div class="product-main">
+      <div class="container">
+        <div class="product-layout">
+          <!-- 左侧区域：商品图片和详情 -->
+          <div class="left-column">
+            <!-- 商品图片区域 -->
+            <div class="product-gallery">
+              <!-- 主图区域 -->
+              <div class="main-image-area">
+                <div class="main-image-container"
+                  @mouseenter="handleImageMouseEnter"
+                  @mousemove="handleImageMouseMove" 
+                  @mouseleave="handleImageMouseLeave">
+                  <img 
+                    :src="getCurrentImage()" 
+                    :alt="product.name" 
+                    class="main-image" 
+                    ref="mainImageRef"
+                  />
+                  <div v-if="product.stock === 0" class="out-of-stock">
+                    已售罄
+                  </div>
+                </div>
+
+                <!-- 放大镜预览区域 -->
+                <div v-show="zoomVisible" class="zoom-preview">
+                  <div class="zoom-image-container">
+                    <img 
+                      :src="zoomImageUrl" 
+                      :alt="product.name" 
+                      class="zoom-image"
+                      :style="{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'contain'
+                      }"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <!-- 缩略图列表 -->
+              <div class="thumbnail-list">
+                <div v-for="(img, index) in imageUrls" :key="index"
+                  :class="['thumbnail-item', { active: currentImageIndex === index }]" 
+                  @click="changeMainImage(index)">
+                  <img :src="img" :alt="`${product.name}-${index + 1}`" />
+                </div>
+              </div>
+            </div>
+
+            <!-- 商品详情区域 -->
+            <div class="product-tabs">
+              <div class="tabs-header">
+                <div :class="['tab-item', { active: activeTab === 'detail' }]" @click="activeTab = 'detail'">
+                  图文详情
+                </div>
+              </div>
+
+              <div class="tabs-content">
+                <!-- 图文详情 -->
+                <div v-show="activeTab === 'detail'" class="tab-pane detail-pane">
+                  <div class="detail-images">
+                    <div v-for="(img, index) in imageUrls" :key="index" class="detail-image-item">
+                      <img :src="img" :alt="`${product.name}-图${index + 1}`" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 右侧区域：商品信息（固定位置） -->
+          <div class="right-column">
+            <div class="product-info-fixed">
+              <div class="info-card">
+                <!-- 商品标题 -->
+                <h1 class="product-title">{{ product.name }}</h1>
+
+                <!-- 价格区域 -->
+                <div class="price-section">
+                  <div class="price-row">
+                    <span class="price-label">价格</span>
+                    <div class="price-main">
+                      <span class="price-currency">¥</span>
+                      <span class="price-value">{{ formatPrice(product.price) }}</span>
+                    </div>
+                  </div>
+                  <div class="price-extra">
+                    <span class="stock">库存 {{ product.stock || 0 }} 件</span>
+                  </div>
+                </div>
+
+                <!-- 服务承诺 -->
+                <div class="service-promise">
+                  <div class="service-item">
+                    <el-icon>
+                      <Timer />
+                    </el-icon>
+                    <span>现货，付款后48小时内发货</span>
+                  </div>
+                  <div class="service-item">
+                    <el-icon>
+                      <CircleCheck />
+                    </el-icon>
+                    <span>快递：免运费</span>
+                  </div>
+                  <div class="service-item">
+                    <el-icon>
+                      <CircleCheck />
+                    </el-icon>
+                    <span>特殊商品不可退货</span>
+                  </div>
+                </div>
+
+                <!-- 数量选择 -->
+                <div class="quantity-section">
+                  <div class="quantity-label">数量</div>
+                  <div class="quantity-control">
+                    <button class="quantity-btn minus" @click="decreaseQuantity" :disabled="quantity <= 1">
+                      <el-icon>
+                        <Minus />
+                      </el-icon>
+                    </button>
+                    <input v-model.number="quantity" type="number" min="1" :max="product.stock || 999"
+                      class="quantity-input" @change="handleQuantityChange" />
+                    <button class="quantity-btn plus" @click="increaseQuantity"
+                      :disabled="quantity >= (product.stock || 999)">
+                      <el-icon>
+                        <Plus />
+                      </el-icon>
+                    </button>
+                  </div>
+                  <div class="stock-info">库存 {{ product.stock || 0 }} 件</div>
+                </div>
+
+                <!-- 操作按钮 -->
+                <div class="action-buttons">
+                  <button class="btn add-cart" :class="{ loading: addingToCart }" @click="handleAddToCart"
+                    :disabled="product.stock === 0">
+                    <el-icon>
+                      <ShoppingCartFull />
+                    </el-icon>
+                    <span v-if="!addingToCart">加入购物车</span>
+                    <span v-else>添加中...</span>
+                  </button>
+                  <button class="btn buy-now" @click="handleBuyNow" :disabled="product.stock === 0">
+                    立即购买
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 购买弹窗 -->
+  <PurchaseDialog v-model="purchaseDialogVisible" :products="purchaseProducts" :order="purchaseOrder"
+    :need-create-order="false" @pay-later="handlePayLater" @pay-now="handlePayNow" />
+
+  <!-- 抽奖弹窗 -->
+  <el-dialog
+    v-model="lotteryDialogVisible"
+    title="盲盒抽奖"
+    width="500px"
+    :close-on-click-modal="false"
+    :close-on-press-escape="false"
+    :show-close="!isDrawing"
+  >
+    <div class="lottery-container">
+      <div v-if="isDrawing" class="lottery-drawing">
+        <img src="@/assets/images/BlindBox.png" alt="盲盒抽奖" class="blind-box-image" :class="drawAnimationClass" />
+        <div class="drawing-text">正在抽奖...</div>
+      </div>
+      <div v-else-if="lotteryResult" class="lottery-result">
+        <div class="result-title">恭喜你抽到了！</div>
+        <div class="result-prize">({{ lotteryResult.name }})</div>
+        <div class="result-info">您的订单已更新为抽到的商品</div>
+      </div>
+      <div v-else class="lottery-waiting">
+        <img src="@/assets/images/BlindBox.png" alt="盲盒抽奖" class="blind-box-image" />
+        <div class="waiting-text">准备抽奖</div>
+        <div class="waiting-subtext">点击开始按钮抽取您的商品</div>
+      </div>
+    </div>
+
+    <template #footer>
+      <div class="lottery-footer">
+        <el-button 
+          v-if="!isDrawing && !lotteryResult"
+          type="primary"
+          @click="startLottery"
+          :loading="isDrawing"
+        >
+          开始抽奖
+        </el-button>
+        <el-button 
+          v-if="lotteryResult"
+          type="primary"
+          @click="lotteryDialogVisible = false"
+        >
+          确定
+        </el-button>
+      </div>
+    </template>
+  </el-dialog>
+</template>
+
+<style scoped>
+/* 重置样式 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.product-detail {
+  width: 100%;
+  min-height: 100vh;
+  background: #f5f5f5;
+  font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* 面包屑导航 */
+.breadcrumb-nav {
+  height: 40px;
+  background: #fff;
+  border-bottom: 1px solid #e5e5e5;
+  display: flex;
+  align-items: center;
+}
+
+.breadcrumb-nav .el-breadcrumb {
+  font-size: 12px;
+  color: #666;
+}
+
+.breadcrumb-nav :deep(.el-breadcrumb__inner) {
+  color: #666;
+}
+
+.breadcrumb-nav :deep(.el-breadcrumb__inner:hover) {
+  color: #ff5000;
+}
+
+/* 主商品区域 */
+.product-main {
+  padding: 20px 0;
+  background: #fff;
+}
+
+.product-layout {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  position: relative;
+}
+
+/* 左侧列 */
+.left-column {
+  flex: 1;
+  min-width: 0;
+  margin-right: 400px;
+}
+
+/* 右侧列 - 固定位置 */
+.right-column {
+  position: fixed;
+  top: 80px;
+  right: calc(50% - 600px + 20px);
+  width: 380px;
+  height: calc(100vh - 100px);
+  overflow-y: auto;
+  z-index: 100;
+}
+
+.product-info-fixed {
+  position: sticky;
+  top: 0;
+}
+
+/* 商品图片区域 */
+.product-gallery {
+  background: #fff;
+  padding: 20px;
+  border: 1px solid #e5e5e5;
+  border-radius: 4px;
+  margin-bottom: 20px;
+}
+
+/* 主图区域 */
+.main-image-area {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.main-image-container {
+  width: 100%;
+  height: 500px;
+  border: 1px solid #e5e5e5;
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+  background: #f8f8f8;
+  cursor: crosshair;
+}
+
+.main-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.out-of-stock {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+/* 放大镜预览区域 */
+.zoom-preview {
+  position: absolute;
+  left: 100%;
+  top: 0;
+  margin-left: 20px;
+  width: 400px;
+  height: 400px;
+  border: 1px solid #e5e5e5;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  background: #fff;
+}
+
+.zoom-image-container {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.zoom-image {
+  transition: transform 0.1s ease-out;
+  transform-origin: center center;
+}
+
+/* 缩略图列表 */
+.thumbnail-list {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 10px 0;
+  margin-bottom: 20px;
+}
+
+.thumbnail-item {
+  width: 80px;
+  height: 80px;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  overflow: hidden;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  background: #f8f8f8;
+}
+
+.thumbnail-item:hover,
+.thumbnail-item.active {
+  border-color: #ff5000;
+}
+
+.thumbnail-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 商品详情和评价区域 */
+.product-tabs {
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.tabs-header {
+  display: flex;
+  border-bottom: 1px solid #e5e5e5;
+  background: #f8f9fa;
+}
+
+.tab-item {
+  padding: 15px 30px;
+  font-size: 16px;
+  color: #333;
+  cursor: pointer;
+  position: relative;
+  user-select: none;
+  flex: 1;
+  text-align: center;
+}
+
+.tab-item:hover {
+  color: #ff5000;
+}
+
+.tab-item.active {
+  color: #ff5000;
+  font-weight: 600;
+  background: #fff;
+}
+
+.tab-item.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #ff5000;
+}
+
+.tabs-content {
+  padding: 20px;
+}
+
+/* 图文详情 */
+.detail-images {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.detail-image-item img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
+
+/* 右侧固定卡片 */
+.info-card {
+  padding: 20px;
+  border: 1px solid #e5e5e5;
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+}
+
+.product-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+
+.product-subtitle {
+  font-size: 14px;
+  color: #999;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+/* 价格区域 */
+.price-section {
+  padding: 15px;
+  background: linear-gradient(135deg, #fff5f5 0%, #ffecec 100%);
+  border-radius: 4px;
+  margin-bottom: 20px;
+}
+
+.price-row {
+  display: flex;
+  align-items: flex-end;
+  margin-bottom: 8px;
+}
+
+.price-label {
+  font-size: 14px;
+  color: #666;
+  margin-right: 10px;
+}
+
+.price-main {
+  display: flex;
+  align-items: baseline;
+}
+
+.price-currency {
+  font-size: 18px;
+  color: #ff5000;
+  font-weight: 600;
+}
+
+.price-value {
+  font-size: 30px;
+  color: #ff5000;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.price-extra {
+  display: flex;
+  gap: 20px;
+  font-size: 12px;
+  color: #666;
+}
+
+/* 服务承诺 */
+.service-promise {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  border-left: 3px solid #ff5000;
+}
+
+.service-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #666;
+}
+
+.service-item .el-icon {
+  color: #52c41a;
+  font-size: 14px;
+}
+
+/* 数量选择 */
+.quantity-section {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 25px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.quantity-label {
+  font-size: 14px;
+  color: #333;
+  font-weight: 500;
+}
+
+.quantity-control {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+}
+
+.quantity-btn {
+  width: 32px;
+  height: 32px;
+  background: #f5f5f5;
+  border: 1px solid #dcdfe6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 12px;
+}
+
+.quantity-btn:hover {
+  background: #e8e8e8;
+}
+
+.quantity-btn:disabled {
+  background: #f5f5f5;
+  color: #ccc;
+  cursor: not-allowed;
+}
+
+.quantity-btn.minus {
+  border-radius: 4px 0 0 4px;
+}
+
+.quantity-btn.plus {
+  border-radius: 0 4px 4px 0;
+}
+
+.quantity-input {
+  width: 50px;
+  height: 32px;
+  border: 1px solid #dcdfe6;
+  border-left: none;
+  border-right: none;
+  text-align: center;
+  font-size: 14px;
+  color: #333;
+}
+
+.quantity-input:focus {
+  outline: none;
+  border-color: #ff5000;
+}
+
+.stock-info {
+  font-size: 12px;
+  color: #999;
+  margin-left: auto;
+}
+
+/* 操作按钮 */
+.action-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.btn {
+  flex: 1;
+  height: 44px;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: none;
+}
+
+.btn.add-cart {
+  background: linear-gradient(135deg, #ff9000 0%, #ff5000 100%);
+  color: #fff;
+}
+
+.btn.add-cart:hover {
+  opacity: 0.9;
+}
+
+.btn.add-cart:disabled,
+.btn.buy-now:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.btn.buy-now {
+  background: linear-gradient(135deg, #ff3c00 0%, #e60000 100%);
+  color: #fff;
+}
+
+.btn.buy-now:hover {
+  opacity: 0.9;
+}
+
+.btn.loading {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+/* 响应式设计 */
+@media (max-width: 1199px) {
+  .container {
+    max-width: 100%;
+  }
+
+  .left-column {
+    margin-right: 350px;
+  }
+
+  .right-column {
+    width: 350px;
+    right: 20px;
+  }
+}
+
+@media (max-width: 991px) {
+  .product-layout {
+    flex-direction: column;
+  }
+
+  .left-column {
+    width: 100%;
+    margin-right: 0;
+  }
+
+  .right-column {
+    position: static;
+    width: 100%;
+    height: auto;
+    overflow-y: visible;
+  }
+
+  .product-info-fixed {
+    position: static;
+  }
+
+  .zoom-preview {
+    display: none;
+  }
+
+  .main-image-container {
+    height: 400px;
+  }
+}
+
+@media (max-width: 767px) {
+  .container {
+    padding: 0 15px;
+  }
+
+  .main-image-container {
+    height: 320px;
+  }
+
+  .thumbnail-item {
+    width: 70px;
+    height: 70px;
+  }
+
+  .product-title {
+    font-size: 18px;
+  }
+
+  .price-value {
+    font-size: 26px;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 479px) {
+  .container {
+    padding: 0 10px;
+  }
+
+  .main-image-container {
+    height: 260px;
+  }
+
+  .thumbnail-item {
+    width: 60px;
+    height: 60px;
+  }
+}
+
+/* 抽奖弹窗样式 */
+.lottery-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30px 0;
+  min-height: 300px;
+}
+
+/* 抽奖转盘样式 */
+.lottery-drawing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 抽奖结果样式 */
+.lottery-result {
+  text-align: center;
+  padding: 30px;
+}
+
+.result-title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #ff4400;
+  margin-bottom: 20px;
+}
+
+.result-prize {
+  font-size: 32px;
+  font-weight: bold;
+  color: #ff4400;
+  margin-bottom: 20px;
+  padding: 10px 20px;
+  background-color: #fff8f0;
+  border-radius: 10px;
+}
+
+.result-info {
+  font-size: 16px;
+  color: #666;
+}
+
+/* 等待抽奖样式 */
+.lottery-waiting {
+  text-align: center;
+  padding: 50px;
+}
+
+.waiting-text {
+  font-size: 24px;
+  font-weight: bold;
+  color: #ff4400;
+  margin-bottom: 10px;
+}
+
+.waiting-subtext {
+  font-size: 16px;
+  color: #666;
+}
+
+.blind-box-image {
+  width: 200px;
+  height: 200px;
+  object-fit: contain;
+  margin-bottom: 20px;
+  transition: transform 3s ease-out;
+}
+
+.lottery-spinning {
+  transform: rotate(1800deg); /* 旋转5圈 */
+}
+
+.lottery-footer {
+  display: flex;
+  justify-content: center;
+}
+</style>

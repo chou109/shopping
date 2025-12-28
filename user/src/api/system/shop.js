@@ -8,6 +8,14 @@ export function getShopInfo(id) {
   })
 }
 
+// 根据店铺ID查询商品列表
+export function getShopProducts(shopId) {
+  return request({
+    url: `/system/product/shop/${shopId}`,
+    method: 'get'
+  })
+}
+
 // 搜索店铺
 export function searchShop(keyword, status) {
   return request({

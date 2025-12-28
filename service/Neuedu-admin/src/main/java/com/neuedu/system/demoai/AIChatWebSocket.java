@@ -42,12 +42,22 @@ public class AIChatWebSocket {
             ChatRequest request = objectMapper.readValue(message, ChatRequest.class);
             String userQuestion = request.getQuestion().trim();
             Long productId = request.getProductId();
+            Long userId = request.getUserId(); // 新增：获取用户ID
 
             if (userQuestion.isEmpty()) {
                 sendMessage(session, buildResponse("stream", "请问您想咨询什么问题呢？"));
                 sendMessage(session, buildResponse("end", ""));
                 return;
             }
+
+            // 新增：处理订单查询请求
+            if (zhipuAIService.isOrderQueryRequest(userQuestion)) {
+                String response = zhipuAIService.handleOrderQuery(userQuestion, userId);
+                sendMessage(session, buildResponse("stream", response));
+                sendMessage(session, buildResponse("end", ""));
+                return;
+            }
+
             // 新增：专门处理商品价格查询
             if (isProductPriceQuery(userQuestion)) {
                 String response = zhipuAIService.handleProductPriceQuery(userQuestion);
@@ -387,12 +397,16 @@ public class AIChatWebSocket {
     public static class ChatRequest {
         private String question;
         private Long productId;
+        private Long userId; // 新增：用户ID字段
 
         public String getQuestion() { return question; }
         public void setQuestion(String question) { this.question = question; }
 
         public Long getProductId() { return productId; }
         public void setProductId(Long productId) { this.productId = productId; }
+
+        public Long getUserId() { return userId; }
+        public void setUserId(Long userId) { this.userId = userId; }
     }
 //    @Bean
 //    public WebMvcConfigurer corsConfigurer() {

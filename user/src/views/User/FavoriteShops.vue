@@ -2,7 +2,6 @@
   <div class="favorite-shops">
     <!-- 页面头部 -->
     <div class="page-header">
-      <h3>收藏店铺</h3>
       <span class="count">共关注 {{ favoriteList.length }} 家店铺</span>
     </div>
 
@@ -15,12 +14,7 @@
       </div>
 
       <div v-else class="shop-list">
-        <div 
-          v-for="item in favoriteList" 
-          :key="item.favoriteId" 
-          class="shop-card"
-          @click="goShopDetail(item.targetId)"
-        >
+        <div v-for="item in favoriteList" :key="item.favoriteId" class="shop-card" @click="goShopDetail(item.targetId)">
           <div class="shop-logo">
             <img :src="getShopLogoUrl(item.shopLogo)" :alt="item.shopName" @error="handleLogoError" />
           </div>
@@ -28,11 +22,15 @@
             <div class="shop-name">{{ item.shopName || '未知店铺' }}</div>
             <div class="shop-meta">
               <span class="followers">
-                <el-icon><User /></el-icon>
+                <el-icon>
+                  <User />
+                </el-icon>
                 {{ formatNumber(item.shopFollowers) }} 粉丝
               </span>
               <span class="rating" v-if="item.shopRating">
-                <el-icon><Star /></el-icon>
+                <el-icon>
+                  <Star />
+                </el-icon>
                 {{ item.shopRating }}
               </span>
             </div>
@@ -41,19 +39,10 @@
             </div>
           </div>
           <div class="shop-actions">
-            <el-button 
-              type="danger" 
-              size="small" 
-              plain
-              @click.stop="handleRemoveFavorite(item)"
-            >
+            <el-button type="danger" size="small" plain @click.stop="handleRemoveFavorite(item)">
               取消关注
             </el-button>
-            <el-button 
-              type="primary" 
-              size="small"
-              @click.stop="goShopDetail(item.targetId)"
-            >
+            <el-button type="primary" size="small" @click.stop="goShopDetail(item.targetId)">
               进入店铺
             </el-button>
           </div>
@@ -100,7 +89,7 @@ const handleRemoveFavorite = async (item) => {
       cancelButtonText: '取消',
       type: 'warning'
     })
-    
+
     const res = await removeFavorite(2, item.targetId) // 2表示店铺
     if (res.code === 200) {
       ElMessage.success('已取消关注')
@@ -150,7 +139,7 @@ const formatTime = (time) => {
 // 跳转店铺详情
 const goShopDetail = (shopId) => {
   router.push({
-    path: '/shop/detail',
+    path: '/shop',
     query: { id: shopId }
   })
 }

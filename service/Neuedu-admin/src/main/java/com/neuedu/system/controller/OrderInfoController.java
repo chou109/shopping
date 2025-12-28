@@ -57,6 +57,20 @@ public class OrderInfoController extends BaseController {
     }
 
     /**
+     * 获取我的订单数量
+     */
+    @Operation(summary = "获取我的订单数量")
+    @GetMapping("/my/count")
+    public AjaxResult myOrderCount() {
+        Long userId = SecurityUtils.getUserId();
+        if (userId == null) {
+            return success(0);
+        }
+        List<OrderInfo> list = orderInfoService.selectOrderListByUserId(userId, null);
+        return success(list != null ? list.size() : 0);
+    }
+
+    /**
      * 创建订单（从购物车，用户端）
      */
     @Operation(summary = "创建订单（从购物车）")

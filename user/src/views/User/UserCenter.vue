@@ -47,7 +47,7 @@
       </div>
 
       <!-- 右侧内容区域 - 滚动容器 -->
-      <div class="user-content" ref="contentRef" @scroll="handleContentScroll">
+      <div class="user-content" style="margin-top: -50px;" ref="contentRef" @scroll="handleContentScroll">
         <div class="page-header">
           <h2>{{ pageTitle }}</h2>
           <div class="page-subtitle">{{ pageSubtitle }}</div>

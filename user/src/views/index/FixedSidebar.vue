@@ -18,7 +18,6 @@
         <el-icon>
           <ShoppingCart />
         </el-icon>
-        <span v-if="cartCount > 0" class="item-badge">{{ formatCount(cartCount) }}</span>
       </div>
       <div class="item-text">购物车</div>
     </div>
@@ -42,8 +41,6 @@
         <el-icon>
           <Headset />
         </el-icon>
-        <!-- 可选：添加AI助手消息提示 -->
-        <span v-if="chatUnreadCount > 0" class="item-badge">{{ formatCount(chatUnreadCount) }}</span>
       </div>
       <div class="item-text">AI助手</div>
     </div>

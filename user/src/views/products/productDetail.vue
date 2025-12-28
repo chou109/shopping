@@ -270,13 +270,14 @@ const loadProductComments = async () => {
       // 确保评论数组格式正确
       if (Array.isArray(comments)) {
         // 标准化评论数据结构，确保必要字段存在
-        const normalizedComments = comments.map(comment => ({
+        const normalizeComment = (comment) => ({
           commentId: comment.commentId || comment.id || 0,
           productId: comment.productId || product.value.id,
           userId: comment.userId || 0,
           parentId: comment.parentId || comment.pid || 0,
-          nickName: comment.nickName || comment.username || '匿名用户',
-          avatar: comment.avatar || '/src/assets/images/default-avatar.png',
+          nickName: comment.nickName || comment.userName || comment.username || '',
+          userAvatar: comment.userAvatar || comment.avatar || '/src/assets/images/default-avatar.png',
+          avatar: comment.userAvatar || comment.avatar || '/src/assets/images/default-avatar.png',
           content: comment.content || '',
           score: comment.score || 0,
           images: comment.images || comment.imgs || [],
@@ -284,9 +285,11 @@ const loadProductComments = async () => {
           replyCount: comment.replyCount || 0,
           createTime: comment.createTime || comment.time || new Date().toISOString(),
           isAnonymous: comment.isAnonymous || 0,
-          children: comment.children || comment.replies || []
-        }))
-        
+          children: (comment.children || comment.replies || []).map(child => normalizeComment(child))
+        })
+
+        const normalizedComments = comments.map(comment => normalizeComment(comment))
+
         productComments.value = normalizedComments
         commentPageParams.value.total = response.total || response.data?.total || normalizedComments.length
       } else {
@@ -694,7 +697,7 @@ const handleBuyNow = async () => {
     // 获取用户地址列表
     const addressRes = await getMyAddressList()
     const addressData = addressRes.data || addressRes.rows || []
-    
+
     if (addressRes.code !== 200 || addressData.length === 0) {
       ElMessage.warning('请先添加收货地址')
       router.push('/user/profile')
@@ -703,16 +706,16 @@ const handleBuyNow = async () => {
 
     // 选择默认地址或第一个地址
     const defaultAddr = addressData.find(a => a.isDefault === 1 || a.defaultFlag === 1) || addressData[0]
-    
+
     // 创建直接购买订单
     const orderData = {
       productId: product.value.id,
       quantity: quantity.value,
       addressId: defaultAddr.id
     }
-    
+
     const orderRes = await createDirectOrder(orderData)
-    
+
     if (orderRes.code === 200 && orderRes.data) {
       // 设置购买弹窗数据
       purchaseProducts.value = [{
@@ -955,10 +958,11 @@ onMounted(() => {
                         <div class="comment-item">
                           <!-- 评论内容 -->
                           <div class="comment-header">
-                            <img :src="comment.avatar" :alt="comment.nickName" class="user-avatar"
+                            <img :src="getProductImageUrl(comment.avatar)" :alt="comment.nickName" class="user-avatar"
                               @error="handleImageError" />
                             <div class="user-info">
-                              <div class="user-name">{{ comment.isAnonymous ? '匿名用户' : comment.nickName }}</div>
+                              <div class="user-name">{{ comment.isAnonymous === 1 ? '匿名用户' : (comment.nickName ||
+                                `用户${comment.userId}`) }}</div>
                               <div class="comment-time">{{ formatTime(comment.createTime) }}</div>
                             </div>
                           </div>
@@ -975,7 +979,8 @@ onMounted(() => {
 
                           <div v-if="comment.images && comment.images.length > 0" class="comment-images">
                             <div v-for="(img, imgIndex) in comment.images" :key="imgIndex" class="comment-image">
-                              <img :src="img" :alt="`评价图片${imgIndex + 1}`" @error="handleImageError" />
+                              <img :src="getProductImageUrl(img)" :alt="`评价图片${imgIndex + 1}`"
+                                @error="handleImageError" />
                             </div>
                           </div>
 
@@ -983,12 +988,12 @@ onMounted(() => {
                           <div v-if="comment.children && comment.children.length > 0" class="comment-replies">
                             <div v-for="reply in comment.children" :key="reply.commentId" class="reply-item">
                               <div class="reply-header">
-                                <img :src="reply.avatar" :alt="reply.nickName" class="reply-avatar"
-                                  @error="handleImageError" />
+                                <img :src="getProductImageUrl(reply.userAvatar || reply.avatar)" :alt="reply.nickName"
+                                  class="reply-avatar" @error="handleImageError" />
                                 <div class="reply-user-info">
                                   <div class="reply-user-name">
-                                    <span v-if="reply.userId === shopInfo.id" class="shop-tag">商家</span>
-                                    {{ reply.nickName }}
+                                    <span v-if="reply.userId === shopInfo.userId" class="shop-tag">商家</span>
+                                    {{ reply.isAnonymous === 1 ? '匿名用户' : (reply.nickName || `用户${reply.userId}`) }}
                                   </div>
                                   <div class="reply-time">{{ formatTime(reply.createTime) }}</div>
                                 </div>
@@ -1007,12 +1012,13 @@ onMounted(() => {
                                 <div v-for="subReply in reply.children" :key="subReply.commentId"
                                   class="sub-reply-item">
                                   <div class="sub-reply-header">
-                                    <img :src="subReply.avatar" :alt="subReply.nickName" class="sub-reply-avatar"
-                                      @error="handleImageError" />
+                                    <img :src="getProductImageUrl(subReply.userAvatar || subReply.avatar)"
+                                      :alt="subReply.nickName" class="sub-reply-avatar" @error="handleImageError" />
                                     <div class="sub-reply-user-info">
                                       <div class="sub-reply-user-name">
-                                        <span v-if="subReply.userId === shopInfo.id" class="shop-tag">商家</span>
-                                        {{ subReply.nickName }}
+                                        <span v-if="subReply.userId === shopInfo.userId" class="shop-tag">商家</span>
+                                        {{ subReply.isAnonymous === 1 ? '匿名用户' : (subReply.nickName ||
+                                        `用户${subReply.userId}`) }}
                                       </div>
                                       <div class="sub-reply-time">{{ formatTime(subReply.createTime) }}</div>
                                     </div>
@@ -1162,15 +1168,9 @@ onMounted(() => {
   </div>
 
   <!-- 购买弹窗 -->
-  <PurchaseDialog
-    v-model="purchaseDialogVisible"
-    :products="purchaseProducts"
-    :order="purchaseOrder"
-    :need-create-order="false"
-    @pay-later="handlePayLater"
-    @pay-now="handlePayNow"
-    @cancel="purchaseDialogVisible = false"
-  />
+  <PurchaseDialog v-model="purchaseDialogVisible" :products="purchaseProducts" :order="purchaseOrder"
+    :need-create-order="false" @pay-later="handlePayLater" @pay-now="handlePayNow"
+    @cancel="purchaseDialogVisible = false" />
 </template>
 
 <style scoped>
@@ -1611,6 +1611,37 @@ onMounted(() => {
   background: #fff;
 }
 
+.comment-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #e5e5e5;
+}
+
+.user-info {
+  flex: 1;
+}
+
+.user-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+}
+
+.comment-time {
+  font-size: 12px;
+  color: #999;
+  margin-top: 2px;
+}
+
 /* 在 style 部分添加以下样式 */
 .comment-replies {
   margin-top: 15px;
@@ -1636,10 +1667,11 @@ onMounted(() => {
 }
 
 .reply-avatar {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   object-fit: cover;
+  border: 1px solid #e5e5e5;
 }
 
 .reply-user-info {
@@ -1705,10 +1737,11 @@ onMounted(() => {
 }
 
 .sub-reply-avatar {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   object-fit: cover;
+  border: 1px solid #e5e5e5;
 }
 
 .sub-reply-user-info {

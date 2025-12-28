@@ -1,4 +1,33 @@
 export function getProductImageUrl(imagePath) {
+  // 处理Vite图片模块对象
+  if (typeof imagePath === 'object' && imagePath.default) {
+    imagePath = imagePath.default;
+  }
+  
+  // 处理可能的图片对象格式（如{ url: 'xxx' }）
+  if (typeof imagePath === 'object' && imagePath.url) {
+    imagePath = imagePath.url;
+  }
+  
+  // 处理数组格式（取第一个元素）
+  if (Array.isArray(imagePath)) {
+    imagePath = imagePath[0] || '';
+    // 如果第一个元素还是对象，递归处理
+    if (typeof imagePath === 'object') {
+      return getProductImageUrl(imagePath);
+    }
+  }
+  
+  // 确保imagePath是字符串
+  if (typeof imagePath !== 'string') {
+    try {
+      imagePath = String(imagePath);
+    } catch (e) {
+      console.error('无法将图片路径转换为字符串:', imagePath);
+      return '/src/assets/images/default-product.png';
+    }
+  }
+
   if (!imagePath || imagePath === '') {
     return '/src/assets/images/default-product.png';
   }

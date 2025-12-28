@@ -36,6 +36,7 @@
             <span class="tip-item">• 推荐商品</span>
             <span class="tip-item">• 解答售后问题</span>
             <span class="tip-item">• 查询物流信息</span>
+            <span class="tip-item">• 查询订单状态</span>
           </div>
         </div>
       </div>
@@ -127,8 +128,17 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick } from 'vue';
+import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue';
+import { useStore } from 'vuex';
 import { getWebSocketUrl } from '@/utils/request';
+
+// Vuex store
+const store = useStore();
+
+// 获取当前用户ID
+const currentUserId = computed(() => {
+  return store.state.user?.userId || localStorage.getItem('userId') || null;
+});
 // 响应式数据
 const chatList = ref([]);
 const inputMsg = ref('');
@@ -149,15 +159,21 @@ const lastMessageRef = ref(null);
 // 示例问题
 const exampleQuestions = ref([
   '你好',
+  '查看我的订单',
+  '我的订单状态',
+  '查看待付款订单',
   '有没有推荐的苹果手机？',
   '有没有推荐的小米手机？',
   '我想要2000元以上的苹果手机',
-  '有没有推荐的衣服？',
   '什么时候发货？',
+<<<<<<< HEAD
+  '如何退货？'
+=======
   '如何退货？',
   '价格是多少？',
   //'帮我推荐500元以下的商品',
   '我想买华为的手机'
+>>>>>>> c9eadacee5ed0110a18e451b8a34a4ddf2f5ce84
 ]);
 
 // WebSocket实例
@@ -388,7 +404,8 @@ const sendMessage = () => {
   
   ws.send(JSON.stringify({
     question: text,
-    productId: null
+    productId: null,
+    userId: currentUserId.value
   }));
   
   inputMsg.value = '';

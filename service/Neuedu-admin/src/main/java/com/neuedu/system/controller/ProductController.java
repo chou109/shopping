@@ -13,7 +13,9 @@ import com.neuedu.common.core.controller.BaseController;
 import com.neuedu.common.core.domain.AjaxResult;
 import com.neuedu.common.enums.BusinessType;
 import com.neuedu.system.domain.Product;
+import com.neuedu.system.domain.Shop;
 import com.neuedu.system.service.IProductService;
+import com.neuedu.system.service.IShopService;
 import com.neuedu.common.utils.poi.ExcelUtil;
 import com.neuedu.common.core.page.TableDataInfo;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -32,6 +34,7 @@ import io.swagger.v3.oas.annotations.Operation;
 public class ProductController extends BaseController
 {
     private final IProductService productService;
+    private final IShopService shopService;
 
     /**
      * 查询商品列表
@@ -116,6 +119,25 @@ public class ProductController extends BaseController
     public AjaxResult search(@RequestParam String keyword)
     {
         List<Product> list = productService.searchProductByName(keyword);
+        return success(list);
+    }
+
+    /**
+     * 根据店铺ID查询商品列表（公开接口）
+     */
+    @Operation(summary = "根据店铺ID查询商品")
+    @GetMapping("/shop/{shopId}")
+    public AjaxResult byShop(@PathVariable Long shopId)
+    {
+        // 先查询店铺获取店主用户ID
+        Shop shop = shopService.selectShopById(shopId);
+        if (shop == null) {
+            return error("店铺不存在");
+        }
+        Product query = new Product();
+        query.setCreateUser(shop.getUserId()); // 使用店主用户ID查询
+        query.setStatus(1); // 只查询上架商品
+        List<Product> list = productService.selectProductList(query);
         return success(list);
     }
 

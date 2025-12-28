@@ -27,6 +27,11 @@ export const constantRoutes = [
     hidden: true
   },
   {
+    path: '/qq-callback',
+    component: () => import('@/views/qq-callback'),
+    hidden: true
+  },
+  {
     path: "/:pathMatch(.*)*",
     component: () => import('@/views/error/404'),
     hidden: true
@@ -126,6 +131,19 @@ export const constantRoutes = [
       }
     ]
   },
+  // 搜索路由
+  {
+    path: '/search',
+    name: 'Search',
+    component: Layout,
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/products/ProductsSearch.vue'),
+        meta: { title: '搜索结果' }
+      }
+    ]
+  },
   {
     path: '/product/detail',
     name: 'ProductDetail',
@@ -135,6 +153,31 @@ export const constantRoutes = [
         path: '',
         component: () => import('@/views/products/productDetail.vue'),
         meta: { title: '商品详情' }
+      }
+    ]
+  },
+  {
+    path: '/shop',
+    name: 'ShopDetail',
+    component: Layout,
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/products/ShopDetail.vue'),
+        meta: { title: '店铺详情' }
+
+      }
+    ]
+  },
+  {
+    path: '/product/blind-box',
+    name: 'BlindBoxDetail',
+    component: Layout,
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/products/blindBoxDetail.vue'),
+        meta: { title: '盲盒商品' }
       }
     ]
   }
