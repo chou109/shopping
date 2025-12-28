@@ -1,6 +1,8 @@
 package com.neuedu.system.controller;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -13,6 +15,7 @@ import com.neuedu.common.annotation.Log;
 import com.neuedu.common.core.controller.BaseController;
 import com.neuedu.common.core.domain.AjaxResult;
 import com.neuedu.common.enums.BusinessType;
+import com.neuedu.common.utils.SecurityUtils;
 import com.neuedu.system.domain.Shop;
 import com.neuedu.system.service.IShopService;
 import com.neuedu.common.utils.poi.ExcelUtil;
@@ -42,6 +45,20 @@ public class ShopController extends BaseController
     @GetMapping("/list")
     public TableDataInfo list(Shop shop)
     {
+        Long userId = SecurityUtils.getUserId();
+        // 如果是商家（user_id=2），只能查看自己的店铺
+        if (userId != null && userId == 2L) {
+            Shop myShop = shopService.getMyShop();
+            if (myShop != null) {
+                List<Shop> list = Arrays.asList(myShop);
+                TableDataInfo dataTable = getDataTable(list);
+                dataTable.setTotal(1);
+                return dataTable;
+            } else {
+                return getDataTable(new ArrayList<>());
+            }
+        }
+        
         startPage();
         List<Shop> list = shopService.selectShopList(shop);
         return getDataTable(list);

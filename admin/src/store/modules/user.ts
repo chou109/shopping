@@ -18,6 +18,7 @@ const useUserStore = defineStore(
       token: getToken(),
       name: '',
       avatar: '',
+      userId: null,
       roles: Array(),
       permissions: []
     }),
@@ -54,6 +55,7 @@ const useUserStore = defineStore(
             }
             this.name = user.userName
             this.avatar = avatar;
+            this.userId = user.userId;
             resolve(res)
           }).catch(error => {
             reject(error)
@@ -67,6 +69,7 @@ const useUserStore = defineStore(
             this.token = ''
             this.roles = []
             this.permissions = []
+            this.userId = null;
             removeToken()
             resolve(null)
           }).catch(error => {

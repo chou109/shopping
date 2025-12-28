@@ -269,7 +269,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <!-- 取消订单 -->
     <update id="cancelOrder">
         update order_info
-        set status = 70,
+        set status = 60,
             status_desc = '已取消',
             cancel_time = now(),
             cancel_reason = #{cancelReason},
@@ -280,7 +280,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <!-- 支付订单 -->
     <update id="payOrder">
         update order_info
-        set status = 30,
+        set status = 20,
             status_desc = '待发货',
             payment_time = now(),
             payment_type = #{paymentType},
@@ -306,14 +306,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select
         count(*) as total_count,
         sum(case when status = 10 then 1 else 0 end) as wait_pay_count,
-        sum(case when status = 20 then 1 else 0 end) as paid_count,
-        sum(case when status = 30 then 1 else 0 end) as wait_ship_count,
-        sum(case when status = 40 then 1 else 0 end) as shipped_count,
-        sum(case when status = 50 then 1 else 0 end) as wait_receive_count,
-        sum(case when status = 60 then 1 else 0 end) as completed_count,
-        sum(case when status = 70 then 1 else 0 end) as cancelled_count,
+        sum(case when status = 20 then 1 else 0 end) as wait_ship_count,
+        sum(case when status = 30 then 1 else 0 end) as wait_receive_count,
+        sum(case when status = 40 then 1 else 0 end) as wait_review_count,
+        sum(case when status = 50 then 1 else 0 end) as completed_count,
+        sum(case when status = 60 then 1 else 0 end) as cancelled_count,
         sum(payment) as total_amount,
-        sum(case when status in (20,30,40,50,60) then payment else 0 end) as valid_amount
+        sum(case when status in (20,30,40,50) then payment else 0 end) as valid_amount
         from order_info
         where delete_flag = 0
         <if test="startTime != null and startTime != ''">
@@ -334,7 +333,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         count(*) as order_count,
         sum(payment) as order_amount
         from order_info
-        where delete_flag = 0 and status != 70
+        where delete_flag = 0 and status != 60
         <if test="startTime != null and startTime != ''">
             and create_time >= #{startTime}
         </if>

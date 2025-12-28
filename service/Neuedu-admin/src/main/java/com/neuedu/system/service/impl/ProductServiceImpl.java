@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.List;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.neuedu.common.utils.DateUtils;
+import com.neuedu.common.utils.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.neuedu.system.mapper.ProductMapper;
@@ -107,6 +108,8 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     public int insertProduct(Product product)
     {
         product.setCreateTime(DateUtils.getNowDate());
+        // 设置创建者ID为当前登录用户ID
+        product.setCreateUser(SecurityUtils.getUserId());
         // 设置默认值
         if (product.getDeleteFlag() == null) {
             product.setDeleteFlag(0);
@@ -217,3 +220,6 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         return list;
     }
 }
+
+
+

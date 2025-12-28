@@ -153,7 +153,8 @@ const loadProducts = async (reset = false) => {
         pageSize: pageSize.value,
         sortType: sortType.value,
         random: sortType.value === 'random' ? 1 : 0,
-        needSalesCount: 1 // 预留参数，告诉后端需要返回销量数据
+        needSalesCount: 1,
+        status: 1 // 只查询上架商品
       }
     })
 

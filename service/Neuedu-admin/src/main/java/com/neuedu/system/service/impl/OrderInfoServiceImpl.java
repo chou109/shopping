@@ -452,8 +452,8 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
                         null,
                         null,
                         null,
-                        OrderStatusConstants.PAID,
-                        OrderStatusConstants.getOrderStatusDesc(OrderStatusConstants.PAID),
+                        OrderStatusConstants.WAIT_SHIP,
+                        OrderStatusConstants.getOrderStatusDesc(OrderStatusConstants.WAIT_SHIP),
                         "订单支付"
                 );
             }
@@ -461,8 +461,8 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
             // 更新订单明细状态
             List<OrderDetail> orderDetails = orderDetailService.selectOrderDetailByOrderNo(orderNo);
             for (OrderDetail detail : orderDetails) {
-                detail.setStatus(OrderStatusConstants.PAID);
-                detail.setStatusDesc(OrderStatusConstants.getOrderStatusDesc(OrderStatusConstants.PAID));
+                detail.setStatus(OrderStatusConstants.WAIT_SHIP);
+                detail.setStatusDesc(OrderStatusConstants.getOrderStatusDesc(OrderStatusConstants.WAIT_SHIP));
                 orderDetailService.updateOrderDetail(detail);
 
                 // 记录明细状态变更
@@ -472,8 +472,8 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
                             detail.getOrderDetailNo(),
                             detail.getProductId(),
                             detail.getProductName(),
-                            OrderStatusConstants.PAID,
-                            OrderStatusConstants.getOrderStatusDesc(OrderStatusConstants.PAID),
+                            OrderStatusConstants.WAIT_SHIP,
+                            OrderStatusConstants.getOrderStatusDesc(OrderStatusConstants.WAIT_SHIP),
                             "订单支付"
                     );
                 }
@@ -564,9 +564,9 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
             throw new RuntimeException("订单状态不正确，无法发货");
         }
 
-        // 更新订单状态为已发货
-        orderInfo.setStatus(OrderStatusConstants.SHIPPED);
-        orderInfo.setStatusDesc(OrderStatusConstants.getOrderStatusDesc(OrderStatusConstants.SHIPPED));
+        // 更新订单状态为待收货
+        orderInfo.setStatus(OrderStatusConstants.WAIT_RECEIVE);
+        orderInfo.setStatusDesc(OrderStatusConstants.getOrderStatusDesc(OrderStatusConstants.WAIT_RECEIVE));
         orderInfo.setShipTime(DateUtils.getNowDate());
         int result = orderInfoMapper.updateOrderInfo(orderInfo);
 
@@ -577,8 +577,8 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
                     null,
                     null,
                     null,
-                    OrderStatusConstants.SHIPPED,
-                    OrderStatusConstants.getOrderStatusDesc(OrderStatusConstants.SHIPPED),
+                    OrderStatusConstants.WAIT_RECEIVE,
+                    OrderStatusConstants.getOrderStatusDesc(OrderStatusConstants.WAIT_RECEIVE),
                     "订单发货"
             );
         }
@@ -601,14 +601,14 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
             throw new RuntimeException("订单不存在");
         }
 
-        // 验证订单状态（只有已发货的订单可以确认收货）
-        if (!OrderStatusConstants.SHIPPED.equals(orderInfo.getStatus())) {
+        // 验证订单状态（只有待收货的订单可以确认收货）
+        if (!OrderStatusConstants.WAIT_RECEIVE.equals(orderInfo.getStatus())) {
             throw new RuntimeException("订单状态不正确，无法确认收货");
         }
 
-        // 更新订单状态为已完成
-        orderInfo.setStatus(OrderStatusConstants.COMPLETED);
-        orderInfo.setStatusDesc(OrderStatusConstants.getOrderStatusDesc(OrderStatusConstants.COMPLETED));
+        // 更新订单状态为待评价
+        orderInfo.setStatus(OrderStatusConstants.WAIT_REVIEW);
+        orderInfo.setStatusDesc(OrderStatusConstants.getOrderStatusDesc(OrderStatusConstants.WAIT_REVIEW));
         orderInfo.setReceiveTime(DateUtils.getNowDate());
         int result = orderInfoMapper.updateOrderInfo(orderInfo);
 
@@ -619,8 +619,8 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
                     null,
                     null,
                     null,
-                    OrderStatusConstants.COMPLETED,
-                    OrderStatusConstants.getOrderStatusDesc(OrderStatusConstants.COMPLETED),
+                    OrderStatusConstants.WAIT_REVIEW,
+                    OrderStatusConstants.getOrderStatusDesc(OrderStatusConstants.WAIT_REVIEW),
                     "确认收货"
             );
         }
@@ -795,7 +795,42 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
     public int updateOrderInfo(OrderInfo orderInfo)
     {
         orderInfo.setUpdateTime(DateUtils.getNowDate());
+        
+        // 根据 status 自动设置对应的 statusDesc
+        if (orderInfo.getStatus() != null) {
+            String statusDesc = getStatusDescByStatus(orderInfo.getStatus());
+            if (statusDesc != null) {
+                orderInfo.setStatusDesc(statusDesc);
+            }
+        }
+        
         return orderInfoMapper.updateOrderInfo(orderInfo);
+    }
+    
+    /**
+     * 根据状态码获取状态描述
+     * 支持前端简化状态码(0,1,2,3,4,5)和后端标准状态码(10,20,30,40,50,60)
+     */
+    private String getStatusDescByStatus(Integer status) {
+        if (status == null) return null;
+        
+        switch (status) {
+            // 前端简化状态码
+            case 0: return "待付款";
+            case 1: return "待发货";
+            case 2: return "待收货";
+            case 3: return "待评价";
+            case 4: return "交易完成";
+            case 5: return "已取消";
+            // 后端标准状态码
+            case 10: return "待付款";
+            case 20: return "待发货";
+            case 30: return "待收货";
+            case 40: return "待评价";
+            case 50: return "交易完成";
+            case 60: return "已取消";
+            default: return null;
+        }
     }
 
     /**

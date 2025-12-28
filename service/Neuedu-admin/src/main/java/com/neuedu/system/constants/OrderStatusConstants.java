@@ -8,16 +8,12 @@ public class OrderStatusConstants {
     private OrderStatusConstants() {}
 
     // 订单状态
-    public static final Integer WAIT_PAY = 10;        // 待付款
-    @Deprecated // 已废弃，付款后直接变为待发货，保留用于兼容旧数据
-    public static final Integer PAID = 20;            // 已付款（已废弃）
-    public static final Integer WAIT_SHIP = 30;       // 待发货
-    public static final Integer SHIPPED = 40;         // 已发货
-    public static final Integer WAIT_RECEIVE = 50;    // 待收货
-    public static final Integer COMPLETED = 60;       // 已完成/交易完成
-    public static final Integer CANCELLED = 70;       // 已取消
-    public static final Integer REFUNDING = 80;       // 退款中
-    public static final Integer REFUNDED = 90;        // 已退款
+    public static final Integer WAIT_PAY = 10;        // 待付款 - 创建订单
+    public static final Integer WAIT_SHIP = 20;       // 待发货 - 支付完成
+    public static final Integer WAIT_RECEIVE = 30;    // 待收货 - 卖家发货
+    public static final Integer WAIT_REVIEW = 40;     // 待评价 - 确认收货
+    public static final Integer COMPLETED = 50;       // 交易完成 - 评价完成
+    public static final Integer CANCELLED = 60;       // 已取消 - 取消订单
 
     // 支付类型
     public static final Integer PAYMENT_ALIPAY = 1;   // 支付宝
@@ -40,14 +36,11 @@ public class OrderStatusConstants {
 
         switch (status) {
             case 10: return "待付款";
-            case 20: return "待发货";  // 兼容旧数据，显示为待发货
-            case 30: return "待发货";
-            case 40: return "已发货";
-            case 50: return "待收货";
-            case 60: return "交易完成";
-            case 70: return "已取消";
-            case 80: return "退款中";
-            case 90: return "已退款";
+            case 20: return "待发货";
+            case 30: return "待收货";
+            case 40: return "待评价";
+            case 50: return "交易完成";
+            case 60: return "已取消";
             default: return "未知状态";
         }
     }
