@@ -10,7 +10,9 @@
               <div class="avatar-wrapper">
                 <img :src="avatarUrl" alt="头像" class="user-avatar-img" />
                 <div class="avatar-upload" @click="openAvatarDialog">
-                  <el-icon><Camera /></el-icon>
+                  <el-icon>
+                    <Camera />
+                  </el-icon>
                   <span>更换</span>
                 </div>
               </div>
@@ -24,7 +26,8 @@
                 <div class="stat-value">{{ userStats.orderCount || 0 }}</div>
                 <div class="stat-label">订单</div>
               </div>
-              <div class="stat-item" @click="$router.push('/user/favorite/product')">
+              <div class="stat-item">
+                <!-- @click="$router.push('/user/favorite/product')" -->
                 <div class="stat-value">{{ userStats.favoriteCount || 0 }}</div>
                 <div class="stat-label">收藏</div>
               </div>
@@ -44,11 +47,16 @@
 
             <div class="quick-actions">
               <el-button type="danger" plain round @click="$router.push('/user/orders')">
-                <el-icon><List /></el-icon>
+                <el-icon>
+                  <List />
+                </el-icon>
                 我的订单
               </el-button>
-              <el-button type="warning" plain round @click="$router.push('/user/cart')">
-                <el-icon><ShoppingCart /></el-icon>
+              <br>
+              <el-button style="margin-top: -10px;" type="warning" plain round @click="$router.push('/user/cart')">
+                <el-icon>
+                  <ShoppingCart />
+                </el-icon>
                 购物车
               </el-button>
             </div>
@@ -380,7 +388,9 @@
         </el-form-item>
 
         <el-form-item label="充值后余额">
-          <span class="after-balance">¥{{ formatPrice((parseFloat(userInfo.balance || 0) + parseFloat(rechargeForm.amount || 0)).toFixed(2)) }}</span>
+          <span class="after-balance">¥{{ formatPrice((parseFloat(userInfo.balance || 0) +
+            parseFloat(rechargeForm.amount ||
+              0)).toFixed(2)) }}</span>
         </el-form-item>
       </el-form>
 
@@ -405,6 +415,9 @@ import { getUsers, getUser, updateCurrentUserPassword } from '@/api/system/user'
 import { createRechargeOrder, paymentSuccess } from '@/api/system/rechargeInfo'
 import { getToken } from '@/utils/auth'
 import { getProductImageUrl } from '@/utils/image'
+import { getFavoriteStats } from '@/api/system/favorite'
+import { getCartCount } from '@/api/system/cart'
+import { getFootprintCount, getOrderCount } from '@/api/system/stats'
 // 导入地址管理相关的API
 import {
   listAddressByUserId,
@@ -525,15 +538,15 @@ const rechargeForm = reactive({
 const rechargeRules = {
   amount: [
     { required: true, message: '请输入充值金额', trigger: 'blur' },
-    { 
+    {
       validator: (rule, value, callback) => {
         if (value < 1 || value > 30000) {
           callback(new Error('充值金额必须在1-30000元之间'))
         } else {
           callback()
         }
-      }, 
-      trigger: 'change' 
+      },
+      trigger: 'change'
     }
   ],
   paymentType: [
@@ -633,14 +646,37 @@ const loadUserInfo = async () => {
   }
 }
 
-// 加载用户统计信息 - 使用默认值，统计接口暂不可用
+// 加载用户统计信息
 const loadUserStats = async () => {
-  // 统计接口不存在，使用默认值
-  userStats.value = {
-    orderCount: 0,
-    favoriteCount: 0,
-    footprintCount: 0,
-    cartCount: 0
+  try {
+    // 获取收藏统计
+    const favoriteRes = await getFavoriteStats()
+    if (favoriteRes.code === 200 && favoriteRes.data) {
+      userStats.value.favoriteCount = favoriteRes.data.totalCount || 0
+    }
+
+    // 获取购物车数量
+    const cartRes = await getCartCount()
+    if (cartRes.code === 200) {
+      userStats.value.cartCount = cartRes.data || 0
+    }
+
+    // 获取足迹数量
+    const userId = userInfo.value.userId || userInfo.value.id
+    if (userId) {
+      const footprintRes = await getFootprintCount(userId)
+      if (footprintRes.code === 200) {
+        userStats.value.footprintCount = footprintRes.data || 0
+      }
+
+      // 获取订单数量
+      const orderRes = await getOrderCount()
+      if (orderRes.code === 200) {
+        userStats.value.orderCount = orderRes.data || 0
+      }
+    }
+  } catch (e) {
+    console.error('加载统计信息失败:', e)
   }
 }
 
@@ -824,18 +860,18 @@ const handleAmountChange = (value) => {
     rechargeForm.amount = 1
     return
   }
-  
+
   // 计算当前最大可充值金额
   const currentBalance = parseFloat(userInfo.value.balance || 0)
   const maxBalance = 30000
   const maxRecharge = maxBalance - currentBalance
-  
+
   if (maxRecharge <= 0) {
     ElMessage.warning('您的账户余额已达上限' + maxBalance + '元，无法继续充值')
     rechargeForm.amount = 0
     return
   }
-  
+
   if (value > maxRecharge) {
     ElMessage.warning('当前账户余额为' + currentBalance + '元，当前最大充值金额为' + maxRecharge + '元')
     rechargeForm.amount = maxRecharge
@@ -859,7 +895,7 @@ const handleRechargeSubmit = async () => {
   const currentBalance = parseFloat(userInfo.value.balance || 0)
   const maxBalance = 30000
   const maxRecharge = maxBalance - currentBalance
-  
+
   if (rechargeForm.amount < 1 || rechargeForm.amount > maxRecharge) {
     ElMessage.warning('充值金额必须在1-' + maxRecharge + '元之间')
     return
@@ -886,7 +922,7 @@ const handleRechargeSubmit = async () => {
       if (payRes.code === 200) {
         ElMessage.success('充值成功！充值金额：¥' + rechargeForm.amount)
         rechargeDialogVisible.value = false
-        
+
         // 刷新用户信息以更新余额
         await loadUserInfo()
       } else {

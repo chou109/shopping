@@ -988,8 +988,8 @@ onMounted(() => {
                           <div v-if="comment.children && comment.children.length > 0" class="comment-replies">
                             <div v-for="reply in comment.children" :key="reply.commentId" class="reply-item">
                               <div class="reply-header">
-                                <img :src="getProductImageUrl(reply.userAvatar || reply.avatar)" :alt="reply.nickName" class="reply-avatar"
-                                  @error="handleImageError" />
+                                <img :src="getProductImageUrl(reply.userAvatar || reply.avatar)" :alt="reply.nickName"
+                                  class="reply-avatar" @error="handleImageError" />
                                 <div class="reply-user-info">
                                   <div class="reply-user-name">
                                     <span v-if="reply.userId === shopInfo.userId" class="shop-tag">商家</span>
@@ -1012,12 +1012,13 @@ onMounted(() => {
                                 <div v-for="subReply in reply.children" :key="subReply.commentId"
                                   class="sub-reply-item">
                                   <div class="sub-reply-header">
-                                    <img :src="getProductImageUrl(subReply.userAvatar || subReply.avatar)" :alt="subReply.nickName" class="sub-reply-avatar"
-                                      @error="handleImageError" />
+                                    <img :src="getProductImageUrl(subReply.userAvatar || subReply.avatar)"
+                                      :alt="subReply.nickName" class="sub-reply-avatar" @error="handleImageError" />
                                     <div class="sub-reply-user-info">
                                       <div class="sub-reply-user-name">
                                         <span v-if="subReply.userId === shopInfo.userId" class="shop-tag">商家</span>
-                                        {{ subReply.isAnonymous === 1 ? '匿名用户' : (subReply.nickName || `用户${subReply.userId}`) }}
+                                        {{ subReply.isAnonymous === 1 ? '匿名用户' : (subReply.nickName ||
+                                        `用户${subReply.userId}`) }}
                                       </div>
                                       <div class="sub-reply-time">{{ formatTime(subReply.createTime) }}</div>
                                     </div>

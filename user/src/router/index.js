@@ -27,6 +27,11 @@ export const constantRoutes = [
     hidden: true
   },
   {
+    path: '/qq-callback',
+    component: () => import('@/views/qq-callback'),
+    hidden: true
+  },
+  {
     path: "/:pathMatch(.*)*",
     component: () => import('@/views/error/404'),
     hidden: true
@@ -135,6 +140,18 @@ export const constantRoutes = [
         path: '',
         component: () => import('@/views/products/productDetail.vue'),
         meta: { title: '商品详情' }
+      }
+    ]
+  },
+  {
+    path: '/shop',
+    name: 'ShopDetail',
+    component: Layout,
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/products/ShopDetail.vue'),
+        meta: { title: '店铺详情' }
       }
     ]
   }

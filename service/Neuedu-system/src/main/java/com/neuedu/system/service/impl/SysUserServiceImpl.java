@@ -114,6 +114,18 @@ public class SysUserServiceImpl implements ISysUserService
     }
 
     /**
+     * 通过QQ OpenID查询用户
+     * 
+     * @param qqOpenid QQ开放ID
+     * @return 用户对象信息
+     */
+    @Override
+    public SysUser selectUserByQqOpenid(String qqOpenid)
+    {
+        return userMapper.selectUserByQqOpenid(qqOpenid);
+    }
+
+    /**
      * 通过用户ID查询用户
      * 
      * @param userId 用户ID

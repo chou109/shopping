@@ -50,6 +50,19 @@
           <span>注册</span>
         </el-button>
       </el-form-item>
+
+      <!-- QQ登录按钮 -->
+      <el-form-item style="width:100%;">
+        <el-button size="medium" round style="width:100%; background: #12B7F5; border-color: #12B7F5; color: #fff;"
+          @click="handleQQLogin">
+          <svg style="width:18px;height:18px;vertical-align:middle;margin-right:8px;" viewBox="0 0 24 24"
+            fill="currentColor">
+            <path
+              d="M12.003 2c-2.265 0-6.29 1.364-6.29 7.325v1.195S3.55 14.96 3.55 17.474c0 .665.17 1.025.281 1.025.114 0 .902-.484 1.748-2.072 0 0-.18 2.197 1.904 3.967 0 0-1.77.495-1.77 1.182 0 .686 4.078.43 6.29.43 2.212 0 6.29.256 6.29-.43 0-.687-1.77-1.182-1.77-1.182 2.085-1.77 1.904-3.967 1.904-3.967.846 1.588 1.634 2.072 1.748 2.072.111 0 .281-.36.281-1.025 0-2.514-2.162-6.954-2.162-6.954V9.325C18.294 3.364 14.27 2 12.003 2z" />
+          </svg>
+          <span>QQ登录</span>
+        </el-button>
+      </el-form-item>
     </el-form>
 
   </div>
@@ -104,6 +117,11 @@ export default {
     this.getCookie();
   },
   methods: {
+    handleQQLogin() {
+      // 跳转到QQ登录页面
+      const qqLoginUrl = 'https://qq.wch666.com/api/qq.php?token=4922a38240ef9fd21bfc5dd47bff232e&msg=user_login&display=pc';
+      window.location.href = qqLoginUrl;
+    },
     getCode() {
       getCodeImg().then(res => {
         this.codeUrl = "data:image/gif;base64," + res.img;

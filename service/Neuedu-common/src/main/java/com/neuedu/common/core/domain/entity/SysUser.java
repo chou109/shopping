@@ -100,12 +100,23 @@ public class SysUser extends BaseEntity
     @Excel(name = "账户余额")
     private BigDecimal balance;
 
+    /** QQ开放ID */
+    private String qqOpenid;
+
     public BigDecimal getBalance() {
         return balance;
     }
 
     public void setBalance(BigDecimal balance) {
         this.balance = balance;
+    }
+
+    public String getQqOpenid() {
+        return qqOpenid;
+    }
+
+    public void setQqOpenid(String qqOpenid) {
+        this.qqOpenid = qqOpenid;
     }
 
     public Integer getUserType() {

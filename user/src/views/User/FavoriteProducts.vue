@@ -2,7 +2,6 @@
   <div class="favorite-products">
     <!-- 页面头部 -->
     <div class="page-header">
-      <h3>收藏商品</h3>
       <span class="count">共 {{ favoriteList.length }} 件商品</span>
     </div>
 
@@ -15,16 +14,14 @@
       </div>
 
       <div v-else class="product-grid">
-        <div 
-          v-for="item in favoriteList" 
-          :key="item.favoriteId" 
-          class="product-card"
-          @click="goProductDetail(item.targetId)"
-        >
+        <div v-for="item in favoriteList" :key="item.favoriteId" class="product-card"
+          @click="goProductDetail(item.targetId)">
           <div class="product-image">
             <img :src="getProductImageUrl(item.productMainImage)" :alt="item.productName" @error="handleImageError" />
             <div class="favorite-btn" @click.stop="handleRemoveFavorite(item)">
-              <el-icon><Star /></el-icon>
+              <el-icon>
+                <Star />
+              </el-icon>
             </div>
           </div>
           <div class="product-info">
@@ -81,7 +78,7 @@ const handleRemoveFavorite = async (item) => {
       cancelButtonText: '取消',
       type: 'warning'
     })
-    
+
     const res = await removeFavorite(1, item.targetId) // 1表示商品
     if (res.code === 200) {
       ElMessage.success('已取消收藏')

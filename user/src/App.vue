@@ -24,6 +24,8 @@ html, body, #app {
   margin: 0;
   padding: 0;
   height: 100%;
+  min-height: 100vh;
+  background-color: #f5f5f5;
   width: 100%;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
@@ -191,6 +193,6 @@ img {
   flex-direction: column;
   line-height: 1.6;
   color: #333;
-  background-color: #fff;
+  background-color: #f5f5f5;
 }
 </style>

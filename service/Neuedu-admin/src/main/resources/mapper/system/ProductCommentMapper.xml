@@ -21,13 +21,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="updateTime"    column="update_time"    />
         <result property="nickName"    column="nick_name"    />
         <result property="userAvatar"    column="avatar"    />
+        <result property="productName"    column="product_name"    />
+        <result property="productImage"    column="product_image"    />
+        <result property="productPrice"    column="product_price"    />
     </resultMap>
 
     <sql id="selectProductCommentVo">
         select pc.comment_id, pc.product_id, pc.user_id, pc.order_id, pc.parent_id, pc.content, pc.images, pc.score, pc.is_anonymous, pc.like_count, pc.reply_count, pc.status, pc.create_time, pc.update_time,
-               u.nick_name, u.avatar
+               u.nick_name, u.avatar,
+               p.name as product_name, p.main_image as product_image, p.price as product_price
         from product_comment pc
         left join sys_user u on pc.user_id = u.user_id
+        left join product p on pc.product_id = p.id
     </sql>
 
     <select id="selectProductCommentList" parameterType="ProductComment" resultMap="ProductCommentResult">
