@@ -113,19 +113,22 @@
                   <el-button type="danger" size="small" @click="handleDeleteOrder(order)">删除订单</el-button>
                 </template>
 
-                <!-- 20：待发货 → 退款 -->
+                <!-- 20：待发货 → 退款（盲盒订单禁止退款） -->
                 <template v-else-if="order.status === 20">
-                  <el-button type="warning" size="small" @click="handleRefund(order)">申请退款</el-button>
+                  <span v-if="order.isBlindBox" class="no-refund-tip">盲盒订单不支持退款</span>
+                  <el-button v-else type="warning" size="small" @click="handleRefund(order)">申请退款</el-button>
                 </template>
 
-                <!-- 30：待收货 → 收货 -->
+                <!-- 30：待收货 → 收货/退款 -->
                 <template v-else-if="order.status === 30">
                   <el-button type="primary" size="small" @click="handleConfirmReceipt(order)">确认收货</el-button>
+                  <el-button v-if="!order.isBlindBox" type="warning" size="small" @click="handleRefund(order)">申请退款</el-button>
                 </template>
 
-                <!-- 40：待评价 → 评价 -->
+                <!-- 40：待评价 → 评价/退款 -->
                 <template v-else-if="order.status === 40">
                   <el-button type="primary" size="small" @click="handleReview(order)">去评价</el-button>
+                  <el-button v-if="!order.isBlindBox" type="warning" size="small" @click="handleRefund(order)">申请退款</el-button>
                 </template>
 
                 <!-- 50：交易完成 → 详情/删除 -->
@@ -639,6 +642,14 @@ const getTotalQuantity = (order) => {
   return order.orderDetails.reduce((sum, item) => sum + (item.quantity || 0), 0)
 }
 
+// 检查订单是否为盲盒订单（通过商品名称前缀判断）
+const isBlindBoxOrder = (order) => {
+  if (!order || !order.orderDetails) return false
+  return order.orderDetails.some(detail => 
+    detail.productName && detail.productName.startsWith('【盲盒】')
+  )
+}
+
 // 检查订单中是否包含盲盒抽奖结果商品
 const hasBlindBoxResult = (order) => {
   if (!order) return false
@@ -653,6 +664,14 @@ const hasBlindBoxResult = (order) => {
     // 检查订单详情的商品ID是否为盲盒ID (9999)
     const isBlindBoxProduct = order.orderDetails.some(detail => detail.productId === 9999 || detail.productId === '9999')
     if (isBlindBoxProduct) {
+      return true
+    }
+    
+    // 检查商品名称是否包含盲盒标记
+    const hasBlindBoxName = order.orderDetails.some(detail => 
+      detail.productName && (detail.productName.includes('【盲盒】') || detail.productName.includes('盲盒'))
+    )
+    if (hasBlindBoxName) {
       return true
     }
   }
@@ -793,8 +812,8 @@ const handleConfirmReceipt = async (order) => {
 // 申请退款
 const handleRefund = (order) => {
   // 盲盒商品禁止退款
-  if (order.isBlindBox || hasBlindBoxResult(order)) {
-    ElMessage.warning('盲盒商品不支持退款')
+  if (isBlindBoxOrder(order) || order.isBlindBox || hasBlindBoxResult(order)) {
+    ElMessage.warning('盲盒订单不支持退款')
     return
   }
   currentOrder.value = order
@@ -1283,6 +1302,15 @@ onMounted(() => {
 .order-actions {
   display: flex;
   gap: 10px;
+  align-items: center;
+}
+
+.no-refund-tip {
+  color: #909399;
+  font-size: 12px;
+  padding: 5px 10px;
+  background: #f4f4f5;
+  border-radius: 4px;
 }
 
 .pagination-container {

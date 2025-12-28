@@ -574,25 +574,24 @@ onMounted(() => {
                   </div>
                 </div>
 
-                <!-- 数量选择 -->
+                <!-- 数量选择（盲盒限购1件） -->
                 <div class="quantity-section">
                   <div class="quantity-label">数量</div>
                   <div class="quantity-control">
-                    <button class="quantity-btn minus" @click="decreaseQuantity" :disabled="quantity <= 1">
+                    <button class="quantity-btn minus" disabled>
                       <el-icon>
                         <Minus />
                       </el-icon>
                     </button>
-                    <input v-model.number="quantity" type="number" min="1" :max="product.stock || 999"
-                      class="quantity-input" @change="handleQuantityChange" />
-                    <button class="quantity-btn plus" @click="increaseQuantity"
-                      :disabled="quantity >= (product.stock || 999)">
+                    <input v-model.number="quantity" type="number" min="1" max="1"
+                      class="quantity-input" readonly />
+                    <button class="quantity-btn plus" disabled>
                       <el-icon>
                         <Plus />
                       </el-icon>
                     </button>
                   </div>
-                  <div class="stock-info">库存 {{ product.stock || 0 }} 件</div>
+                  <div class="stock-info">限购 1 件</div>
                 </div>
 
                 <!-- 操作按钮 -->
