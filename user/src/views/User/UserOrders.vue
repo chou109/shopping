@@ -108,11 +108,20 @@
                   <el-button type="danger" size="small" @click="handleDeleteOrder(order)">删除订单</el-button>
                 </template>
                 
+                <!-- 已付款待抽奖订单（盲盒） -->
+                <template v-else-if="order.status === 20 && order.isBlindBox">
+                  <el-button type="primary" size="small" @click="handleStartLottery(order)">开始抽奖</el-button>
+                  <el-button type="danger" size="small" @click="handleDeleteOrder(order)">删除订单</el-button>
+                </template>
+                
                 <!-- 待发货订单 -->
                 <template v-else-if="order.status === 30">
-                  <el-button size="small" @click="handleRefund(order)">申请退款</el-button>
-                  <el-button size="small" @click="viewOrderDetail(order)">查看详情</el-button>
-                  <el-button type="danger" size="small" @click="handleDeleteOrder(order)">删除订单</el-button>
+                  <!-- 普通商品或已抽奖的盲盒商品 -->
+                  <template>
+                    <el-button size="small" v-if="!order.isBlindBox" @click="handleRefund(order)">申请退款</el-button>
+                    <el-button size="small" @click="viewOrderDetail(order)">查看详情</el-button>
+                    <el-button type="danger" size="small" @click="handleDeleteOrder(order)">删除订单</el-button>
+                  </template>
                 </template>
                 
                 <!-- 待收货订单 -->
@@ -579,11 +588,7 @@ const handleBuyAgain = (order) => {
 // 删除订单
 const handleDeleteOrder = async (order) => {
   try {
-    await ElMessageBox.confirm('确定要删除该订单吗？删除后不可恢复！', '删除订单', {
-      confirmButtonText: '确定删除',
-      cancelButtonText: '取消',
-      type: 'warning'
-    })
+    await ElMessageBox.confirm('确定要删除该订单吗？删除后不可恢复！', '删除订单', { confirmButtonText: '确定删除', cancelButtonText: '取消', type: 'warning' })
     
     const res = await delInfo(order.id)
     if (res.code === 200) {
@@ -598,6 +603,33 @@ const handleDeleteOrder = async (order) => {
       ElMessage.error('删除失败：' + (e.message || '未知错误'))
     }
   }
+}
+
+// 开始抽奖（盲盒订单）
+const handleStartLottery = (order) => {
+  ElMessageBox.confirm('确定要开始抽奖吗？', '开始抽奖', {
+    confirmButtonText: '确定抽奖',
+    cancelButtonText: '取消',
+    type: 'primary'
+  }).then(() => {
+    // TODO: 实现抽奖逻辑
+    // 1. 调用抽奖API
+    // 2. 更新订单状态为待发货
+    // 3. 显示抽奖结果
+    ElMessage.success('抽奖功能开发中，当前已模拟抽奖完成，订单状态将更新为待发货')
+    
+    // 模拟更新订单状态
+    // 在实际项目中，这里应该调用API来更新订单状态
+    const orderIndex = orderList.value.findIndex(o => o.id === order.id)
+    if (orderIndex !== -1) {
+      orderList.value[orderIndex].status = 30 // 待发货
+      orderList.value[orderIndex].statusDesc = '待发货'
+    }
+    
+    loadOrderCounts()
+  }).catch(() => {
+    // 用户取消抽奖
+  })
 }
 
 onMounted(() => {

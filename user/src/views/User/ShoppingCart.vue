@@ -38,9 +38,9 @@
 
               <div class="item-content">
                 <!-- 商品图片 -->
-                <div class="item-image" @click="goToProductDetail(item.productId)">
-                  <img :src="getProductImageUrl(item.productMainImage)" :alt="item.name" @error="handleImageError" />
-                </div>
+<div class="item-image" @click="goToProductDetail(item.productId)">
+  <img :src="item.productId === 9999 || item.productName?.includes('盲盒') ? '/src/assets/images/BlindBox.png' : getProductImageUrl(item.productMainImage)" :alt="item.productName" @error="handleImageError" />
+</div>
 
                 <!-- 商品信息 -->
                 <div class="item-info">
@@ -274,6 +274,16 @@ const loadCartData = async () => {
     console.log("购物车数据:", response)
     if (response.code === 200) {
       cartItems.value = response.data || []
+      // 调试购物车商品数据
+      console.log("购物车商品列表:", cartItems.value)
+      // 查看第一个商品的详细信息，特别是图片相关字段
+      if (cartItems.value.length > 0) {
+        const firstItem = cartItems.value[0]
+        console.log("第一个商品详细信息:", firstItem)
+        console.log("商品主图数据结构:", firstItem.productMainImage)
+        console.log("商品主图类型:", typeof firstItem.productMainImage)
+        console.log("处理后的图片URL:", getProductImageUrl(firstItem.productMainImage))
+      }
       // 计算小计并转换selected为布尔值
       cartItems.value.forEach(item => {
         // 后端返回的selected是数字(0/1)，需要转换为布尔值
@@ -557,10 +567,20 @@ const addToFavorites = async (item) => {
 
 // 跳转到商品详情
 const goToProductDetail = (productId) => {
-  router.push({
-    path: '/product/detail',
-    query: { id: productId }
-  })
+  // 判断是否为盲盒商品（ID为9999或包含"blind"字符串）
+  const isBlindBox = productId === 9999 || (typeof productId === 'string' && (productId.includes('blind') || productId.startsWith('blind-')));
+  
+  if (isBlindBox) {
+    router.push({
+      path: '/product/blind-box',
+      query: { id: productId }
+    })
+  } else {
+    router.push({
+      path: '/product/detail',
+      query: { id: productId }
+    })
+  }
 }
 
 // 去购物
