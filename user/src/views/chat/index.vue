@@ -23,8 +23,9 @@
 
     <!-- 聊天区域 -->
     <div class="chat-container" ref="chatContainer">
-      <!-- 欢迎消息 -->
-      <div class="welcome-message">
+      <!-- 欢迎消息（添加了关闭按钮） -->
+      <div class="welcome-message" v-if="showWelcomeMessage">
+        <div class="welcome-close-btn" @click="closeWelcomeMessage">×</div>
         <div class="welcome-content">
           <div class="welcome-icon">🤖</div>
           <div class="welcome-title">👋 您好！</div>
@@ -35,6 +36,7 @@
             <span class="tip-item">• 推荐商品</span>
             <span class="tip-item">• 解答售后问题</span>
             <span class="tip-item">• 查询物流信息</span>
+            <span class="tip-item">• 查询订单状态</span>
           </div>
         </div>
       </div>
@@ -126,8 +128,17 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick } from 'vue';
+import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue';
+import { useStore } from 'vuex';
 import { getWebSocketUrl } from '@/utils/request';
+
+// Vuex store
+const store = useStore();
+
+// 获取当前用户ID
+const currentUserId = computed(() => {
+  return store.state.user?.userId || localStorage.getItem('userId') || null;
+});
 // 响应式数据
 const chatList = ref([]);
 const inputMsg = ref('');
@@ -136,6 +147,7 @@ const isAiTyping = ref(false);
 const showQuickReplies = ref(true);
 const currentAiMessage = ref('');
 const autoScrollEnabled = ref(true);
+const showWelcomeMessage = ref(true); // 控制欢迎消息显示
 
 // 获取DOM引用
 const chatContainer = ref(null);
@@ -147,19 +159,24 @@ const lastMessageRef = ref(null);
 // 示例问题
 const exampleQuestions = ref([
   '你好',
+  '查看我的订单',
+  '我的订单状态',
+  '查看待付款订单',
   '有没有推荐的苹果手机？',
   '有没有推荐的小米手机？',
   '我想要2000元以上的苹果手机',
-  '有没有推荐的衣服？',
   '什么时候发货？',
-  '如何退货？',
-  '价格是多少？',
-  '帮我推荐500元以下的商品',
-  '我想买华为的手机'
+  '如何退货？'
 ]);
 
 // WebSocket实例
 let ws = null;
+
+// 关闭欢迎消息
+const closeWelcomeMessage = () => {
+  showWelcomeMessage.value = false;
+  forceScrollToBottom();
+};
 
 // 判断是否是商品列表
 const isProductList = (content) => {
@@ -380,7 +397,8 @@ const sendMessage = () => {
   
   ws.send(JSON.stringify({
     question: text,
-    productId: null
+    productId: null,
+    userId: currentUserId.value
   }));
   
   inputMsg.value = '';
@@ -605,6 +623,7 @@ onUnmounted(() => {
   pointer-events: none;
 }
 
+/* 欢迎消息样式（添加了关闭按钮） */
 .welcome-message {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
@@ -614,6 +633,31 @@ onUnmounted(() => {
   max-width: 85%;
   box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
   animation: slideIn 0.5s ease-out;
+  position: relative;
+}
+
+/* 关闭按钮 */
+.welcome-close-btn {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  cursor: pointer;
+  transition: all 0.3s;
+  z-index: 10;
+}
+
+.welcome-close-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
 }
 
 .welcome-content {
@@ -1075,6 +1119,19 @@ onUnmounted(() => {
   .user-icon {
     width: 32px;
     height: 32px;
+  }
+  
+  .welcome-message {
+    max-width: 90%;
+    padding: 20px;
+  }
+  
+  .welcome-close-btn {
+    top: 6px;
+    right: 8px;
+    width: 20px;
+    height: 20px;
+    font-size: 16px;
   }
 }
 </style>

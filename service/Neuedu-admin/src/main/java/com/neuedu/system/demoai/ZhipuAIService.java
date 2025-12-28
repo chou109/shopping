@@ -5,11 +5,15 @@ import com.neuedu.system.demoai.model.PriceCondition;
 import com.neuedu.system.demoai.model.PriceExtractResult;
 import com.neuedu.system.demoai.service.CategoryService;
 import com.neuedu.system.demoai.service.ProductService;
+import com.neuedu.system.demoai.service.OrderService;
+import com.neuedu.system.domain.OrderInfo;
+import com.neuedu.system.domain.OrderDetail;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
@@ -24,6 +28,9 @@ public class ZhipuAIService {
 
     @Autowired
     private CategoryService categoryService;
+
+    @Autowired
+    private OrderService orderService;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -817,7 +824,19 @@ public class ZhipuAIService {
         }
         // 新增：优先识别"衣服"相关类别，添加"精品服饰"到类别关键词
         boolean hasClothesKeyword = userQuestion.contains("衣服") || userQuestion.contains("服饰");
-        if (categoryKeywords.isEmpty() || hasClothesKeyword) {
+        // 检查是否有具体的服饰分类关键词
+        boolean hasSpecificClothingKeyword = false;
+        for (String keyword : categoryKeywords) {
+            if ("特色女装".equals(keyword) || "女装".equals(keyword) || "女士服装".equals(keyword) ||
+                "精品男装".equals(keyword) || "男装".equals(keyword) || "男士服装".equals(keyword) ||
+                "潮流女鞋".equals(keyword) || "女鞋".equals(keyword) || "高跟鞋".equals(keyword) ||
+                "品质男鞋".equals(keyword) || "男鞋".equals(keyword) || "皮鞋".equals(keyword)) {
+                hasSpecificClothingKeyword = true;
+                break;
+            }
+        }
+        // 只有当没有具体服饰分类关键词时，才添加通用的"精品服饰"关键词
+        if ((categoryKeywords.isEmpty() || hasClothesKeyword) && !hasSpecificClothingKeyword) {
             // 避免重复添加
             if (!categoryKeywords.contains("精品服饰")) {
                 categoryKeywords.add("精品服饰"); // 匹配电商知识库中的分类
@@ -843,35 +862,83 @@ public class ZhipuAIService {
         }
 
         // =========== 新增：根据用户意图精确筛选分类 ===========
-        // 如果用户明确提到"手机"，优先使用手机分类（category_id=7）
-        boolean hasMobileKeyword = userQuestion.contains("手机") ||
-                userQuestion.contains("iPhone") ||
-                userQuestion.contains("智能手机");
-
-        // 如果用户明确提到"手机配件"，使用配件分类（category_id=8）
+        // 手机配件关键词（优先检测，因为“手机膜”包含“手机”）
         boolean hasAccessoryKeyword = userQuestion.contains("钢化膜") ||
+                userQuestion.contains("手机膜") ||
+                userQuestion.contains("玻璃膜") ||
+                userQuestion.contains("保护膜") ||
+                userQuestion.contains("贴膜") ||
+                userQuestion.contains("手机壳") ||
+                userQuestion.contains("保护壳") ||
+                userQuestion.contains("手机套") ||
                 userQuestion.contains("配件") ||
                 userQuestion.contains("充电宝") ||
-                userQuestion.contains("耳机");
+                userQuestion.contains("耳机") ||
+                userQuestion.contains("数据线") ||
+                userQuestion.contains("充电器") ||
+                userQuestion.contains("支架") ||
+                userQuestion.contains("手机支架");
+                
+        // 如果用户明确提到“手机”，但不是配件
+        boolean hasMobileKeyword = (userQuestion.contains("手机") ||
+                userQuestion.contains("iPhone") ||
+                userQuestion.contains("智能手机")) && !hasAccessoryKeyword;
+
+        // 服饰类商品精确筛选
+        boolean hasMenClothingKeyword = userQuestion.contains("精品男装") ||
+                userQuestion.contains("男装") ||
+                userQuestion.contains("男士服装");
+        boolean hasWomenClothingKeyword = userQuestion.contains("特色女装") ||
+                userQuestion.contains("女装") ||
+                userQuestion.contains("女士服装");
+        boolean hasMenShoesKeyword = userQuestion.contains("品质男鞋") ||
+                userQuestion.contains("男鞋") ||
+                userQuestion.contains("皮鞋");
+        boolean hasWomenShoesKeyword = userQuestion.contains("潮流女鞋") ||
+                userQuestion.contains("女鞋") ||
+                userQuestion.contains("高跟鞋");
 
         // 根据用户意图调整分类ID
-        if (hasMobileKeyword && !hasAccessoryKeyword) {
-            // 用户要手机，不是配件：只保留category_id=7
-            categoryIds.removeIf(id -> id != 7);
-            // 如果没有7，则添加7
-            if (!categoryIds.contains(7L)) {
-                categoryIds.add(7L);
+        if (hasAccessoryKeyword) {
+            // 用户要配件（手机膜、充电宝等）：只保留category_id=8
+            categoryIds.clear();
+            categoryIds.add(8L);
+            log.info("识别为手机配件查询，使用配件分类ID=8");
+        } else if (hasMobileKeyword) {
+            // 用户要手机：只保留category_id=7
+            categoryIds.clear();
+            categoryIds.add(7L);
+            log.info("识别为手机查询，使用手机分类ID=7");
+        } else if (hasMenClothingKeyword) {
+            // 用户要男装：只保留男装分类ID（24L）
+            categoryIds.removeIf(id -> id != 24L);
+            // 如果没有24，则添加24
+            if (!categoryIds.contains(24L)) {
+                categoryIds.add(24L);
             }
-        } else if (hasAccessoryKeyword && !hasMobileKeyword) {
-            // 用户要配件，不是手机：只保留category_id=8
-            categoryIds.removeIf(id -> id != 8);
-            // 如果没有8，则添加8
-            if (!categoryIds.contains(8L)) {
-                categoryIds.add(8L);
+        } else if (hasWomenClothingKeyword) {
+            // 用户要女装：只保留女装分类ID（23L）
+            categoryIds.removeIf(id -> id != 23L);
+            // 如果没有23，则添加23
+            if (!categoryIds.contains(23L)) {
+                categoryIds.add(23L);
+            }
+        } else if (hasMenShoesKeyword) {
+            // 用户要男鞋：只保留男鞋相关分类
+            List<Long> menShoeIds = categoryService.getCategoryIdsByKeyword("品质男鞋");
+            if (menShoeIds != null && !menShoeIds.isEmpty()) {
+                categoryIds.clear();
+                categoryIds.addAll(menShoeIds);
+            }
+        } else if (hasWomenShoesKeyword) {
+            // 用户要女鞋：只保留女鞋相关分类
+            List<Long> womenShoeIds = categoryService.getCategoryIdsByKeyword("潮流女鞋");
+            if (womenShoeIds != null && !womenShoeIds.isEmpty()) {
+                categoryIds.clear();
+                categoryIds.addAll(womenShoeIds);
             }
         }
-        // 如果用户同时提到手机和配件，则不进行特殊处理
-        // =================================================
+        // =========================================================
 
         List<Product> products = new ArrayList<>();
 
@@ -1792,7 +1859,9 @@ public class ZhipuAIService {
 
         return isPriceQueryRequest(question) ||
                 question.matches(".*(推荐|有没有|买|想买|想要|咨询|查询|看看|看下|看|找|寻找|搜索|介绍一下|介绍|了解|想了解).*(苹果|小米|华为|三星|联想|索尼)?(手机|衣服|衣物|电视|笔记本|电脑|空调|配件|家用|电器|商品|产品).*") ||
-                question.matches(".*(\\d+)(元|块钱)?(以上|及以上|左右|以下|以内).*(苹果|小米|华为|三星|联想|索尼)?(手机|衣服|衣物|电视|笔记本|电脑|空调|配件|家用|电器).*");
+                question.matches(".*(\\d+)(元|块钱)?(以上|及以上|左右|以下|以内).*(苹果|小米|华为|三星|联想|索尼)?(手机|衣服|衣物|电视|笔记本|电脑|空调|配件|家用|电器).*") ||
+                // 检查是否包含已知的商品分类关键词
+                !extractCategoryKeywordsFromQuestion(question).isEmpty();
     }
 
     // 从用户问题中提取品牌
@@ -1961,14 +2030,22 @@ public class ZhipuAIService {
             // 同时添加电商知识库中的分类名称
             keywords.add("手机数码");
         }
-        if (question.contains("衣服") || question.contains("衣物") ||
+        // 检查是否有具体的服饰分类关键词
+        boolean hasSpecificClothingKeyword = false;
+        if (question.contains("特色女装") || question.contains("女装") || question.contains("女士服装") ||
+                question.contains("精品男装") || question.contains("男装") || question.contains("男士服装") ||
+                question.contains("潮流女鞋") || question.contains("女鞋") || question.contains("高跟鞋") ||
+                question.contains("品质男鞋") || question.contains("男鞋") || question.contains("皮鞋")) {
+            hasSpecificClothingKeyword = true;
+        }
+        // 只有当没有具体服饰分类关键词时，才添加通用的"服饰"关键词
+        if (!hasSpecificClothingKeyword && (question.contains("衣服") || question.contains("衣物") ||
                 question.contains("礼服") || question.contains("连衣裙") ||
                 question.contains("婚纱") || question.contains("大衣") ||
                 question.contains("西装") || question.contains("外套") ||
-                question.contains("女装") || question.contains("男装") ||
                 question.contains("服饰") || question.contains("上衣") ||
                 question.contains("裤子") || question.contains("裙子") ||
-                question.contains("T恤") || question.contains("衬衫")) {
+                question.contains("T恤") || question.contains("衬衫"))) {
             keywords.add("服饰");
         }
         if (question.contains("电视") || question.contains("电视机") || question.contains("液晶电视")) {
@@ -2006,6 +2083,31 @@ public class ZhipuAIService {
         if (question.contains("黄金") || question.contains("项链") || question.contains("珠宝")) {
             keywords.add("珠宝饰品");
         }
+        // 新增：特定商品类别的关键词识别
+        if (question.contains("特色女装") || question.contains("女装") || question.contains("女士服装")) {
+            keywords.add("特色女装");
+        }
+        if (question.contains("精品男装") || question.contains("男装") || question.contains("男士服装")) {
+            keywords.add("精品男装");
+        }
+        if (question.contains("潮流女鞋") || question.contains("女鞋") || question.contains("高跟鞋")) {
+            keywords.add("潮流女鞋");
+        }
+        if (question.contains("品质男鞋") || question.contains("男鞋") || question.contains("皮鞋")) {
+            keywords.add("品质男鞋");
+        }
+        if (question.contains("功能箱包") || question.contains("箱包") || question.contains("钱包")) {
+            keywords.add("功能箱包");
+        }
+        if (question.contains("黄金首饰") || question.contains("黄金") || question.contains("首饰")) {
+            keywords.add("黄金首饰");
+        }
+        if (question.contains("钻石彩宝") || question.contains("钻石") || question.contains("彩宝")) {
+            keywords.add("钻石彩宝");
+        }
+        if (question.contains("面部护理") || question.contains("面部") || question.contains("护肤")) {
+            keywords.add("面部护理");
+        }
 
         return keywords;
     }
@@ -2040,5 +2142,306 @@ public class ZhipuAIService {
     // 非流式聊天
     public String simpleChat(String userQuestion, String knowledge) {
         return processLocalChat(userQuestion, knowledge);
+    }
+
+    // ==================== 订单查询相关功能 ====================
+
+    /**
+     * 判断是否为订单查询请求
+     */
+    public boolean isOrderQueryRequest(String question) {
+        String lowerQuestion = question.toLowerCase();
+        
+        // 1. 首先检查是否包含订单号格式（O + 20位数字）
+        if (question.matches(".*O\\d{20}.*") || question.matches("^\\d{14,20}$")) {
+            return true;
+        }
+        
+        // 2. 订单查询关键词
+        return lowerQuestion.matches(".*(订单|我的订单|查订单|查看订单|订单状态|订单进度|物流|配送|发货).*") ||
+               lowerQuestion.matches(".*(订单号|单号|编号).*(o\\d{20}|\\d{14,20}).*") ||
+               lowerQuestion.matches(".*(到哪了|发了没|什么时候到|几号到|收到没).*");
+    }
+
+    /**
+     * 处理订单查询请求
+     */
+    public String handleOrderQuery(String userQuestion, Long userId) {
+        log.info("处理订单查询请求：{}, userId={}", userQuestion, userId);
+
+        // 1. 尝试从问题中提取订单号
+        String orderNo = extractOrderNoFromQuestion(userQuestion);
+        
+        if (orderNo != null && !orderNo.isEmpty()) {
+            // 查询特定订单
+            return querySpecificOrder(orderNo);
+        }
+
+        // 2. 如果没有订单号，查询用户所有订单
+        if (userId != null) {
+            // 判断是否查询特定状态的订单
+            Integer status = extractOrderStatusFromQuestion(userQuestion);
+            return queryUserOrders(userId, status);
+        }
+
+        return "请提供您的订单号,或者告诉我您想查询哪种状态的订单(如:待付款、已发货等)。";
+    }
+
+    /**
+     * 从问题中提取订单号
+     */
+    private String extractOrderNoFromQuestion(String question) {
+        // 匹配格式: O + 14位数字 + 6位随机数
+        Pattern pattern = Pattern.compile("(O\\d{20})");
+        Matcher matcher = pattern.matcher(question);
+        
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        
+        // 尝试匹配纯数字订单号
+        pattern = Pattern.compile("(\\d{14,20})");
+        matcher = pattern.matcher(question);
+        
+        if (matcher.find()) {
+            String number = matcher.group(1);
+            // 如果是纯数字，尝试添加O前缀
+            if (number.length() == 20) {
+                return "O" + number;
+            }
+        }
+        
+        return null;
+    }
+
+    /**
+     * 从问题中提取订单状态
+     */
+    private Integer extractOrderStatusFromQuestion(String question) {
+        String lowerQuestion = question.toLowerCase();
+        
+        if (lowerQuestion.matches(".*(待付款|未付款|等待付款|待支付).*")) {
+            return 10; // 待付款
+        } else if (lowerQuestion.matches(".*(已付款|已支付|付过款).*")) {
+            return 20; // 已付款
+        } else if (lowerQuestion.matches(".*(待发货|未发货|等待发货).*")) {
+            return 30; // 待发货
+        } else if (lowerQuestion.matches(".*(已发货|发货了|在途|配送中).*")) {
+            return 40; // 已发货
+        } else if (lowerQuestion.matches(".*(待收货|未收货|等待收货).*")) {
+            return 50; // 待收货
+        } else if (lowerQuestion.matches(".*(已完成|已收货|完成).*")) {
+            return 60; // 已完成
+        } else if (lowerQuestion.matches(".*(已取消|取消了).*")) {
+            return 70; // 已取消
+        } else if (lowerQuestion.matches(".*(退款中|申请退款).*")) {
+            return 80; // 退款中
+        } else if (lowerQuestion.matches(".*(已退款|退款成功).*")) {
+            return 90; // 已退款
+        }
+        
+        return null; // 查询所有订单
+    }
+
+    /**
+     * 查询特定订单
+     */
+    private String querySpecificOrder(String orderNo) {
+        OrderInfo orderInfo = orderService.getOrderByOrderNo(orderNo);
+        
+        if (orderInfo == null) {
+            return "未找到订单号为【" + orderNo + "】的订单信息，请检查订单号是否正确。";
+        }
+        
+        return buildOrderDetailResponse(orderInfo);
+    }
+
+    /**
+     * 查询用户订单列表
+     */
+    private String queryUserOrders(Long userId, Integer status) {
+        List<OrderInfo> orders = orderService.getOrdersByUserId(userId, status);
+        
+        if (orders == null || orders.isEmpty()) {
+            if (status != null) {
+                return "您暂时没有状态为【" + getOrderStatusDesc(status) + "】的订单。";
+            }
+            return "您暂时还没有订单哦，快去看看喜欢的商品吧！";
+        }
+        
+        return buildOrderListResponse(orders, status);
+    }
+
+    /**
+     * 构建订单详情响应
+     */
+    private String buildOrderDetailResponse(OrderInfo orderInfo) {
+        StringBuilder response = new StringBuilder();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        
+        response.append("📦 **订单详情**\n\n");
+        response.append("🔖 **订单编号**：").append(orderInfo.getOrderNo()).append("\n");
+        response.append("📌 **订单状态**：").append(orderInfo.getStatusDesc()).append("\n");
+        response.append("💰 **订单金额**：").append(orderInfo.getPayment()).append(" 元\n");
+        
+        // 根据状态显示不同信息
+        if (orderInfo.getStatus() == 10) {
+            // 待付款
+            response.append("⏰ **下单时间**：").append(dateFormat.format(orderInfo.getCreateTime())).append("\n");
+            if (orderInfo.getExpireTime() != null) {
+                response.append("⚠️ **超时时间**：").append(dateFormat.format(orderInfo.getExpireTime())).append("\n");
+                response.append("\n💡 **温馨提示**：订单将在超时后自动取消，请及时支付。");
+            }
+        } else if (orderInfo.getStatus() == 20) {
+            // 已付款
+            if (orderInfo.getPaymentTime() != null) {
+                response.append("💳 **支付时间**：").append(dateFormat.format(orderInfo.getPaymentTime())).append("\n");
+            }
+            if (orderInfo.getPaymentTypeDesc() != null) {
+                response.append("💳 **支付方式**：").append(orderInfo.getPaymentTypeDesc()).append("\n");
+            }
+            response.append("\n💡 **温馨提示**：您的订单正在处理中，请耐心等待。");
+        } else if (orderInfo.getStatus() == 30) {
+            // 待发货
+            if (orderInfo.getPaymentTime() != null) {
+                response.append("💳 **支付时间**：").append(dateFormat.format(orderInfo.getPaymentTime())).append("\n");
+            }
+            if (orderInfo.getPaymentTypeDesc() != null) {
+                response.append("💳 **支付方式**：").append(orderInfo.getPaymentTypeDesc()).append("\n");
+            }
+            response.append("\n💡 **温馨提示**：您的订单正在准备中，预计1-3个工作日内发货。");
+        } else if (orderInfo.getStatus() == 40) {
+            // 已发货
+            if (orderInfo.getShipTime() != null) {
+                response.append("🚚 **发货时间**：").append(dateFormat.format(orderInfo.getShipTime())).append("\n");
+            }
+            response.append("📍 **收货地址**：").append(buildAddressString(orderInfo)).append("\n");
+            response.append("📞 **收货人**：").append(orderInfo.getReceiveName())
+                    .append(" ").append(orderInfo.getReceivePhone()).append("\n");
+            response.append("\n💡 **温馨提示**：商品已发出，预计3-7天送达，请保持电话畅通。");
+        } else if (orderInfo.getStatus() == 50) {
+            // 待收货
+            if (orderInfo.getPaymentTime() != null) {
+                response.append("💳 **支付时间**：").append(dateFormat.format(orderInfo.getPaymentTime())).append("\n");
+            }
+            if (orderInfo.getPaymentTypeDesc() != null) {
+                response.append("💳 **支付方式**：").append(orderInfo.getPaymentTypeDesc()).append("\n");
+            }
+            if (orderInfo.getShipTime() != null) {
+                response.append("🚚 **发货时间**：").append(dateFormat.format(orderInfo.getShipTime())).append("\n");
+            }
+            response.append("📍 **收货地址**：").append(buildAddressString(orderInfo)).append("\n");
+            response.append("📞 **收货人**：").append(orderInfo.getReceiveName())
+                    .append(" ").append(orderInfo.getReceivePhone()).append("\n");
+            response.append("\n💡 **温馨提示**：商品正在配送中，请注意查收，收到后请确认收货。");
+        } else if (orderInfo.getStatus() == 60) {
+            // 已完成
+            response.append("✅ **收货时间**：").append(dateFormat.format(orderInfo.getReceiveTime())).append("\n");
+            response.append("\n💡 **温馨提示**：感谢您的购买，期待您的再次光临！");
+        } else if (orderInfo.getStatus() == 70) {
+            // 已取消
+            response.append("❌ **取消时间**：").append(dateFormat.format(orderInfo.getCancelTime())).append("\n");
+            if (orderInfo.getCancelReason() != null) {
+                response.append("📝 **取消原因**：").append(orderInfo.getCancelReason()).append("\n");
+            }
+        } else if (orderInfo.getStatus() == 90) {
+            // 已退款
+            response.append("💸 **退款金额**：").append(orderInfo.getRefundAmount()).append(" 元\n");
+            response.append("⏰ **退款时间**：").append(dateFormat.format(orderInfo.getRefundTime())).append("\n");
+            if (orderInfo.getRefundReason() != null) {
+                response.append("📝 **退款原因**：").append(orderInfo.getRefundReason()).append("\n");
+            }
+        }
+        
+        // 显示订单商品信息
+        if (orderInfo.getOrderDetails() != null && !orderInfo.getOrderDetails().isEmpty()) {
+            response.append("\n📋 **订单商品**：\n");
+            for (int i = 0; i < orderInfo.getOrderDetails().size(); i++) {
+                OrderDetail detail = orderInfo.getOrderDetails().get(i);
+                response.append((i + 1)).append(". ").append(detail.getProductName())
+                        .append(" × ").append(detail.getQuantity())
+                        .append(" (¥").append(detail.getCurrentUnitPrice()).append(")\n");
+            }
+        }
+        
+        return response.toString();
+    }
+
+    /**
+     * 构建订单列表响应
+     */
+    private String buildOrderListResponse(List<OrderInfo> orders, Integer status) {
+        StringBuilder response = new StringBuilder();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+        
+        if (status != null) {
+            response.append("📋 **").append(getOrderStatusDesc(status)).append("订单列表**\n\n");
+        } else {
+            response.append("📋 **我的订单列表**\n\n");
+        }
+        
+        int displayCount = Math.min(orders.size(), 5);
+        for (int i = 0; i < displayCount; i++) {
+            OrderInfo order = orders.get(i);
+            response.append((i + 1)).append(". 订单号：").append(order.getOrderNo()).append("\n");
+            response.append("   状态：").append(order.getStatusDesc()).append("\n");
+            response.append("   金额：¥").append(order.getPayment()).append("\n");
+            response.append("   时间：").append(dateFormat.format(order.getCreateTime())).append("\n");
+            
+            if (i < displayCount - 1) {
+                response.append("\n");
+            }
+        }
+        
+        if (orders.size() > displayCount) {
+            response.append("\n📊 共 ").append(orders.size())
+                    .append(" 个订单，已显示最新 ").append(displayCount).append(" 个。\n");
+        }
+        
+        response.append("\n💡 **提示**：发送订单号可查看详细信息。");
+        
+        return response.toString();
+    }
+
+    /**
+     * 构建地址字符串
+     */
+    private String buildAddressString(OrderInfo orderInfo) {
+        StringBuilder address = new StringBuilder();
+        
+        if (orderInfo.getProvince() != null) {
+            address.append(orderInfo.getProvince());
+        }
+        if (orderInfo.getCity() != null) {
+            address.append(orderInfo.getCity());
+        }
+        if (orderInfo.getArea() != null) {
+            address.append(orderInfo.getArea());
+        }
+        if (orderInfo.getStreet() != null) {
+            address.append(orderInfo.getStreet());
+        }
+        
+        return address.toString();
+    }
+
+    /**
+     * 获取订单状态描述
+     */
+    private String getOrderStatusDesc(Integer status) {
+        if (status == null) return "未知";
+        
+        switch (status) {
+            case 10: return "待付款";
+            case 20: return "已付款";
+            case 30: return "待发货";
+            case 40: return "已发货";
+            case 50: return "待收货";
+            case 60: return "已完成";
+            case 70: return "已取消";
+            case 80: return "退款中";
+            case 90: return "已退款";
+            default: return "未知";
+        }
     }
 }

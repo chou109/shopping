@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI客服订单查询示例</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+                'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .chat-container {
+            width: 90%;
+            max-width: 600px;
+            height: 80vh;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #f5f5f5;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message.ai {
+            justify-content: flex-start;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.ai .message-content {
+            background: white;
+            color: #333;
+            border: 1px solid #e0e0e0;
+            border-bottom-left-radius: 4px;
+        }
+
+        .chat-input-container {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .chat-input:focus {
+            border-color: #667eea;
+        }
+
+        .send-button {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .send-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .send-button:active {
+            transform: translateY(0);
+        }
+
+        .send-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .quick-buttons {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .quick-button {
+            padding: 8px 16px;
+            background: white;
+            border: 1px solid #667eea;
+            border-radius: 20px;
+            color: #667eea;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+
+        .quick-button:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .connection-status {
+            padding: 8px 16px;
+            text-align: center;
+            font-size: 12px;
+            color: white;
+        }
+
+        .connection-status.connected {
+            background: #4caf50;
+        }
+
+        .connection-status.disconnected {
+            background: #f44336;
+        }
+
+        .typing-indicator {
+            display: none;
+            padding: 12px 16px;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e0e0e0;
+            width: fit-content;
+        }
+
+        .typing-indicator.show {
+            display: block;
+        }
+
+        .typing-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #667eea;
+            margin: 0 2px;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+            }
+            30% {
+                transform: translateY(-10px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            🤖 AI智能客服 - 订单查询助手
+        </div>
+        <div class="connection-status disconnected" id="connectionStatus">
+            未连接
+        </div>
+        <div class="chat-messages" id="chatMessages">
+            <div class="message ai">
+                <div class="message-content">
+                    您好!我是智能客服助手,很高兴为您服务!
+                    
+我可以帮您:
+📦 查询订单状态
+🚚 查看物流信息
+💰 查看订单金额
+📝 查询订单详情
+
+请告诉我您想了解什么吧~
+                </div>
+            </div>
+        </div>
+        <div class="chat-input-container">
+            <div class="quick-buttons">
+                <button class="quick-button" onclick="sendQuickMessage('我的订单')">📋 我的订单</button>
+                <button class="quick-button" onclick="sendQuickMessage('待付款订单')">💳 待付款订单</button>
+                <button class="quick-button" onclick="sendQuickMessage('已发货订单')">🚚 已发货订单</button>
+                <button class="quick-button" onclick="sendQuickMessage('推荐手机')">📱 推荐商品</button>
+            </div>
+            <div class="input-wrapper">
+                <input type="text" 
+                       class="chat-input" 
+                       id="messageInput" 
+                       placeholder="输入您的问题,例如:我的订单、查询订单O20231227143021123456..."
+                       onkeypress="handleKeyPress(event)">
+                <button class="send-button" id="sendButton" onclick="sendMessage()">
+                    发送
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let isConnected = false;
+        // 模拟用户ID - 实际使用时应该从登录信息中获取
+        const userId = 1; // 这里应该替换为实际的用户ID
+
+        // WebSocket连接
+        function connectWebSocket() {
+            // 注意:修改为您的实际WebSocket地址
+            ws = new WebSocket('ws://localhost:9091/ai/chat');
+
+            ws.onopen = function() {
+                console.log('WebSocket连接成功');
+                isConnected = true;
+                updateConnectionStatus(true);
+            };
+
+            ws.onmessage = function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    handleResponse(data);
+                } catch (e) {
+                    console.error('解析消息失败:', e);
+                }
+            };
+
+            ws.onerror = function(error) {
+                console.error('WebSocket错误:', error);
+                updateConnectionStatus(false);
+            };
+
+            ws.onclose = function() {
+                console.log('WebSocket连接关闭');
+                isConnected = false;
+                updateConnectionStatus(false);
+                // 5秒后尝试重连
+                setTimeout(connectWebSocket, 5000);
+            };
+        }
+
+        // 更新连接状态显示
+        function updateConnectionStatus(connected) {
+            const statusEl = document.getElementById('connectionStatus');
+            if (connected) {
+                statusEl.textContent = '已连接';
+                statusEl.className = 'connection-status connected';
+            } else {
+                statusEl.textContent = '未连接 - 正在重连...';
+                statusEl.className = 'connection-status disconnected';
+            }
+        }
+
+        // 发送消息
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+
+            if (!message) {
+                return;
+            }
+
+            if (!isConnected) {
+                alert('WebSocket未连接,请稍后重试');
+                return;
+            }
+
+            // 显示用户消息
+            addMessage('user', message);
+
+            // 清空输入框
+            input.value = '';
+
+            // 显示输入中指示器
+            showTypingIndicator();
+
+            // 发送到服务器
+            const payload = {
+                question: message,
+                userId: userId,
+                productId: null
+            };
+
+            ws.send(JSON.stringify(payload));
+        }
+
+        // 快捷发送消息
+        function sendQuickMessage(message) {
+            document.getElementById('messageInput').value = message;
+            sendMessage();
+        }
+
+        // 处理键盘事件
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        // 添加消息到聊天框
+        function addMessage(type, content) {
+            const messagesContainer = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.textContent = content;
+
+            messageDiv.appendChild(contentDiv);
+            messagesContainer.appendChild(messageDiv);
+
+            // 滚动到底部
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // 显示输入中指示器
+        function showTypingIndicator() {
+            const messagesContainer = document.getElementById('chatMessages');
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message ai';
+            typingDiv.id = 'typingIndicator';
+
+            const indicatorDiv = document.createElement('div');
+            indicatorDiv.className = 'typing-indicator show';
+            indicatorDiv.innerHTML = `
+                <span class="typing-dot"></span>
+                <span class="typing-dot"></span>
+                <span class="typing-dot"></span>
+            `;
+
+            typingDiv.appendChild(indicatorDiv);
+            messagesContainer.appendChild(typingDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // 隐藏输入中指示器
+        function hideTypingIndicator() {
+            const indicator = document.getElementById('typingIndicator');
+            if (indicator) {
+                indicator.remove();
+            }
+        }
+
+        // 处理服务器响应
+        let currentAIMessage = '';
+
+        function handleResponse(data) {
+            if (data.type === 'stream') {
+                // 流式输出
+                currentAIMessage += data.content;
+                updateAIMessage(currentAIMessage);
+            } else if (data.type === 'end') {
+                // 结束
+                hideTypingIndicator();
+                currentAIMessage = '';
+            } else if (data.type === 'error') {
+                hideTypingIndicator();
+                addMessage('ai', '抱歉,处理您的请求时出现错误: ' + data.content);
+                currentAIMessage = '';
+            }
+        }
+
+        // 更新AI消息
+        function updateAIMessage(content) {
+            hideTypingIndicator();
+
+            const messagesContainer = document.getElementById('chatMessages');
+            let lastMessage = messagesContainer.lastElementChild;
+
+            if (!lastMessage || !lastMessage.classList.contains('ai') || 
+                lastMessage.id === 'typingIndicator') {
+                // 创建新消息
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message ai';
+                messageDiv.id = 'currentAIMessage';
+
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'message-content';
+                contentDiv.textContent = content;
+
+                messageDiv.appendChild(contentDiv);
+                messagesContainer.appendChild(messageDiv);
+            } else if (lastMessage.id === 'currentAIMessage') {
+                // 更新现有消息
+                lastMessage.querySelector('.message-content').textContent = content;
+            }
+
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // 页面加载时连接WebSocket
+        window.onload = function() {
+            connectWebSocket();
+        };
+
+        // 页面卸载时关闭连接
+        window.onbeforeunload = function() {
+            if (ws) {
+                ws.close();
+            }
+        };
+    </script>
+</body>
+</html>
