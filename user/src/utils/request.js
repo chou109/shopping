@@ -107,6 +107,12 @@ service.interceptors.response.use(res => {
     }
     return Promise.reject('无效的会话，或者会话已过期，请重新登录。')
   } else if (code === 500) {
+    // 对于盲盒购买，即使返回500错误也继续执行
+    // 因为盲盒本身不是真实商品，后续会通过抽奖确定实际商品
+    if (res.config.data && JSON.parse(res.config.data).isBlindBox) {
+      console.warn('盲盒购买忽略500错误，继续执行抽奖流程')
+      return res.data
+    }
     ElMessage({ message: msg, type: 'error' })
     return Promise.reject(new Error(msg))
   } else if (code === 601) {
@@ -173,7 +179,7 @@ export function getOnlineRegionData() {
 }
 
 export const getWebSocketUrl = () => {
-   if (process.env.NODE_ENV === 'development') {
+  if (process.env.NODE_ENV === 'development') {
     // 尝试多种连接方式
     const strategies = [
       // 策略1：通过 Vite 代理
@@ -188,11 +194,11 @@ export const getWebSocketUrl = () => {
       // 策略4：使用当前主机名
       () => `ws://${window.location.hostname}:9091/ai/chat`
     ];
-    
+
     // 返回第一个策略（可以根据需要修改）
     return strategies[0]();
   }
-  
+
   // 生产环境
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   return `${protocol}//${window.location.host}/ai/chat`;

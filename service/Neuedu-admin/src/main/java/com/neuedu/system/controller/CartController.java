@@ -95,6 +95,12 @@ public class CartController extends BaseController
         if (userId == null) {
             return error("用户未登录");
         }
+        
+        // 盲盒商品（ID=9999）不允许加入购物车
+        if (cart.getProductId() != null && cart.getProductId() == 9999) {
+            return error("盲盒商品不支持加入购物车，请直接购买");
+        }
+        
         cart.setUserId(userId);
 
         // 设置创建人

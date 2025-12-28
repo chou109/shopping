@@ -1,240 +1,100 @@
 <template>
-  <div class="app-container">
-    <!-- 基础查询条件 -->
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="80px"
-      class="search-form">
-      <el-row :gutter="20">
-        <!-- 第一行：基础查询条件 -->
-        <el-col :span="6">
-          <el-form-item label="商品名称" prop="name">
-            <el-input v-model="queryParams.name" placeholder="请输入商品名称" clearable @keyup.enter="handleQuery" />
-          </el-form-item>
-        </el-col>
-        <el-col :span="6">
-          <el-form-item label="热门状态" prop="hotFlag">
-            <el-select v-model="queryParams.hotFlag" placeholder="全部" clearable style="width: 200px">
-              <el-option label="全部" :value="null" />
-              <el-option label="热门" :value="1" />
-              <el-option label="非热门" :value="0" />
-            </el-select>
-          </el-form-item>
-        </el-col>
-        <!-- 店铺名称搜索框 -->
-        <el-col :span="6">
-          <el-form-item label="店铺名称" prop="shopId">
-            <div class="store-select-wrapper" @click.stop="toggleStoreCascader">
-              <el-select v-model="queryParams.shopId" placeholder="点击选择店铺" clearable filterable
-                style="width: 200px" @click.stop>
-                <el-option label="全部" :value="null" />
-                <el-option v-for="store in storeTreeOptions" :key="store.id" :label="store.shopName"
-                  :value="store.id" />
-              </el-select>
-
-              <!-- 级联选择器面板 -->
-              <div v-if="showStoreCascader" class="cascader-panel store-cascader" @click.stop>
-                <div class="cascader-container">
-                  <!-- 左侧店铺列表 -->
-                  <div class="cascader-menu left-menu">
-                    <div v-for="store in storeTree" :key="store.id" class="cascader-menu-item"
-                      :class="{ active: queryParams.shopId === store.id }" 
-                      @click.stop="handleStoreClick(store)">
-                      <span>{{ store.shopName }}</span>
-                      <el-tag v-if="store.status === 1" size="small" type="success" style="margin-left: 8px;">正常</el-tag>
-                      <el-tag v-else-if="store.status === 2" size="small" type="warning" style="margin-left: 8px;">关闭</el-tag>
-                      <el-tag v-else size="small" type="info" style="margin-left: 8px;">审核中</el-tag>
-                    </div>
-                  </div>
-
-                  <!-- 右侧店铺详情 -->
-                  <div v-if="selectedStore" class="cascader-menu right-menu">
-                    <div class="store-detail-panel">
-                      <div class="store-detail-header">
-                        <h4>{{ selectedStore.shopName }}</h4>
-                      </div>
-                      <div class="store-detail-info">
-                        <p><span class="detail-label">联系电话:</span> {{ selectedStore.contactPhone || '未填写' }}</p>
-                        <p><span class="detail-label">店铺地址:</span> {{ selectedStore.contactAddress || '未填写' }}</p>
-                        <p><span class="detail-label">店铺评分:</span> 
-                          <el-rate
-                            v-model="selectedStore.shopScore"
-                            disabled
-                            show-score
-                            text-color="#ff9900"
-                            score-template="{value}"
-                            style="display: inline-block; margin-left: 5px;"
-                          />
-                        </p>
-                        <p><span class="detail-label">商品数量:</span> {{ selectedStore.productCount || 0 }}</p>
-                        <p><span class="detail-label">销售数量:</span> {{ selectedStore.salesCount || 0 }}</p>
-                      </div>
-                      <div class="store-detail-footer">
-                        <el-button type="primary" size="small" @click.stop="confirmStoreSelection">选择此店铺</el-button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div v-if="storeTree.length === 0" class="cascader-menu right-menu empty-tips">
-                    暂无店铺数据
-                  </div>
-                </div>
-              </div>
-            </div>
-          </el-form-item>
-        </el-col>
-        <el-col :span="6">
-          <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-            <el-button type="text" @click="toggleAdvanced" style="margin-left: 10px;">
-              {{ showAdvanced ? '收起' : '展开' }}
-              <el-icon :style="{ transform: showAdvanced ? 'rotate(180deg)' : '', transition: 'transform 0.3s' }">
-                <ArrowDown />
-              </el-icon>
-            </el-button>
-          </el-form-item>
-        </el-col>
-      </el-row>
-
-      <!-- 高级查询条件（折叠部分） -->
-      <div v-if="showAdvanced" class="advanced-search"
-        style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
-        <el-row :gutter="20">
-          <!-- 商品ID -->
+  <div class="app-container product-management">
+    <!-- 搜索区域卡片 -->
+    <el-card class="search-card" shadow="hover" v-show="showSearch">
+      <el-form :model="queryParams" ref="queryRef" :inline="true">
+        <el-row :gutter="24">
           <el-col :span="6">
-            <el-form-item label="商品ID" prop="productId">
-              <el-input v-model="queryParams.productId" placeholder="请输入商品编码" clearable />
+            <el-form-item label="商品名称" prop="name">
+              <el-input v-model="queryParams.name" placeholder="请输入商品名称" clearable @keyup.enter="handleQuery" style="width: 100%" />
             </el-form-item>
           </el-col>
-          
-          <!-- 品类 -->
-          <el-col :span="6">
-            <el-form-item label="品类" prop="categoryId">
-              <div class="cascader-select-wrapper" @click.stop="toggleCascader">
-                <el-select v-model="queryParams.categoryId" placeholder="点击选择品类" clearable filterable
-                  style="width: 200px" @click.stop>
-                  <el-option label="全部" :value="null" />
-                  <el-option v-for="category in categoryTreeOptions" :key="category.id" :label="category.name"
-                    :value="category.id" />
-                </el-select>
-
-                <!-- 级联选择器面板 -->
-                <div v-if="showCascader" class="cascader-panel" @click.stop>
-                  <div class="cascader-container">
-                    <!-- 左侧父级菜单 -->
-                    <div class="cascader-menu left-menu">
-                      <div v-for="parent in categoryTree" :key="parent.id" class="cascader-menu-item"
-                        :class="{ active: activeParentId === parent.id }" @mouseenter="handleParentHover(parent)"
-                        @click.stop="handleParentClick(parent)">
-                        <span>{{ parent.name }}</span>
-                        <el-icon v-if="parent.children && parent.children.length > 0" style="margin-left: 8px;">
-                          <ArrowRight />
-                        </el-icon>
-                      </div>
-                    </div>
-
-                    <!-- 右侧子级菜单 -->
-                    <div v-if="activeParentId && activeChildren.length > 0" class="cascader-menu right-menu">
-                      <div v-for="child in activeChildren" :key="child.id" class="cascader-menu-item"
-                        :class="{ active: queryParams.categoryId === child.id }" @click.stop="handleChildClick(child)">
-                        <span>{{ child.name }}</span>
-                      </div>
-                    </div>
-
-                    <div v-if="activeParentId && activeChildren.length === 0"
-                      class="cascader-menu right-menu empty-tips">
-                      该分类下没有子分类
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </el-form-item>
-          </el-col>
-          
-          <!-- 商品状态 - 放在品类后面 -->
           <el-col :span="6">
             <el-form-item label="商品状态" prop="status">
-              <el-select v-model="queryParams.status" placeholder="全部状态" clearable style="width: 200px">
+              <el-select v-model="queryParams.status" placeholder="全部状态" clearable style="width: 100%" @change="handleQuery">
                 <el-option label="全部" :value="null" />
                 <el-option label="上架" :value="1" />
                 <el-option label="下架" :value="0" />
               </el-select>
             </el-form-item>
           </el-col>
-          
-          <!-- 这里留空一个位置，保持布局平衡 -->
           <el-col :span="6">
-            <!-- 可以为空，或者放其他查询条件 -->
-          </el-col>
-        </el-row>
-
-        <el-row :gutter="20" style="margin-top: 10px;">
-          <el-col :span="8">
-            <el-form-item label="价格范围">
-              <div style="display: flex; align-items: center;">
-                <el-input-number v-model="queryParams.minPrice" placeholder="最低价" :min="0" :precision="2"
-                  :controls="false" style="flex: 1" />
-                <span style="margin: 0 10px; color: #ccc">-</span>
-                <el-input-number v-model="queryParams.maxPrice" placeholder="最高价" :min="0" :precision="2"
-                  :controls="false" style="flex: 1" />
-              </div>
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="库存范围">
-              <div style="display: flex; align-items: center;">
-                <el-input-number v-model="queryParams.minStock" placeholder="最小库存" :min="0" :controls="false"
-                  style="flex: 1" />
-                <span style="margin: 0 10px; color: #ccc">-</span>
-                <el-input-number v-model="queryParams.maxStock" placeholder="最大库存" :min="0" :controls="false"
-                  style="flex: 1" />
-              </div>
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="创建时间">
-              <el-date-picker v-model="queryParams.createTime" type="daterange" range-separator="至"
-                start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-
-        <el-row :gutter="20" style="margin-top: 10px;">
-          <el-col :span="6">
-            <el-form-item label="删除状态" prop="deleteFlag">
-              <el-select v-model="queryParams.deleteFlag" placeholder="全部" clearable style="width: 200px">
+            <el-form-item label="热门状态" prop="hotFlag">
+              <el-select v-model="queryParams.hotFlag" placeholder="全部" clearable style="width: 100%" @change="handleQuery">
                 <el-option label="全部" :value="null" />
-                <el-option label="正常" :value="0" />
-                <el-option label="已删除" :value="1" />
+                <el-option label="热门" :value="1" />
+                <el-option label="非热门" :value="0" />
               </el-select>
             </el-form-item>
           </el-col>
+          <el-col :span="6">
+            <el-form-item class="search-buttons">
+              <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+              <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+              <el-button type="primary" link @click="toggleAdvanced">
+                {{ showAdvanced ? '收起' : '展开' }}
+                <el-icon :class="{ 'rotate-icon': showAdvanced }">
+                  <ArrowDown />
+                </el-icon>
+              </el-button>
+            </el-form-item>
+          </el-col>
         </el-row>
+
+        <!-- 高级查询条件 -->
+        <el-collapse-transition>
+          <div v-show="showAdvanced" class="advanced-search-section">
+            <el-divider content-position="left">更多筛选</el-divider>
+            <el-row :gutter="24">
+              <el-col :span="6">
+                <el-form-item label="商品ID" prop="productId">
+                  <el-input v-model="queryParams.productId" placeholder="请输入商品ID" clearable style="width: 100%" />
+                </el-form-item>
+              </el-col>
+              <el-col :span="10">
+                <el-form-item label="品类" prop="categoryId">
+                  <el-select v-model="queryParams.categoryId" placeholder="点击选择品类" clearable filterable style="width: 150px">
+                    <el-option label="全部" :value="null" />
+                    <el-option v-for="category in categoryTreeOptions" :key="category.id" :label="category.name" :value="category.id" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+            </el-row>
+          </div>
+        </el-collapse-transition>
+      </el-form>
+      
+      <!-- 筛选条件标签展示 -->
+      <div class="filter-tags" v-if="hasActiveFilters">
+        <span class="filter-label">当前筛选：</span>
+        <el-tag v-if="queryParams.status !== null" :type="queryParams.status === 1 ? 'success' : 'danger'" closable @close="clearFilter('status')" effect="dark" size="large">
+          {{ queryParams.status === 1 ? '上架' : '下架' }}
+        </el-tag>
+        <el-tag v-if="queryParams.hotFlag !== null" :type="queryParams.hotFlag === 1 ? 'danger' : 'info'" closable @close="clearFilter('hotFlag')" effect="dark" size="large">
+          {{ queryParams.hotFlag === 1 ? '热门' : '非热门' }}
+        </el-tag>
       </div>
-    </el-form>
+    </el-card>
 
     <!-- 操作按钮区域 -->
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd"
-          v-hasPermi="['system:product:add']">新增</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate"
-          v-hasPermi="['system:product:edit']">修改</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete"
-          v-hasPermi="['system:product:remove']">删除</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button type="warning" plain icon="Download" @click="handleExport"
-          v-hasPermi="['system:product:export']">导出</el-button>
-      </el-col>
+    <div class="toolbar-wrapper">
+      <div class="action-buttons">
+        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['system:product:add']">新增</el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['system:product:edit']">修改</el-button>
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:product:remove']">删除</el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['system:product:export']">导出</el-button>
+      </div>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
-    </el-row>
+    </div>
 
-    <!-- 数据表格 -->
-    <el-table v-loading="loading" :data="productList" @selection-change="handleSelectionChange">
+    <!-- 数据表格卡片 -->
+    <el-card class="table-card" shadow="hover">
+    <el-table v-loading="loading" :data="productList" @selection-change="handleSelectionChange"
+      :header-cell-style="{ background: '#f5f7fa', color: '#606266', fontWeight: '600' }"
+      :row-style="{ height: '60px' }"
+      stripe
+      border
+    >
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="ID" align="center" prop="id" width="80" />
       <el-table-column label="商品图片" align="center" prop="mainImage" width="100">
@@ -343,10 +203,13 @@
         </template>
       </el-table-column>
     </el-table>
+    </el-card>
 
     <!-- 分页组件 -->
-    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum"
-      v-model:limit="queryParams.pageSize" @pagination="getList" />
+    <div class="pagination-wrapper">
+      <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum"
+        v-model:limit="queryParams.pageSize" @pagination="getList" />
+    </div>
 
     <!-- 添加或修改商品对话框 -->
     <el-dialog :title="title" v-model="open" width="800px" append-to-body>
@@ -373,11 +236,6 @@
                   <el-option v-for="category in categoryTreeOptions" :key="category.id" :label="category.name"
                     :value="category.id" />
                 </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="活动ID" prop="activityId">
-              <el-input v-model="form.activityId" placeholder="请输入活动ID" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -472,7 +330,8 @@ const LOCAL_CATEGORY_OPTIONS = Object.entries(LOCAL_CATEGORY_MAP).map(([id, name
 import { listProduct, getProduct, delProduct, addProduct, updateProduct, updateProductStatus, updateProductHotFlag } from "@/api/system/product";
 import { listCategoryFront } from "@/api/system/category";
 import { ArrowDown, ArrowRight } from '@element-plus/icons-vue';
-import { listStore } from "@/api/system/store";
+import { ElMessage } from 'element-plus';
+import useUserStore from '@/store/modules/user';
 
 const { proxy } = getCurrentInstance();
 const filteredCategoryOptions = ref([...LOCAL_CATEGORY_OPTIONS]);
@@ -489,42 +348,20 @@ const multiple = ref(true);
 const total = ref(0);
 const title = ref("");
 const categoryTree = ref([]);
-const showCascader = ref(false);
 const activeParentId = ref(null);
 const activeChildren = ref([]);
 const categoryTreeOptions = ref([]);
-
-// 新增店铺相关的响应式变量
-const storeTree = ref([]);
-const storeTreeOptions = ref([]);
-const showStoreCascader = ref(false);
-const selectedStore = ref(null);
 
 const data = reactive({
   form: {},
   queryParams: {
     pageNum: 1,
     pageSize: 10,
-    // 基础查询条件
     name: null,
     status: null,
     hotFlag: null,
-    shopId: null, // 修改为shopId
-    // 高级查询条件
-    id: null,
     productId: null,
     categoryId: null,
-    activityId: null,
-    createUser: null,
-    updateUser: null,
-    deleteFlag: null,
-    // 范围查询
-    minPrice: null,
-    maxPrice: null,
-    minStock: null,
-    maxStock: null,
-    // 时间范围
-    createTime: null,
   },
   rules: {
     name: [
@@ -543,6 +380,18 @@ const data = reactive({
 });
 
 const { queryParams, form, rules } = toRefs(data);
+const productRef = ref(null);
+
+// 计算属性：是否有激活的筛选条件
+const hasActiveFilters = computed(() => {
+  return queryParams.value.status !== null || queryParams.value.hotFlag !== null;
+});
+
+/** 清除指定筛选 */
+function clearFilter(field) {
+  queryParams.value[field] = null;
+  handleQuery();
+}
 
 /** 将树形数据扁平化，用于下拉框显示 */
 function flattenCategoryTree(treeData, level = 0) {
@@ -592,82 +441,6 @@ async function loadCategoryTree() {
     console.error('加载分类树失败:', error);
     categoryTree.value = [];
     categoryTreeOptions.value = [];
-  }
-}
-
-/** 从后端加载店铺列表 */
-async function loadStoreList() {
-  try {
-    const response = await listStore({
-      pageNum: 1,
-      pageSize: 1000,
-      deleteFlag: 0
-    });
-    
-    console.log('Store list response:', response);
-
-    if (response && response.code === 200) {
-      const stores = response.rows || response.data || [];
-      storeTree.value = stores;
-      generateStoreOptions();
-    }
-  } catch (error) {
-    console.error('加载店铺列表失败:', error);
-    storeTree.value = [];
-    storeTreeOptions.value = [];
-  }
-}
-
-/** 生成店铺选项 */
-function generateStoreOptions() {
-  storeTreeOptions.value = storeTree.value.map(store => ({
-    id: store.id,
-    shopName: store.shopName,
-    status: store.status,
-    contactAddress: store.contactAddress
-  }));
-}
-
-/** 切换店铺级联面板显示 */
-function toggleStoreCascader() {
-  showStoreCascader.value = !showStoreCascader.value;
-  
-  if (showStoreCascader.value && queryParams.value.shopId) {
-    const store = storeTree.value.find(s => s.id === queryParams.value.shopId);
-    if (store) {
-      selectedStore.value = store;
-    }
-  }
-}
-
-/** 处理店铺点击 */
-function handleStoreClick(store) {
-  selectedStore.value = store;
-  queryParams.value.shopId = store.id;
-}
-
-/** 确认店铺选择 */
-function confirmStoreSelection() {
-  if (selectedStore.value) {
-    queryParams.value.shopId = selectedStore.value.id;
-    showStoreCascader.value = false;
-    handleQuery();
-  }
-}
-
-/** 点击页面其他区域关闭店铺级联面板 */
-function handleStoreClickOutside(event) {
-  const storeCascaderEl = document.querySelector('.store-select-wrapper');
-  if (storeCascaderEl && !storeCascaderEl.contains(event.target)) {
-    showStoreCascader.value = false;
-  }
-}
-
-/** 点击页面其他区域关闭品类级联面板 */
-function handleClickOutside(event) {
-  const cascaderEl = document.querySelector('.cascader-select-wrapper');
-  if (cascaderEl && !cascaderEl.contains(event.target)) {
-    showCascader.value = false;
   }
 }
 
@@ -738,14 +511,6 @@ function handleParentHover(parent) {
   activeChildren.value = parent.children || [];
 }
 
-/** 切换级联面板显示 */
-function toggleCascader() {
-  showCascader.value = !showCascader.value;
-  if (showCascader.value && queryParams.value.categoryId) {
-    findParentForSelected();
-  }
-}
-
 /** 获取分类的父级路径 */
 function getParentPath(tree, categoryId, path = []) {
   for (const node of tree) {
@@ -763,32 +528,6 @@ function getParentPath(tree, categoryId, path = []) {
   return null;
 }
 
-/** 查找已选分类的父级 */
-function findParentForSelected() {
-  const selectedId = queryParams.value.categoryId;
-  if (!selectedId) return;
-
-  const findParent = (categories) => {
-    for (const category of categories) {
-      if (category.children) {
-        const found = category.children.find(child => child.id === selectedId);
-        if (found) {
-          activeParentId.value = category.id;
-          activeChildren.value = category.children;
-          return true;
-        }
-
-        if (findParent(category.children)) {
-          return true;
-        }
-      }
-    }
-    return false;
-  };
-
-  findParent(categoryTree.value);
-}
-
 /** 处理父级菜单点击 */
 function handleParentClick(parent) {
   activeParentId.value = parent.id;
@@ -800,42 +539,16 @@ function handleChildClick(child) {
   queryParams.value.categoryId = child.id;
 }
 
-/** 品类选择变化处理 */
-function handleCategoryChange(value) {
-  console.log('Selected category id:', value);
-}
-
-/** 过滤品类选项（用于下拉框搜索） */
-function filterCategoryOptions(query) {
-  if (!query) {
-    return categoryTreeOptions.value;
-  }
-
-  const searchText = query.toLowerCase();
-  const matchedCategories = categoryTreeOptions.value.filter(item =>
-    item.name.toLowerCase().includes(searchText) ||
-    item.id.toString().includes(searchText)
-  );
-
-  if (matchedCategories.length === 0) {
-    return [];
-  }
-
-  return categoryTreeOptions.value.filter(item =>
-    matchedCategories.some(match => match.id === item.id)
-  );
-}
-
 /** 查询商品列表 */
 function getList() {
   loading.value = true;
-
+  const userStore = useUserStore();
   const params = { ...queryParams.value };
-
-  if (params.createTime && params.createTime.length === 2) {
-    params.beginCreateTime = params.createTime[0];
-    params.endCreateTime = params.createTime[1];
-    delete params.createTime;
+  
+  // user_id=1 是超级管理员，可查看所有商品
+  // user_id=2 是商家，只能查看自己创建的商品
+  if (userStore.userId !== 1) {
+    params.createUser = userStore.userId;
   }
 
   Object.keys(params).forEach(key => {
@@ -846,7 +559,6 @@ function getList() {
 
   listProduct(params).then(response => {
     productList.value = response.rows;
-    console.log('Fetched product list:', response.rows);
     total.value = response.total;
     loading.value = false;
   }).catch(() => {
@@ -905,20 +617,10 @@ function resetQuery() {
     name: null,
     status: null,
     hotFlag: null,
-    shopId: null,
-    id: null,
     productId: null,
     categoryId: null,
-    activityId: null,
-    createUser: null,
-    updateUser: null,
-    deleteFlag: null,
-    minPrice: null,
-    maxPrice: null,
-    minStock: null,
-    maxStock: null,
-    createTime: null,
   };
+  showAdvanced.value = false;
   handleQuery();
 }
 
@@ -957,31 +659,35 @@ function handleUpdate(row) {
 }
 
 /** 提交按钮 */
-function submitForm() {
-  proxy.$refs["productRef"].validate(valid => {
-    if (valid) {
-      if (form.value.id != null) {
-        updateProduct(form.value).then(response => {
-          proxy.$modal.msgSuccess("修改成功");
-          open.value = false;
-          getList();
-        });
-      } else {
-        addProduct(form.value).then(response => {
-          proxy.$modal.msgSuccess("新增成功");
-          open.value = false;
-          getList();
-        });
-      }
-    }
-  });
-}
+const submitForm = async () => {
+  await productRef.value.validate();
+  const userStore = useUserStore();
+  if (!userStore.userId) {
+    ElMessage.error('无法获取用户信息，请重新登录');
+    return;
+  }
+  form.value.createUser = userStore.userId;
+  if (form.value.id != null) {
+    await updateProduct(form.value);
+    proxy.$modal.msgSuccess("修改成功");
+  } else {
+    await addProduct(form.value);
+    proxy.$modal.msgSuccess("新增成功");
+  }
+  open.value = false;
+  getList();
+};
 
 /** 删除按钮操作 */
 function handleDelete(row) {
+  const userStore = useUserStore();
+  if (!userStore.userId) {
+    ElMessage.error('无法获取用户信息，请重新登录');
+    return;
+  }
   const _ids = row.id ? [row.id] : ids.value;
   proxy.$modal.confirm('是否确认删除商品编号为"' + _ids.join(',') + '"的数据项？').then(function () {
-    return delProduct(_ids);
+    return delProduct(_ids, { createUser: userStore.userId });
   }).then(() => {
     getList();
     proxy.$modal.msgSuccess("删除成功");
@@ -991,12 +697,6 @@ function handleDelete(row) {
 /** 导出按钮操作 */
 function handleExport() {
   const params = { ...queryParams.value };
-  if (params.createTime && params.createTime.length === 2) {
-    params.beginCreateTime = params.createTime[0];
-    params.endCreateTime = params.createTime[1];
-    delete params.createTime;
-  }
-
   proxy.download('system/product/export', params, `product_${new Date().getTime()}.xlsx`);
 }
 
@@ -1029,32 +729,129 @@ function toggleHot(row) {
 // 组件挂载时加载数据
 onMounted(() => {
   loadCategoryTree();
-  loadStoreList();
   getList();
-  
-  // 添加点击外部关闭监听
-  document.addEventListener('click', handleClickOutside);
-  document.addEventListener('click', handleStoreClickOutside);
-});
-
-onBeforeUnmount(() => {
-  document.removeEventListener('click', handleClickOutside);
-  document.removeEventListener('click', handleStoreClickOutside);
 });
 </script>
 
 <style scoped>
-.search-form {
-  background: #f8f9fa;
-  padding: 20px;
-  border-radius: 8px;
+/* 容器基础样式 */
+.product-management {
+  padding: 24px;
+  background: #f5f7fa;
+  min-height: calc(100vh - 100px);
+}
+
+/* 搜索卡片 */
+.search-card {
   margin-bottom: 20px;
+  border-radius: 8px;
 }
 
-.advanced-search {
-  border-top: 1px solid #e8e8e8;
+.search-card :deep(.el-card__body) {
+  padding: 20px 24px 8px;
 }
 
+.search-card :deep(.el-form-item) {
+  margin-bottom: 18px;
+}
+
+.search-card :deep(.el-form-item__label) {
+  font-weight: 500;
+  color: #606266;
+}
+
+.search-buttons {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.rotate-icon {
+  transform: rotate(180deg);
+  transition: transform 0.3s;
+}
+
+/* 高级筛选区域 */
+.advanced-search-section {
+  padding-top: 8px;
+}
+
+.advanced-search-section :deep(.el-divider__text) {
+  font-size: 13px;
+  color: #909399;
+  background: #fff;
+}
+
+/* 筛选条件标签 */
+.filter-tags {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0 0;
+  margin-top: 8px;
+  border-top: 1px dashed #e4e7ed;
+}
+
+.filter-label {
+  font-size: 14px;
+  color: #606266;
+  font-weight: 500;
+}
+
+.filter-tags :deep(.el-tag) {
+  font-size: 14px;
+  padding: 8px 16px;
+}
+
+/* 工具栏 */
+.toolbar-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 0 4px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+/* 表格卡片 */
+.table-card {
+  border-radius: 8px;
+}
+
+.table-card :deep(.el-card__body) {
+  padding: 0;
+}
+
+.table-card :deep(.el-table) {
+  border-radius: 8px;
+}
+
+.table-card :deep(.el-table th) {
+  padding: 14px 0;
+}
+
+.table-card :deep(.el-table td) {
+  padding: 12px 0;
+}
+
+.table-card :deep(.el-table .cell) {
+  padding: 0 16px;
+  line-height: 1.6;
+}
+
+/* 分页包裹 */
+.pagination-wrapper {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 4px;
+}
+
+/* 商品名称 */
 .product-name {
   font-weight: 500;
   margin-bottom: 4px;
@@ -1070,171 +867,10 @@ onBeforeUnmount(() => {
   -webkit-box-orient: vertical;
 }
 
-.app-container {
-  padding: 20px;
-}
-
-.mb8 {
-  margin-bottom: 20px;
-}
-
-:deep(.el-table .cell) {
-  line-height: 1.4;
-}
-
-:deep(.el-form-item) {
-  margin-bottom: 15px;
-}
-
-/* 级联选择器样式 */
-.cascader-select-wrapper,
-.store-select-wrapper {
-  position: relative;
-}
-
-.cascader-panel {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  margin-top: 5px;
-  background: white;
-  border: 1px solid #e4e7ed;
-  border-radius: 4px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-  z-index: 9999;
-  min-width: 400px;
-  max-height: 300px;
-  overflow: hidden;
-}
-
-.store-cascader .cascader-container {
-  min-width: 500px;
-}
-
-.cascader-container {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-.cascader-menu {
-  flex: 1;
-  min-height: 200px;
-  overflow-y: auto;
-  border: none;
-  padding: 0;
-}
-
-.left-menu {
-  border-right: 1px solid #e4e7ed;
-  min-width: 150px;
-}
-
-.right-menu {
-  min-width: 150px;
-}
-
-.cascader-menu-item {
-  padding: 8px 16px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  transition: background-color 0.3s;
-}
-
-.cascader-menu-item:hover {
-  background-color: #f5f7fa;
-}
-
-.cascader-menu-item.active {
-  background-color: #ecf5ff;
-  color: #409eff;
-}
-
-.empty-tips {
-  padding: 20px;
-  text-align: center;
-  color: #999;
-  font-size: 14px;
-}
-
-/* 店铺详情面板样式 */
-.store-detail-panel {
-  padding: 15px;
-  max-width: 300px;
-}
-
-.store-detail-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #eee;
-}
-
-.store-detail-header h4 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: #333;
-}
-
-.store-detail-info {
-  margin-bottom: 15px;
-}
-
-.store-detail-info p {
-  margin: 8px 0;
-  font-size: 13px;
-  line-height: 1.4;
-}
-
-.detail-label {
-  display: inline-block;
-  width: 70px;
-  color: #666;
-  font-weight: 500;
-}
-
-.store-detail-footer {
-  text-align: center;
-  padding-top: 10px;
-  border-top: 1px solid #eee;
-}
-
-/* 店铺项样式 */
-.cascader-menu-item .el-tag {
-  margin-left: 8px;
-  font-size: 10px;
-  height: 18px;
-  line-height: 16px;
-}
-
-/* 确保级联面板在所有元素之上 */
-.cascader-panel {
-  z-index: 9999;
-}
-
-/* 店铺下拉框优化 */
-:deep(.el-select-dropdown__item) {
-  padding: 0 20px;
-  height: 36px;
-  line-height: 36px;
-}
-
-:deep(.el-select .el-input__inner) {
-  cursor: pointer;
-}
-
-:deep(.el-select .el-select__caret) {
-  opacity: 0.5;
-}
-
-/* 点击展开按钮样式 */
-.cascader-select-wrapper :deep(.el-input),
-.store-select-wrapper :deep(.el-input) {
-  cursor: pointer;
+/* 响应式调整 */
+@media screen and (max-width: 1400px) {
+  .table-card :deep(.el-table .cell) {
+    padding: 0 12px;
+  }
 }
 </style>

@@ -130,3 +130,11 @@ export function applyRefund(data) {
     data: data
   })
 }
+
+// 检查盲盒购买资格
+export function checkBlindBoxPurchase() {
+  return request({
+    url: '/system/orderInfo/blind-box/check',
+    method: 'get'
+  })
+}

@@ -851,7 +851,6 @@ const handleRecharge = () => {
 // 处理充值金额变化
 const handleAmountChange = (value) => {
   if (value === null || value === undefined) {
-    rechargeForm.amount = 1
     return
   }
 
@@ -862,16 +861,10 @@ const handleAmountChange = (value) => {
 
   if (maxRecharge <= 0) {
     ElMessage.warning('您的账户余额已达上限' + maxBalance + '元，无法继续充值')
-    rechargeForm.amount = 0
-    return
-  }
-
-  if (value > maxRecharge) {
-    ElMessage.warning('当前账户余额为' + currentBalance + '元，当前最大充值金额为' + maxRecharge + '元')
-    rechargeForm.amount = maxRecharge
   } else if (value < 1) {
-    ElMessage.warning('充值金额不能小于1元，已自动调整为最低金额')
-    rechargeForm.amount = 1
+    ElMessage.warning('充值金额不能小于1元')
+  } else if (value > maxRecharge) {
+    ElMessage.warning('当前余额为' + currentBalance + '元，最多可充值' + maxRecharge + '元')
   }
 }
 
@@ -885,13 +878,23 @@ const handleRechargeSubmit = async () => {
     return
   }
 
-  // 再次验证金额范围
+  // 严格验证金额范围
   const currentBalance = parseFloat(userInfo.value.balance || 0)
   const maxBalance = 30000
   const maxRecharge = maxBalance - currentBalance
 
-  if (rechargeForm.amount < 1 || rechargeForm.amount > maxRecharge) {
-    ElMessage.warning('充值金额必须在1-' + maxRecharge + '元之间')
+  if (maxRecharge <= 0) {
+    ElMessage.warning('您的账户余额已达上限' + maxBalance + '元，无法继续充值')
+    return
+  }
+
+  if (rechargeForm.amount < 1) {
+    ElMessage.warning('充值金额不能小于1元')
+    return
+  }
+
+  if (rechargeForm.amount > maxRecharge) {
+    ElMessage.warning('当前余额为' + currentBalance + '元，最多可充值' + maxRecharge + '元')
     return
   }
 

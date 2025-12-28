@@ -72,7 +72,11 @@
                   @error="handleImageError" />
               </div>
               <div class="product-info">
-                <div class="product-name">{{ detail.productName }}</div>
+                <div class="product-name">
+                  <el-tag v-if="detail.productName && detail.productName.startsWith('【盲盒】')" type="warning" size="small"
+                    class="blind-box-tag">盲盒</el-tag>
+                  {{ detail.productName ? detail.productName.replace('【盲盒】', '') : '' }}
+                </div>
                 <div class="product-spec" v-if="detail.specifications">{{ detail.specifications }}</div>
               </div>
               <div class="product-price">
@@ -103,7 +107,9 @@
                 <!-- 10：待付款 → 取消/付款/删除 -->
                 <template v-if="order.status === 10">
                   <el-button size="small" @click="handleCancelOrder(order)">取消订单</el-button>
-                  <el-button type="primary" size="small" @click="handlePayOrder(order)">立即付款</el-button>
+                  <el-button v-if="order.isBlindBox" type="primary" size="small"
+                    @click="handleStartLottery(order)">继续付款</el-button>
+                  <el-button v-else type="primary" size="small" @click="handlePayOrder(order)">立即付款</el-button>
                   <el-button type="danger" size="small" @click="handleDeleteOrder(order)">删除订单</el-button>
                 </template>
 
@@ -234,32 +240,21 @@
       </template>
     </el-dialog>
 
-    <!-- 评价弹窗 -->
-    <el-dialog v-model="reviewDialogVisible" title="评价商品" width="600px">
-      <div class="review-dialog-content">
-        <!-- 商品列表 -->
-        <div v-for="(item, index) in reviewItems" :key="index" class="review-product-item">
-          <div class="product-info-row">
-            <img :src="getProductImageUrl(item.productMainImage)" class="product-img" />
-            <div class="product-name">{{ item.productName }}</div>
-          </div>
-          <div class="rating-row">
-            <span class="rating-label">评分：</span>
-            <div class="star-rating">
-              <span v-for="n in 5" :key="n" class="star" :class="{ active: n <= item.score }"
-                @click="item.score = n">★</span>
-            </div>
-            <span class="score-text">{{ getScoreText(item.score) }}</span>
-          </div>
-          <el-input v-model="item.content" type="textarea" :rows="3" placeholder="分享您的使用体验，对其他买家有很大的帮助哦~" />
-          <div class="anonymous-row">
-            <el-checkbox v-model="item.isAnonymous">匿名评价</el-checkbox>
-          </div>
+    <!-- 抽奖弹窗 -->
+    <el-dialog v-model="lotteryDialogVisible" title="盲盒抽奖" width="500px">
+      <div class="lottery-container">
+        <div v-if="isDrawing" class="lottery-drawing">
+          <img src="@/assets/images/BlindBox.png" alt="盲盒抽奖" class="blind-box-image" :class="drawAnimationClass" />
+          <div class="drawing-text">正在抽奖...</div>
+        </div>
+        <div v-else-if="lotteryResult" class="lottery-result">
+          <div class="result-title">恭喜你抽到了！</div>
+          <div class="result-prize">({{ lotteryResult.name }})</div>
+          <div class="result-info">您的订单已更新为抽到的商品</div>
         </div>
       </div>
       <template #footer>
-        <el-button @click="reviewDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submittingReview" @click="submitReviewHandler">提交评价</el-button>
+        <el-button @click="lotteryDialogVisible = false" :disabled="isDrawing">关闭</el-button>
       </template>
     </el-dialog>
 
@@ -299,9 +294,7 @@
           </div>
           <div class="detail-row">
             <span class="label">收货地址：</span>
-            <span class="value">{{ detailOrder.province }}{{ detailOrder.city }}{{ detailOrder.area }}{{
-              detailOrder.street
-              }}</span>
+            <span class="value">{{ detailOrder.province }}{{ detailOrder.city }}{{ detailOrder.area }}{{ detailOrder.street }}</span>
           </div>
         </div>
 
@@ -440,8 +433,131 @@ const loadOrders = async () => {
       } else {
         orderList.value = allOrders
       }
-      console.log('筛选后订单数:', orderList.value.length)
+      // Post-process orders to handle Blind Box display
+      orderList.value.forEach(order => {
+        // 调试：打印订单数据结构
+        console.log('订单数据:', order)
 
+        if (order.orderDetails && order.orderDetails.length > 0) {
+          let wonName = null
+          let wonImage = null
+
+          // 1. 检查订单详情项本身是否有盲盒标识
+          const detail = order.orderDetails[0]
+          console.log('订单详情:', detail)
+
+          // 检查订单详情是否直接包含盲盒结果信息
+          if (detail.isBlindBoxResult) {
+            console.log('订单详情直接包含盲盒结果标识')
+            // 如果订单详情本身标记了是盲盒结果，可能需要从其他地方获取真实商品信息
+            wonName = detail.actualProductName || detail.wonProductName
+            wonImage = detail.actualProductImage || detail.wonProductImage
+          }
+
+          // 2. 检查订单级别的attributes字段
+          console.log('订单attributes:', order.attributes)
+          if (!wonName && order.attributes) {
+            try {
+              const attrs = typeof order.attributes === 'string' ? JSON.parse(order.attributes) : order.attributes
+              console.log('解析后的attributes:', attrs)
+              if (attrs) {
+                wonName = attrs.wonProductName || attrs.wonName || attrs.prizeName || attrs.productName
+                wonImage = attrs.wonProductImage || attrs.wonImage || attrs.prizeImage || attrs.productImage
+              }
+            } catch (e) {
+              console.error('解析attributes失败:', e)
+            }
+          }
+
+          // 3. 检查是否有extAttributes或其他可能存储中奖信息的字段
+          console.log('订单extAttributes:', order.extAttributes)
+          if (!wonName && order.extAttributes) {
+            try {
+              const extAttrs = typeof order.extAttributes === 'string' ? JSON.parse(order.extAttributes) : order.extAttributes
+              console.log('解析后的extAttributes:', extAttrs)
+              if (extAttrs) {
+                wonName = extAttrs.wonProductName || extAttrs.wonName || extAttrs.prizeName || extAttrs.productName
+                wonImage = extAttrs.wonProductImage || extAttrs.wonImage || extAttrs.prizeImage || extAttrs.productImage
+              }
+            } catch (e) {
+              console.error('解析extAttributes失败:', e)
+            }
+          }
+
+          // 4. 检查remark字段（多种可能的格式）
+          console.log('订单remark:', order.remark)
+          if (!wonName && order.remark) {
+            // 处理【盲盒中奖】格式
+            if (order.remark.includes('【盲盒中奖】')) {
+              try {
+                const part1 = order.remark.split('【盲盒中奖】')[1]
+                console.log('解析remark第1部分:', part1)
+                if (part1) {
+                  // 尝试多种分隔方式
+                  let namePart = part1
+                  // 尝试按'('分割
+                  if (part1.includes('(')) {
+                    namePart = part1.split('(')[0]
+                  }
+                  // 尝试按'，'分割
+                  else if (part1.includes('，')) {
+                    namePart = part1.split('，')[0]
+                  }
+                  // 尝试按'原价'分割
+                  else if (part1.includes('原价')) {
+                    namePart = part1.split('原价')[0]
+                  }
+
+                  console.log('解析remark名称部分:', namePart)
+                  if (namePart && namePart.trim()) {
+                    wonName = namePart.trim()
+                  }
+                }
+              } catch (e) {
+                console.error("Error parsing blind box remark:", e)
+              }
+            }
+            // 处理其他可能的格式
+            else if (order.remark.includes('盲盒')) {
+              try {
+                // 尝试提取盲盒相关的商品名称
+                const parts = order.remark.split(' ')
+                for (let part of parts) {
+                  if (part.includes('：')) {
+                    const name = part.split('：')[1]
+                    if (name && name.trim()) {
+                      wonName = name.trim()
+                      break
+                    }
+                  }
+                }
+              } catch (e) {
+                console.error("Error parsing blind box remark (other format):", e)
+              }
+            }
+          }
+
+          // 5. 检查订单是否有盲盒标识，可能需要特殊处理
+          if ((order.isBlindBox || detail.isBlindBox) && !wonName) {
+            console.log('订单是盲盒但未找到中奖信息')
+            // 可以考虑显示一个特殊的提示，或者保留默认名称
+          }
+
+          console.log('最终解析结果 - wonName:', wonName, 'wonImage:', wonImage)
+
+          // Apply changes
+          if (wonName) {
+            console.log('更新商品名称:', detail.productName, '->', wonName)
+            detail.productName = wonName
+            // 确保订单详情也标记为盲盒结果
+            detail.isBlindBoxResult = true
+          }
+          if (wonImage) {
+            console.log('更新商品图片:', detail.productMainImage, '->', wonImage)
+            detail.productMainImage = wonImage
+          }
+        }
+      })
       total.value = orderList.value.length
     }
   } catch (e) {
@@ -521,6 +637,49 @@ const getStatusClass = (status) => {
 const getTotalQuantity = (order) => {
   if (!order.orderDetails) return 0
   return order.orderDetails.reduce((sum, item) => sum + (item.quantity || 0), 0)
+}
+
+// 检查订单中是否包含盲盒抽奖结果商品
+const hasBlindBoxResult = (order) => {
+  if (!order) return false
+
+  // 检查订单详情是否直接标记了盲盒结果
+  if (order.orderDetails && order.orderDetails.length > 0) {
+    // 检查是否有任何订单详情项标记了isBlindBoxResult
+    if (order.orderDetails.some(detail => detail.isBlindBoxResult)) {
+      return true
+    }
+
+    // 检查订单详情的商品ID是否为盲盒ID (9999)
+    const isBlindBoxProduct = order.orderDetails.some(detail => detail.productId === 9999 || detail.productId === '9999')
+    if (isBlindBoxProduct) {
+      return true
+    }
+  }
+
+  // 检查订单是否标记为盲盒
+  if (order.isBlindBox) {
+    return true
+  }
+
+  // 检查订单属性中是否包含盲盒中奖信息
+  try {
+    if (order.attributes) {
+      const attrs = typeof order.attributes === 'string' ? JSON.parse(order.attributes) : order.attributes
+      if (attrs && (attrs.isBlindBox || attrs.source === 'blind_box_lottery' || attrs.wonProductId)) {
+        return true
+      }
+    }
+  } catch (e) {
+    console.error('解析attributes失败:', e)
+  }
+
+  // 检查订单备注中是否包含盲盒中奖信息
+  if (order.remark && order.remark.includes('【盲盒中奖】')) {
+    return true
+  }
+
+  return false
 }
 
 // 去购物
@@ -633,6 +792,11 @@ const handleConfirmReceipt = async (order) => {
 
 // 申请退款
 const handleRefund = (order) => {
+  // 盲盒商品禁止退款
+  if (order.isBlindBox || hasBlindBoxResult(order)) {
+    ElMessage.warning('盲盒商品不支持退款')
+    return
+  }
   currentOrder.value = order
   // 初始化退款表单
   refundForm.value = {
@@ -769,28 +933,97 @@ const handleDeleteOrder = async (order) => {
   }
 }
 
+// 抽奖相关状态
+const lotteryDialogVisible = ref(false)
+const isDrawing = ref(false)
+const lotteryResult = ref(null)
+const drawAnimationClass = ref('')
+const currentBlindBoxOrder = ref(null)
+
+// 抽奖选项配置（商品级别）
+const lotteryOptions = ref([
+  // 店铺10的商品 (85%概率)
+  { shopId: 10, productId: 101, name: '酷派数码配件-手机壳', probability: 85 },
+  { shopId: 10, productId: 102, name: '酷派数码配件-数据线', probability: 85 },
+  { shopId: 10, productId: 103, name: '酷派数码配件-充电器', probability: 85 },
+  // 店铺11的商品 (14%概率)
+  { shopId: 11, productId: 111, name: '罗马仕充电宝-10000mAh', probability: 14 },
+  { shopId: 11, productId: 112, name: '罗马仕充电宝-20000mAh', probability: 14 },
+  // 其他店铺的商品 (1%概率)
+  { shopId: 6, productId: 61, name: '店铺6-蓝牙耳机', probability: 1 },
+  { shopId: 7, productId: 71, name: '店铺7-手机支架', probability: 1 },
+  { shopId: 8, productId: 81, name: '店铺8-内存卡', probability: 1 },
+  { shopId: 9, productId: 91, name: '店铺9-手机膜', probability: 1 },
+  { shopId: 12, productId: 121, name: '店铺12-移动电源', probability: 1 },
+  { shopId: 13, productId: 131, name: '店铺13-耳机套', probability: 1 },
+  { shopId: 14, productId: 141, name: '店铺14-数据线保护套', probability: 1 }
+])
+
+// 抽奖算法
+const drawLottery = () => {
+  const random = Math.random() * 100
+  let selectedProduct = null
+
+  if (random < 85) {
+    // 85%概率：选择店铺10的商品
+    const shop10Products = lotteryOptions.value.filter(product => product.shopId === 10)
+    selectedProduct = shop10Products[Math.floor(Math.random() * shop10Products.length)]
+  } else if (random < 99) {
+    // 14%概率：选择店铺11的商品
+    const shop11Products = lotteryOptions.value.filter(product => product.shopId === 11)
+    selectedProduct = shop11Products[Math.floor(Math.random() * shop11Products.length)]
+  } else {
+    // 1%概率：选择其他指定店铺的商品
+    const otherProducts = lotteryOptions.value.filter(product => [6, 7, 8, 9, 12, 13, 14].includes(product.shopId))
+    selectedProduct = otherProducts[Math.floor(Math.random() * otherProducts.length)]
+  }
+
+  return selectedProduct
+}
+
 // 开始抽奖（盲盒订单）
 const handleStartLottery = (order) => {
+  currentBlindBoxOrder.value = order
+
   ElMessageBox.confirm('确定要开始抽奖吗？', '开始抽奖', {
     confirmButtonText: '确定抽奖',
     cancelButtonText: '取消',
     type: 'primary'
   }).then(() => {
-    // TODO: 实现抽奖逻辑
-    // 1. 调用抽奖API
-    // 2. 更新订单状态为待发货
-    // 3. 显示抽奖结果
-    ElMessage.success('抽奖功能开发中，当前已模拟抽奖完成，订单状态将更新为待发货')
+    // 显示抽奖弹窗
+    lotteryDialogVisible.value = true
 
-    // 模拟更新订单状态
-    // 在实际项目中，这里应该调用API来更新订单状态
-    const orderIndex = orderList.value.findIndex(o => o.id === order.id)
-    if (orderIndex !== -1) {
-      orderList.value[orderIndex].status = 30 // 待发货
-      orderList.value[orderIndex].statusDesc = '待发货'
-    }
+    // 开始抽奖动画
+    isDrawing.value = true
+    drawAnimationClass.value = 'lottery-spinning'
 
-    loadOrderCounts()
+    // 3秒后结束动画并显示结果
+    setTimeout(() => {
+      isDrawing.value = false
+      drawAnimationClass.value = ''
+
+      // 执行抽奖算法
+      lotteryResult.value = drawLottery()
+
+      // TODO: 调用API更新订单
+      // 1. 删除盲盒订单
+      // 2. 创建新的商品订单
+      // 3. 更新订单列表
+
+      // 模拟更新订单状态
+      const orderIndex = orderList.value.findIndex(o => o.id === order.id)
+      if (orderIndex !== -1) {
+        // 更新订单商品信息
+        orderList.value[orderIndex].orderDetails[0].productName = lotteryResult.value.name
+        orderList.value[orderIndex].orderDetails[0].productId = lotteryResult.value.productId
+        orderList.value[orderIndex].isBlindBox = false // 不再是盲盒订单
+        orderList.value[orderIndex].status = 30 // 待发货
+        orderList.value[orderIndex].statusDesc = '待发货'
+      }
+
+      ElMessage.success(`恭喜你抽到了：${lotteryResult.value.name}，订单已更新！`)
+      loadOrderCounts()
+    }, 3000)
   }).catch(() => {
     // 用户取消抽奖
   })
@@ -972,6 +1205,11 @@ onMounted(() => {
   color: #999;
 }
 
+.blind-box-tag {
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
 .product-price {
   text-align: right;
   min-width: 100px;
@@ -1139,80 +1377,121 @@ onMounted(() => {
   padding: 10px 0;
 }
 
-/* 评价弹窗样式 */
-.review-dialog-content {
-  max-height: 500px;
-  overflow-y: auto;
-}
-
-.review-product-item {
-  padding: 16px;
-  border: 1px solid #f0f0f0;
-  border-radius: 8px;
-  margin-bottom: 16px;
-}
-
-.review-product-item:last-child {
-  margin-bottom: 0;
-}
-
-.product-info-row {
+/* 抽奖弹窗样式 */
+.lottery-container {
   display: flex;
+  justify-content: center;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
+  padding: 20px;
+  min-height: 300px;
+  flex-direction: column;
 }
 
-.product-img {
-  width: 60px;
-  height: 60px;
-  border-radius: 4px;
-  object-fit: cover;
+.lottery-drawing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
-.product-info-row .product-name {
-  flex: 1;
-  font-size: 14px;
+.blind-box-image {
+  width: 200px;
+  height: 200px;
+  object-fit: contain;
+  transition: transform 3s ease-out;
+  margin-bottom: 20px;
+}
+
+.drawing-text {
+  font-size: 18px;
   color: #333;
+  font-weight: 500;
+  margin-top: 20px;
 }
 
-.rating-row {
+.lottery-spinning {
+  transform: rotate(1800deg);
+}
+
+.lottery-option {
+  position: absolute;
+  width: 50%;
+  height: 50%;
+  text-align: center;
+  font-weight: bold;
+  color: #333;
+  transform-origin: 100% 100%;
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
+  justify-content: flex-start;
+  padding-left: 20px;
 }
 
-.rating-label {
-  font-size: 14px;
-  color: #666;
+.lottery-option:nth-child(1) {
+  transform: rotate(20deg) translateY(-50%);
 }
 
-.star-rating {
-  display: flex;
-  gap: 4px;
+.lottery-option:nth-child(2) {
+  transform: rotate(60deg) translateY(-50%);
 }
 
-.star-rating .star {
+.lottery-option:nth-child(3) {
+  transform: rotate(100deg) translateY(-50%);
+}
+
+.lottery-option:nth-child(4) {
+  transform: rotate(140deg) translateY(-50%);
+}
+
+.lottery-option:nth-child(5) {
+  transform: rotate(180deg) translateY(-50%);
+}
+
+.lottery-option:nth-child(6) {
+  transform: rotate(220deg) translateY(-50%);
+}
+
+.lottery-option:nth-child(7) {
+  transform: rotate(260deg) translateY(-50%);
+}
+
+.lottery-option:nth-child(8) {
+  transform: rotate(300deg) translateY(-50%);
+}
+
+.lottery-option:nth-child(9) {
+  transform: rotate(340deg) translateY(-50%);
+}
+
+.lottery-indicator {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 30px;
+  color: #ff5000;
+  font-weight: bold;
+}
+
+.lottery-result {
+  text-align: center;
+  padding: 40px;
+}
+
+.result-title {
   font-size: 24px;
-  color: #ddd;
-  cursor: pointer;
-  transition: color 0.2s;
+  color: #333;
+  margin-bottom: 20px;
 }
 
-.star-rating .star:hover,
-.star-rating .star.active {
-  color: #ff9900;
-}
-
-.score-text {
-  font-size: 14px;
-  color: #ff9900;
-  margin-left: 8px;
-}
-
-.anonymous-row {
-  margin-top: 12px;
+.result-prize {
+  font-size: 32px;
+  color: #ff5000;
+  font-weight: bold;
+  background: #fff7f5;
+  padding: 20px;
+  border-radius: 8px;
+  border: 2px solid #ff5000;
 }
 
 /* 订单详情弹窗样式 */

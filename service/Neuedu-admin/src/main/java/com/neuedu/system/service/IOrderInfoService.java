@@ -70,6 +70,19 @@ public interface IOrderInfoService extends IService<OrderInfo>
     public OrderInfo createDirectOrder(Long userId, Long productId, Integer quantity, Long addressId);
 
     /**
+     * 直接购买创建订单（支持自定义价格和备注，用于盲盒订单）
+     *
+     * @param userId 用户ID
+     * @param productId 商品ID
+     * @param quantity 数量
+     * @param addressId 地址ID
+     * @param overridePrice 覆盖价格（盲盒价格）
+     * @param remark 备注（盲盒标记）
+     * @return 订单信息
+     */
+    public OrderInfo createDirectOrderWithOptions(Long userId, Long productId, Integer quantity, Long addressId, BigDecimal overridePrice, String remark);
+
+    /**
      * 支付订单
      *
      * @param orderNo 订单编号

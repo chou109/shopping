@@ -1,5 +1,6 @@
 package com.neuedu.system.controller;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
@@ -14,7 +15,12 @@ import com.neuedu.common.core.controller.BaseController;
 import com.neuedu.common.core.domain.AjaxResult;
 import com.neuedu.common.enums.BusinessType;
 import com.neuedu.system.domain.OrderInfo;
+import com.neuedu.system.domain.OrderDetail;
+import com.neuedu.system.domain.Product;
 import com.neuedu.system.service.IOrderInfoService;
+import com.neuedu.system.service.IOrderDetailService;
+import com.neuedu.system.service.IProductService;
+import com.neuedu.system.constants.OrderStatusConstants;
 import com.neuedu.common.utils.poi.ExcelUtil;
 import com.neuedu.common.core.page.TableDataInfo;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -33,6 +39,11 @@ import io.swagger.v3.oas.annotations.Operation;
 public class OrderInfoController extends BaseController {
     private final IOrderInfoService orderInfoService;
 
+    @Autowired
+    private IProductService productService;
+
+    @Autowired
+    private IOrderDetailService orderDetailService;
 
     /**
      * 查询我的订单列表（用户端）
@@ -65,6 +76,27 @@ public class OrderInfoController extends BaseController {
     }
 
     /**
+     * 检查用户是否可以购买盲盒
+     */
+    @Operation(summary = "检查盲盒购买资格")
+    @GetMapping("/blind-box/check")
+    public AjaxResult checkBlindBoxPurchase() {
+        Long userId = SecurityUtils.getUserId();
+        if (userId == null) {
+            return error("用户未登录");
+        }
+        
+        List<OrderDetail> userOrderDetails = orderDetailService.selectOrderDetailByUserId(userId);
+        boolean hasPurchasedBlindBox = userOrderDetails.stream()
+            .anyMatch(detail -> detail.getProductName() != null && detail.getProductName().startsWith("【盲盒】"));
+        
+        if (hasPurchasedBlindBox) {
+            return error("每个用户只能购买一次盲盒，您已经购买过了");
+        }
+        return success("可以购买");
+    }
+
+    /**
      * 创建订单（从购物车，用户端）
      */
     @Operation(summary = "创建订单（从购物车）")
@@ -86,6 +118,7 @@ public class OrderInfoController extends BaseController {
 
     /**
      * 直接购买创建订单（单个商品，用户端）
+     * 支持盲盒订单：传递 isBlindBox=true 和 blindBoxPrice 参数
      */
     @Operation(summary = "直接购买创建订单")
     @Log(title = "订单", businessType = BusinessType.INSERT)
@@ -101,7 +134,50 @@ public class OrderInfoController extends BaseController {
             Integer quantity = Integer.valueOf(params.get("quantity").toString());
             Long addressId = Long.valueOf(params.get("addressId").toString());
             
-            OrderInfo orderInfo = orderInfoService.createDirectOrder(userId, productId, quantity, addressId);
+            // 检查是否为盲盒订单 - 增强类型转换逻辑
+            boolean isBlindBox = false;
+            Object isBlindBoxParam = params.get("isBlindBox");
+            if (isBlindBoxParam != null) {
+                if (isBlindBoxParam instanceof Boolean) {
+                    isBlindBox = (Boolean) isBlindBoxParam;
+                } else {
+                    isBlindBox = Boolean.parseBoolean(isBlindBoxParam.toString());
+                }
+            }
+            
+            BigDecimal overridePrice = null;
+            String remark = null;
+            
+            if (isBlindBox) {
+                // 检查用户是否已经购买过盲盒
+                List<OrderDetail> userOrderDetails = orderDetailService.selectOrderDetailByUserId(userId);
+                boolean hasPurchasedBlindBox = userOrderDetails.stream()
+                    .anyMatch(detail -> detail.getProductName() != null && detail.getProductName().startsWith("【盲盒】"));
+                if (hasPurchasedBlindBox) {
+                    return error("每个用户只能购买一次盲盒，您已经购买过了");
+                }
+                
+                // 盲盒订单使用盲盒价格
+                Object blindBoxPriceParam = params.get("blindBoxPrice");
+                if (blindBoxPriceParam != null) {
+                    if (blindBoxPriceParam instanceof Number) {
+                        overridePrice = new BigDecimal(((Number) blindBoxPriceParam).doubleValue());
+                    } else {
+                        overridePrice = new BigDecimal(blindBoxPriceParam.toString());
+                    }
+                } else {
+                    // 默认盲盒价格为500元
+                    overridePrice = new BigDecimal("500");
+                }
+                remark = "【盲盒】";
+            }
+            
+            OrderInfo orderInfo;
+            if (overridePrice != null || remark != null) {
+                orderInfo = orderInfoService.createDirectOrderWithOptions(userId, productId, quantity, addressId, overridePrice, remark);
+            } else {
+                orderInfo = orderInfoService.createDirectOrder(userId, productId, quantity, addressId);
+            }
             return success(orderInfo);
         } catch (RuntimeException e) {
             return error(e.getMessage());
@@ -306,7 +382,58 @@ public class OrderInfoController extends BaseController {
         return toAjax(orderInfoService.deleteOrderInfoById(id));
     }
 
+    /**
+     * 商家端发货订单
+     */
+    @Operation(summary = "商家端发货订单")
+    @Log(title = "订单", businessType = BusinessType.UPDATE)
+    @PutMapping("/{orderNo}/merchant-ship")
+    public AjaxResult merchantShipOrder(@PathVariable String orderNo, @RequestBody Map<String, String> shippingInfo) {
+        Long userId = SecurityUtils.getUserId();
+        if (userId == null) {
+            return error("用户未登录");
+        }
+
+        // 验证当前用户是否为商家（user_id=2）
+        if (userId != 2L) {
+            return error("无权操作此订单");
+        }
+
+        OrderInfo orderInfo = orderInfoService.selectOrderInfoByOrderNo(orderNo);
+        if (orderInfo == null) {
+            return error("订单不存在");
+        }
+
+        // 验证订单是否属于当前商家的店铺
+        // 首先获取订单对应的商品，然后检查商品的创建用户是否为当前商家
+        List<OrderDetail> orderDetails = orderInfoService.selectOrderInfoById(orderInfo.getId()).getOrderDetails();
+        if (orderDetails == null || orderDetails.isEmpty()) {
+            return error("订单明细不存在");
+        }
+        
+        // 检查订单中的商品是否属于当前商家
+        for (OrderDetail detail : orderDetails) {
+            Product product = productService.selectProductById(detail.getProductId());
+            if (product != null && !product.getCreateUser().equals(userId)) {
+                return error("无权操作此订单");
+            }
+        }
+
+        // 验证订单状态是否为待发货
+        if (!orderInfo.getStatus().equals(OrderStatusConstants.WAIT_SHIP)) {
+            return error("订单状态不正确，无法发货");
+        }
+
+        try {
+            int result = orderInfoService.shipOrder(orderNo, shippingInfo);
+            return toAjax(result);
+        } catch (RuntimeException e) {
+            return error(e.getMessage());
+        }
+    }
+
 }
+
 /**
  * 订单管理Controller（管理员端）
  */
@@ -346,12 +473,12 @@ class OrderInfoAdminController extends BaseController
     }
 
     /**
-     * 获取订单详细信息（管理员端）
+     * 根据订单号获取订单详细信息（管理员端）
      */
-    @Operation(summary = "获取订单详细信息（管理员）")
+    @Operation(summary = "根据订单号获取订单详细信息（管理员）")
     @PreAuthorize("@ss.hasPermi('system:order:query')")
-    @GetMapping(value = "/{orderNo}")
-    public AjaxResult getInfo(@PathVariable String orderNo)
+    @GetMapping(value = "/by-order-no/{orderNo}")
+    public AjaxResult getInfoByOrderNo(@PathVariable String orderNo)
     {
         return success(orderInfoService.selectOrderInfoByOrderNo(orderNo));
     }

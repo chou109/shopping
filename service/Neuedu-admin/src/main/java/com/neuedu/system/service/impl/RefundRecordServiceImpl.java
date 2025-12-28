@@ -2,6 +2,7 @@ package com.neuedu.system.service.impl;
 import com.neuedu.system.constants.OrderStatusConstants;
 import com.neuedu.system.domain.OrderInfo;
 import com.neuedu.system.domain.OrderDetail;
+import com.neuedu.system.domain.Product;
 import com.neuedu.system.service.IOrderInfoService;
 import com.neuedu.system.service.IProductService;
 import com.neuedu.system.service.ISysUserService;
@@ -161,6 +162,18 @@ public class RefundRecordServiceImpl extends ServiceImpl<RefundRecordMapper, Ref
             throw new RuntimeException("订单状态不正确，无法申请退款");
         }
 
+        // 检查订单中是否包含盲盒商品
+        if (orderInfo.getOrderDetails() != null) {
+            for (OrderDetail detail : orderInfo.getOrderDetails()) {
+                if (detail.getProductId() != null) {
+                    Product product = productService.selectProductById(detail.getProductId());
+                    if (product != null && Integer.valueOf(1).equals(product.getIsBlindBox())) {
+                        throw new RuntimeException("盲盒商品不支持退款");
+                    }
+                }
+            }
+        }
+
         // 验证退款金额
         if (refundAmount.compareTo(orderInfo.getPayment()) > 0) {
             throw new RuntimeException("退款金额不能超过订单金额");
@@ -182,6 +195,7 @@ public class RefundRecordServiceImpl extends ServiceImpl<RefundRecordMapper, Ref
         refundRecord.setCreateTime(DateUtils.getNowDate());
 
         int result = refundRecordMapper.insertRefundRecord(refundRecord);
+
 
         // 4. 更新订单状态为已取消
         if (result > 0) {
@@ -227,6 +241,7 @@ public class RefundRecordServiceImpl extends ServiceImpl<RefundRecordMapper, Ref
             // 3. 执行退款操作（根据退款方式）
             OrderInfo orderInfo = orderInfoService.selectOrderInfoByOrderNo(refundRecord.getOrderNo());
             if (orderInfo != null) {
+
                 // 更新订单状态为已取消
                 orderInfo.setStatus(OrderStatusConstants.CANCELLED);
                 orderInfo.setStatusDesc(OrderStatusConstants.getOrderStatusDesc(OrderStatusConstants.CANCELLED));

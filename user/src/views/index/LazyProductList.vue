@@ -153,19 +153,26 @@ const loadProducts = async (reset = false) => {
         pageSize: pageSize.value,
         sortType: sortType.value,
         random: sortType.value === 'random' ? 1 : 0,
-        needSalesCount: 1 // 预留参数，告诉后端需要返回销量数据
+        needSalesCount: 1,
+        status: 1 // 只查询上架商品
       }
     })
 
     if (response.code === 200) {
-      const newProducts = response.rows || response.data || []
+      // Get raw data first
+      let rawProducts = response.rows || response.data || []
+      const rawCount = rawProducts.length
+
+      // Filter out blind box products
+      let newProducts = rawProducts.filter(p => {
+        const isIdMatch = String(p.id) === '9999'
+        const isFlagMatch = p.isBlindBox == 1 || p.is_blind_box == 1 || p.isBlindBox === 'true'
+        return !isIdMatch && !isFlagMatch
+      })
 
       // 为商品添加销量数据
-      // 后期后端接口完善后，这里应该直接使用后端返回的salesCount字段
       const enhancedProducts = newProducts.map(product => ({
         ...product,
-        // 这里模拟一些销量数据，实际应该从后端获取
-        // 如果后端返回了salesCount，就用后端的；如果没有，可以显示默认值或不显示
         salesCount: product.salesCount || Math.floor(Math.random() * 1000)
       }))
 
@@ -176,8 +183,9 @@ const loadProducts = async (reset = false) => {
       }
 
       // 判断是否还有更多数据
+      // CRITICAL FIX: Use rawCount to decide if we reached the end of the backend page
       const total = response.total || 0
-      if (products.value.length >= total || newProducts.length < pageSize.value) {
+      if (products.value.length >= total || rawCount < pageSize.value) {
         hasMore.value = false
       } else {
         currentPage.value++
@@ -324,7 +332,7 @@ defineExpose({
 
 .product-image-wrapper {
   width: 100%;
-  height: 180px;
+  height: 250px;
   overflow: hidden;
   background: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%);
 }
@@ -353,7 +361,7 @@ defineExpose({
   color: #333;
   margin: 0 0 8px 0;
   line-height: 1.4;
-  height: 40px;
+  height: 20px;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
@@ -367,7 +375,7 @@ defineExpose({
   color: #999;
   margin-bottom: 12px;
   line-height: 1.4;
-  height: 34px;
+  height: 15px;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;

@@ -8,6 +8,7 @@ public class OrderStatusConstants {
     private OrderStatusConstants() {}
 
     // 订单状态
+
     public static final Integer WAIT_PAY = 10;        // 待付款
     public static final Integer WAIT_SHIP = 20;       // 待发货
     public static final Integer WAIT_RECEIVE = 30;    // 待收货

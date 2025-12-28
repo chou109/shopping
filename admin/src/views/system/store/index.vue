@@ -5,17 +5,6 @@
       class="search-form compact-form">
       <el-row :gutter="20">
         <!-- 第一行：基础查询条件 -->
-        <el-col :span="6">
-          <el-form-item label="用户ID" prop="userId" label-width="70px" class="compact-item">
-            <el-input
-              v-model="queryParams.userId"
-              placeholder="请输入用户ID"
-              clearable
-              @keyup.enter="handleQuery"
-              class="compact-input"
-            />
-          </el-form-item>
-        </el-col>
         <el-col :span="8">
           <el-form-item label="店铺名称" prop="shopName" label-width="70px" class="compact-item">
             <el-input
@@ -210,7 +199,6 @@
     <el-table v-loading="loading" :data="storeList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="主键" align="center" prop="id" width="80" />
-      <el-table-column label="用户ID" align="center" prop="userId" width="100" />
       <el-table-column label="店铺名称" align="center" prop="shopName" min-width="150" />
       <el-table-column label="店铺logo" align="center" prop="shopLogo" width="100">
         <template #default="scope">
@@ -474,9 +462,6 @@ const data = reactive({
     createTime: null,
   },
   rules: {
-    userId: [
-      { required: true, message: "店铺所有者用户ID不能为空", trigger: "blur" }
-    ],
     shopName: [
       { required: true, message: "店铺名称不能为空", trigger: "blur" }
     ],

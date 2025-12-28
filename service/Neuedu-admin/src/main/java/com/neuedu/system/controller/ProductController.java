@@ -162,6 +162,15 @@ public class ProductController extends BaseController
     @PostMapping
     public AjaxResult add(@RequestBody Product product)
     {
+        // 获取当前登录用户ID
+        Long currentUserId = SecurityUtils.getUserId();
+        if (currentUserId == null) {
+            return AjaxResult.error("用户未登录");
+        }
+        
+        // 设置创建者ID为当前登录用户ID
+        product.setCreateUser(currentUserId);
+        
         return toAjax(productService.insertProduct(product));
     }
 

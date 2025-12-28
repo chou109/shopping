@@ -224,13 +224,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <!-- 更新商品库存 -->
     <update id="updateProductStock">
         update product set stock = stock + #{quantity}, update_time = now()
-        where product_id = #{productId} and delete_flag = 0
+        where id = #{productId} and delete_flag = 0
     </update>
 
     <!-- 更新商品热门状态 -->
     <update id="updateProductHotFlag">
         update product set hot_flag = #{hotFlag}, update_time = now()
-        where product_id = #{productId} and delete_flag = 0
+        where id = #{productId} and delete_flag = 0
     </update>
 
     <delete id="deleteProductById" parameterType="Long">

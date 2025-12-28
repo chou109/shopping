@@ -1,50 +1,49 @@
 <template>
-  <div class="app-container">
-    <!-- 搜索区域 -->
-    <div class="search-container">
-      <el-form :model="queryParams" ref="queryRef" :inline="true" class="search-form">
-        <el-form-item label="分类名称" prop="name">
-          <el-input
-            v-model="queryParams.name"
-            placeholder="请输入分类名称"
-            clearable
-            style="width: 200px"
-            @keyup.enter="handleQuery"
-          />
-        </el-form-item>
-        <el-form-item label="状态" prop="status">
-          <el-select v-model="queryParams.status" placeholder="分类状态" clearable style="width: 200px">
-            <el-option label="启用" :value="1" />
-            <el-option label="禁用" :value="0" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-          <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-        </el-form-item>
+  <div class="app-container category-management">
+    <!-- 搜索区域卡片 -->
+    <el-card class="search-card" shadow="hover">
+      <el-form :model="queryParams" ref="queryRef" :inline="true">
+        <el-row :gutter="24">
+          <el-col :span="6">
+            <el-form-item label="分类名称" prop="name">
+              <el-input
+                v-model="queryParams.name"
+                placeholder="请输入分类名称"
+                clearable
+                style="width: 100%"
+                @keyup.enter="handleQuery"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="状态" prop="status">
+              <el-select v-model="queryParams.status" placeholder="全部状态" clearable style="width: 100%">
+                <el-option label="全部" :value="undefined" />
+                <el-option label="启用" :value="1" />
+                <el-option label="禁用" :value="0" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item class="search-buttons">
+              <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+              <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            </el-form-item>
+          </el-col>
+        </el-row>
       </el-form>
-    </div>
+    </el-card>
 
     <!-- 操作按钮区域 -->
-    <div class="action-container">
+    <div class="toolbar-wrapper">
       <div class="action-buttons">
-        <el-button
-          type="primary"
-          plain
-          icon="Plus"
-          @click="handleAdd"
-        >新增</el-button>
-        <el-button
-          type="info"
-          plain
-          icon="Sort"
-          @click="toggleExpandAll"
-        >{{ isExpandAll ? '折叠' : '展开' }}</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd">新增</el-button>
+        <el-button type="info" plain icon="Sort" @click="toggleExpandAll">{{ isExpandAll ? '折叠' : '展开' }}</el-button>
       </div>
     </div>
 
-    <!-- 分类表格 -->
-    <div class="table-container">
+    <!-- 分类表格卡片 -->
+    <el-card class="table-card" shadow="hover">
       <div v-if="categoryList.length === 0 && !loading" class="empty-table">
         <el-empty description="暂无分类数据" />
       </div>
@@ -56,29 +55,22 @@
         row-key="id"
         :default-expand-all="isExpandAll"
         :tree-props="{ children: 'children', hasChildren: 'hasChildren' }"
-        class="category-table"
+        :header-cell-style="{ background: '#f5f7fa', color: '#606266', fontWeight: '600' }"
         :row-class-name="tableRowClassName"
-        style="width: 100%"
+        stripe
+        border
       >
-        <el-table-column prop="name" label="分类名称" width="900" class-name="name-column">
+        <el-table-column prop="name" label="分类名称" min-width="300" class-name="name-column">
           <template #default="scope">
-            <div :class="getCategoryClass(scope.row)" class="category-cell">
-              <!-- 缩进显示层级 -->
-              <div :style="{ paddingLeft: (scope.row.level || 0) * 18 + 'px' }" class="category-content">
-                <span v-if="scope.row.children && scope.row.children.length > 0" class="folder-icon">
-                  <el-icon v-if="scope.row.expanded !== false" class="expanded-icon"><FolderOpened /></el-icon>
-                  <el-icon v-else><Folder /></el-icon>
-                </span>
-                <span v-else class="file-icon">
-                  <el-icon><Document /></el-icon>
-                </span>
-                <span class="category-name">{{ scope.row.name }}</span>
-                
-                <!-- 状态标签 -->
-                <el-tag v-if="scope.row.status === 0" size="small" type="info" class="ml-2">已禁用</el-tag>
-                <el-tag v-if="scope.row.deleteFlag === 1" size="small" type="warning" class="ml-2">已删除</el-tag>
-              </div>
-            </div>
+            <span v-if="scope.row.children && scope.row.children.length > 0" class="folder-icon">
+              <el-icon class="expanded-icon"><FolderOpened /></el-icon>
+            </span>
+            <span v-else class="file-icon">
+              <el-icon><Document /></el-icon>
+            </span>
+            <span :class="['category-name', { 'disabled-text': scope.row.status === 0, 'deleted-text': scope.row.deleteFlag === 1 }]">{{ scope.row.name }}</span>
+            <el-tag v-if="scope.row.status === 0" size="small" type="info" class="ml-2">已禁用</el-tag>
+            <el-tag v-if="scope.row.deleteFlag === 1" size="small" type="warning" class="ml-2">已删除</el-tag>
           </template>
         </el-table-column>
         
@@ -95,7 +87,7 @@
           </template>
         </el-table-column>
         
-        <el-table-column label="操作" align="center" width="450" class-name="action-column">
+        <el-table-column label="操作" align="center" width="280" class-name="action-column">
           <template #default="scope">
             <div class="action-cell">
               <el-button 
@@ -123,7 +115,7 @@
           </template>
         </el-table-column>
       </el-table>
-    </div>
+    </el-card>
 
     <!-- 添加或修改分类对话框 -->
     <el-dialog :title="title" v-model="open" width="500px" append-to-body>
@@ -630,109 +622,117 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.app-container {
-  padding: 20px;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-/* 搜索区域样式 */
-.search-container {
+/* 容器基础样式 */
+.category-management {
+  padding: 24px;
   background: #f5f7fa;
-  border-radius: 6px;
-  padding: 16px 20px;
-  margin-bottom: 12px;
+  min-height: calc(100vh - 100px);
 }
 
-.search-form {
-  margin: 0;
-  padding: 0;
+/* 搜索卡片 */
+.search-card {
+  margin-bottom: 20px;
+  border-radius: 8px;
 }
 
-:deep(.search-form .el-form-item) {
-  margin-bottom: 0;
-  margin-right: 16px;
+.search-card :deep(.el-card__body) {
+  padding: 20px 24px 8px;
 }
 
-:deep(.search-form .el-form-item__label) {
+.search-card :deep(.el-form-item) {
+  margin-bottom: 18px;
+}
+
+.search-card :deep(.el-form-item__label) {
   font-weight: 500;
-  padding-right: 8px;
+  color: #606266;
 }
 
-/* 操作按钮区域样式 */
-.action-container {
-  margin-bottom: 16px;
-  padding: 0;
-}
-
-.action-buttons {
+.search-buttons {
   display: flex;
   gap: 12px;
   align-items: center;
 }
 
-/* 表格容器样式 */
-.table-container {
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
-  border: 1px solid #ebeef5;
-  border-radius: 6px;
-  background: #fff;
+/* 工具栏 */
+.toolbar-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 0 4px;
 }
 
-/* 表格样式 */
-.category-table {
-  width: 100%;
-  height: 100%;
-  border: none;
+.action-buttons {
+  display: flex;
+  gap: 12px;
 }
 
-:deep(.category-table) {
-  font-size: 14px;
+/* 表格卡片 */
+.table-card {
+  border-radius: 8px;
 }
 
-:deep(.category-table .el-table__header-wrapper) {
-  background-color: #f5f7fa;
+.table-card :deep(.el-card__body) {
+  padding: 0;
 }
 
-:deep(.category-table .el-table__header th) {
-  background-color: #f5f7fa;
-  font-weight: 600;
-  color: #303133;
+.table-card :deep(.el-table) {
+  border-radius: 8px;
+}
+
+.table-card :deep(.el-table th) {
+  padding: 14px 0;
+}
+
+.table-card :deep(.el-table td) {
   padding: 12px 0;
 }
 
-:deep(.category-table .el-table__cell) {
-  padding: 8px 0;
-  border-bottom: 1px solid #ebeef5;
-  vertical-align: middle;
-}
-
-:deep(.category-table .el-table__row) {
-  height: 48px;
+.table-card :deep(.el-table .cell) {
+  padding: 0 16px;
+  line-height: 1.6;
 }
 
 /* 分类名称列样式 */
 .category-cell {
-  height: 100%;
-  display: flex;
+  display: inline-flex;
   align-items: center;
 }
 
 .category-content {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  height: 100%;
-  width: 100%;
 }
 
 .category-name {
   margin-left: 8px;
   font-size: 14px;
   color: #303133;
-  flex: 1;
+}
+
+.category-name.disabled-text {
+  color: #c0c4cc;
+}
+
+.category-name.deleted-text {
+  text-decoration: line-through;
+  color: #909399;
+}
+
+/* 让展开箭头和内容对齐 */
+:deep(.name-column .cell) {
+  display: flex !important;
+  align-items: center !important;
+}
+
+:deep(.el-table__expand-icon) {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  vertical-align: middle !important;
+  margin-right: 4px;
+  flex-shrink: 0;
 }
 
 /* 状态列样式 */
@@ -743,10 +743,6 @@ onMounted(() => {
   height: 100%;
 }
 
-:deep(.status-cell .el-switch) {
-  margin: 0;
-}
-
 /* 操作列样式 */
 .action-cell {
   display: flex;
@@ -754,13 +750,6 @@ onMounted(() => {
   justify-content: center;
   align-items: center;
   height: 100%;
-}
-
-:deep(.action-cell .el-button) {
-  padding: 6px 12px;
-  font-size: 12px;
-  height: 28px;
-  line-height: 14px;
 }
 
 /* 分类样式 */
@@ -793,13 +782,6 @@ onMounted(() => {
   margin-left: 8px;
 }
 
-:deep(.el-tag) {
-  height: 20px;
-  line-height: 18px;
-  font-size: 11px;
-  padding: 0 5px;
-}
-
 /* 空状态 */
 .empty-table {
   display: flex;
@@ -817,72 +799,44 @@ onMounted(() => {
   margin-top: 20px;
 }
 
-/* 按钮间距优化 */
-:deep(.el-button--primary.is-plain) {
-  border-color: #409eff;
-  color: #409eff;
-}
-
-:deep(.el-button--info.is-plain) {
-  border-color: #909399;
-  color: #909399;
-}
-
-/* 树形表格样式 */
-:deep(.category-table .el-table__row--level-0) {
-  background-color: #fff;
-}
-
-:deep(.category-table .el-table__row--level-1) {
-  background-color: #fff;
-}
-
-:deep(.category-table .el-table__row--level-2) {
-  background-color: #fff;
-}
-
 /* 特殊行样式 */
-:deep(.category-table .deleted-row) {
+:deep(.el-table .deleted-row) {
   background-color: #fef0f0 !important;
 }
 
-:deep(.category-table .deleted-row:hover > td) {
+:deep(.el-table .deleted-row:hover > td) {
   background-color: #fde2e2 !important;
 }
 
-:deep(.category-table .disabled-row) {
+:deep(.el-table .disabled-row) {
   background-color: #fafafa !important;
 }
 
-:deep(.category-table .disabled-row:hover > td) {
+:deep(.el-table .disabled-row:hover > td) {
   background-color: #f5f7fa !important;
 }
 
 /* 表格行hover效果 */
-:deep(.category-table .el-table__row:hover > td) {
+:deep(.el-table .el-table__row:hover > td) {
   background-color: #f5f7fa;
 }
 
-/* 修复表格内边距 */
-:deep(.category-table .el-table__inner-wrapper::before) {
-  display: none;
-}
-
-:deep(.category-table .el-table__body-wrapper) {
+/* 滚动条样式 */
+:deep(.el-table .el-table__body-wrapper) {
   scrollbar-width: thin;
   scrollbar-color: #c1c1c1 #f5f5f5;
 }
 
-:deep(.category-table .el-table__body-wrapper::-webkit-scrollbar) {
+:deep(.el-table .el-table__body-wrapper::-webkit-scrollbar) {
   width: 6px;
   height: 6px;
 }
 
-:deep(.category-table .el-table__body-wrapper::-webkit-scrollbar-track) {
+:deep(.el-table .el-table__body-wrapper::-webkit-scrollbar-track) {
   background: #f5f5f5;
 }
 
-:deep(.category-table .el-table__body-wrapper::-webkit-scrollbar-thumb) {
+:deep(.el-table .el-table__body-wrapper::-webkit-scrollbar-thumb) {
   background: #c1c1c1;
   border-radius: 3px;
 }

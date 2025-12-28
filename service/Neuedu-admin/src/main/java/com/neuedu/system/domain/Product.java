@@ -128,6 +128,11 @@ public class Product extends BaseEntity
     @TableField(exist = false)
     private Long shopId;
 
+    /** 是否为盲盒商品 */
+    @Schema(title = "是否为盲盒商品")
+    @Excel(name = "是否为盲盒商品")
+    private Integer isBlindBox;
+
     // ============ 查询参数字段（非数据库字段） ============
 
     /** 最小价格（查询参数） */

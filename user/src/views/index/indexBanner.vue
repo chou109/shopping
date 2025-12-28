@@ -21,7 +21,7 @@ const isMouseOverMenu = ref(false)  // 鼠标是否在菜单区域内
 const updateCarouselHeight = () => {
   const width = window.innerWidth
   windowWidth.value = width
-  
+
   if (width < 480) {
     carouselHeight.value = '180px'
   } else if (width < 768) {
@@ -33,37 +33,37 @@ const updateCarouselHeight = () => {
   }
 }
 
-const loadBanners = function() {
+const loadBanners = function () {
   loading.value = true
-  
+
   // 为每个banner添加对应的商品ID
   banners.value = [
-    { 
-      id: 1, 
+    {
+      id: 1,
       imageUrl: banner1,
       title: '小米(MI) L65M4-AQ电视',
       description: '全高清屏，纤薄金属',
       productId: 48,
       link: '/product/detail?id=48'
     },
-    { 
-      id: 2, 
+    {
+      id: 2,
       imageUrl: banner2,
       title: '培罗蒙(BAROMON) 西服套装',
       description: '柔软舒适，质感档次',
       productId: 103,
       link: '/product/detail?id=103'
     },
-    { 
-      id: 3, 
+    {
+      id: 3,
       imageUrl: banner3,
       title: '苹果(Apple) MacBook',
       description: '纤薄，轻巧，强劲',
       productId: 41,
       link: '/product/detail?id=41'
     },
-    { 
-      id: 4, 
+    {
+      id: 4,
       imageUrl: banner4,
       title: '马克华菲(Mark Fairwhale) 韩版衬衫',
       description: '光泽软和，时尚修身',
@@ -71,24 +71,24 @@ const loadBanners = function() {
       link: '/product/detail?id=118'
     }
   ]
-  
+
   loading.value = false
 }
 
 // 加载分类数据
-const loadCategories = async function() {
+const loadCategories = async function () {
   try {
     const response = await getFrontCategoryTree()
     console.log('分类数据响应:', response)
-    
+
     if (response.code === 200) {
       // 过滤出顶级分类（parentId=0）作为大类
       const topLevelCategories = response.data || []
       console.log('顶级分类:', topLevelCategories)
-      
+
       // 只显示前6个大类
       categories.value = topLevelCategories.slice(0, 6)
-      
+
       // 如果没有数据，使用默认数据
       if (categories.value.length === 0) {
         categories.value = getDefaultCategories()
@@ -108,8 +108,8 @@ const loadCategories = async function() {
 // 获取默认分类数据
 const getDefaultCategories = () => {
   return [
-    { 
-      id: 1, 
+    {
+      id: 1,
       name: '手机数码',
       children: [
         { id: 7, name: '手机通讯' },
@@ -122,8 +122,8 @@ const getDefaultCategories = () => {
         { id: 14, name: '苹果配件' }
       ]
     },
-    { 
-      id: 2, 
+    {
+      id: 2,
       name: '电脑办公',
       children: [
         { id: 15, name: '笔记本' },
@@ -132,8 +132,8 @@ const getDefaultCategories = () => {
         { id: 18, name: '办公设备' }
       ]
     },
-    { 
-      id: 3, 
+    {
+      id: 3,
       name: '家用电器',
       children: [
         { id: 19, name: '厨房电器' },
@@ -142,8 +142,8 @@ const getDefaultCategories = () => {
         { id: 22, name: '个护健康' }
       ]
     },
-    { 
-      id: 4, 
+    {
+      id: 4,
       name: '服装服饰',
       children: [
         { id: 23, name: '女装' },
@@ -152,8 +152,8 @@ const getDefaultCategories = () => {
         { id: 26, name: '内衣' }
       ]
     },
-    { 
-      id: 5, 
+    {
+      id: 5,
       name: '美妆护肤',
       children: [
         { id: 27, name: '面部护肤' },
@@ -162,8 +162,8 @@ const getDefaultCategories = () => {
         { id: 30, name: '美妆工具' }
       ]
     },
-    { 
-      id: 6, 
+    {
+      id: 6,
       name: '黄金首饰',
       children: [
         { id: 31, name: '黄金' },
@@ -178,9 +178,9 @@ const getDefaultCategories = () => {
 // 处理子分类点击
 const handleSubCategoryClick = (subCategoryId) => {
   console.log('点击子分类:', subCategoryId)
-  router.push({ 
-    path: '/products', 
-    query: { 
+  router.push({
+    path: '/products',
+    query: {
       categoryId: subCategoryId,
       searchType: 'category'
     }
@@ -188,7 +188,7 @@ const handleSubCategoryClick = (subCategoryId) => {
 }
 
 // 修改：处理轮播图点击，跳转到商品详情页
-const handleBannerClick = function(banner) {
+const handleBannerClick = function (banner) {
   if (banner.link) {
     router.push(banner.link)
   } else if (banner.productId) {
@@ -197,7 +197,7 @@ const handleBannerClick = function(banner) {
   }
 }
 
-const handleImageError = function(event) {
+const handleImageError = function (event) {
   console.error('图片加载失败:', event.target.src)
   event.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwMCIgaGVpZ2h0PSI0MDAiIHZpZXdCb3g9IjAgMCAxMjAwIDQwMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTIwMCIgaGVpZ2h0PSI0MDAiIGZpbGw9IiNlZWVlZWUiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjI0IiBmaWxsPSIjYWFhIj5CYW5uZXIgSW1hZ2U8L3RleHQ+PC9zdmc+'
 }
@@ -233,23 +233,20 @@ onUnmounted(() => {
 <template>
   <div class="banner-container" v-loading="loading">
     <!-- 商品分类导航 - 独立于轮播图，固定在轮播图上方 -->
-    <div class="home-category" v-if="categories.length > 0"
-         @mouseenter="handleMouseEnterMenu"
-         @mouseleave="handleMouseLeaveMenu">
+    <div class="home-category" v-if="categories.length > 0" @mouseenter="handleMouseEnterMenu"
+      @mouseleave="handleMouseLeaveMenu">
       <ul class="menu">
-        <li v-for="item in categories" :key="item.id" 
-            :class="{ 'active': hoveredCategory === item.id }"
-            @mouseenter="hoveredCategory = item.id">
+        <li v-for="item in categories" :key="item.id" :class="{ 'active': hoveredCategory === item.id }"
+          @mouseenter="hoveredCategory = item.id">
           <div class="category-main">{{ item.name }}</div>
         </li>
       </ul>
-      
+
       <!-- 统一的子目录层 - 所有子分类都显示在这个固定位置 -->
       <div class="layer" v-if="hoveredCategory && categories.find(c => c.id === hoveredCategory)">
         <ul>
-          <li v-for="child in categories.find(c => c.id === hoveredCategory)?.children" 
-              :key="child.id" 
-              @click="handleSubCategoryClick(child.id)">
+          <li v-for="child in categories.find(c => c.id === hoveredCategory)?.children" :key="child.id"
+            @click="handleSubCategoryClick(child.id)">
             <div class="sub-category-item">
               <p class="name ellipsis-2">
                 {{ child.name }}
@@ -259,23 +256,15 @@ onUnmounted(() => {
         </ul>
       </div>
     </div>
-    
+
     <!-- 轮播图 - 分类导航不随轮播图轮播 -->
     <div class="banner-wrapper">
-      <el-carousel 
-        :interval="5000" 
-        :height="carouselHeight" 
-        indicator-position="outside"
-        :arrow="windowWidth > 768 ? 'always' : 'never'"
-      >
+      <el-carousel :interval="5000" :height="carouselHeight" indicator-position="outside"
+        :arrow="windowWidth > 768 ? 'always' : 'never'">
         <el-carousel-item v-for="banner in banners" :key="banner.id">
           <div class="banner-item" @click="handleBannerClick(banner)">
-            <img 
-              :src="banner.imageUrl" 
-              :alt="banner.title || 'Banner'" 
-              class="banner-image"
-              @error="handleImageError"
-            />
+            <img :src="banner.imageUrl" :alt="banner.title || 'Banner'" class="banner-image"
+              @error="handleImageError" />
             <div class="banner-content">
               <h3>{{ banner.title }}</h3>
               <p>{{ banner.description }}</p>
@@ -284,12 +273,12 @@ onUnmounted(() => {
         </el-carousel-item>
       </el-carousel>
     </div>
-    
+
     <!-- 右侧跳转模块 -->
     <div class="jump-module" @click="router.push('/product/blind-box')" style="cursor: pointer;">
       <div class="jump-content">
         <div class="jump-text">
-          <div class="jump-text-large">潮店数码盲盒<br>好货低价易购</div>
+          <div class="jump-text-large">随机商品盲盒<br>好货低价易购</div>
           <div class="jump-text-small">官方正品 省钱省心</div>
         </div>
         <div class="jump-image">
@@ -314,7 +303,7 @@ onUnmounted(() => {
 }
 
 .banner-container {
-  width: 1600px;
+  width: 1450px;
   margin: 0 auto 20px auto;
   position: relative;
   min-height: 417px;
@@ -332,7 +321,8 @@ onUnmounted(() => {
   flex: 1;
   height: 400px;
   margin: 0;
-  min-width: 0; /* 确保flex item可以收缩 */
+  min-width: 0;
+  /* 确保flex item可以收缩 */
 }
 
 /* 右侧跳转模块样式 */
@@ -469,31 +459,31 @@ onUnmounted(() => {
 }
 
 .menu li {
-    position: relative;
-    height: 66.67px;
-    line-height: 66.67px;
-    transition: all 0.3s ease;
-    cursor: pointer;
-    color: #000000;
-    border-bottom: 1px solid var(--category-border);
-    list-style: none !important;
-    padding: 0 20px;
-    font-size: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
+  position: relative;
+  height: 66.67px;
+  line-height: 66.67px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  color: #000000;
+  border-bottom: 1px solid var(--category-border);
+  list-style: none !important;
+  padding: 0 20px;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
 .menu li:last-child {
   border-bottom: none;
 }
 
 .menu li:hover,
-  .menu li.active {
-    background-color: var(--category-hover);
-    color: #ff6034;
-    font-weight: 500;
-  }
+.menu li.active {
+  background-color: var(--category-hover);
+  color: #ff6034;
+  font-weight: 500;
+}
 
 /* 淘宝样式箭头 */
 .menu li:hover::after,
@@ -507,52 +497,54 @@ onUnmounted(() => {
 }
 
 .category-main {
-    font-size: 16px;
-    font-weight: 400;
-    transition: all 0.3s ease;
-    width: 100%;
-  }
+  font-size: 16px;
+  font-weight: 400;
+  transition: all 0.3s ease;
+  width: 100%;
+}
 
 /* 子分类层样式优化 */
-  .layer {
-    width: 300px;
-    height: 400px;
-    background-color: white;
-    position: absolute;
-    left: 250px;
-    top: 0;
-    z-index: 4;
-    border: 1px solid var(--category-border);
-    border-left: none;
-    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.08);
-    border-radius: 0 12px 12px 0;
-    padding: 20px;
-    box-sizing: border-box;
-  }
+.layer {
+  width: 300px;
+  height: 400px;
+  background-color: white;
+  position: absolute;
+  left: 250px;
+  top: 0;
+  z-index: 4;
+  border: 1px solid var(--category-border);
+  border-left: none;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.08);
+  border-radius: 0 12px 12px 0;
+  padding: 20px;
+  box-sizing: border-box;
+}
 
-  .layer ul {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 0;
-    padding: 0;
-    margin: 0;
-    list-style: none !important;
-    height: 100%;
-  }
+.layer ul {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0;
+  padding: 0;
+  margin: 0;
+  list-style: none !important;
+  height: 100%;
+}
 
-  .layer li {
-    width: 50%; /* 每行显示2个子分类 */
-    height: 25%; /* 每列显示4个子分类 */
-    line-height: 100px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    color: var(--text-secondary);
-    padding: 0 15px;
-    box-sizing: border-box;
-    border: none;
-    text-align: center;
-  }
+.layer li {
+  width: 50%;
+  /* 每行显示2个子分类 */
+  height: 25%;
+  /* 每列显示4个子分类 */
+  line-height: 100px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: var(--text-secondary);
+  padding: 0 15px;
+  box-sizing: border-box;
+  border: none;
+  text-align: center;
+}
 
 .layer li:hover {
   background-color: transparent;
@@ -610,12 +602,12 @@ onUnmounted(() => {
     width: 95%;
     max-width: 1500px;
   }
-  
+
   .banner-wrapper {
     flex: 1;
     min-width: 0;
   }
-  
+
   .layer {
     width: 300px;
   }
@@ -626,55 +618,56 @@ onUnmounted(() => {
     width: 95%;
     margin: 0 auto 20px auto;
   }
-  
+
   .home-category {
     width: 180px;
     height: 320px;
   }
-  
+
   .layer {
     width: 200px;
     left: 180px;
     height: 320px;
   }
-  
+
   .banner-wrapper {
     flex: 1;
     min-width: 0;
     height: 320px;
   }
-  
+
   .jump-module {
     width: 250px;
     height: 320px;
   }
-  
+
   .menu li {
     height: 35px;
     line-height: 35px;
     padding: 0 15px;
     font-size: 13px;
   }
-  
+
   .layer li {
-    width: 33.333%; /* 中屏每行显示3个 */
+    width: 33.333%;
+    /* 中屏每行显示3个 */
     height: 32px;
     line-height: 32px;
     padding: 0 12px;
   }
-  
+
   .name {
     font-size: 12px;
   }
-  
+
   .banner-content {
     padding: 12px 20px;
   }
-  
+
   .banner-content h3 {
     font-size: 20px;
   }
-  
+
   .banner-content p {
     font-size: 13px;
   }
@@ -687,20 +680,20 @@ onUnmounted(() => {
     flex-direction: column;
     height: auto;
   }
-  
+
   .home-category {
     width: 100%;
     height: auto;
     border-right: none;
     border-bottom: 1px solid var(--category-border);
   }
-  
+
   .menu {
     display: flex;
     flex-wrap: wrap;
     height: auto;
   }
-  
+
   .menu li {
     width: 33.333%;
     height: 40px;
@@ -708,40 +701,41 @@ onUnmounted(() => {
     border-right: 1px solid var(--category-border);
     box-sizing: border-box;
   }
-  
+
   .menu li:nth-child(3n) {
     border-right: none;
   }
-  
+
   .menu li:nth-last-child(-n+3) {
     border-bottom: none;
   }
-  
+
   .layer {
-    display: none; /* 移动端隐藏子分类层 */
+    display: none;
+    /* 移动端隐藏子分类层 */
   }
-  
+
   .banner-wrapper {
     width: 100%;
     margin-left: 0;
     height: 250px;
   }
-  
+
   .jump-module {
     width: 100%;
     height: auto;
     margin-top: 10px;
   }
-  
+
   .banner-content {
     padding: 10px 15px;
   }
-  
+
   .banner-content h3 {
     font-size: 18px;
     margin-bottom: 5px;
   }
-  
+
   .banner-content p {
     font-size: 12px;
   }
@@ -754,25 +748,26 @@ onUnmounted(() => {
     padding: 0;
     border-radius: 0;
   }
-  
+
   .home-category {
-    display: none; /* 超小屏隐藏分类导航 */
+    display: none;
+    /* 超小屏隐藏分类导航 */
   }
-  
+
   .banner-wrapper {
     width: 100%;
     height: 180px;
     border-radius: 0;
   }
-  
+
   .banner-content {
     padding: 8px 12px;
   }
-  
+
   .banner-content h3 {
     font-size: 16px;
   }
-  
+
   .banner-content p {
     font-size: 11px;
     display: none;
@@ -822,11 +817,11 @@ onUnmounted(() => {
   :deep(.el-carousel__arrow) {
     display: none;
   }
-  
+
   :deep(.el-carousel__indicator) {
     padding: 4px 2px;
   }
-  
+
   :deep(.el-carousel__button) {
     width: 5px;
     height: 5px;
