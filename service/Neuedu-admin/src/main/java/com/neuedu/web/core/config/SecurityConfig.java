@@ -114,6 +114,12 @@ public class SecurityConfig {
                     .anonymous()
                     .antMatchers("/ai/chat").permitAll()
                     .antMatchers("/test/**").permitAll()
+                    .antMatchers("/system/shop/public/**").permitAll()
+                    .antMatchers("/system/shop/hot").permitAll()
+                    .antMatchers("/system/shop/search").permitAll()
+                    .antMatchers("/system/product/shop/**").permitAll()
+                    // QQ登录接口
+                    .antMatchers("/qq/**").permitAll()
                     // === 临时修改：允许所有认证用户访问所有接口 ===
 //                    .antMatchers("/system/**").authenticated()  // 所有认证用户都可访问
 //                    .antMatchers("/user/**").authenticated()    // 所有认证用户都可访问

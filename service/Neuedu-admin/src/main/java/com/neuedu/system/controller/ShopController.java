@@ -73,6 +73,16 @@ public class ShopController extends BaseController
     }
 
     /**
+     * 获取店铺公开信息（无需权限，用于前台展示）
+     */
+    @Operation(summary = "获取店铺公开信息")
+    @GetMapping(value = "/public/{id}")
+    public AjaxResult getPublicInfo(@PathVariable("id") Long id)
+    {
+        return success(shopService.selectShopById(id));
+    }
+
+    /**
      * 新增店铺信息
      */
     @Operation(summary = "新增店铺信息")

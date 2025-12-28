@@ -59,6 +59,17 @@ public interface IOrderInfoService extends IService<OrderInfo>
     public OrderInfo createOrderFromCart(Long userId, Long addressId);
 
     /**
+     * 直接购买创建订单（单个商品）
+     *
+     * @param userId 用户ID
+     * @param productId 商品ID
+     * @param quantity 数量
+     * @param addressId 地址ID
+     * @return 订单信息
+     */
+    public OrderInfo createDirectOrder(Long userId, Long productId, Integer quantity, Long addressId);
+
+    /**
      * 支付订单
      *
      * @param orderNo 订单编号
@@ -98,11 +109,12 @@ public interface IOrderInfoService extends IService<OrderInfo>
      * 申请退款
      *
      * @param orderNo 订单编号
-     * @param refundAmount 退款金额
-     * @param refundReason 退款原因
+     * @param reason 退款原因
+     * @param description 退款说明
+     * @param contactPhone 联系电话
      * @return 结果
      */
-    public int applyRefund(String orderNo, BigDecimal refundAmount, String refundReason);
+    public int applyRefund(String orderNo, String reason, String description, String contactPhone);
 
     /**
      * 处理退款

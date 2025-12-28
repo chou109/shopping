@@ -1,5 +1,6 @@
 package com.neuedu.system.mapper;
 
+import java.math.BigDecimal;
 import java.util.List;
 import org.apache.ibatis.annotations.Param;
 import com.neuedu.common.core.domain.entity.SysUser;
@@ -42,6 +43,14 @@ public interface SysUserMapper
      * @return 用户对象信息
      */
     public SysUser selectUserByUserName(String userName);
+
+    /**
+     * 通过QQ OpenID查询用户
+     * 
+     * @param qqOpenid QQ开放ID
+     * @return 用户对象信息
+     */
+    public SysUser selectUserByQqOpenid(String qqOpenid);
 
     /**
      * 通过用户ID查询用户
@@ -124,4 +133,13 @@ public interface SysUserMapper
      * @return 结果
      */
     public SysUser checkEmailUnique(String email);
+
+    /**
+     * 更新用户余额
+     *
+     * @param userId 用户ID
+     * @param balance 新余额
+     * @return 结果
+     */
+    public int updateUserBalance(@Param("userId") Long userId, @Param("balance") BigDecimal balance);
 }

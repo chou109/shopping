@@ -51,6 +51,20 @@ public class OrderInfoController extends BaseController {
     }
 
     /**
+     * 获取我的订单数量
+     */
+    @Operation(summary = "获取我的订单数量")
+    @GetMapping("/my/count")
+    public AjaxResult myOrderCount() {
+        Long userId = SecurityUtils.getUserId();
+        if (userId == null) {
+            return success(0);
+        }
+        List<OrderInfo> list = orderInfoService.selectOrderListByUserId(userId, null);
+        return success(list != null ? list.size() : 0);
+    }
+
+    /**
      * 创建订单（从购物车，用户端）
      */
     @Operation(summary = "创建订单（从购物车）")
@@ -64,6 +78,30 @@ public class OrderInfoController extends BaseController {
 
         try {
             OrderInfo orderInfo = orderInfoService.createOrderFromCart(userId, addressId);
+            return success(orderInfo);
+        } catch (RuntimeException e) {
+            return error(e.getMessage());
+        }
+    }
+
+    /**
+     * 直接购买创建订单（单个商品，用户端）
+     */
+    @Operation(summary = "直接购买创建订单")
+    @Log(title = "订单", businessType = BusinessType.INSERT)
+    @PostMapping("/direct")
+    public AjaxResult createDirectOrder(@RequestBody Map<String, Object> params) {
+        Long userId = SecurityUtils.getUserId();
+        if (userId == null) {
+            return error("用户未登录");
+        }
+
+        try {
+            Long productId = Long.valueOf(params.get("productId").toString());
+            Integer quantity = Integer.valueOf(params.get("quantity").toString());
+            Long addressId = Long.valueOf(params.get("addressId").toString());
+            
+            OrderInfo orderInfo = orderInfoService.createDirectOrder(userId, productId, quantity, addressId);
             return success(orderInfo);
         } catch (RuntimeException e) {
             return error(e.getMessage());
@@ -177,11 +215,10 @@ public class OrderInfoController extends BaseController {
      */
     @Operation(summary = "申请退款")
     @Log(title = "订单", businessType = BusinessType.UPDATE)
-    @PostMapping("/{orderNo}/apply-refund")
-    public AjaxResult applyRefund(@PathVariable String orderNo,
-                                  @RequestParam String refundAmount,
-                                  @RequestParam String refundReason) {
+    @PostMapping("/apply-refund")
+    public AjaxResult applyRefund(@RequestBody Map<String, Object> refundData) {
         Long userId = SecurityUtils.getUserId();
+        String orderNo = (String) refundData.get("orderNo");
         OrderInfo orderInfo = orderInfoService.selectOrderInfoByOrderNo(orderNo);
 
         if (orderInfo == null) {
@@ -194,7 +231,11 @@ public class OrderInfoController extends BaseController {
         }
 
         try {
-            int result = orderInfoService.applyRefund(orderNo, new java.math.BigDecimal(refundAmount), refundReason);
+            String reason = (String) refundData.get("reason");
+            String description = (String) refundData.get("description");
+            String contactPhone = (String) refundData.get("contactPhone");
+            
+            int result = orderInfoService.applyRefund(orderNo, reason, description, contactPhone);
             return toAjax(result);
         } catch (RuntimeException e) {
             return error(e.getMessage());
@@ -216,6 +257,28 @@ public class OrderInfoController extends BaseController {
         return success(statistics);
     }
 
+    /**
+     * 用户删除自己的订单
+     */
+    @Operation(summary = "用户删除订单")
+    @Log(title = "订单", businessType = BusinessType.DELETE)
+    @PostMapping("/delete-my-order")
+    public AjaxResult userDelete(@RequestParam("id") Long id) {
+        Long userId = SecurityUtils.getUserId();
+        if (userId == null) {
+            return AjaxResult.error("用户未登录");
+        }
+        // 验证订单属于当前用户
+        OrderInfo order = orderInfoService.selectOrderInfoById(id);
+        if (order == null) {
+            return AjaxResult.error("订单不存在");
+        }
+        if (!order.getUserId().equals(userId)) {
+            return AjaxResult.error("无权删除此订单");
+        }
+        return toAjax(orderInfoService.deleteOrderInfoById(id));
+    }
+
 }
 /**
  * 订单管理Controller（管理员端）
@@ -228,16 +291,16 @@ class OrderInfoAdminController extends BaseController
 {
     private final IOrderInfoService orderInfoService;
 
-    /**
-     * 查询订单列表（管理员端）
-     */
     @Operation(summary = "查询订单列表（管理员）")
     @PreAuthorize("@ss.hasPermi('system:order:list')")
     @GetMapping("/list")
     public TableDataInfo list(OrderInfo orderInfo)
     {
+        // startPage() 会自动从请求中获取 pageNum 和 pageSize
         startPage();
         List<OrderInfo> list = orderInfoService.selectOrderInfoList(orderInfo);
+
+        // getDataTable() 会返回包含 total、rows 等信息的 TableDataInfo
         return getDataTable(list);
     }
 
@@ -395,7 +458,7 @@ class OrderInfoAdminController extends BaseController
     }
 
     /**
-     * 删除订单
+     * 删除订单（管理员）
      */
     @Operation(summary = "删除订单")
     @PreAuthorize("@ss.hasPermi('system:info:remove')")

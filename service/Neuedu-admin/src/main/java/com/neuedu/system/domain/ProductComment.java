@@ -14,7 +14,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
  * 商品评论对象 product_comment
- * 
+ *
  * @author ruoyi
  * @date 2025-12-21
  */
@@ -26,6 +26,9 @@ public class ProductComment extends BaseEntity
 {
     private static final long serialVersionUID = 1L;
 
+    // 排除继承的deleted字段，该表无此列
+    @TableField(exist = false)
+    private Integer deleted;
 
     /** 评论ID */
     @Schema(title = "评论ID")
@@ -86,6 +89,30 @@ public class ProductComment extends BaseEntity
     @Excel(name = "状态", readConverterExp = "1=-正常，2-审核中，3-已删除")
     private Integer status;
 
+    /** 用户昵称（非数据库字段） */
+    @Schema(title = "用户昵称")
+    @TableField(exist = false)
+    private String nickName;
+
+    /** 用户头像（非数据库字段） */
+    @Schema(title = "用户头像")
+    @TableField(exist = false)
+    private String userAvatar;
+
+    /** 商品名称（非数据库字段） */
+    @Schema(title = "商品名称")
+    @TableField(exist = false)
+    private String productName;
+
+    /** 商品图片（非数据库字段） */
+    @Schema(title = "商品图片")
+    @TableField(exist = false)
+    private String productImage;
+
+    /** 商品价格（非数据库字段） */
+    @Schema(title = "商品价格")
+    @TableField(exist = false)
+    private java.math.BigDecimal productPrice;
 
     @TableField(exist = false)  // 告诉MyBatis这个字段不在数据库表中
     private String createBy;
@@ -101,9 +128,6 @@ public class ProductComment extends BaseEntity
 
     @TableField(exist = false)
     private String remark;
-    //
-    @TableField(exist = false)
-    private Integer deleted;
 
     // ============ 新增的便捷方法 ============
 

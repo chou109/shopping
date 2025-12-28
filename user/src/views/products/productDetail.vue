@@ -33,6 +33,11 @@ import {
 import { getProductImageUrl, handleImageError } from '@/utils/image'
 import { listFootprintByUser, deleteFootprint, recordFootprint } from '@/api/system/footprint'
 
+import { createDirectOrder, payOrder } from '@/api/system/orderInfo'
+import { getMyAddressList } from '@/api/system/address'
+import { toggleFavorite, checkFavorite } from '@/api/system/favorite'
+import PurchaseDialog from '@/components/PurchaseDialog/index.vue'
+
 const route = useRoute()
 const router = useRouter()
 
@@ -54,6 +59,7 @@ const product = ref({
 // 店铺信息
 const shopInfo = ref({
   id: 0,
+  userId: 0, // 店铺主人ID，用于发送消息
   shopName: '',
   shopLogo: '',
   shopBanner: '',
@@ -88,6 +94,11 @@ const addingToCart = ref(false)
 const isFavorite = ref(false)
 const activeTab = ref('detail')
 
+// 购买弹窗相关
+const purchaseDialogVisible = ref(false)
+const purchaseProducts = ref([])
+const purchaseOrder = ref({})
+
 // 放大镜相关
 const zoomVisible = ref(false)
 const zoomPosition = ref({ x: 0, y: 0 })
@@ -120,6 +131,7 @@ const loadProductData = async () => {
       product.value = response.data
       console.log('商品数据:', product.value)
       recordFootprint({ targetType: 1, targetId: route.query.id })
+      checkProductFavorite(productId) // 检查是否已收藏
 
       if (!product.value.category && product.value.categoryId) {
         product.value.category = {
@@ -152,6 +164,7 @@ const loadShopInfo = async (shopId) => {
     if (response.code === 200 && response.data) {
       shopInfo.value = {
         id: response.data.id || response.data.shopId || 0,
+        userId: response.data.userId || 0, // 店铺主人ID
         shopName: response.data.shopName || response.data.name || '官方旗舰店',
         shopLogo: response.data.shopLogo || response.data.logo || '',
         shopBanner: response.data.shopBanner || response.data.banner || '',
@@ -167,6 +180,7 @@ const loadShopInfo = async (shopId) => {
     } else {
       shopInfo.value = {
         id: shopId,
+        userId: 0, // 店铺主人ID
         shopName: '官方旗舰店',
         shopLogo: '',
         shopBanner: '',
@@ -184,6 +198,7 @@ const loadShopInfo = async (shopId) => {
     console.error('加载店铺信息失败:', error)
     shopInfo.value = {
       id: shopId,
+      userId: 0, // 店铺主人ID
       shopName: '官方旗舰店',
       shopLogo: '',
       shopBanner: '',
@@ -199,6 +214,31 @@ const loadShopInfo = async (shopId) => {
   }
 }
 
+// 跳转到店铺页面
+const goToShopPage = () => {
+  if (shopInfo.value.id) {
+    router.push({
+      path: '/shop',
+      query: { id: shopInfo.value.id }
+    })
+  }
+}
+
+// 联系客服（跳转到人工客服页面，传递店铺主人ID）
+const contactCustomerService = () => {
+  // 获取店铺主人ID作为消息接收者
+  const receiverId = shopInfo.value.userId || 0
+  console.log('联系客服 - 店铺主人ID:', receiverId, 'shopInfo:', shopInfo.value)
+  router.push({
+    path: '/customer-service',
+    query: {
+      shopId: shopInfo.value.id,
+      receiverId: receiverId,
+      shopName: shopInfo.value.shopName
+    }
+  })
+}
+
 // 加载商品评价
 const loadProductComments = async () => {
   if (!product.value.id) return
@@ -206,22 +246,58 @@ const loadProductComments = async () => {
   commentLoading.value = true
   try {
     const response = await getCommentTree(product.value.id)
+    console.log('评论API响应:', response)
 
     if (response.code === 200) {
       let comments = []
 
+      // 增强数据解析逻辑，处理更多可能的响应格式
       if (response.rows && Array.isArray(response.rows)) {
         comments = response.rows
       } else if (response.data && Array.isArray(response.data)) {
         comments = response.data
+      } else if (response.data && response.data.comments && Array.isArray(response.data.comments)) {
+        comments = response.data.comments
       } else if (Array.isArray(response)) {
         comments = response
+      } else if (response.data && typeof response.data === 'object') {
+        // 处理可能的单条评论对象
+        comments = [response.data]
+      } else {
+        console.warn('未识别的评论数据格式:', response)
       }
 
-      productComments.value = comments
-      commentPageParams.value.total = response.total || comments.length
+      // 确保评论数组格式正确
+      if (Array.isArray(comments)) {
+        // 标准化评论数据结构，确保必要字段存在
+        const normalizeComment = (comment) => ({
+          commentId: comment.commentId || comment.id || 0,
+          productId: comment.productId || product.value.id,
+          userId: comment.userId || 0,
+          parentId: comment.parentId || comment.pid || 0,
+          nickName: comment.nickName || comment.userName || comment.username || '',
+          userAvatar: comment.userAvatar || comment.avatar || '/src/assets/images/default-avatar.png',
+          avatar: comment.userAvatar || comment.avatar || '/src/assets/images/default-avatar.png',
+          content: comment.content || '',
+          score: comment.score || 0,
+          images: comment.images || comment.imgs || [],
+          likeCount: comment.likeCount || 0,
+          replyCount: comment.replyCount || 0,
+          createTime: comment.createTime || comment.time || new Date().toISOString(),
+          isAnonymous: comment.isAnonymous || 0,
+          children: (comment.children || comment.replies || []).map(child => normalizeComment(child))
+        })
 
-      if (comments.length === 0) {
+        const normalizedComments = comments.map(comment => normalizeComment(comment))
+
+        productComments.value = normalizedComments
+        commentPageParams.value.total = response.total || response.data?.total || normalizedComments.length
+      } else {
+        console.error('评论数据不是数组:', comments)
+        productComments.value = []
+      }
+
+      if (productComments.value.length === 0) {
         productComments.value = getMockComments()
         commentPageParams.value.total = productComments.value.length
       }
@@ -229,6 +305,7 @@ const loadProductComments = async () => {
       // 评论加载完成后，重新计算统计
       commentStats.value = calculateCommentStatsFromData()
     } else {
+      console.warn('评论API返回错误:', response.msg || '未知错误')
       productComments.value = getMockComments()
       commentPageParams.value.total = productComments.value.length
       commentStats.value = calculateCommentStatsFromData()
@@ -555,6 +632,18 @@ const handleAddToCart = async () => {
     return
   }
 
+  // 验证是否选择了所有规格
+  if (productSpecs.value.length > 0 && selectedSpecs.value.length < productSpecs.value.length) {
+    ElMessage.warning('请选择所有商品规格')
+    return
+  }
+
+  // 验证库存
+  if (quantity.value > (product.value.stock || 0)) {
+    ElMessage.warning('库存不足')
+    return
+  }
+
   addingToCart.value = true
   try {
     const cartData = {
@@ -565,7 +654,9 @@ const handleAddToCart = async () => {
       quantity: quantity.value,
       productUnitPrice: product.value.price,
       selected: 1,
-      productTotalPrice: product.value.price * quantity.value
+      productTotalPrice: product.value.price * quantity.value,
+      specs: selectedSpecs.value.join(','), // 传递规格信息
+      shopId: product.value.shopId
     }
 
     const response = await addCart(cartData)
@@ -584,33 +675,120 @@ const handleAddToCart = async () => {
 }
 
 // 立即购买
-const handleBuyNow = () => {
+const handleBuyNow = async () => {
   if (!product.value.id) {
     ElMessage.warning('商品信息不完整')
     return
   }
 
-  const orderData = {
-    productId: product.value.id,
-    quantity: quantity.value,
-    productName: product.value.name,
-    price: product.value.price,
-    mainImage: product.value.mainImage
+  // 验证是否选择了所有规格
+  if (productSpecs.value.length > 0 && selectedSpecs.value.length < productSpecs.value.length) {
+    ElMessage.warning('请选择所有商品规格')
+    return
   }
 
-  router.push({
-    path: '/order/confirm',
-    query: orderData
-  })
+  // 验证库存
+  if (quantity.value > (product.value.stock || 0)) {
+    ElMessage.warning('库存不足')
+    return
+  }
+
+  try {
+    // 获取用户地址列表
+    const addressRes = await getMyAddressList()
+    const addressData = addressRes.data || addressRes.rows || []
+
+    if (addressRes.code !== 200 || addressData.length === 0) {
+      ElMessage.warning('请先添加收货地址')
+      router.push('/user/profile')
+      return
+    }
+
+    // 选择默认地址或第一个地址
+    const defaultAddr = addressData.find(a => a.isDefault === 1 || a.defaultFlag === 1) || addressData[0]
+
+    // 创建直接购买订单
+    const orderData = {
+      productId: product.value.id,
+      quantity: quantity.value,
+      addressId: defaultAddr.id
+    }
+
+    const orderRes = await createDirectOrder(orderData)
+
+    if (orderRes.code === 200 && orderRes.data) {
+      // 设置购买弹窗数据
+      purchaseProducts.value = [{
+        name: product.value.name,
+        mainImage: product.value.mainImage,
+        price: product.value.price,
+        quantity: quantity.value
+      }]
+      purchaseOrder.value = orderRes.data
+      purchaseDialogVisible.value = true
+    } else {
+      ElMessage.error(orderRes.msg || '创建订单失败')
+    }
+  } catch (error) {
+    console.error('购买失败:', error)
+    ElMessage.error('购买失败，请稍后重试')
+  }
+}
+
+// 稍后支付
+const handlePayLater = (orderData) => {
+  ElMessage.success('订单已创建，请尽快完成支付')
+  purchaseDialogVisible.value = false
+  router.push('/user/orders')
+}
+
+// 立即支付
+const handlePayNow = async (orderData) => {
+  try {
+    const payRes = await payOrder(orderData.orderNo, orderData.paymentType)
+    if (payRes.code === 200) {
+      ElMessage.success('支付成功')
+      purchaseDialogVisible.value = false
+      router.push('/user/orders')
+    } else {
+      ElMessage.error(payRes.msg || '支付失败')
+    }
+  } catch (error) {
+    console.error('支付失败:', error)
+    ElMessage.error(error.message || '支付失败，请稍后重试')
+  }
+}
+
+// 检查商品是否已收藏
+const checkProductFavorite = async (productId) => {
+  try {
+    const res = await checkFavorite(1, productId) // 1表示商品
+    if (res.code === 200 && res.data) {
+      isFavorite.value = res.data.isFavorite || false
+    }
+  } catch (e) {
+    console.error('检查收藏状态失败', e)
+  }
 }
 
 // 收藏商品
-const handleToggleFavorite = () => {
-  isFavorite.value = !isFavorite.value
-  if (isFavorite.value) {
-    ElMessage.success('已收藏商品')
-  } else {
-    ElMessage.info('已取消收藏')
+const handleToggleFavorite = async () => {
+  try {
+    const productId = route.query.id
+    const res = await toggleFavorite(1, productId) // 1表示商品
+    if (res.code === 200) {
+      isFavorite.value = res.data
+      if (isFavorite.value) {
+        ElMessage.success('已收藏商品')
+      } else {
+        ElMessage.info('已取消收藏')
+      }
+    } else {
+      ElMessage.error(res.msg || '操作失败')
+    }
+  } catch (e) {
+    console.error('收藏操作失败', e)
+    ElMessage.error('操作失败')
   }
 }
 
@@ -780,10 +958,11 @@ onMounted(() => {
                         <div class="comment-item">
                           <!-- 评论内容 -->
                           <div class="comment-header">
-                            <img :src="comment.avatar" :alt="comment.nickName" class="user-avatar"
+                            <img :src="getProductImageUrl(comment.avatar)" :alt="comment.nickName" class="user-avatar"
                               @error="handleImageError" />
                             <div class="user-info">
-                              <div class="user-name">{{ comment.isAnonymous ? '匿名用户' : comment.nickName }}</div>
+                              <div class="user-name">{{ comment.isAnonymous === 1 ? '匿名用户' : (comment.nickName ||
+                                `用户${comment.userId}`) }}</div>
                               <div class="comment-time">{{ formatTime(comment.createTime) }}</div>
                             </div>
                           </div>
@@ -800,7 +979,8 @@ onMounted(() => {
 
                           <div v-if="comment.images && comment.images.length > 0" class="comment-images">
                             <div v-for="(img, imgIndex) in comment.images" :key="imgIndex" class="comment-image">
-                              <img :src="img" :alt="`评价图片${imgIndex + 1}`" @error="handleImageError" />
+                              <img :src="getProductImageUrl(img)" :alt="`评价图片${imgIndex + 1}`"
+                                @error="handleImageError" />
                             </div>
                           </div>
 
@@ -808,12 +988,12 @@ onMounted(() => {
                           <div v-if="comment.children && comment.children.length > 0" class="comment-replies">
                             <div v-for="reply in comment.children" :key="reply.commentId" class="reply-item">
                               <div class="reply-header">
-                                <img :src="reply.avatar" :alt="reply.nickName" class="reply-avatar"
-                                  @error="handleImageError" />
+                                <img :src="getProductImageUrl(reply.userAvatar || reply.avatar)" :alt="reply.nickName"
+                                  class="reply-avatar" @error="handleImageError" />
                                 <div class="reply-user-info">
                                   <div class="reply-user-name">
-                                    <span v-if="reply.userId === shopInfo.id" class="shop-tag">商家</span>
-                                    {{ reply.nickName }}
+                                    <span v-if="reply.userId === shopInfo.userId" class="shop-tag">商家</span>
+                                    {{ reply.isAnonymous === 1 ? '匿名用户' : (reply.nickName || `用户${reply.userId}`) }}
                                   </div>
                                   <div class="reply-time">{{ formatTime(reply.createTime) }}</div>
                                 </div>
@@ -832,12 +1012,13 @@ onMounted(() => {
                                 <div v-for="subReply in reply.children" :key="subReply.commentId"
                                   class="sub-reply-item">
                                   <div class="sub-reply-header">
-                                    <img :src="subReply.avatar" :alt="subReply.nickName" class="sub-reply-avatar"
-                                      @error="handleImageError" />
+                                    <img :src="getProductImageUrl(subReply.userAvatar || subReply.avatar)"
+                                      :alt="subReply.nickName" class="sub-reply-avatar" @error="handleImageError" />
                                     <div class="sub-reply-user-info">
                                       <div class="sub-reply-user-name">
-                                        <span v-if="subReply.userId === shopInfo.id" class="shop-tag">商家</span>
-                                        {{ subReply.nickName }}
+                                        <span v-if="subReply.userId === shopInfo.userId" class="shop-tag">商家</span>
+                                        {{ subReply.isAnonymous === 1 ? '匿名用户' : (subReply.nickName ||
+                                        `用户${subReply.userId}`) }}
                                       </div>
                                       <div class="sub-reply-time">{{ formatTime(subReply.createTime) }}</div>
                                     </div>
@@ -985,6 +1166,11 @@ onMounted(() => {
       </div>
     </div>
   </div>
+
+  <!-- 购买弹窗 -->
+  <PurchaseDialog v-model="purchaseDialogVisible" :products="purchaseProducts" :order="purchaseOrder"
+    :need-create-order="false" @pay-later="handlePayLater" @pay-now="handlePayNow"
+    @cancel="purchaseDialogVisible = false" />
 </template>
 
 <style scoped>
@@ -1425,6 +1611,37 @@ onMounted(() => {
   background: #fff;
 }
 
+.comment-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #e5e5e5;
+}
+
+.user-info {
+  flex: 1;
+}
+
+.user-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+}
+
+.comment-time {
+  font-size: 12px;
+  color: #999;
+  margin-top: 2px;
+}
+
 /* 在 style 部分添加以下样式 */
 .comment-replies {
   margin-top: 15px;
@@ -1450,10 +1667,11 @@ onMounted(() => {
 }
 
 .reply-avatar {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   object-fit: cover;
+  border: 1px solid #e5e5e5;
 }
 
 .reply-user-info {
@@ -1519,10 +1737,11 @@ onMounted(() => {
 }
 
 .sub-reply-avatar {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   object-fit: cover;
+  border: 1px solid #e5e5e5;
 }
 
 .sub-reply-user-info {

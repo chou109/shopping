@@ -38,9 +38,9 @@
 
               <div class="item-content">
                 <!-- 商品图片 -->
-                <div class="item-image" @click="goToProductDetail(item.productId)">
-                  <img :src="getProductImageUrl(item.productMainImage)" :alt="item.name" @error="handleImageError" />
-                </div>
+<div class="item-image" @click="goToProductDetail(item.productId)">
+  <img :src="item.productId === 9999 || item.productName?.includes('盲盒') ? '/src/assets/images/BlindBox.png' : getProductImageUrl(item.productMainImage)" :alt="item.productName" @error="handleImageError" />
+</div>
 
                 <!-- 商品信息 -->
                 <div class="item-info">
@@ -143,6 +143,17 @@
       </div>
     </div>
   </div>
+
+  <!-- 购买弹窗 -->
+  <PurchaseDialog
+    v-model="purchaseDialogVisible"
+    :products="purchaseProducts"
+    :order="purchaseOrder"
+    :need-create-order="false"
+    @pay-later="handlePayLater"
+    @pay-now="handlePayNow"
+    @cancel="purchaseDialogVisible = false"
+  />
 </template>
 
 <script setup>
@@ -152,7 +163,10 @@ import { useStore } from 'vuex'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Lock } from '@element-plus/icons-vue'
 import { getProductImageUrl, handleImageError } from '@/utils/image'
-import { listCart, updateCart, delCart, clearCart } from '@/api/system/cart'
+import { listCart, updateCart, delCart, clearCart, batchSelectCart } from '@/api/system/cart'
+import { createOrderFromCart, payOrder } from '@/api/system/orderInfo'
+import { getMyAddressList } from '@/api/system/address'
+import PurchaseDialog from '@/components/PurchaseDialog/index.vue'
 
 const router = useRouter()
 const store = useStore()
@@ -160,6 +174,11 @@ const loading = ref(false)
 
 // 购物车数据
 const cartItems = ref([])
+
+// 购买弹窗相关
+const purchaseDialogVisible = ref(false)
+const purchaseProducts = ref([])
+const purchaseOrder = ref({})
 
 // 计算属性
 const selectedItems = computed(() => {
@@ -241,8 +260,6 @@ const formatPrice = (price) => {
 }
 
 // 加载购物车数据
-// 加载购物车数据
-// 加载购物车数据
 const loadCartData = async () => {
   loading.value = true
   try {
@@ -257,9 +274,20 @@ const loadCartData = async () => {
     console.log("购物车数据:", response)
     if (response.code === 200) {
       cartItems.value = response.data || []
-      // 强制重置所有商品为未选中状态
+      // 调试购物车商品数据
+      console.log("购物车商品列表:", cartItems.value)
+      // 查看第一个商品的详细信息，特别是图片相关字段
+      if (cartItems.value.length > 0) {
+        const firstItem = cartItems.value[0]
+        console.log("第一个商品详细信息:", firstItem)
+        console.log("商品主图数据结构:", firstItem.productMainImage)
+        console.log("商品主图类型:", typeof firstItem.productMainImage)
+        console.log("处理后的图片URL:", getProductImageUrl(firstItem.productMainImage))
+      }
+      // 计算小计并转换selected为布尔值
       cartItems.value.forEach(item => {
-        item.selected = false  // 强制设置为false，忽略后端返回的选中状态
+        // 后端返回的selected是数字(0/1)，需要转换为布尔值
+        item.selected = item.selected === 1 || item.selected === true
         // 计算小计
         if (item.productUnitPrice && item.quantity && !item.productTotalPrice) {
           item.productTotalPrice = item.productUnitPrice * item.quantity
@@ -280,15 +308,36 @@ const loadCartData = async () => {
 }
 
 // 全选/取消全选
-const handleSelectAll = (selected) => {
-  cartItems.value.forEach(item => {
-    item.selected = selected
-  })
+const handleSelectAll = async (selected) => {
+  try {
+    // 更新前端状态
+    cartItems.value.forEach(item => {
+      item.selected = selected
+    })
+    // 调用API更新后端状态
+    await batchSelectCart(selected ? 1 : 0)
+    ElMessage.success('选择状态已更新')
+  } catch (error) {
+    console.error('更新全选状态失败:', error)
+    ElMessage.error('更新失败')
+  }
 }
 
 // 单个商品选择
-const handleItemSelect = (item) => {
-  console.log('商品选择状态变化:', item.productName, item.selected)
+const handleItemSelect = async (item) => {
+  try {
+    // 调用API更新后端状态
+    await updateCart(item.id, {
+      selected: item.selected ? 1 : 0
+    })
+    console.log('商品选择状态变化:', item.productName, item.selected)
+    ElMessage.success('选择状态已更新')
+  } catch (error) {
+    console.error('更新商品选择状态失败:', error)
+    ElMessage.error('更新失败')
+    // 恢复原状态
+    item.selected = !item.selected
+  }
 }
 
 // 增加数量
@@ -427,18 +476,83 @@ const handleClearCart = async () => {
 }
 
 // 去结算
-const handleCheckout = () => {
+const handleCheckout = async () => {
   if (selectedCount.value === 0) {
     ElMessage.warning('请先选择要结算的商品')
     return
   }
 
-  router.push({
-    path: '/order/confirm',
-    query: {
-      cartItems: JSON.stringify(selectedItems.value)
+  // 检查是否有选中的商品
+  const selected = selectedItems.value
+  console.log('选中的商品:', selected, '数量:', selected.length)
+  
+  if (selected.length === 0) {
+    ElMessage.warning('请先选择要结算的商品')
+    return
+  }
+
+  // 获取用户地址列表
+  try {
+    const addressRes = await getMyAddressList()
+    const addressData = addressRes.data || addressRes.rows || []
+    if (addressRes.code === 200 && addressData.length > 0) {
+      // 选择默认地址或第一个地址
+      const defaultAddr = addressData.find(a => a.isDefault === 1 || a.defaultFlag === 1) || addressData[0]
+      console.log('使用地址:', defaultAddr)
+      
+      // 创建订单 - 使用主键id
+      const orderRes = await createOrderFromCart(defaultAddr.id)
+      console.log('创建订单响应:', orderRes)
+      
+      if (orderRes.code === 200 && orderRes.data) {
+        // 设置购买弹窗数据
+        purchaseProducts.value = selected.map(item => ({
+          name: item.productName,
+          mainImage: item.productMainImage,
+          price: item.productUnitPrice,
+          quantity: item.quantity
+        }))
+        purchaseOrder.value = orderRes.data
+        purchaseDialogVisible.value = true
+      } else {
+        ElMessage.error(orderRes.msg || '创建订单失败')
+      }
+    } else {
+      ElMessage.warning('请先添加收货地址')
+      router.push('/user/profile')
     }
-  })
+  } catch (error) {
+    console.error('结算失败:', error)
+    ElMessage.error(error.message || '结算失败，请稍后重试')
+  }
+}
+
+// 稍后支付
+const handlePayLater = (orderData) => {
+  ElMessage.success('订单已创建，请尽快完成支付')
+  purchaseDialogVisible.value = false
+  // 刷新购物车
+  loadCartData()
+  router.push('/user/orders')
+}
+
+// 立即支付
+const handlePayNow = async (orderData) => {
+  try {
+    const payRes = await payOrder(orderData.orderNo, orderData.paymentType)
+    if (payRes.code === 200) {
+      ElMessage.success('支付成功')
+      purchaseDialogVisible.value = false
+      // 刷新购物车
+      loadCartData()
+      router.push('/user/orders')
+    } else {
+      ElMessage.error(payRes.msg || '支付失败')
+    }
+  } catch (error) {
+    console.error('支付失败:', error)
+    ElMessage.error(error.message || '支付失败，请稍后重试')
+  }
 }
 
 // 添加到收藏
@@ -453,10 +567,20 @@ const addToFavorites = async (item) => {
 
 // 跳转到商品详情
 const goToProductDetail = (productId) => {
-  router.push({
-    path: '/product/detail',
-    query: { id: productId }
-  })
+  // 判断是否为盲盒商品（ID为9999或包含"blind"字符串）
+  const isBlindBox = productId === 9999 || (typeof productId === 'string' && (productId.includes('blind') || productId.startsWith('blind-')));
+  
+  if (isBlindBox) {
+    router.push({
+      path: '/product/blind-box',
+      query: { id: productId }
+    })
+  } else {
+    router.push({
+      path: '/product/detail',
+      query: { id: productId }
+    })
+  }
 }
 
 // 去购物

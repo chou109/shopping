@@ -31,3 +31,19 @@ export function getUserCartStats(userId) {
     method: 'get'
   })
 }
+
+// 获取足迹数量
+export function getFootprintCount(userId) {
+  return request({
+    url: '/system/footprint/count/' + userId,
+    method: 'get'
+  })
+}
+
+// 获取订单数量
+export function getOrderCount() {
+  return request({
+    url: '/system/orderInfo/my/count',
+    method: 'get'
+  })
+}

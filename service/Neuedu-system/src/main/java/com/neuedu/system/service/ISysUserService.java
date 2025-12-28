@@ -1,5 +1,6 @@
 package com.neuedu.system.service;
 
+import java.math.BigDecimal;
 import java.util.List;
 import com.neuedu.common.core.domain.entity.SysUser;
 
@@ -41,6 +42,14 @@ public interface ISysUserService
      * @return 用户对象信息
      */
     public SysUser selectUserByUserName(String userName);
+
+    /**
+     * 通过QQ OpenID查询用户
+     * 
+     * @param qqOpenid QQ开放ID
+     * @return 用户对象信息
+     */
+    public SysUser selectUserByQqOpenid(String qqOpenid);
 
     /**
      * 通过用户ID查询用户
@@ -203,4 +212,21 @@ public interface ISysUserService
      * @return 结果
      */
     public String importUser(List<SysUser> userList, Boolean isUpdateSupport, String operName);
+
+    /**
+     * 更新用户余额
+     *
+     * @param userId 用户ID
+     * @param amount 变动金额（正数为增加，负数为减少）
+     * @return 是否成功
+     */
+    public boolean updateUserBalance(Long userId, BigDecimal amount);
+
+    /**
+     * 获取用户余额
+     *
+     * @param userId 用户ID
+     * @return 余额
+     */
+    public BigDecimal getUserBalance(Long userId);
 }

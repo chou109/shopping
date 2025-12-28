@@ -3,10 +3,10 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.neuedu.common.exception.ServiceException;
 import com.neuedu.common.utils.SecurityUtils;
 
-import com.neuedu.system.domain.User;
+import com.neuedu.common.core.domain.entity.SysUser;
 import com.neuedu.system.service.IProductService;
 import com.neuedu.system.service.IShopService;
-import com.neuedu.system.service.IUserService;
+import com.neuedu.system.service.ISysUserService;
 import lombok.RequiredArgsConstructor;
 
 import java.util.ArrayList;
@@ -38,7 +38,7 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
     private final IProductService productService; // 注入商品服务
     private final IShopService shopService; // 注入店铺服务
     @Autowired
-    private IUserService userService;
+    private ISysUserService sysUserService;
     /**
      * 查询商品评论
      * 
@@ -444,11 +444,12 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
             node.put("children", new ArrayList<Map<String, Object>>()); // 初始化children
 
             // 获取用户信息
-            User user = userService.selectUserById(comment.getUserId());
+            SysUser user = sysUserService.selectUserById(comment.getUserId());
             if (user != null) {
-                node.put("userName", user.getUserName());
+                node.put("nickName", user.getNickName());
                 node.put("userAvatar", user.getAvatar());
             }
+            node.put("isAnonymous", comment.getIsAnonymous());
 
             nodeMap.put(comment.getCommentId(), node);
         }

@@ -27,6 +27,19 @@ public class User extends BaseEntity
 {
     private static final long serialVersionUID = 1L;
 
+    // 覆盖BaseEntity中的字段，标记为不存在于数据库
+    @TableField(exist = false)
+    private String createBy;
+
+    @TableField(exist = false)
+    private Integer deleted;
+
+    @TableField(exist = false)
+    private String updateBy;
+
+    @TableField(exist = false)
+    private String remark;
+
 
     /** 主键 */
     @Schema(title = "主键")

@@ -166,7 +166,7 @@ export default service
 // 在线省市区数据API（备用方案）
 export function getOnlineRegionData() {
   // 使用第三方API获取省市区数据
-  return request({
+  return service({
     url: 'https://cn.apihz.cn/api/other/xzqh.php',
     method: 'get'
   })

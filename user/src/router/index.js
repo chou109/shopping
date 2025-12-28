@@ -27,6 +27,11 @@ export const constantRoutes = [
     hidden: true
   },
   {
+    path: '/qq-callback',
+    component: () => import('@/views/qq-callback'),
+    hidden: true
+  },
+  {
     path: "/:pathMatch(.*)*",
     component: () => import('@/views/error/404'),
     hidden: true
@@ -49,7 +54,7 @@ export const constantRoutes = [
       }
     ]
   },
-    // AI客服聊天页面
+  // AI客服聊天页面
   {
     path: '/chat',
     component: Layout,
@@ -58,9 +63,26 @@ export const constantRoutes = [
         path: '',
         name: 'Chat',
         component: () => import('@/views/chat/index.vue'),
-        meta: { 
+        meta: {
           title: 'AI客服',
           icon: 'chat-dot-round',
+          requiresAuth: true
+        }
+      }
+    ]
+  },
+  // 人工客服页面
+  {
+    path: '/customer-service',
+    component: Layout,
+    children: [
+      {
+        path: '',
+        name: 'CustomerService',
+        component: () => import('@/views/message/CustomerService.vue'),
+        meta: {
+          title: '人工客服',
+          icon: 'service',
           requiresAuth: true
         }
       }
@@ -71,24 +93,25 @@ export const constantRoutes = [
     path: '/user/:page?',
     component: Layout,
     meta: { requiresAuth: true },
-    props: (route) => ({ 
+    props: (route) => ({
       page: route.params.page || 'profile',
-      query: route.query 
+      query: route.query
     }),
     children: [
       {
         path: '',
         name: 'UserCenter',
         component: () => import('@/views/user/UserCenter.vue'),
-        meta: { 
+        meta: {
           title: '用户中心',
           pageTitles: {
             profile: '个人中心',
             orders: '我的订单',
             cart: '购物车',
+            message: '我的消息',
             footprint: '我的足迹',
-            'favorite/shop': '收藏店铺',
-            'favorite/product': '收藏商品',
+            favoriteShop: '收藏店铺',
+            favoriteProduct: '收藏商品',
             review: '我的评价',
           }
         }
@@ -117,6 +140,30 @@ export const constantRoutes = [
         path: '',
         component: () => import('@/views/products/productDetail.vue'),
         meta: { title: '商品详情' }
+      }
+    ]
+  },
+  {
+    path: '/shop',
+    name: 'ShopDetail',
+    component: Layout,
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/products/ShopDetail.vue'),
+        meta: { title: '店铺详情' }
+
+      }
+    ]
+  },
+  {
+    path: '/product/blind-box',
+    name: 'BlindBoxDetail',
+    component: Layout,
+    children: [
+      {
+        component: () => import('@/views/products/blindBoxDetail.vue'),
+        meta: { title: '盲盒商品' }
       }
     ]
   }

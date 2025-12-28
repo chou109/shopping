@@ -8,8 +8,8 @@ import java.util.stream.Collectors;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.neuedu.system.domain.User;
-import com.neuedu.system.service.IUserService;
+import com.neuedu.common.core.domain.entity.SysUser;
+import com.neuedu.system.service.ISysUserService;
 import lombok.RequiredArgsConstructor;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -389,9 +389,9 @@ public class ProductCommentController extends BaseController
             node.put("children", new ArrayList<Map<String, Object>>());
 
             // 用户信息
-            User user = userService.selectUserById(root.getUserId());
+            SysUser user = sysUserService.selectUserById(root.getUserId());
             if (user != null) {
-                node.put("userName", user.getUserName());
+                node.put("userName", user.getNickName());
                 node.put("userAvatar", user.getAvatar());
             }
 
@@ -412,9 +412,9 @@ public class ProductCommentController extends BaseController
             node.put("children", new ArrayList<Map<String, Object>>()); // 子评论不再有children
 
             // 用户信息
-            User user = userService.selectUserById(child.getUserId());
+            SysUser user = sysUserService.selectUserById(child.getUserId());
             if (user != null) {
-                node.put("userName", user.getUserName());
+                node.put("userName", user.getNickName());
                 node.put("userAvatar", user.getAvatar());
             }
 
@@ -436,5 +436,5 @@ public class ProductCommentController extends BaseController
         return success(resultData);
     }
     @Autowired
-    private IUserService userService;
+    private ISysUserService sysUserService;
 }

@@ -1,6 +1,6 @@
 import request from '@/utils/request'
 
-// 查询【请填写功能名称】列表
+// 查询充值记录列表
 export function listInfo(query) {
   return request({
     url: '/system/rechargeInfo/list',
@@ -9,7 +9,7 @@ export function listInfo(query) {
   })
 }
 
-// 查询【请填写功能名称】详细
+// 查询充值记录详细
 export function getInfo(id) {
   return request({
     url: '/system/rechargeInfo/' + id,
@@ -17,7 +17,45 @@ export function getInfo(id) {
   })
 }
 
-// 新增【请填写功能名称】
+// 创建充值订单
+export function createRechargeOrder(data) {
+  return request({
+    url: '/system/rechargeInfo/create',
+    method: 'post',
+    data: data
+  })
+}
+
+// 模拟支付成功回调
+export function paymentSuccess(orderNo, paymentNo, paymentType) {
+  return request({
+    url: '/system/rechargeInfo/payment/success',
+    method: 'post',
+    params: {
+      orderNo: orderNo,
+      paymentNo: paymentNo || 'PAY' + Date.now(),
+      paymentType: paymentType || 1
+    }
+  })
+}
+
+// 根据用户ID查询充值记录
+export function getRechargeByUserId(userId) {
+  return request({
+    url: '/system/rechargeInfo/user/' + userId,
+    method: 'get'
+  })
+}
+
+// 获取用户充值总额
+export function getTotalRecharge(userId) {
+  return request({
+    url: '/system/rechargeInfo/user/' + userId + '/total',
+    method: 'get'
+  })
+}
+
+// 新增充值记录
 export function addInfo(data) {
   return request({
     url: '/system/rechargeInfo',
@@ -26,7 +64,7 @@ export function addInfo(data) {
   })
 }
 
-// 修改【请填写功能名称】
+// 修改充值记录
 export function updateInfo(data) {
   return request({
     url: '/system/rechargeInfo',
@@ -35,7 +73,7 @@ export function updateInfo(data) {
   })
 }
 
-// 删除【请填写功能名称】
+// 删除充值记录
 export function delInfo(id) {
   return request({
     url: '/system/rechargeInfo/' + id,

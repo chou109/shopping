@@ -1,5 +1,6 @@
 package com.neuedu.system.service.impl;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -110,6 +111,18 @@ public class SysUserServiceImpl implements ISysUserService
     public SysUser selectUserByUserName(String userName)
     {
         return userMapper.selectUserByUserName(userName);
+    }
+
+    /**
+     * 通过QQ OpenID查询用户
+     * 
+     * @param qqOpenid QQ开放ID
+     * @return 用户对象信息
+     */
+    @Override
+    public SysUser selectUserByQqOpenid(String qqOpenid)
+    {
+        return userMapper.selectUserByQqOpenid(qqOpenid);
     }
 
     /**
@@ -551,5 +564,56 @@ public class SysUserServiceImpl implements ISysUserService
             successMsg.insert(0, "恭喜您，数据已全部导入成功！共 " + successNum + " 条，数据如下：");
         }
         return successMsg.toString();
+    }
+
+    /**
+     * 更新用户余额
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean updateUserBalance(Long userId, BigDecimal amount) {
+        if (userId == null || amount == null) {
+            throw new ServiceException("用户ID和金额不能为空");
+        }
+
+        SysUser user = userMapper.selectUserById(userId);
+        if (user == null) {
+            throw new ServiceException("用户不存在");
+        }
+
+        BigDecimal currentBalance = user.getBalance() != null ? user.getBalance() : BigDecimal.ZERO;
+        BigDecimal newBalance = currentBalance.add(amount);
+
+        // 检查余额是否足够（当减少余额时）
+        if (newBalance.compareTo(BigDecimal.ZERO) < 0) {
+            throw new ServiceException("用户余额不足");
+        }
+
+        // 检查最大余额限制（30000）
+        BigDecimal maxBalance = new BigDecimal("30000");
+        if (newBalance.compareTo(maxBalance) > 0) {
+            BigDecimal maxRecharge = maxBalance.subtract(currentBalance);
+            throw new ServiceException("充值失败，当前账户余额为" + currentBalance + "元，当前最大充值金额为" + maxRecharge + "元");
+        }
+
+        // 更新余额
+        return userMapper.updateUserBalance(userId, newBalance) > 0;
+    }
+
+    /**
+     * 获取用户余额
+     */
+    @Override
+    public BigDecimal getUserBalance(Long userId) {
+        if (userId == null) {
+            return BigDecimal.ZERO;
+        }
+
+        SysUser user = userMapper.selectUserById(userId);
+        if (user == null) {
+            return BigDecimal.ZERO;
+        }
+
+        return user.getBalance() != null ? user.getBalance() : BigDecimal.ZERO;
     }
 }

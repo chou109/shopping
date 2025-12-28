@@ -1,5 +1,6 @@
 package com.neuedu.common.core.domain.entity;
 
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 import javax.validation.constraints.*;
@@ -94,6 +95,29 @@ public class SysUser extends BaseEntity
      */
     @Excel(name = "用户类型", readConverterExp = "0=普通用户,1=管理员,2=超级管理员,3=审核员,4=运营,5=客服")
     private Integer userType;
+
+    /** 账户余额 */
+    @Excel(name = "账户余额")
+    private BigDecimal balance;
+
+    /** QQ开放ID */
+    private String qqOpenid;
+
+    public BigDecimal getBalance() {
+        return balance;
+    }
+
+    public void setBalance(BigDecimal balance) {
+        this.balance = balance;
+    }
+
+    public String getQqOpenid() {
+        return qqOpenid;
+    }
+
+    public void setQqOpenid(String qqOpenid) {
+        this.qqOpenid = qqOpenid;
+    }
 
     public Integer getUserType() {
         return userType;

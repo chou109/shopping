@@ -46,6 +46,40 @@ public class UserFavorite extends BaseEntity
     @Excel(name = "目标ID(商品ID或店铺ID)")
     private Long targetId;
 
+    // ============ 关联字段（非数据库字段） ============
+    
+    /** 商品名称 */
+    @TableField(exist = false)
+    private String productName;
+    
+    /** 商品主图 */
+    @TableField(exist = false)
+    private String productMainImage;
+    
+    /** 商品价格 */
+    @TableField(exist = false)
+    private java.math.BigDecimal productPrice;
+    
+    /** 商品副标题 */
+    @TableField(exist = false)
+    private String productSubtitle;
+    
+    /** 店铺名称 */
+    @TableField(exist = false)
+    private String shopName;
+    
+    /** 店铺Logo */
+    @TableField(exist = false)
+    private String shopLogo;
+    
+    /** 店铺粉丝数 */
+    @TableField(exist = false)
+    private Long shopFollowers;
+    
+    /** 店铺评分 */
+    @TableField(exist = false)
+    private java.math.BigDecimal shopRating;
+
 
     // ============ 新增的便捷方法 ============
 

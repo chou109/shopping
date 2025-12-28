@@ -12,11 +12,11 @@ public class OrderStatusUtil {
      */
     public enum OrderStatus {
         WAIT_PAY(10, "待付款"),
-        PAID(20, "已付款"),
+        // PAID(20, "已付款"), // 已废弃，付款后直接变为待发货
         WAIT_SHIP(30, "待发货"),
         SHIPPED(40, "已发货"),
         WAIT_RECEIVE(50, "待收货"),
-        COMPLETED(60, "已完成"),
+        COMPLETED(60, "交易完成"),
         CANCELLED(70, "已取消"),
         REFUNDING(80, "退款中"),
         REFUNDED(90, "已退款");
@@ -135,14 +135,14 @@ public class OrderStatusUtil {
      */
     public static boolean canCancel(Integer status) {
         return OrderStatus.WAIT_PAY.getCode().equals(status)
-                || OrderStatus.PAID.getCode().equals(status);
+                || OrderStatus.WAIT_SHIP.getCode().equals(status);
     }
 
     /**
      * 检查订单是否允许发货
      */
     public static boolean canShip(Integer status) {
-        return OrderStatus.PAID.getCode().equals(status);
+        return OrderStatus.WAIT_SHIP.getCode().equals(status);
     }
 
     /**
@@ -156,7 +156,7 @@ public class OrderStatusUtil {
      * 检查订单是否允许退款
      */
     public static boolean canRefund(Integer status) {
-        return OrderStatus.PAID.getCode().equals(status)
+        return OrderStatus.WAIT_SHIP.getCode().equals(status)
                 || OrderStatus.SHIPPED.getCode().equals(status);
     }
 }

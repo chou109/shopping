@@ -172,7 +172,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
      * @return 结果
      */
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public int updateProductStock(Long productId, Long quantity)
     {
         // 验证库存是否足够（减少库存时）

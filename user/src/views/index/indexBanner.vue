@@ -5,6 +5,7 @@ import banner1 from '@/assets/banner1.jpg';
 import banner2 from '@/assets/banner2.jpg';
 import banner3 from '@/assets/banner3.jpg';
 import banner4 from '@/assets/banner4.jpg';
+import BlindBox from '@/assets/BlindBox.png';
 import { getFrontCategoryTree } from '@/api/system/category';
 
 const router = useRouter()
@@ -283,24 +284,37 @@ onUnmounted(() => {
         </el-carousel-item>
       </el-carousel>
     </div>
+    
+    <!-- 右侧跳转模块 -->
+    <div class="jump-module" @click="router.push('/product/blind-box')" style="cursor: pointer;">
+      <div class="jump-content">
+        <div class="jump-text">
+          <div class="jump-text-large">潮店数码盲盒<br>好货低价易购</div>
+          <div class="jump-text-small">官方正品 省钱省心</div>
+        </div>
+        <div class="jump-image">
+          <img :src="BlindBox" alt="促销图片">
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
 /* 页面主题色 */
 :root {
-  --primary-color: #ff5500;
-  --hover-bg: rgba(255, 85, 0, 0.08);
-  --active-bg: rgba(255, 85, 0, 0.15);
-  --category-bg: #f8f8f8;
-  --category-hover: #fff5f0;
+  --primary-color: #ff0036;
+  --hover-bg: rgba(255, 0, 54, 0.08);
+  --active-bg: rgba(255, 0, 54, 0.15);
+  --category-bg: #fff;
+  --category-hover: #fff0f3;
   --category-border: #e0e0e0;
-  --text-primary: #ff5500;
-  --text-secondary: #666;
+  --text-primary: #ff0036;
+  --text-secondary: #333;
 }
 
 .banner-container {
-  width: 1400px;
+  width: 1600px;
   margin: 0 auto 20px auto;
   position: relative;
   min-height: 417px;
@@ -312,13 +326,84 @@ onUnmounted(() => {
 }
 
 .banner-wrapper {
-  border-radius: 0 12px 12px 0;
+  border-radius: 0 0 0 0;
   overflow: hidden;
   position: relative;
-  width: 1000px;
+  flex: 1;
   height: 400px;
   margin: 0;
-  flex: 1;
+  min-width: 0; /* 确保flex item可以收缩 */
+}
+
+/* 右侧跳转模块样式 */
+.jump-module {
+  width: 250px;
+  height: 400px;
+  background-color: #ff6034;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.jump-content {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  color: white;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.jump-text {
+  flex: 0.6;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+  padding-top: 20px;
+}
+
+.jump-text-large {
+  font-size: 24px;
+  font-weight: bold;
+  line-height: 1.3;
+  margin-bottom: 8px;
+  font-family: 'Microsoft YaHei', 'SimHei', sans-serif;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+  letter-spacing: 1px;
+}
+
+.jump-text-small {
+  font-size: 14px;
+  opacity: 0.9;
+  font-family: 'Microsoft YaHei', 'SimHei', sans-serif;
+  letter-spacing: 0.5px;
+}
+
+.jump-image {
+  flex: 0.8;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  width: 100%;
+  padding-bottom: 20px;
+}
+
+.jump-image img {
+  height: 180px;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+  transition: transform 0.3s ease;
+}
+
+.jump-image:hover img {
+  transform: scale(1.05);
 }
 
 .banner-item {
@@ -368,7 +453,7 @@ onUnmounted(() => {
 
 /* 商品分类导航样式 - 淘宝样式优化 */
 .home-category {
-  width: 200px;
+  width: 250px;
   height: 400px;
   background-color: var(--category-bg);
   position: relative;
@@ -384,30 +469,31 @@ onUnmounted(() => {
 }
 
 .menu li {
-  position: relative;
-  height: 40px;
-  line-height: 40px;
-  transition: all 0.3s ease;
-  cursor: pointer;
-  color: var(--text-primary);
-  border-bottom: 1px solid var(--category-border);
-  list-style: none !important;
-  padding: 0 20px;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-}
+    position: relative;
+    height: 66.67px;
+    line-height: 66.67px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    color: #000000;
+    border-bottom: 1px solid var(--category-border);
+    list-style: none !important;
+    padding: 0 20px;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 
 .menu li:last-child {
   border-bottom: none;
 }
 
 .menu li:hover,
-.menu li.active {
-  background-color: var(--category-hover);
-  color: var(--primary-color);
-  font-weight: 500;
-}
+  .menu li.active {
+    background-color: var(--category-hover);
+    color: #ff6034;
+    font-weight: 500;
+  }
 
 /* 淘宝样式箭头 */
 .menu li:hover::after,
@@ -421,52 +507,52 @@ onUnmounted(() => {
 }
 
 .category-main {
-  font-size: 14px;
-  font-weight: 400;
-  transition: all 0.3s ease;
-  width: 100%;
-}
+    font-size: 16px;
+    font-weight: 400;
+    transition: all 0.3s ease;
+    width: 100%;
+  }
 
 /* 子分类层样式优化 */
-.layer {
-  width: 800px;
-  height: 400px;
-  background-color: white;
-  position: absolute;
-  left: 200px;
-  top: 0;
-  z-index: 4;
-  border: 1px solid var(--category-border);
-  border-left: none;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.08);
-  border-radius: 0 12px 12px 0;
-  padding: 20px;
-  box-sizing: border-box;
-}
+  .layer {
+    width: 300px;
+    height: 400px;
+    background-color: white;
+    position: absolute;
+    left: 250px;
+    top: 0;
+    z-index: 4;
+    border: 1px solid var(--category-border);
+    border-left: none;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.08);
+    border-radius: 0 12px 12px 0;
+    padding: 20px;
+    box-sizing: border-box;
+  }
 
-.layer ul {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0;
-  padding: 0;
-  margin: 0;
-  list-style: none !important;
-  height: 100%;
-  align-content: flex-start;
-}
+  .layer ul {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0;
+    padding: 0;
+    margin: 0;
+    list-style: none !important;
+    height: 100%;
+  }
 
-.layer li {
-  width: 25%; /* 每行显示4个子分类 */
-  height: 36px;
-  line-height: 36px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  color: var(--text-secondary);
-  padding: 0 15px;
-  box-sizing: border-box;
-  border: none;
-  text-align: left;
-}
+  .layer li {
+    width: 50%; /* 每行显示2个子分类 */
+    height: 25%; /* 每列显示4个子分类 */
+    line-height: 100px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: var(--text-secondary);
+    padding: 0 15px;
+    box-sizing: border-box;
+    border: none;
+    text-align: center;
+  }
 
 .layer li:hover {
   background-color: transparent;
@@ -526,11 +612,12 @@ onUnmounted(() => {
   }
   
   .banner-wrapper {
-    width: calc(100% - 200px);
+    flex: 1;
+    min-width: 0;
   }
   
   .layer {
-    width: calc(100% - 200px);
+    width: 300px;
   }
 }
 
@@ -546,13 +633,19 @@ onUnmounted(() => {
   }
   
   .layer {
-    width: calc(100% - 180px);
+    width: 200px;
     left: 180px;
     height: 320px;
   }
   
   .banner-wrapper {
-    width: calc(100% - 180px);
+    flex: 1;
+    min-width: 0;
+    height: 320px;
+  }
+  
+  .jump-module {
+    width: 250px;
     height: 320px;
   }
   
@@ -632,6 +725,12 @@ onUnmounted(() => {
     width: 100%;
     margin-left: 0;
     height: 250px;
+  }
+  
+  .jump-module {
+    width: 100%;
+    height: auto;
+    margin-top: 10px;
   }
   
   .banner-content {
