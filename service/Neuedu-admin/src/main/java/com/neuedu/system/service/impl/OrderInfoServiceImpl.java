@@ -398,6 +398,122 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
     }
 
     /**
+     * 直接购买创建订单（支持自定义价格和备注，用于盲盒订单）
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public OrderInfo createDirectOrderWithOptions(Long userId, Long productId, Integer quantity, Long addressId, BigDecimal overridePrice, String remark)
+    {
+        // 1. 验证用户
+        SysUser sysUser = sysUserService.selectUserById(userId);
+        if (sysUser == null) {
+            throw new RuntimeException("用户不存在");
+        }
+
+        // 2. 验证地址
+        UserAddress address = userAddressService.selectUserAddressById(addressId);
+        if (address == null) {
+            throw new RuntimeException("收货地址不存在");
+        }
+        if (!userId.equals(address.getCreateUser())) {
+            throw new RuntimeException("收货地址不属于当前用户");
+        }
+
+        // 3. 验证商品
+        Product product = productService.selectProductById(productId);
+        if (product == null) {
+            throw new RuntimeException("商品不存在");
+        }
+        if (product.getStatus() != 1) {
+            throw new RuntimeException("商品已下架");
+        }
+        if (product.getStock() < quantity) {
+            throw new RuntimeException("商品库存不足");
+        }
+
+        // 4. 计算总金额（如果有覆盖价格则使用覆盖价格）
+        BigDecimal unitPrice = overridePrice != null ? overridePrice : product.getPrice();
+        BigDecimal totalAmount = unitPrice.multiply(new BigDecimal(quantity));
+
+        // 5. 生成订单号
+        String orderNo = generateOrderNo();
+
+        // 6. 创建订单主信息
+        OrderInfo orderInfo = new OrderInfo();
+        orderInfo.setOrderNo(orderNo);
+        orderInfo.setUserId(userId);
+        orderInfo.setCreateUser(userId);
+        orderInfo.setDeleteFlag(0);
+        orderInfo.setStatus(OrderStatusConstants.WAIT_PAY);
+        orderInfo.setStatusDesc(OrderStatusConstants.getOrderStatusDesc(OrderStatusConstants.WAIT_PAY));
+
+        // 设置地址信息
+        orderInfo.setAddressId(addressId);
+        orderInfo.setReceiveName(address.getReceiveName());
+        orderInfo.setReceivePhone(address.getReceivePhone());
+        orderInfo.setProvince(address.getProvince());
+        orderInfo.setCity(address.getCity());
+        orderInfo.setArea(address.getArea());
+        orderInfo.setStreet(address.getStreet());
+        orderInfo.setPostalCode(address.getPostalCode());
+
+        // 计算总金额
+        orderInfo.setPayment(totalAmount);
+        orderInfo.setPostage(BigDecimal.ZERO);
+
+        // 设置订单超时时间（30分钟后）
+        Date expireTime = DateUtils.addMinutes(DateUtils.getNowDate(), ORDER_EXPIRE_MINUTES);
+        orderInfo.setExpireTime(expireTime);
+
+        orderInfo.setCreateTime(DateUtils.getNowDate());
+        orderInfoMapper.insertOrderInfo(orderInfo);
+
+        // 7. 创建订单明细
+        OrderDetail orderDetail = new OrderDetail();
+        orderDetail.setOrderNo(orderNo);
+        orderDetail.setOrderDetailNo(generateOrderDetailNo());
+        orderDetail.setProductId(productId);
+        // 如果是盲盒订单，在商品名称前加上标记
+        String productName = (remark != null ? remark : "") + product.getName();
+        orderDetail.setProductName(productName);
+        orderDetail.setProductMainImage(product.getMainImage());
+        orderDetail.setCurrentUnitPrice(unitPrice);
+        orderDetail.setQuantity(quantity.longValue());
+        orderDetail.setTotalPrice(totalAmount);
+        orderDetail.setUserId(userId);
+        orderDetail.setCreateUser(userId);
+        orderDetail.setDeleteFlag(0);
+        orderDetail.setStatus(OrderStatusConstants.WAIT_PAY);
+        orderDetail.setStatusDesc(OrderStatusConstants.getOrderStatusDesc(OrderStatusConstants.WAIT_PAY));
+        orderDetail.setCreateTime(DateUtils.getNowDate());
+
+        orderDetailService.insertOrderDetail(orderDetail);
+
+        // 记录状态变更
+        if (orderStatusRecordService != null) {
+            orderStatusRecordService.recordOrderStatus(
+                    orderNo,
+                    orderDetail.getOrderDetailNo(),
+                    productId,
+                    productName,
+                    OrderStatusConstants.WAIT_PAY,
+                    OrderStatusConstants.getOrderStatusDesc(OrderStatusConstants.WAIT_PAY),
+                    "创建订单"
+            );
+        }
+
+        // 8. 扣减商品库存（预扣）
+        productService.updateProductStock(productId, -quantity.longValue());
+
+        // 设置订单明细列表
+        List<OrderDetail> orderDetailList = new ArrayList<>();
+        orderDetailList.add(orderDetail);
+        orderInfo.setOrderDetails(orderDetailList);
+
+        return orderInfo;
+    }
+
+    /**
      * 支付订单
      *
      * @param orderNo 订单编号

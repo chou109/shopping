@@ -1,5 +1,6 @@
 package com.neuedu.system.controller;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
@@ -17,6 +18,7 @@ import com.neuedu.system.domain.OrderInfo;
 import com.neuedu.system.domain.OrderDetail;
 import com.neuedu.system.domain.Product;
 import com.neuedu.system.service.IOrderInfoService;
+import com.neuedu.system.service.IOrderDetailService;
 import com.neuedu.system.service.IProductService;
 import com.neuedu.system.constants.OrderStatusConstants;
 import com.neuedu.common.utils.poi.ExcelUtil;
@@ -39,6 +41,9 @@ public class OrderInfoController extends BaseController {
 
     @Autowired
     private IProductService productService;
+
+    @Autowired
+    private IOrderDetailService orderDetailService;
 
     /**
      * 查询我的订单列表（用户端）
@@ -71,6 +76,27 @@ public class OrderInfoController extends BaseController {
     }
 
     /**
+     * 检查用户是否可以购买盲盒
+     */
+    @Operation(summary = "检查盲盒购买资格")
+    @GetMapping("/blind-box/check")
+    public AjaxResult checkBlindBoxPurchase() {
+        Long userId = SecurityUtils.getUserId();
+        if (userId == null) {
+            return error("用户未登录");
+        }
+        
+        List<OrderDetail> userOrderDetails = orderDetailService.selectOrderDetailByUserId(userId);
+        boolean hasPurchasedBlindBox = userOrderDetails.stream()
+            .anyMatch(detail -> detail.getProductName() != null && detail.getProductName().startsWith("【盲盒】"));
+        
+        if (hasPurchasedBlindBox) {
+            return error("每个用户只能购买一次盲盒，您已经购买过了");
+        }
+        return success("可以购买");
+    }
+
+    /**
      * 创建订单（从购物车，用户端）
      */
     @Operation(summary = "创建订单（从购物车）")
@@ -92,6 +118,7 @@ public class OrderInfoController extends BaseController {
 
     /**
      * 直接购买创建订单（单个商品，用户端）
+     * 支持盲盒订单：传递 isBlindBox=true 和 blindBoxPrice 参数
      */
     @Operation(summary = "直接购买创建订单")
     @Log(title = "订单", businessType = BusinessType.INSERT)
@@ -107,7 +134,50 @@ public class OrderInfoController extends BaseController {
             Integer quantity = Integer.valueOf(params.get("quantity").toString());
             Long addressId = Long.valueOf(params.get("addressId").toString());
             
-            OrderInfo orderInfo = orderInfoService.createDirectOrder(userId, productId, quantity, addressId);
+            // 检查是否为盲盒订单 - 增强类型转换逻辑
+            boolean isBlindBox = false;
+            Object isBlindBoxParam = params.get("isBlindBox");
+            if (isBlindBoxParam != null) {
+                if (isBlindBoxParam instanceof Boolean) {
+                    isBlindBox = (Boolean) isBlindBoxParam;
+                } else {
+                    isBlindBox = Boolean.parseBoolean(isBlindBoxParam.toString());
+                }
+            }
+            
+            BigDecimal overridePrice = null;
+            String remark = null;
+            
+            if (isBlindBox) {
+                // 检查用户是否已经购买过盲盒
+                List<OrderDetail> userOrderDetails = orderDetailService.selectOrderDetailByUserId(userId);
+                boolean hasPurchasedBlindBox = userOrderDetails.stream()
+                    .anyMatch(detail -> detail.getProductName() != null && detail.getProductName().startsWith("【盲盒】"));
+                if (hasPurchasedBlindBox) {
+                    return error("每个用户只能购买一次盲盒，您已经购买过了");
+                }
+                
+                // 盲盒订单使用盲盒价格
+                Object blindBoxPriceParam = params.get("blindBoxPrice");
+                if (blindBoxPriceParam != null) {
+                    if (blindBoxPriceParam instanceof Number) {
+                        overridePrice = new BigDecimal(((Number) blindBoxPriceParam).doubleValue());
+                    } else {
+                        overridePrice = new BigDecimal(blindBoxPriceParam.toString());
+                    }
+                } else {
+                    // 默认盲盒价格为500元
+                    overridePrice = new BigDecimal("500");
+                }
+                remark = "【盲盒】";
+            }
+            
+            OrderInfo orderInfo;
+            if (overridePrice != null || remark != null) {
+                orderInfo = orderInfoService.createDirectOrderWithOptions(userId, productId, quantity, addressId, overridePrice, remark);
+            } else {
+                orderInfo = orderInfoService.createDirectOrder(userId, productId, quantity, addressId);
+            }
             return success(orderInfo);
         } catch (RuntimeException e) {
             return error(e.getMessage());

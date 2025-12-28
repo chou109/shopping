@@ -75,7 +75,10 @@
                 <img :src="getProductImageUrl(detail.productMainImage)" :alt="detail.productName" @error="handleImageError" />
               </div>
               <div class="product-info">
-                <div class="product-name">{{ detail.productName }}</div>
+                <div class="product-name">
+                  <el-tag v-if="detail.productName && detail.productName.startsWith('【盲盒】')" type="warning" size="small" class="blind-box-tag">盲盒</el-tag>
+                  {{ detail.productName ? detail.productName.replace('【盲盒】', '') : '' }}
+                </div>
                 <div class="product-spec" v-if="detail.specifications">{{ detail.specifications }}</div>
               </div>
               <div class="product-price">
@@ -1058,6 +1061,11 @@ onMounted(() => {
 .product-spec {
   font-size: 12px;
   color: #999;
+}
+
+.blind-box-tag {
+  margin-right: 6px;
+  vertical-align: middle;
 }
 
 .product-price {

@@ -732,33 +732,29 @@ const updateOrderAfterLottery = async () => {
   console.log('抽奖结果:', lotteryResult.value)
   
   try {
-    // 遍历选中的商品，分别为其创建订单
     const addressId = purchaseOrder.value.addressId
     const items = selectedItems.value
     const wonProduct = lotteryResult.value
     const prizeName = wonProduct.name || wonProduct.productName || '未知奖品'
+    const wonProductId = wonProduct.productId || wonProduct.id
     
     for (const item of items) {
        const isBlindBox = item.productId === 9999 || item.productName?.includes('盲盒')
        let orderData = {}
        
        if (isBlindBox) {
-          // 盲盒订单 - 下单也是盲盒，通过备注记录中奖信息
+          // 盲盒订单 - 使用抽中的真实商品ID创建订单
+          if (!wonProductId) {
+            console.error('抽奖结果缺少商品ID:', wonProduct)
+            ElMessage.error('抽奖结果异常，请联系客服')
+            return
+          }
           orderData = {
-              productId: 9999, // 强制使用盲盒ID
+              productId: wonProductId, // 使用抽中的真实商品ID
               quantity: item.quantity,
               addressId: addressId,
-              isBlindBox: true,
-              price: item.productUnitPrice, // 盲盒价格
-              remark: `【盲盒中奖】${prizeName}`,
-              attributes: {
-                 isRefundable: false,
-                 source: 'blind_box_lottery',
-                 wonProductId: wonProduct.productId,
-                 wonProductName: prizeName,
-                 wonProductImage: wonProduct.image,
-                 wonShopId: wonProduct.shopId
-              }
+              isBlindBox: true, // 标记为盲盒订单
+              blindBoxPrice: 500 // 盲盒价格500元
           }
        } else {
           // 普通商品
@@ -779,6 +775,10 @@ const updateOrderAfterLottery = async () => {
           }
           // 移除购物车项
           await delCart(item.id)
+       } else {
+          console.error('创建订单失败:', res.msg)
+          ElMessage.error(res.msg || '创建订单失败')
+          return
        }
     }
     
@@ -792,7 +792,7 @@ const updateOrderAfterLottery = async () => {
     
   } catch (error) {
     console.error('生成订单失败:', error)
-    ElMessage.error('生成订单失败')
+    ElMessage.error('生成订单失败，请稍后重试')
   }
 }
 

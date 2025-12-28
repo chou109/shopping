@@ -158,7 +158,7 @@
         <el-button 
           type="primary" 
           @click="handleConfirmPayment"
-          :disabled="!selectedPaymentType"
+          :disabled="!selectedPaymentType || !orderData.receiveName"
           :loading="submitting"
         >
           确认支付
@@ -452,6 +452,12 @@ const handleDialogClosed = () => {
 const handleConfirmPayment = () => {
   if (!selectedPaymentType.value) {
     ElMessage.warning('请选择支付方式')
+    return
+  }
+  
+  if (!orderData.value.receiveName || !orderData.value.addressId) {
+    ElMessage.warning('请先选择收货地址')
+    showAddressSelector.value = true
     return
   }
   

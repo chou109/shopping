@@ -47,12 +47,21 @@ export function useBlindBox() {
 
             let products = []
 
+            // 过滤盲盒商品的辅助函数（排除id为9999的盲盒）
+            const filterBlindBox = (items) => {
+                return items.filter(item => item.id !== 9999 && item.productId !== 9999)
+            }
+
             // Attempt 1: Target Shop
             try {
                 const res = await getShopProducts(winningShopId)
                 if (res.code === 200 && res.rows && res.rows.length > 0) {
-                    products = res.rows
-                    currentShopId = winningShopId
+                    products = filterBlindBox(res.rows)
+                    if (products.length > 0) {
+                        currentShopId = winningShopId
+                    } else {
+                        console.warn(`Target Shop ${winningShopId} has no valid products after filtering.`)
+                    }
                 } else {
                     console.warn(`Target Shop ${winningShopId} is empty.`)
                 }
@@ -65,9 +74,11 @@ export function useBlindBox() {
                 try {
                     const res = await getShopProducts(10)
                     if (res.code === 200 && res.rows && res.rows.length > 0) {
-                        products = res.rows
-                        currentShopId = 10
-                        console.log("Fallback to Shop 10")
+                        products = filterBlindBox(res.rows)
+                        if (products.length > 0) {
+                            currentShopId = 10
+                            console.log("Fallback to Shop 10")
+                        }
                     }
                 } catch (e) { }
             }
@@ -77,9 +88,11 @@ export function useBlindBox() {
                 try {
                     const res = await getShopProducts(11)
                     if (res.code === 200 && res.rows && res.rows.length > 0) {
-                        products = res.rows
-                        currentShopId = 11
-                        console.log("Fallback to Shop 11")
+                        products = filterBlindBox(res.rows)
+                        if (products.length > 0) {
+                            currentShopId = 11
+                            console.log("Fallback to Shop 11")
+                        }
                     }
                 } catch (e) { }
             }
@@ -90,9 +103,10 @@ export function useBlindBox() {
                 try {
                     const fallbackRes = await listProductRandom({ limit: 10 })
                     if (fallbackRes.rows && fallbackRes.rows.length > 0) {
-                        products = fallbackRes.rows
-                        // Determine shop from product if possible
-                        currentShopId = products[0].shopId || 10
+                        products = filterBlindBox(fallbackRes.rows)
+                        if (products.length > 0) {
+                            currentShopId = products[0].shopId || 10
+                        }
                     }
                 } catch (e) {
                     console.error("Global fallback failed", e)

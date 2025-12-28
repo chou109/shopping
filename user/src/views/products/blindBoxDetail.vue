@@ -11,7 +11,7 @@ import {
   Minus
 } from '@element-plus/icons-vue'
 import { addCart } from '@/api/system/cart'
-import { createDirectOrder, payOrder } from '@/api/system/orderInfo'
+import { createDirectOrder, payOrder, checkBlindBoxPurchase, getUserBalance } from '@/api/system/orderInfo'
 import { getMyAddressList } from '@/api/system/address'
 import { getShopProducts } from '@/api/system/shop'
 import { useBlindBox } from '@/composables/useBlindBox'
@@ -48,7 +48,7 @@ const imageUrls = [
 const product = ref({
   id: 9999,
   name: "随机商品盲盒 好货低价易购 官方正品 省钱省心",
-  price: 50,
+  price: 500,
   stock: 9999,
   mainImage: imageUrls[0],
   subImages: imageUrls,
@@ -237,6 +237,13 @@ const handleBuyNow = async () => {
   }
 
   try {
+    // 先检查盲盒购买资格
+    const checkRes = await checkBlindBoxPurchase()
+    if (checkRes.code !== 200) {
+      ElMessage.warning(checkRes.msg || '每个用户只能购买一次盲盒')
+      return
+    }
+    
     // 获取用户地址列表
     const addressRes = await getMyAddressList()
     const addressData = addressRes.data || addressRes.rows || []
@@ -249,6 +256,13 @@ const handleBuyNow = async () => {
 
     // 选择默认地址或第一个地址
     const defaultAddr = addressData.find(a => a.isDefault === 1 || a.defaultFlag === 1) || addressData[0]
+    
+    // 确保地址有效
+    if (!defaultAddr || !defaultAddr.id) {
+      ElMessage.warning('请先选择收货地址')
+      router.push('/user/profile')
+      return
+    }
 
     // 准备购买数据，但不生成订单
     purchaseOrder.value = {
@@ -292,6 +306,22 @@ const handlePayLater = (orderData) => {
 // 立即支付
 const handlePayNow = async (orderData) => {
   try {
+    // 如果是余额支付，先检查余额是否足够
+    if (orderData.paymentType === 4) {
+      const balanceRes = await getUserBalance()
+      if (balanceRes.code === 200) {
+        const userBalance = parseFloat(balanceRes.data || 0)
+        const blindBoxPrice = 500 // 盲盒价格
+        if (userBalance < blindBoxPrice) {
+          ElMessage.error(`余额不足，当前余额：¥${userBalance.toFixed(2)}，需要：¥${blindBoxPrice}`)
+          return
+        }
+      } else {
+        ElMessage.error('获取余额失败，请稍后重试')
+        return
+      }
+    }
+    
     // 记录支付方式，用于后续真实下单
     purchaseOrder.value.paymentType = orderData.paymentType
     
@@ -363,38 +393,23 @@ const updateOrderAfterLottery = async () => {
   }
 
   try {
-    // 策略调整：
-    // 为了保证订单金额为盲盒价格(50元)，我们必须创建盲盒商品(ID: 9999)的订单。
-    // 然后将实际抽到的商品信息记录在备注(remark)和扩展属性(attributes)中。
-    // 这样后端计算价格时会使用50元，而前端显示的订单详情可以通过解析attributes展示真实奖品。
-    
     const wonProduct = lotteryResult.value
-    
-    // 确保名字存在
     const prizeName = wonProduct.name || wonProduct.productName || '未知奖品'
+    const wonProductId = wonProduct.productId || wonProduct.id
+    
+    // 使用抽中的真实商品ID创建订单
+    if (!wonProductId) {
+      console.error('抽奖结果缺少商品ID:', wonProduct)
+      ElMessage.error('抽奖结果异常，请联系客服')
+      return
+    }
     
     const orderData = {
-      // 使用盲盒ID，确保价格是50   
-      productId: product.value.id, // 9999
+      productId: wonProductId, // 使用抽中的真实商品ID
       quantity: quantity.value,
       addressId: purchaseOrder.value.addressId,
-      
-      // 传递真实价格（后端可能忽略，所以主要靠神秘盲盒roductId）
-      price: product.value.price, 
-      
-      // 关键：将中奖信息写入备注
-      remark: `【盲盒中奖】${prizeName} (原价: ¥${wonProduct.price})`, 
-      
-      attributes: JSON.stringify({
-        isBlindBox: true,
-        isRefundable: false,
-        source: 'blind_box_lottery',
-        // 记录中奖商品的真实ID和信息，供前端订单列表展示使用
-        wonProductId: wonProduct.id || wonProduct.productId, // Handle both id formats
-        wonProductName: prizeName,
-        wonProductImage: wonProduct.mainImage || wonProduct.image,
-        wonShopId: wonProduct.shopId
-      })
+      isBlindBox: true, // 标记为盲盒订单
+      blindBoxPrice: 500 // 盲盒价格500元
     }
 
     console.log('提交订单数据:', orderData)
@@ -414,6 +429,7 @@ const updateOrderAfterLottery = async () => {
         router.push('/user/orders')
       }, 1500)
     } else {
+      console.error('创建订单失败:', orderRes.msg)
       ElMessage.error(orderRes.msg || '创建订单失败')
     }
   } catch (error) {
@@ -581,15 +597,8 @@ onMounted(() => {
 
                 <!-- 操作按钮 -->
                 <div class="action-buttons">
-                  <button class="btn add-cart" :class="{ loading: addingToCart }" @click="handleAddToCart"
-                    :disabled="product.stock === 0">
-                    <el-icon>
-                      <ShoppingCartFull />
-                    </el-icon>
-                    <span v-if="!addingToCart">加入购物车</span>
-                    <span v-else>添加中...</span>
-                  </button>
-                  <button class="btn buy-now" @click="handleBuyNow" :disabled="product.stock === 0">
+                  <!-- 盲盒不支持加入购物车，只能直接购买 -->
+                  <button class="btn buy-now full-width" @click="handleBuyNow" :disabled="product.stock === 0">
                     立即购买
                   </button>
                 </div>
@@ -1109,6 +1118,10 @@ onMounted(() => {
 .btn.buy-now {
   background: linear-gradient(135deg, #ff3c00 0%, #e60000 100%);
   color: #fff;
+}
+
+.btn.buy-now.full-width {
+  width: 100%;
 }
 
 .btn.buy-now:hover {
