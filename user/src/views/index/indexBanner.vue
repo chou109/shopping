@@ -289,7 +289,7 @@ onUnmounted(() => {
     <div class="jump-module" @click="router.push('/product/blind-box')" style="cursor: pointer;">
       <div class="jump-content">
         <div class="jump-text">
-          <div class="jump-text-large">潮店数码盲盒<br>好货低价易购</div>
+          <div class="jump-text-large">随机商品盲盒<br>好货低价易购</div>
           <div class="jump-text-small">官方正品 省钱省心</div>
         </div>
         <div class="jump-image">

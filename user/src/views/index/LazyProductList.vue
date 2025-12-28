@@ -158,14 +158,20 @@ const loadProducts = async (reset = false) => {
     })
 
     if (response.code === 200) {
-      const newProducts = response.rows || response.data || []
+      // Get raw data first
+      let rawProducts = response.rows || response.data || []
+      const rawCount = rawProducts.length
+      
+      // Filter out blind box products
+      let newProducts = rawProducts.filter(p => {
+         const isIdMatch = String(p.id) === '9999'
+         const isFlagMatch = p.isBlindBox == 1 || p.is_blind_box == 1 || p.isBlindBox === 'true'
+         return !isIdMatch && !isFlagMatch
+      })
 
       // 为商品添加销量数据
-      // 后期后端接口完善后，这里应该直接使用后端返回的salesCount字段
       const enhancedProducts = newProducts.map(product => ({
         ...product,
-        // 这里模拟一些销量数据，实际应该从后端获取
-        // 如果后端返回了salesCount，就用后端的；如果没有，可以显示默认值或不显示
         salesCount: product.salesCount || Math.floor(Math.random() * 1000)
       }))
 
@@ -176,8 +182,9 @@ const loadProducts = async (reset = false) => {
       }
 
       // 判断是否还有更多数据
+      // CRITICAL FIX: Use rawCount to decide if we reached the end of the backend page
       const total = response.total || 0
-      if (products.value.length >= total || newProducts.length < pageSize.value) {
+      if (products.value.length >= total || rawCount < pageSize.value) {
         hasMore.value = false
       } else {
         currentPage.value++

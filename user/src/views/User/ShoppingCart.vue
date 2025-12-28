@@ -154,6 +154,53 @@
     @pay-now="handlePayNow"
     @cancel="purchaseDialogVisible = false"
   />
+
+  <!-- 抽奖弹窗 -->
+  <el-dialog
+    v-model="lotteryDialogVisible"
+    title="盲盒抽奖"
+    width="500px"
+    :close-on-click-modal="false"
+    :close-on-press-escape="false"
+    :show-close="!isDrawing"
+  >
+    <div class="lottery-container">
+      <div v-if="isDrawing" class="lottery-drawing">
+        <img src="@/assets/images/BlindBox.png" alt="盲盒抽奖" class="blind-box-image" :class="drawAnimationClass" />
+        <div class="drawing-text">正在抽奖...</div>
+      </div>
+      <div v-else-if="lotteryResult" class="lottery-result">
+        <div class="result-title">恭喜你抽到了！</div>
+        <div class="result-prize">({{ lotteryResult.name }})</div>
+        <div class="result-info">您的订单已更新为抽到的商品</div>
+      </div>
+      <div v-else class="lottery-waiting">
+        <img src="@/assets/images/BlindBox.png" alt="盲盒抽奖" class="blind-box-image" />
+        <div class="waiting-text">准备抽奖</div>
+        <div class="waiting-subtext">点击开始按钮抽取您的商品</div>
+      </div>
+    </div>
+
+    <template #footer>
+      <div class="lottery-footer">
+        <el-button 
+          v-if="!isDrawing && !lotteryResult"
+          type="primary"
+          @click="startLottery"
+          :loading="isDrawing"
+        >
+          开始抽奖
+        </el-button>
+        <el-button 
+          v-if="lotteryResult"
+          type="primary"
+          @click="lotteryDialogVisible = false"
+        >
+          确定
+        </el-button>
+      </div>
+    </template>
+  </el-dialog>
 </template>
 
 <script setup>
@@ -164,8 +211,9 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Lock } from '@element-plus/icons-vue'
 import { getProductImageUrl, handleImageError } from '@/utils/image'
 import { listCart, updateCart, delCart, clearCart, batchSelectCart } from '@/api/system/cart'
-import { createOrderFromCart, payOrder } from '@/api/system/orderInfo'
+import { createOrderFromCart, payOrder, createDirectOrder } from '@/api/system/orderInfo'
 import { getMyAddressList } from '@/api/system/address'
+import { useBlindBox } from '@/composables/useBlindBox'
 import PurchaseDialog from '@/components/PurchaseDialog/index.vue'
 
 const router = useRouter()
@@ -179,6 +227,18 @@ const cartItems = ref([])
 const purchaseDialogVisible = ref(false)
 const purchaseProducts = ref([])
 const purchaseOrder = ref({})
+
+// 抽奖相关
+const lotteryDialogVisible = ref(false)
+const lotteryResult = ref(null)
+const isDrawing = ref(false)
+const drawAnimationClass = ref('')
+
+const { 
+  drawPrize, 
+  isPoolReady,
+  initLotteryPool
+} = useBlindBox()
 
 // 计算属性
 const selectedItems = computed(() => {
@@ -491,6 +551,9 @@ const handleCheckout = async () => {
     return
   }
 
+  // 检查是否包含盲盒商品
+  const hasBlindBox = selected.some(item => item.productId === 9999 || item.productName?.includes('盲盒'))
+  
   // 获取用户地址列表
   try {
     const addressRes = await getMyAddressList()
@@ -500,23 +563,38 @@ const handleCheckout = async () => {
       const defaultAddr = addressData.find(a => a.isDefault === 1 || a.defaultFlag === 1) || addressData[0]
       console.log('使用地址:', defaultAddr)
       
-      // 创建订单 - 使用主键id
-      const orderRes = await createOrderFromCart(defaultAddr.id)
-      console.log('创建订单响应:', orderRes)
-      
-      if (orderRes.code === 200 && orderRes.data) {
-        // 设置购买弹窗数据
-        purchaseProducts.value = selected.map(item => ({
-          name: item.productName,
-          mainImage: item.productMainImage,
-          price: item.productUnitPrice,
-          quantity: item.quantity
-        }))
-        purchaseOrder.value = orderRes.data
-        purchaseDialogVisible.value = true
-      } else {
-        ElMessage.error(orderRes.msg || '创建订单失败')
+      // 如果包含盲盒，执行"先付后单"流程 (Mock Order)
+      // 用户要求：盲盒流程改为先付款（此时不生成订单），再抽奖，再生成订单
+      // 我们创建一个临时订单对象用于展示
+      const mockOrder = {
+        orderNo: 'PAY_' + Date.now(),
+        totalAmount: actualTotalPrice.value,
+        payment: actualTotalPrice.value,
+        status: 0,
+        addressId: defaultAddr.id,
+        receiveName: defaultAddr.receiveName,
+        receivePhone: defaultAddr.receivePhone,
+        province: defaultAddr.province,
+        city: defaultAddr.city,
+        area: defaultAddr.area,
+        street: defaultAddr.street,
+        createTime: new Date().toISOString()
       }
+
+      purchaseProducts.value = selected.map(item => ({
+        name: item.productName,
+        mainImage: item.productMainImage,
+        price: item.productUnitPrice,
+        quantity: item.quantity,
+        // 保留原始信息以便后续处理
+        rawItem: item
+      }))
+      
+      purchaseOrder.value = mockOrder
+      
+      // 直接显示支付弹窗，不创建后端订单
+      purchaseDialogVisible.value = true
+
     } else {
       ElMessage.warning('请先添加收货地址')
       router.push('/user/profile')
@@ -537,17 +615,39 @@ const handlePayLater = (orderData) => {
 }
 
 // 立即支付
+// 立即支付
 const handlePayNow = async (orderData) => {
+  // 检查是否包含盲盒商品 (通过 purchaseProducts 判断)
+  const hasBlindBox = selectedItems.value.some(item => item.productId === 9999 || item.productName?.includes('盲盒'))
+  
+  if (hasBlindBox) {
+     // 保存支付方式供后续使用
+     purchaseOrder.value.paymentType = orderData.paymentType
+     // 模拟支付成功
+     ElMessage.success('支付成功')
+     purchaseDialogVisible.value = false
+     // 触发抽奖
+     lotteryDialogVisible.value = true
+     return
+  }
+
+  // 普通商品流程：创建订单 -> 支付
   try {
-    const payRes = await payOrder(orderData.orderNo, orderData.paymentType)
-    if (payRes.code === 200) {
-      ElMessage.success('支付成功')
-      purchaseDialogVisible.value = false
-      // 刷新购物车
-      loadCartData()
-      router.push('/user/orders')
+    // 此时还没有订单，需要先创建
+    const orderRes = await createOrderFromCart(orderData.addressId)
+    if (orderRes.code === 200) {
+      const realOrder = orderRes.data
+      const payRes = await payOrder(realOrder.orderNo, orderData.paymentType)
+      if (payRes.code === 200) {
+        ElMessage.success('支付成功')
+        purchaseDialogVisible.value = false
+        loadCartData()
+        router.push('/user/orders')
+      } else {
+         ElMessage.error(payRes.msg || '支付失败')
+      }
     } else {
-      ElMessage.error(payRes.msg || '支付失败')
+      ElMessage.error(orderRes.msg || '创建订单失败')
     }
   } catch (error) {
     console.error('支付失败:', error)
@@ -586,6 +686,114 @@ const goToProductDetail = (productId) => {
 // 去购物
 const goShopping = () => {
   router.push('/products')
+}
+
+// 移除本地 drawLottery
+
+// 开始抽奖动画
+const startLottery = async () => {
+  if (!isPoolReady.value) await initLotteryPool()
+  
+  isDrawing.value = true
+  drawAnimationClass.value = 'lottery-spinning'
+  
+  try {
+    const [result] = await Promise.all([
+       drawPrize(),
+       new Promise(resolve => setTimeout(resolve, 3000))
+    ])
+    
+    // 停止动画
+    drawAnimationClass.value = ''
+    
+    if (result) {
+      lotteryResult.value = {
+        ...result,
+        shopId: result.shopId,
+        productId: result.id,
+        name: result.name || result.productName,
+        price: result.price || result.productUnitPrice
+      }
+      isDrawing.value = false
+      await updateOrderAfterLottery()
+    } else {
+       throw new Error('抽奖未返回结果')
+    }
+  } catch(e) {
+     console.error(e)
+     isDrawing.value = false
+     drawAnimationClass.value = ''
+     ElMessage.error('抽奖失败，请重试')
+  }
+}
+
+// 抽奖后更新订单
+const updateOrderAfterLottery = async () => {
+  console.log('抽奖结果:', lotteryResult.value)
+  
+  try {
+    // 遍历选中的商品，分别为其创建订单
+    const addressId = purchaseOrder.value.addressId
+    const items = selectedItems.value
+    const wonProduct = lotteryResult.value
+    const prizeName = wonProduct.name || wonProduct.productName || '未知奖品'
+    
+    for (const item of items) {
+       const isBlindBox = item.productId === 9999 || item.productName?.includes('盲盒')
+       let orderData = {}
+       
+       if (isBlindBox) {
+          // 盲盒订单 - 下单也是盲盒，通过备注记录中奖信息
+          orderData = {
+              productId: 9999, // 强制使用盲盒ID
+              quantity: item.quantity,
+              addressId: addressId,
+              isBlindBox: true,
+              price: item.productUnitPrice, // 盲盒价格
+              remark: `【盲盒中奖】${prizeName}`,
+              attributes: {
+                 isRefundable: false,
+                 source: 'blind_box_lottery',
+                 wonProductId: wonProduct.productId,
+                 wonProductName: prizeName,
+                 wonProductImage: wonProduct.image,
+                 wonShopId: wonProduct.shopId
+              }
+          }
+       } else {
+          // 普通商品
+          orderData = {
+             productId: item.productId,
+             quantity: item.quantity,
+             addressId: addressId
+          }
+       }
+       
+       // 创建直接订单
+       const res = await createDirectOrder(orderData)
+       if (res.code === 200) {
+          // 支付订单
+          const orderNo = res.data.orderNo || res.data
+          if (orderNo) {
+             await payOrder(orderNo, purchaseOrder.value.paymentType || 1)
+          }
+          // 移除购物车项
+          await delCart(item.id)
+       }
+    }
+    
+    ElMessage.success(`恭喜你抽到了：${prizeName}，订单已生成！`)
+    
+    setTimeout(() => {
+      lotteryDialogVisible.value = false
+      loadCartData() // 刷新购物车
+      router.push('/user/orders')
+    }, 1500)
+    
+  } catch (error) {
+    console.error('生成订单失败:', error)
+    ElMessage.error('生成订单失败')
+  }
 }
 
 onMounted(() => {
@@ -958,5 +1166,79 @@ onMounted(() => {
     width: 60px;
     height: 60px;
   }
+}
+
+/* 抽奖弹窗样式 */
+.lottery-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+  position: relative;
+}
+
+.lottery-drawing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 盲盒图片样式 */
+.blind-box-image {
+  width: 200px;
+  height: 200px;
+  object-fit: contain;
+  margin-bottom: 20px;
+  transition: transform 3s ease-out;
+}
+
+.lottery-spinning {
+  transform: rotate(1800deg); /* 旋转5圈 */
+}
+
+.lottery-drawing .drawing-text {
+  font-size: 18px;
+  color: #ff5000;
+  font-weight: bold;
+}
+
+.lottery-result {
+  text-align: center;
+}
+
+.result-title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #FF6B6B;
+  margin-bottom: 20px;
+}
+
+.result-prize {
+  font-size: 32px;
+  font-weight: bold;
+  color: #FF4500;
+  margin-bottom: 20px;
+}
+
+.result-info {
+  font-size: 16px;
+  color: #666;
+}
+
+.lottery-waiting {
+  text-align: center;
+}
+
+.waiting-text {
+  font-size: 20px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.waiting-subtext {
+  font-size: 14px;
+  color: #666;
 }
 </style>

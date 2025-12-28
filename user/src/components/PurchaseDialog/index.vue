@@ -13,22 +13,22 @@
         <div class="order-section">
           <div class="section-title">
             <el-icon><Document /></el-icon>
-            <span>订单信息</span>
+            <span>支付信息</span>
           </div>
           
           <div class="order-info">
             <!-- 订单基本信息 -->
             <div class="info-group">
               <div class="info-item">
-                <span class="label">订单编号：</span>
+                <span class="label">支付单号：</span>
                 <span class="value">{{ orderData.orderNo || '待生成' }}</span>
               </div>
               <div class="info-item">
-                <span class="label">创建时间：</span>
-                <span class="value">{{ formatTime(orderData.createTime) || '待生成' }}</span>
+                <span class="label">当前时间：</span>
+                <span class="value">{{ formatTime(new Date()) }}</span>
               </div>
               <div class="info-item">
-                <span class="label">订单状态：</span>
+                <span class="label">支付状态：</span>
                 <span class="value status-tag">{{ orderData.statusDesc || '待付款' }}</span>
               </div>
             </div>

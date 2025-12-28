@@ -13,6 +13,8 @@ import {
 import { addCart } from '@/api/system/cart'
 import { createDirectOrder, payOrder } from '@/api/system/orderInfo'
 import { getMyAddressList } from '@/api/system/address'
+import { getShopProducts } from '@/api/system/shop'
+import { useBlindBox } from '@/composables/useBlindBox'
 import PurchaseDialog from '@/components/PurchaseDialog/index.vue'
 
 // 导入盲盒图片
@@ -45,7 +47,7 @@ const imageUrls = [
 // 商品数据 - 固定盲盒商品信息
 const product = ref({
   id: 9999,
-  name: "潮店数码盲盒 好货低价易购 官方正品 省钱省心",
+  name: "随机商品盲盒 好货低价易购 官方正品 省钱省心",
   price: 50,
   stock: 9999,
   mainImage: imageUrls[0],
@@ -67,6 +69,20 @@ const activeTab = ref('detail')
 const purchaseDialogVisible = ref(false)
 const purchaseProducts = ref([])
 const purchaseOrder = ref({})
+
+// 抽奖 Hook
+const { 
+  initLotteryPool, 
+  drawPrize, 
+  isLoading: lotteryLoading,
+  isPoolReady 
+} = useBlindBox()
+
+// 抽奖弹窗相关
+const lotteryDialogVisible = ref(false)
+const lotteryResult = ref(null)
+const isDrawing = ref(false)
+const drawAnimationClass = ref('')
 
 // 放大镜相关
 const zoomVisible = ref(false)
@@ -234,29 +250,32 @@ const handleBuyNow = async () => {
     // 选择默认地址或第一个地址
     const defaultAddr = addressData.find(a => a.isDefault === 1 || a.defaultFlag === 1) || addressData[0]
 
-    // 创建直接购买订单
-    const orderData = {
-      productId: product.value.id,
-      quantity: quantity.value,
-      addressId: defaultAddr.id,
-      isBlindBox: true
-    }
-
-    const orderRes = await createDirectOrder(orderData)
-
-    if (orderRes.code === 200 && orderRes.data) {
-      // 设置购买弹窗数据
-      purchaseProducts.value = [{
+    // 准备购买数据，但不生成订单
+    purchaseOrder.value = {
+      // 创建临时订单对象
+      orderNo: 'PAY_' + Date.now(),
+      totalAmount: product.value.price * quantity.value,
+      orderStatus: 0, // 待支付状态
+      isBlindBox: true,
+      blindBoxProduct: {
         name: product.value.name,
         mainImage: imageUrls[0],
         price: product.value.price,
         quantity: quantity.value
-      }]
-      purchaseOrder.value = orderRes.data
-      purchaseDialogVisible.value = true
-    } else {
-      ElMessage.error(orderRes.msg || '创建订单失败')
+      },
+      addressId: defaultAddr.id // 保存地址ID用于后续订单生成
     }
+    
+    // 设置购买弹窗数据
+    purchaseProducts.value = [{
+      name: product.value.name,
+      mainImage: imageUrls[0],
+      price: product.value.price,
+      quantity: quantity.value
+    }]
+    
+    // 显示支付弹窗而不是直接显示抽奖弹窗
+    purchaseDialogVisible.value = true
   } catch (error) {
     console.error('购买失败:', error)
     ElMessage.error('购买失败，请稍后重试')
@@ -273,23 +292,141 @@ const handlePayLater = (orderData) => {
 // 立即支付
 const handlePayNow = async (orderData) => {
   try {
-    const payRes = await payOrder(orderData.orderNo, orderData.paymentType)
-    if (payRes.code === 200) {
-      ElMessage.success('支付成功')
-      purchaseDialogVisible.value = false
-      router.push('/user/orders')
-    } else {
-      ElMessage.error(payRes.msg || '支付失败')
-    }
+    // 记录支付方式，用于后续真实下单
+    purchaseOrder.value.paymentType = orderData.paymentType
+    
+    // 模拟支付成功，因为真实支付需要调用第三方支付接口
+    // 实际项目中应该调用真实的支付API
+    ElMessage.success('支付成功')
+    purchaseDialogVisible.value = false
+    
+    // 支付成功后显示抽奖弹窗
+    lotteryDialogVisible.value = true
   } catch (error) {
     console.error('支付失败:', error)
     ElMessage.error(error.message || '支付失败，请稍后重试')
   }
 }
 
+// 开始抽奖
+const startLottery = async () => {
+  if (!isPoolReady.value) {
+    await initLotteryPool()
+  }
+  
+  isDrawing.value = true
+  drawAnimationClass.value = 'lottery-spinning'
+  
+  try {
+    // 并行执行：抽奖逻辑 + 最小动画时间
+    const [result] = await Promise.all([
+      drawPrize(),
+      new Promise(resolve => setTimeout(resolve, 3000))
+    ])
+    
+    // 停止动画
+    drawAnimationClass.value = ''
+    
+    if (result) {
+      lotteryResult.value = {
+        ...result,
+        shopId: result.shopId,
+        productId: result.id,
+        name: result.name || result.productName,
+        price: result.price || result.productUnitPrice,
+        image: result.mainImage || result.productMainImage || imageUrls[0]
+      }
+      
+      isDrawing.value = false
+      
+      // 抽奖完成，生成订单
+      await updateOrderAfterLottery()
+    } else {
+      isDrawing.value = false
+      ElMessage.error('抽奖异常，请重试')
+    }
+  } catch (error) {
+    console.error('抽奖过程出错:', error)
+    isDrawing.value = false
+    drawAnimationClass.value = ''
+    ElMessage.error('网络异常，请重试')
+  }
+}
+
+// 抽奖后生成真实订单
+const updateOrderAfterLottery = async () => {
+  console.log('完整抽奖数据:', lotteryResult.value)
+  
+  if (!lotteryResult.value || !lotteryResult.value.productId) {
+     ElMessage.error('抽奖数据异常，无法生成订单')
+     return
+  }
+
+  try {
+    // 策略调整：
+    // 为了保证订单金额为盲盒价格(50元)，我们必须创建盲盒商品(ID: 9999)的订单。
+    // 然后将实际抽到的商品信息记录在备注(remark)和扩展属性(attributes)中。
+    // 这样后端计算价格时会使用50元，而前端显示的订单详情可以通过解析attributes展示真实奖品。
+    
+    const wonProduct = lotteryResult.value
+    
+    // 确保名字存在
+    const prizeName = wonProduct.name || wonProduct.productName || '未知奖品'
+    
+    const orderData = {
+      // 使用盲盒ID，确保价格是50   
+      productId: product.value.id, // 9999
+      quantity: quantity.value,
+      addressId: purchaseOrder.value.addressId,
+      
+      // 传递真实价格（后端可能忽略，所以主要靠神秘盲盒roductId）
+      price: product.value.price, 
+      
+      // 关键：将中奖信息写入备注
+      remark: `【盲盒中奖】${prizeName} (原价: ¥${wonProduct.price})`, 
+      
+      attributes: JSON.stringify({
+        isBlindBox: true,
+        isRefundable: false,
+        source: 'blind_box_lottery',
+        // 记录中奖商品的真实ID和信息，供前端订单列表展示使用
+        wonProductId: wonProduct.id || wonProduct.productId, // Handle both id formats
+        wonProductName: prizeName,
+        wonProductImage: wonProduct.mainImage || wonProduct.image,
+        wonShopId: wonProduct.shopId
+      })
+    }
+
+    console.log('提交订单数据:', orderData)
+
+    const orderRes = await createDirectOrder(orderData)
+
+    if (orderRes.code === 200) {
+      const orderNo = orderRes.data.orderNo || orderRes.data
+      if (orderNo) {
+        await payOrder(orderNo, purchaseOrder.value.paymentType || 1)
+      }
+      
+      ElMessage.success(`恭喜你抽到了：${prizeName}，订单已生成！`)
+      
+      setTimeout(() => {
+        lotteryDialogVisible.value = false
+        router.push('/user/orders')
+      }, 1500)
+    } else {
+      ElMessage.error(orderRes.msg || '创建订单失败')
+    }
+  } catch (error) {
+    console.error('生成订单失败:', error)
+    ElMessage.error('生成订单失败，请稍后重试')
+  }
+}
+
 onMounted(() => {
   // 确保放大镜图片URL正确初始化
   zoomImageUrl.value = getCurrentImage()
+  // 预热抽奖池
+  initLotteryPool()
 })
 </script>
 
@@ -467,6 +604,53 @@ onMounted(() => {
   <!-- 购买弹窗 -->
   <PurchaseDialog v-model="purchaseDialogVisible" :products="purchaseProducts" :order="purchaseOrder"
     :need-create-order="false" @pay-later="handlePayLater" @pay-now="handlePayNow" />
+
+  <!-- 抽奖弹窗 -->
+  <el-dialog
+    v-model="lotteryDialogVisible"
+    title="盲盒抽奖"
+    width="500px"
+    :close-on-click-modal="false"
+    :close-on-press-escape="false"
+    :show-close="!isDrawing"
+  >
+    <div class="lottery-container">
+      <div v-if="isDrawing" class="lottery-drawing">
+        <img src="@/assets/images/BlindBox.png" alt="盲盒抽奖" class="blind-box-image" :class="drawAnimationClass" />
+        <div class="drawing-text">正在抽奖...</div>
+      </div>
+      <div v-else-if="lotteryResult" class="lottery-result">
+        <div class="result-title">恭喜你抽到了！</div>
+        <div class="result-prize">({{ lotteryResult.name }})</div>
+        <div class="result-info">您的订单已更新为抽到的商品</div>
+      </div>
+      <div v-else class="lottery-waiting">
+        <img src="@/assets/images/BlindBox.png" alt="盲盒抽奖" class="blind-box-image" />
+        <div class="waiting-text">准备抽奖</div>
+        <div class="waiting-subtext">点击开始按钮抽取您的商品</div>
+      </div>
+    </div>
+
+    <template #footer>
+      <div class="lottery-footer">
+        <el-button 
+          v-if="!isDrawing && !lotteryResult"
+          type="primary"
+          @click="startLottery"
+          :loading="isDrawing"
+        >
+          开始抽奖
+        </el-button>
+        <el-button 
+          v-if="lotteryResult"
+          type="primary"
+          @click="lotteryDialogVisible = false"
+        >
+          确定
+        </el-button>
+      </div>
+    </template>
+  </el-dialog>
 </template>
 
 <style scoped>
@@ -1022,5 +1206,85 @@ onMounted(() => {
     width: 60px;
     height: 60px;
   }
+}
+
+/* 抽奖弹窗样式 */
+.lottery-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30px 0;
+  min-height: 300px;
+}
+
+/* 抽奖转盘样式 */
+.lottery-drawing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 抽奖结果样式 */
+.lottery-result {
+  text-align: center;
+  padding: 30px;
+}
+
+.result-title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #ff4400;
+  margin-bottom: 20px;
+}
+
+.result-prize {
+  font-size: 32px;
+  font-weight: bold;
+  color: #ff4400;
+  margin-bottom: 20px;
+  padding: 10px 20px;
+  background-color: #fff8f0;
+  border-radius: 10px;
+}
+
+.result-info {
+  font-size: 16px;
+  color: #666;
+}
+
+/* 等待抽奖样式 */
+.lottery-waiting {
+  text-align: center;
+  padding: 50px;
+}
+
+.waiting-text {
+  font-size: 24px;
+  font-weight: bold;
+  color: #ff4400;
+  margin-bottom: 10px;
+}
+
+.waiting-subtext {
+  font-size: 16px;
+  color: #666;
+}
+
+.blind-box-image {
+  width: 200px;
+  height: 200px;
+  object-fit: contain;
+  margin-bottom: 20px;
+  transition: transform 3s ease-out;
+}
+
+.lottery-spinning {
+  transform: rotate(1800deg); /* 旋转5圈 */
+}
+
+.lottery-footer {
+  display: flex;
+  justify-content: center;
 }
 </style>

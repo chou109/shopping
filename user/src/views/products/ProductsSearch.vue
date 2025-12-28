@@ -14,6 +14,23 @@
     <div class="search-header">
       <h2>搜索结果</h2>
       <p>{{ pageTitle }}</p>
+      
+      <!-- 页面内搜索框 -->
+      <div class="inline-search-box">
+        <el-input
+          v-model="inlineSearchKeyword"
+          placeholder="请输入关键词搜索"
+          clearable
+          @keyup.enter="handleInlineSearch"
+        >
+          <template #append>
+            <el-button type="primary" @click="handleInlineSearch">
+              <el-icon><Search /></el-icon>
+              搜索
+            </el-button>
+          </template>
+        </el-input>
+      </div>
     </div>
 
     <!-- 分类筛选选项卡 -->
@@ -139,14 +156,16 @@
 
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { Search } from '@element-plus/icons-vue'
 import api from "@/utils/request.js"
 import { getCategory } from '@/api/system/category'
 import { getProductImageUrl, handleImageError } from '@/utils/image'
 import { searchShop, listHotShop } from '@/api/system/shop'
 
 const route = useRoute()
+const router = useRouter()
 const keyword = ref('')
 const categoryId = ref('')
 const categoryName = ref('')
@@ -157,6 +176,7 @@ const total = ref(0)
 const currentPage = ref(1)
 const pageSize = ref(12)
 const activeFilter = ref('all') // 筛选类型：all, product, shop
+const inlineSearchKeyword = ref('') // 页面内搜索关键词
 
 // 获取分类名称
 const loadCategoryName = async () => {
@@ -256,6 +276,22 @@ const resetSearch = () => {
   activeFilter.value = 'all'
   currentPage.value = 1
   loadSearchResults()
+}
+
+// 处理页面内搜索
+const handleInlineSearch = () => {
+  if (!inlineSearchKeyword.value.trim()) {
+    ElMessage.warning('请输入搜索关键词')
+    return
+  }
+  
+  // 更新路由参数，触发搜索
+  router.push({
+    path: '/search',
+    query: {
+      keyword: inlineSearchKeyword.value.trim()
+    }
+  })
 }
 
 // 加载搜索结果
@@ -472,6 +508,47 @@ watch(() => route.query, (newQuery) => {
   font-size: 16px;
 }
 
+/* 页面内搜索框样式 */
+.inline-search-box {
+  margin-top: 20px;
+  max-width: 800px;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.inline-search-box .el-input {
+  width: 100%;
+}
+
+.inline-search-box .el-input__wrapper {
+  border-radius: 20px;
+  border-color: #FF4400;
+  box-shadow: 0 2px 8px rgba(255, 68, 0, 0.15);
+}
+
+.inline-search-box .el-input__inner {
+  height: 40px;
+  border-radius: 20px 0 0 20px;
+  padding-left: 20px;
+}
+
+.inline-search-box .el-button {
+  height: 40px;
+  border-radius: 0 20px 20px 0;
+  background-color: #FF4400;
+  border-color: #FF4400;
+  width: 100px;
+  font-weight: bold;
+  color: #fff; /* 搜索按钮字体颜色设置为白色 */
+}
+
+.inline-search-box .el-button:hover {
+  background-color: #FF5500;
+  border-color: #FF5500;
+  color: #fff; /* 搜索按钮悬停时字体颜色仍为白色 */
+}
+
 /* 筛选选项卡样式 */
 .filter-tabs {
   display: flex;
@@ -479,8 +556,37 @@ watch(() => route.query, (newQuery) => {
   align-items: center;
   margin-bottom: 20px;
   padding: 15px;
-  background: #f8f9fa;
+  background: #fff;
   border-radius: 8px;
+  border-bottom: 2px solid #FF4400;
+}
+
+/* 分类筛选选项卡样式 - 淘宝风格 */
+.filter-tabs .el-radio-button__inner {
+  background-color: #fff;
+  color: #333;
+  border-color: #ddd;
+  border-radius: 0;
+  transition: all 0.3s ease;
+}
+
+.filter-tabs .el-radio-button__inner:hover {
+  color: #FF4400;
+  border-color: #FF4400;
+}
+
+.filter-tabs .el-radio-button__orig-radio:checked + .el-radio-button__inner {
+  background-color: #FF4400;
+  color: #fff;
+  border-color: #FF4400;
+}
+
+.filter-tabs .el-radio-button:first-child .el-radio-button__inner {
+  border-radius: 4px 0 0 4px;
+}
+
+.filter-tabs .el-radio-button:last-child .el-radio-button__inner {
+  border-radius: 0 4px 4px 0;
 }
 
 .filter-stats {
@@ -518,42 +624,42 @@ watch(() => route.query, (newQuery) => {
 /* 商品网格布局 */
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 20px;
   margin-bottom: 30px;
 }
 
 .product-item {
   cursor: pointer;
-  transition: transform 0.3s ease;
+  transition: all 0.3s ease;
 }
 
 .product-item:hover {
-  transform: translateY(-5px);
+  transform: translateY(-2px);
 }
 
 .product-card {
   background: #fff;
-  border-radius: 12px;
+  border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 3px 15px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   height: 100%;
   display: flex;
   flex-direction: column;
   transition: all 0.3s ease;
-  border: 1px solid #f0f0f0;
+  border: 1px solid #fff;
 }
 
 .product-item:hover .product-card {
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
-  border-color: #e0e0e0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: #e5e5e5;
 }
 
 .product-image {
   width: 100%;
-  height: 180px;
+  height: 240px;
   overflow: hidden;
-  background: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%);
+  background: #f5f5f5;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -563,19 +669,19 @@ watch(() => route.query, (newQuery) => {
 .product-image img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  transition: transform 0.5s ease;
+  object-fit: contain;
+  transition: transform 0.3s ease;
 }
 
 .product-item:hover .product-image img {
-  transform: scale(1.05);
+  transform: scale(1.02);
 }
 
 .product-badge {
   position: absolute;
   top: 8px;
   left: 8px;
-  background: #409eff;
+  background: #FF4400;
   color: white;
   padding: 2px 6px;
   border-radius: 3px;
@@ -584,18 +690,18 @@ watch(() => route.query, (newQuery) => {
 }
 
 .product-info {
-  padding: 15px;
+  padding: 12px;
   flex: 1;
   display: flex;
   flex-direction: column;
+  background: #fff;
 }
 
 .product-name {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 13px;
   color: #333;
   margin: 0 0 8px 0;
-  line-height: 1.4;
+  line-height: 1.5;
   height: 40px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -606,45 +712,41 @@ watch(() => route.query, (newQuery) => {
 }
 
 .product-price {
-  color: #e4393c;
-  font-size: 18px;
+  color: #FF4400;
+  font-size: 20px;
   font-weight: bold;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
+  line-height: 1;
+}
+
+.product-price::before {
+  content: '¥';
+  font-size: 14px;
+  margin-right: 2px;
 }
 
 .product-desc {
-  color: #666;
-  font-size: 12px;
-  line-height: 1.4;
-  margin-bottom: 8px;
-  height: 34px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
+  display: none;
 }
 
 .product-category {
-  font-size: 12px;
-  color: #999;
-  margin-bottom: 8px;
+  display: none;
 }
 
 .product-meta {
   display: flex;
   justify-content: space-between;
-  font-size: 11px;
-  color: #666;
-  margin-top: auto;
+  font-size: 12px;
+  color: #999;
+  margin-top: 8px;
 }
 
-.product-sales,
+.product-sales {
+  color: #999;
+}
+
 .product-stock {
-  background: #f5f5f5;
-  padding: 2px 6px;
-  border-radius: 3px;
+  display: none;
 }
 
 /* 店铺网格布局 */
@@ -707,7 +809,7 @@ watch(() => route.query, (newQuery) => {
   position: absolute;
   top: 8px;
   left: 8px;
-  background: #67c23a;
+  background: #FF9900;
   color: white;
   padding: 2px 6px;
   border-radius: 3px;

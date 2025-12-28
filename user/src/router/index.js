@@ -131,6 +131,19 @@ export const constantRoutes = [
       }
     ]
   },
+  // 搜索路由
+  {
+    path: '/search',
+    name: 'Search',
+    component: Layout,
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/products/ProductsSearch.vue'),
+        meta: { title: '搜索结果' }
+      }
+    ]
+  },
   {
     path: '/product/detail',
     name: 'ProductDetail',
