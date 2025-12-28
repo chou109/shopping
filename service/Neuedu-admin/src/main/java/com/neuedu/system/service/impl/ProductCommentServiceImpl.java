@@ -72,6 +72,10 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
     @Override
     public int insertProductComment(ProductComment productComment)
     {
+        // 设置用户ID
+        if (productComment.getUserId() == null) {
+            productComment.setUserId(SecurityUtils.getUserId());
+        }
         productComment.setCreateTime(DateUtils.getNowDate());
         return productCommentMapper.insertProductComment(productComment);
     }

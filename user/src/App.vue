@@ -20,7 +20,9 @@ export default defineComponent({
 
 <style>
 /* ========== 全局基础样式 ========== */
-html, body, #app {
+html,
+body,
+#app {
   margin: 0;
   padding: 0;
   height: 100%;
@@ -33,7 +35,8 @@ html, body, #app {
 /* ========== 滚动优化 ========== */
 html {
   scroll-behavior: smooth;
-  font-size: 16px; /* 基准字体大小 */
+  font-size: 16px;
+  /* 基准字体大小 */
 }
 
 /* 自定义滚动条 */
@@ -63,13 +66,16 @@ html {
 }
 
 /* ========== 图片和媒体响应式 ========== */
-img, video, iframe {
+img,
+video,
+iframe {
   max-width: 100%;
   height: auto;
 }
 
 img {
-  object-fit: cover; /* 防止图片变形 */
+  object-fit: cover;
+  /* 防止图片变形 */
 }
 
 /* 响应式视频容器 */
@@ -77,7 +83,8 @@ img {
   position: relative;
   width: 100%;
   height: 0;
-  padding-bottom: 56.25%; /* 16:9 比例 */
+  padding-bottom: 56.25%;
+  /* 16:9 比例 */
 }
 
 .video-responsive iframe,
@@ -167,7 +174,7 @@ img {
   .desktop-only {
     display: none !important;
   }
-  
+
   .mobile-only {
     display: block !important;
   }
@@ -181,7 +188,8 @@ img {
 }
 
 * {
-  -webkit-tap-highlight-color: transparent; /* 防止移动端点击高亮 */
+  -webkit-tap-highlight-color: transparent;
+  /* 防止移动端点击高亮 */
 }
 </style>
 

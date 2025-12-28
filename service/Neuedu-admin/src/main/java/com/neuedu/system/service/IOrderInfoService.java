@@ -106,6 +106,14 @@ public interface IOrderInfoService extends IService<OrderInfo>
     public int confirmReceipt(String orderNo);
 
     /**
+     * 完成订单（评价后）
+     *
+     * @param orderNo 订单编号
+     * @return 结果
+     */
+    public int completeOrder(String orderNo);
+
+    /**
      * 申请退款
      *
      * @param orderNo 订单编号

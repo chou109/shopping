@@ -33,6 +33,9 @@ public class OrderInfo extends BaseEntity
 {
     private static final long serialVersionUID = 1L;
 
+    /** 乐观锁版本号 */
+    @Version
+    private Integer version;
 
     /** 主键 */
     @Schema(title = "主键")
@@ -80,7 +83,7 @@ public class OrderInfo extends BaseEntity
     private BigDecimal postage;
 
     /** 订单状态 */
-    @Schema(title = "订单状态")
+    @Schema(title = "订单状态，10待付款，20待发货，30待收货，40待评价，50交易完成，60已取消")
     @Excel(name = "订单状态")
     private Integer status;
 

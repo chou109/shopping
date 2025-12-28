@@ -211,6 +211,33 @@ public class OrderInfoController extends BaseController {
     }
 
     /**
+     * 完成订单（评价后，用户端）
+     */
+    @Operation(summary = "完成订单")
+    @Log(title = "订单", businessType = BusinessType.UPDATE)
+    @PutMapping("/{orderNo}/complete")
+    public AjaxResult completeOrder(@PathVariable String orderNo) {
+        Long userId = SecurityUtils.getUserId();
+        OrderInfo orderInfo = orderInfoService.selectOrderInfoByOrderNo(orderNo);
+
+        if (orderInfo == null) {
+            return error("订单不存在");
+        }
+
+        // 验证订单是否属于当前用户
+        if (!orderInfo.getUserId().equals(userId)) {
+            return error("无权操作此订单");
+        }
+
+        try {
+            int result = orderInfoService.completeOrder(orderNo);
+            return toAjax(result);
+        } catch (RuntimeException e) {
+            return error(e.getMessage());
+        }
+    }
+
+    /**
      * 申请退款（用户端）
      */
     @Operation(summary = "申请退款")

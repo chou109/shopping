@@ -16,3 +16,20 @@ export function deleteComment(commentId) {
     method: 'delete'
   })
 }
+
+// 提交评价
+export function submitReview(data) {
+  return request({
+    url: '/system/comment',
+    method: 'post',
+    data: data
+  })
+}
+
+// 评价后更新订单状态为已完成
+export function completeOrder(orderNo) {
+  return request({
+    url: `/system/orderInfo/${orderNo}/complete`,
+    method: 'put'
+  })
+}

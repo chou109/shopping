@@ -49,7 +49,7 @@
           <el-button type="primary" @click="goShopping">去购物</el-button>
         </el-empty>
       </div>
-      
+
       <div v-else class="order-list">
         <div v-for="order in orderList" :key="order.id" class="order-card">
           <!-- 订单头部 -->
@@ -62,17 +62,14 @@
               {{ order.statusDesc }}
             </div>
           </div>
-          
+
           <!-- 订单商品列表 -->
           <div class="order-products">
-            <div 
-              v-for="(detail, index) in order.orderDetails" 
-              :key="index" 
-              class="product-item"
-              @click="goProductDetail(detail.productId)"
-            >
+            <div v-for="(detail, index) in order.orderDetails" :key="index" class="product-item"
+              @click="goProductDetail(detail.productId)">
               <div class="product-image">
-                <img :src="getProductImageUrl(detail.productMainImage)" :alt="detail.productName" @error="handleImageError" />
+                <img :src="getProductImageUrl(detail.productMainImage)" :alt="detail.productName"
+                  @error="handleImageError" />
               </div>
               <div class="product-info">
                 <div class="product-name">{{ detail.productName }}</div>
@@ -87,11 +84,13 @@
               </div>
             </div>
           </div>
-          
+
           <!-- 订单底部 -->
           <div class="order-footer">
             <div class="order-address" v-if="order.receiveName">
-              <el-icon><Location /></el-icon>
+              <el-icon>
+                <Location />
+              </el-icon>
               <span>{{ order.receiveName }} {{ order.receivePhone }}</span>
               <span class="address-detail">{{ order.province }}{{ order.city }}{{ order.area }}{{ order.street }}</span>
             </div>
@@ -101,66 +100,54 @@
                 实付：<span class="total-price">¥{{ formatPrice(order.payment) }}</span>
               </div>
               <div class="order-actions">
-                <!-- 待付款订单 -->
+                <!-- 10：待付款 → 取消/付款/删除 -->
                 <template v-if="order.status === 10">
                   <el-button size="small" @click="handleCancelOrder(order)">取消订单</el-button>
                   <el-button type="primary" size="small" @click="handlePayOrder(order)">立即付款</el-button>
                   <el-button type="danger" size="small" @click="handleDeleteOrder(order)">删除订单</el-button>
                 </template>
-                
-                <!-- 已付款待抽奖订单（盲盒） -->
-                <template v-else-if="order.status === 20 && order.isBlindBox">
-                  <el-button type="primary" size="small" @click="handleStartLottery(order)">开始抽奖</el-button>
-                  <el-button type="danger" size="small" @click="handleDeleteOrder(order)">删除订单</el-button>
+
+                <!-- 20：待发货 → 退款 -->
+                <template v-else-if="order.status === 20">
+                  <el-button type="warning" size="small" @click="handleRefund(order)">申请退款</el-button>
                 </template>
-                
-                <!-- 待发货订单 -->
+
+                <!-- 30：待收货 → 收货 -->
                 <template v-else-if="order.status === 30">
-                  <!-- 普通商品或已抽奖的盲盒商品 -->
-                  <template>
-                    <el-button size="small" v-if="!order.isBlindBox" @click="handleRefund(order)">申请退款</el-button>
-                    <el-button size="small" @click="viewOrderDetail(order)">查看详情</el-button>
-                    <el-button type="danger" size="small" @click="handleDeleteOrder(order)">删除订单</el-button>
-                  </template>
-                </template>
-                
-                <!-- 待收货订单 -->
-                <template v-else-if="order.status === 50">
-                  <el-button size="small" @click="viewLogistics(order)">查看物流</el-button>
                   <el-button type="primary" size="small" @click="handleConfirmReceipt(order)">确认收货</el-button>
-                  <el-button type="danger" size="small" @click="handleDeleteOrder(order)">删除订单</el-button>
                 </template>
-                
-                <!-- 待评价订单 -->
-                <template v-else-if="order.status === 60 && !order.isReviewed">
-                  <el-button size="small" @click="viewOrderDetail(order)">查看详情</el-button>
+
+                <!-- 40：待评价 → 评价 -->
+                <template v-else-if="order.status === 40">
                   <el-button type="primary" size="small" @click="handleReview(order)">去评价</el-button>
+                </template>
+
+                <!-- 50：交易完成 → 详情/删除 -->
+                <template v-else-if="order.status === 50">
+                  <el-button size="small" @click="viewOrderDetail(order)">查看详情</el-button>
                   <el-button type="danger" size="small" @click="handleDeleteOrder(order)">删除订单</el-button>
                 </template>
-                
-                <!-- 已完成/其他状态订单 -->
+
+                <!-- 60：已取消 → 删除 -->
+                <template v-else-if="order.status === 60">
+                  <el-button type="danger" size="small" @click="handleDeleteOrder(order)">删除订单</el-button>
+                </template>
+
+                <!-- 其他状态 -->
                 <template v-else>
                   <el-button size="small" @click="viewOrderDetail(order)">查看详情</el-button>
-                  <el-button size="small" @click="handleBuyAgain(order)">再次购买</el-button>
-                  <el-button type="danger" size="small" @click="handleDeleteOrder(order)">删除订单</el-button>
                 </template>
               </div>
             </div>
           </div>
         </div>
       </div>
-      
+
       <!-- 分页 -->
       <div class="pagination-container" v-if="total > pageSize">
-        <el-pagination
-          v-model:current-page="pageNum"
-          v-model:page-size="pageSize"
-          :total="total"
-          :page-sizes="[10, 20, 50]"
-          layout="total, sizes, prev, pager, next, jumper"
-          @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
-        />
+        <el-pagination v-model:current-page="pageNum" v-model:page-size="pageSize" :total="total"
+          :page-sizes="[10, 20, 50]" layout="total, sizes, prev, pager, next, jumper" @size-change="handleSizeChange"
+          @current-change="handleCurrentChange" />
       </div>
     </div>
 
@@ -197,7 +184,8 @@
           <div class="refund-product-info">
             <div v-for="(detail, index) in currentOrder?.orderDetails" :key="index" class="refund-product-item">
               <div class="product-image">
-                <img :src="getProductImageUrl(detail.productMainImage)" :alt="detail.productName" @error="handleImageError" />
+                <img :src="getProductImageUrl(detail.productMainImage)" :alt="detail.productName"
+                  @error="handleImageError" />
               </div>
               <div class="product-info">
                 <div class="product-name">{{ detail.productName }}</div>
@@ -245,6 +233,114 @@
         <el-button type="danger" :loading="refunding" @click="submitRefund">提交申请</el-button>
       </template>
     </el-dialog>
+
+    <!-- 评价弹窗 -->
+    <el-dialog v-model="reviewDialogVisible" title="评价商品" width="600px">
+      <div class="review-dialog-content">
+        <!-- 商品列表 -->
+        <div v-for="(item, index) in reviewItems" :key="index" class="review-product-item">
+          <div class="product-info-row">
+            <img :src="getProductImageUrl(item.productMainImage)" class="product-img" />
+            <div class="product-name">{{ item.productName }}</div>
+          </div>
+          <div class="rating-row">
+            <span class="rating-label">评分：</span>
+            <div class="star-rating">
+              <span v-for="n in 5" :key="n" class="star" :class="{ active: n <= item.score }"
+                @click="item.score = n">★</span>
+            </div>
+            <span class="score-text">{{ getScoreText(item.score) }}</span>
+          </div>
+          <el-input v-model="item.content" type="textarea" :rows="3" placeholder="分享您的使用体验，对其他买家有很大的帮助哦~" />
+          <div class="anonymous-row">
+            <el-checkbox v-model="item.isAnonymous">匿名评价</el-checkbox>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="reviewDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="submittingReview" @click="submitReviewHandler">提交评价</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 订单详情弹窗 -->
+    <el-dialog v-model="detailDialogVisible" title="订单详情" width="700px">
+      <div v-if="detailOrder" class="order-detail-dialog">
+        <!-- 订单基本信息 -->
+        <div class="detail-section">
+          <div class="detail-row">
+            <span class="label">订单编号：</span>
+            <span class="value">{{ detailOrder.orderNo }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">订单状态：</span>
+            <span class="value status" :class="getStatusClass(detailOrder.status)">{{ detailOrder.statusDesc }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">创建时间：</span>
+            <span class="value">{{ formatTime(detailOrder.createTime) }}</span>
+          </div>
+          <div class="detail-row" v-if="detailOrder.paymentTime">
+            <span class="label">支付时间：</span>
+            <span class="value">{{ formatTime(detailOrder.paymentTime) }}</span>
+          </div>
+          <div class="detail-row" v-if="detailOrder.paymentTypeDesc">
+            <span class="label">支付方式：</span>
+            <span class="value">{{ detailOrder.paymentTypeDesc }}</span>
+          </div>
+        </div>
+
+        <!-- 收货信息 -->
+        <div class="detail-section" v-if="detailOrder.receiveName">
+          <div class="section-title">收货信息</div>
+          <div class="detail-row">
+            <span class="label">收货人：</span>
+            <span class="value">{{ detailOrder.receiveName }} {{ detailOrder.receivePhone }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">收货地址：</span>
+            <span class="value">{{ detailOrder.province }}{{ detailOrder.city }}{{ detailOrder.area }}{{
+              detailOrder.street
+              }}</span>
+          </div>
+        </div>
+
+        <!-- 商品列表 -->
+        <div class="detail-section">
+          <div class="section-title">商品信息</div>
+          <div class="detail-products">
+            <div v-for="(item, index) in detailOrder.orderDetails" :key="index" class="detail-product-item">
+              <img :src="getProductImageUrl(item.productMainImage)" class="product-img" />
+              <div class="product-info">
+                <div class="product-name">{{ item.productName }}</div>
+                <div class="product-spec" v-if="item.specifications">{{ item.specifications }}</div>
+              </div>
+              <div class="product-price">¥{{ formatPrice(item.currentUnitPrice) }} x {{ item.quantity }}</div>
+              <div class="product-total">¥{{ formatPrice(item.totalPrice) }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 订单金额 -->
+        <div class="detail-section total-section">
+          <div class="detail-row">
+            <span class="label">商品总价：</span>
+            <span class="value">¥{{ formatPrice(detailOrder.payment) }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">运费：</span>
+            <span class="value">¥{{ formatPrice(detailOrder.postage || 0) }}</span>
+          </div>
+          <div class="detail-row total-row">
+            <span class="label">实付款：</span>
+            <span class="value total-price">¥{{ formatPrice(detailOrder.payment) }}</span>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="detailDialogVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -252,21 +348,22 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Location } from '@element-plus/icons-vue'
+import { Location, Star, StarFilled } from '@element-plus/icons-vue'
 import { getMyOrders, payOrder, cancelOrder, confirmReceipt, delInfo, applyRefund } from '@/api/system/orderInfo'
+import { submitReview, completeOrder } from '@/api/comment'
 import { getProductImageUrl, handleImageError } from '@/utils/image'
 
 const router = useRouter()
 
-// 状态描述映射（根据 status_desc 字段）
-const STATUS_DESC_MAP = {
+// 状态码映射
+const STATUS_MAP = {
   all: null,
-  waitPay: '待付款',
-  waitShip: '待发货',
-  waitReceive: '待收货',
-  waitReview: '待评价',
-  completed: '交易完成',
-  cancelled: '已取消'
+  waitPay: 10,      // 待付款
+  waitShip: 20,     // 待发货
+  waitReceive: 30,  // 待收货
+  waitReview: 40,   // 待评价
+  completed: 50,    // 交易完成
+  cancelled: 60     // 已取消
 }
 
 // 响应式数据
@@ -313,28 +410,38 @@ const refundRules = ref({
 })
 const refunding = ref(false)
 
+// 评价相关
+const reviewDialogVisible = ref(false)
+const reviewItems = ref([])
+const submittingReview = ref(false)
+const reviewingOrder = ref(null)
+
 // 加载订单列表
 const loadOrders = async () => {
   loading.value = true
   try {
     // 获取所有订单，前端根据 statusDesc 筛选
     const res = await getMyOrders()
+    console.log('订单响应:', res)
     if (res.code === 200) {
       let allOrders = res.rows || []
-      
+      console.log('所有订单:', allOrders.map(o => ({ orderNo: o.orderNo, status: o.status, statusDesc: o.statusDesc })))
+
       // 按创建时间倒序排列
       allOrders = allOrders.sort((a, b) => {
         return new Date(b.createTime) - new Date(a.createTime)
       })
-      
+
       // 根据当前标签筛选
-      const statusDesc = STATUS_DESC_MAP[activeTab.value]
-      if (statusDesc) {
-        orderList.value = allOrders.filter(order => order.statusDesc === statusDesc)
+      const statusCode = STATUS_MAP[activeTab.value]
+      console.log('当前标签:', activeTab.value, '筛选状态码:', statusCode)
+      if (statusCode !== null) {
+        orderList.value = allOrders.filter(order => order.status === statusCode)
       } else {
         orderList.value = allOrders
       }
-      
+      console.log('筛选后订单数:', orderList.value.length)
+
       total.value = orderList.value.length
     }
   } catch (e) {
@@ -351,12 +458,12 @@ const loadOrderCounts = async () => {
     const res = await getMyOrders()
     if (res.code === 200) {
       const allOrders = res.rows || []
-      
-      // 根据 statusDesc 统计各状态数量
+
+      // 根据 status 统计各状态数量
       orderCounts.value = {
-        waitPay: allOrders.filter(o => o.statusDesc === '待付款').length,
-        waitShip: allOrders.filter(o => o.statusDesc === '待发货').length,
-        waitReceive: allOrders.filter(o => o.statusDesc === '待收货').length
+        waitPay: allOrders.filter(o => o.status === 10).length,
+        waitShip: allOrders.filter(o => o.status === 20).length,
+        waitReceive: allOrders.filter(o => o.status === 30).length
       }
     }
   } catch (e) {
@@ -401,12 +508,11 @@ const formatTime = (time) => {
 const getStatusClass = (status) => {
   const classMap = {
     10: 'status-wait-pay',
-    20: 'status-paid',
-    30: 'status-wait-ship',
-    40: 'status-shipped',
-    50: 'status-wait-receive',
-    60: 'status-completed',
-    70: 'status-cancelled'
+    20: 'status-wait-ship',
+    30: 'status-wait-receive',
+    40: 'status-wait-review',
+    50: 'status-completed',
+    60: 'status-cancelled'
   }
   return classMap[status] || ''
 }
@@ -431,8 +537,12 @@ const goProductDetail = (productId) => {
 }
 
 // 查看订单详情
+const detailDialogVisible = ref(false)
+const detailOrder = ref(null)
+
 const viewOrderDetail = (order) => {
-  ElMessage.info('订单详情功能开发中')
+  detailOrder.value = order
+  detailDialogVisible.value = true
 }
 
 // 查看物流
@@ -449,7 +559,7 @@ const handlePayOrder = (order) => {
 // 确认支付
 const confirmPay = async () => {
   if (!currentOrder.value) return
-  
+
   paying.value = true
   try {
     const res = await payOrder(currentOrder.value.orderNo, 4) // 4=余额支付
@@ -478,7 +588,7 @@ const handleCancelOrder = (order) => {
 // 确认取消订单
 const confirmCancel = async () => {
   if (!currentOrder.value) return
-  
+
   cancelling.value = true
   try {
     const res = await cancelOrder(currentOrder.value.orderNo, cancelReason.value || '用户主动取消')
@@ -505,7 +615,7 @@ const handleConfirmReceipt = async (order) => {
       cancelButtonText: '取消',
       type: 'info'
     })
-    
+
     const res = await confirmReceipt(order.orderNo)
     if (res.code === 200) {
       ElMessage.success('已确认收货')
@@ -536,12 +646,12 @@ const handleRefund = (order) => {
 // 提交退款申请
 const submitRefund = async () => {
   if (!currentOrder.value) return
-  
+
   // 表单验证
   if (!refundFormRef.value) return
   await refundFormRef.value.validate(async (valid) => {
     if (!valid) return
-    
+
     refunding.value = true
     try {
       const refundData = {
@@ -550,7 +660,7 @@ const submitRefund = async () => {
         description: refundForm.value.description,
         contactPhone: refundForm.value.contactPhone
       }
-      
+
       // 调用退款API
       const res = await applyRefund(refundData)
       if (res.code === 200) {
@@ -571,7 +681,61 @@ const submitRefund = async () => {
 
 // 去评价
 const handleReview = (order) => {
-  ElMessage.info('评价功能开发中')
+  reviewingOrder.value = order
+  // 初始化评价数据
+  reviewItems.value = (order.orderDetails || []).map(item => ({
+    productId: item.productId,
+    productName: item.productName,
+    productMainImage: item.productMainImage,
+    score: 5,
+    content: '',
+    isAnonymous: false
+  }))
+  reviewDialogVisible.value = true
+}
+
+// 获取评分文字
+const getScoreText = (score) => {
+  const texts = ['请评分', '非常差', '差', '一般', '好', '非常好']
+  return texts[score] || ''
+}
+
+// 提交评价
+const submitReviewHandler = async () => {
+  if (!reviewingOrder.value) return
+
+  // 验证
+  for (const item of reviewItems.value) {
+    if (!item.score) {
+      ElMessage.warning('请为所有商品评分')
+      return
+    }
+  }
+
+  submittingReview.value = true
+  try {
+    // 批量提交评价
+    for (const item of reviewItems.value) {
+      await submitReview({
+        productId: item.productId,
+        orderId: reviewingOrder.value.id,
+        content: item.content || '用户未填写评价内容',
+        score: item.score,
+        isAnonymous: item.isAnonymous ? 1 : 0
+      })
+    }
+
+    // 更新订单状态为已完成
+    await completeOrder(reviewingOrder.value.orderNo)
+
+    ElMessage.success('评价成功')
+    reviewDialogVisible.value = false
+    loadOrders()
+  } catch (e) {
+    ElMessage.error('评价失败：' + (e.message || '未知错误'))
+  } finally {
+    submittingReview.value = false
+  }
 }
 
 // 再次购买
@@ -589,7 +753,7 @@ const handleBuyAgain = (order) => {
 const handleDeleteOrder = async (order) => {
   try {
     await ElMessageBox.confirm('确定要删除该订单吗？删除后不可恢复！', '删除订单', { confirmButtonText: '确定删除', cancelButtonText: '取消', type: 'warning' })
-    
+
     const res = await delInfo(order.id)
     if (res.code === 200) {
       ElMessage.success('订单已删除')
@@ -617,7 +781,7 @@ const handleStartLottery = (order) => {
     // 2. 更新订单状态为待发货
     // 3. 显示抽奖结果
     ElMessage.success('抽奖功能开发中，当前已模拟抽奖完成，订单状态将更新为待发货')
-    
+
     // 模拟更新订单状态
     // 在实际项目中，这里应该调用API来更新订单状态
     const orderIndex = orderList.value.findIndex(o => o.id === order.id)
@@ -625,7 +789,7 @@ const handleStartLottery = (order) => {
       orderList.value[orderIndex].status = 30 // 待发货
       orderList.value[orderIndex].statusDesc = '待发货'
     }
-    
+
     loadOrderCounts()
   }).catch(() => {
     // 用户取消抽奖
@@ -724,14 +888,19 @@ onMounted(() => {
   background: #fff7f5;
 }
 
-.status-paid, .status-wait-ship {
+.status-wait-ship {
   color: #409eff;
   background: #ecf5ff;
 }
 
-.status-shipped, .status-wait-receive {
+.status-wait-receive {
   color: #e6a23c;
   background: #fdf6ec;
+}
+
+.status-wait-review {
+  color: #9c27b0;
+  background: #f3e5f5;
 }
 
 .status-completed {
@@ -968,5 +1137,199 @@ onMounted(() => {
   font-size: 20px;
   font-weight: 700;
   padding: 10px 0;
+}
+
+/* 评价弹窗样式 */
+.review-dialog-content {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.review-product-item {
+  padding: 16px;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.review-product-item:last-child {
+  margin-bottom: 0;
+}
+
+.product-info-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.product-img {
+  width: 60px;
+  height: 60px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.product-info-row .product-name {
+  flex: 1;
+  font-size: 14px;
+  color: #333;
+}
+
+.rating-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.rating-label {
+  font-size: 14px;
+  color: #666;
+}
+
+.star-rating {
+  display: flex;
+  gap: 4px;
+}
+
+.star-rating .star {
+  font-size: 24px;
+  color: #ddd;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.star-rating .star:hover,
+.star-rating .star.active {
+  color: #ff9900;
+}
+
+.score-text {
+  font-size: 14px;
+  color: #ff9900;
+  margin-left: 8px;
+}
+
+.anonymous-row {
+  margin-top: 12px;
+}
+
+/* 订单详情弹窗样式 */
+.order-detail-dialog {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.detail-section {
+  padding: 16px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.detail-section:last-child {
+  border-bottom: none;
+}
+
+.section-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 12px;
+}
+
+.detail-row {
+  display: flex;
+  margin-bottom: 8px;
+}
+
+.detail-row .label {
+  width: 90px;
+  color: #999;
+  flex-shrink: 0;
+}
+
+.detail-row .value {
+  flex: 1;
+  color: #333;
+}
+
+.detail-row .value.status {
+  font-weight: 600;
+}
+
+.detail-products {
+  background: #fafafa;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.detail-product-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.detail-product-item:last-child {
+  border-bottom: none;
+}
+
+.detail-product-item .product-img {
+  width: 60px;
+  height: 60px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.detail-product-item .product-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.detail-product-item .product-name {
+  font-size: 14px;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.detail-product-item .product-spec {
+  font-size: 12px;
+  color: #999;
+}
+
+.detail-product-item .product-price {
+  color: #666;
+  font-size: 14px;
+}
+
+.detail-product-item .product-total {
+  color: #ff5000;
+  font-size: 14px;
+  font-weight: 600;
+  min-width: 80px;
+  text-align: right;
+}
+
+.total-section {
+  background: #fff9f5;
+  padding: 16px;
+  border-radius: 8px;
+}
+
+.total-row {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed #f0f0f0;
+}
+
+.total-row .label {
+  font-weight: 600;
+}
+
+.total-row .total-price {
+  color: #ff5000;
+  font-size: 20px;
+  font-weight: 700;
 }
 </style>

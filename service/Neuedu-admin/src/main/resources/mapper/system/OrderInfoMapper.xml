@@ -148,7 +148,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectWaitConfirmOrders" resultMap="OrderInfoResult">
         <include refid="selectOrderInfoVo"/>
         where oi.delete_flag = 0
-        and oi.status = 40  <!-- 已发货状态 -->
+        and oi.status = 30  <!-- 待收货状态 -->
         and oi.ship_time &lt; date_sub(now(), interval 7 day)
     </select>
 
@@ -269,7 +269,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <!-- 取消订单 -->
     <update id="cancelOrder">
         update order_info
-        set status = 70,
+        set status = 60,
             status_desc = '已取消',
             cancel_time = now(),
             cancel_reason = #{cancelReason},
@@ -280,7 +280,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <!-- 支付订单 -->
     <update id="payOrder">
         update order_info
-        set status = 30,
+        set status = 20,
             status_desc = '待发货',
             payment_time = now(),
             payment_type = #{paymentType},

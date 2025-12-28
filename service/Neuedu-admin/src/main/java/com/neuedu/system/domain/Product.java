@@ -32,6 +32,9 @@ public class Product extends BaseEntity
 {
     private static final long serialVersionUID = 1L;
 
+    /** 乐观锁版本号 */
+    @Version
+    private Integer version;
 
     /** 主键 */
     @Schema(title = "主键")

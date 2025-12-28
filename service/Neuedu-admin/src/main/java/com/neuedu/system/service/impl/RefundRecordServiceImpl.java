@@ -155,9 +155,9 @@ public class RefundRecordServiceImpl extends ServiceImpl<RefundRecordMapper, Ref
             throw new RuntimeException("无权操作此订单");
         }
 
-        // 验证订单状态是否可以退款
-        if (!OrderStatusConstants.PAID.equals(orderInfo.getStatus())
-                && !OrderStatusConstants.SHIPPED.equals(orderInfo.getStatus())) {
+        // 验证订单状态是否可以退款（待发货或待收货）
+        if (!OrderStatusConstants.WAIT_SHIP.equals(orderInfo.getStatus())
+                && !OrderStatusConstants.WAIT_RECEIVE.equals(orderInfo.getStatus())) {
             throw new RuntimeException("订单状态不正确，无法申请退款");
         }
 
@@ -183,10 +183,10 @@ public class RefundRecordServiceImpl extends ServiceImpl<RefundRecordMapper, Ref
 
         int result = refundRecordMapper.insertRefundRecord(refundRecord);
 
-        // 4. 更新订单状态为退款中
+        // 4. 更新订单状态为已取消
         if (result > 0) {
-            orderInfo.setStatus(OrderStatusConstants.REFUNDING);
-            orderInfo.setStatusDesc(OrderStatusConstants.getOrderStatusDesc(OrderStatusConstants.REFUNDING));
+            orderInfo.setStatus(OrderStatusConstants.CANCELLED);
+            orderInfo.setStatusDesc(OrderStatusConstants.getOrderStatusDesc(OrderStatusConstants.CANCELLED));
             orderInfo.setRefundAmount(refundAmount);
             orderInfo.setRefundReason(refundReason);
             orderInfo.setUpdateTime(DateUtils.getNowDate());
@@ -227,9 +227,9 @@ public class RefundRecordServiceImpl extends ServiceImpl<RefundRecordMapper, Ref
             // 3. 执行退款操作（根据退款方式）
             OrderInfo orderInfo = orderInfoService.selectOrderInfoByOrderNo(refundRecord.getOrderNo());
             if (orderInfo != null) {
-                // 更新订单状态为已退款
-                orderInfo.setStatus(OrderStatusConstants.REFUNDED);
-                orderInfo.setStatusDesc(OrderStatusConstants.getOrderStatusDesc(OrderStatusConstants.REFUNDED));
+                // 更新订单状态为已取消
+                orderInfo.setStatus(OrderStatusConstants.CANCELLED);
+                orderInfo.setStatusDesc(OrderStatusConstants.getOrderStatusDesc(OrderStatusConstants.CANCELLED));
                 orderInfo.setRefundTime(DateUtils.getNowDate());
                 orderInfo.setUpdateTime(DateUtils.getNowDate());
                 orderInfoService.updateOrderInfo(orderInfo);

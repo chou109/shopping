@@ -38,9 +38,11 @@
 
               <div class="item-content">
                 <!-- 商品图片 -->
-<div class="item-image" @click="goToProductDetail(item.productId)">
-  <img :src="item.productId === 9999 || item.productName?.includes('盲盒') ? '/src/assets/images/BlindBox.png' : getProductImageUrl(item.productMainImage)" :alt="item.productName" @error="handleImageError" />
-</div>
+                <div class="item-image" @click="goToProductDetail(item.productId)">
+                  <img
+                    :src="item.productId === 9999 || item.productName?.includes('盲盒') ? '/src/assets/images/BlindBox.png' : getProductImageUrl(item.productMainImage)"
+                    :alt="item.productName" @error="handleImageError" />
+                </div>
 
                 <!-- 商品信息 -->
                 <div class="item-info">
@@ -145,15 +147,9 @@
   </div>
 
   <!-- 购买弹窗 -->
-  <PurchaseDialog
-    v-model="purchaseDialogVisible"
-    :products="purchaseProducts"
-    :order="purchaseOrder"
-    :need-create-order="false"
-    @pay-later="handlePayLater"
-    @pay-now="handlePayNow"
-    @cancel="purchaseDialogVisible = false"
-  />
+  <PurchaseDialog v-model="purchaseDialogVisible" :products="purchaseProducts" :order="purchaseOrder"
+    :need-create-order="false" @pay-later="handlePayLater" @pay-now="handlePayNow"
+    @cancel="purchaseDialogVisible = false" />
 </template>
 
 <script setup>
@@ -217,10 +213,10 @@ const discount = computed(() => {
   let discount = 0
   // 简单的优惠计算逻辑
   if (selectedTotalPrice.value >= 200) {
-    discount += 20
+    discount += 0
   }
   if (selectedTotalPrice.value >= 500) {
-    discount += 50
+    discount += 0
   }
   return discount
 })
@@ -485,7 +481,7 @@ const handleCheckout = async () => {
   // 检查是否有选中的商品
   const selected = selectedItems.value
   console.log('选中的商品:', selected, '数量:', selected.length)
-  
+
   if (selected.length === 0) {
     ElMessage.warning('请先选择要结算的商品')
     return
@@ -499,11 +495,11 @@ const handleCheckout = async () => {
       // 选择默认地址或第一个地址
       const defaultAddr = addressData.find(a => a.isDefault === 1 || a.defaultFlag === 1) || addressData[0]
       console.log('使用地址:', defaultAddr)
-      
+
       // 创建订单 - 使用主键id
       const orderRes = await createOrderFromCart(defaultAddr.id)
       console.log('创建订单响应:', orderRes)
-      
+
       if (orderRes.code === 200 && orderRes.data) {
         // 设置购买弹窗数据
         purchaseProducts.value = selected.map(item => ({
@@ -569,7 +565,7 @@ const addToFavorites = async (item) => {
 const goToProductDetail = (productId) => {
   // 判断是否为盲盒商品（ID为9999或包含"blind"字符串）
   const isBlindBox = productId === 9999 || (typeof productId === 'string' && (productId.includes('blind') || productId.startsWith('blind-')));
-  
+
   if (isBlindBox) {
     router.push({
       path: '/product/blind-box',

@@ -167,9 +167,9 @@ public class ProductComment extends BaseEntity
     }
 
     /**
-     * 判断评论是否已删除
+     * 判断评论状态是否为已删除
      */
-    public boolean isDeleted() {
+    public boolean isStatusDeleted() {
         return status != null && status == 3;
     }
 

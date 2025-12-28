@@ -40,10 +40,11 @@
           </div>
         </div>
       </div>
-      
+
       <!-- 聊天记录 -->
       <div class="chat-history" ref="chatHistory">
-        <div v-for="(msg, index) in chatList" :key="index" :class="msg.type === 'user' ? 'user-msg' : 'ai-msg'" :ref="el => { if (el && index === chatList.length - 1) lastMessageRef = el }">
+        <div v-for="(msg, index) in chatList" :key="index" :class="msg.type === 'user' ? 'user-msg' : 'ai-msg'"
+          :ref="el => { if (el && index === chatList.length - 1) lastMessageRef = el }">
           <template v-if="msg.type === 'ai'">
             <div class="avatar-wrapper ai-avatar-wrapper">
               <img src="https://cdn-icons-png.flaticon.com/512/4712/4712039.png" class="avatar ai-avatar" alt="AI客服">
@@ -61,7 +62,7 @@
             </div>
           </template>
         </div>
-        
+
         <!-- AI正在输入指示器 -->
         <div v-if="isAiTyping" class="ai-msg typing-indicator">
           <div class="avatar-wrapper ai-avatar-wrapper">
@@ -75,48 +76,32 @@
             </div>
           </div>
         </div>
-        
+
         <!-- 底部锚点元素，用于自动滚动 -->
         <div ref="scrollAnchor" class="scroll-anchor"></div>
       </div>
-      
+
       <!-- 快捷回复区域 -->
       <div class="quick-replies" v-if="!isAiTyping && showQuickReplies">
         <div class="quick-reply-title">💭 不知道问什么？试试这些：</div>
         <div class="quick-reply-buttons">
-          <button 
-            v-for="(example, index) in exampleQuestions" 
-            :key="index"
-            @click="useExample(example)"
-            :disabled="!isConnected"
-            class="quick-reply-btn"
-          >
+          <button v-for="(example, index) in exampleQuestions" :key="index" @click="useExample(example)"
+            :disabled="!isConnected" class="quick-reply-btn">
             {{ example }}
           </button>
         </div>
       </div>
-      
+
       <!-- 输入区域 -->
       <div class="input-area">
         <div class="input-wrapper">
           <div class="user-icon-wrapper">
             <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" class="user-icon" alt="用户">
           </div>
-          <input 
-            v-model="inputMsg" 
-            placeholder="请输入您想咨询的问题..." 
-            @keyup.enter="sendMessage"
-            @keyup.ctrl.enter="inputMsg += '\n'"
-            :disabled="!isConnected"
-            class="chat-input"
-            ref="chatInput"
-          />
+          <input v-model="inputMsg" placeholder="请输入您想咨询的问题..." @keyup.enter="sendMessage"
+            @keyup.ctrl.enter="inputMsg += '\n'" :disabled="!isConnected" class="chat-input" ref="chatInput" />
           <div class="input-actions">
-            <button 
-              @click="sendMessage" 
-              :disabled="!isConnected || !inputMsg.trim()"
-              class="send-btn"
-            >
+            <button @click="sendMessage" :disabled="!isConnected || !inputMsg.trim()" class="send-btn">
               <span v-if="isConnected">发送</span>
               <span v-else>连接中...</span>
             </button>
@@ -166,14 +151,7 @@ const exampleQuestions = ref([
   '有没有推荐的小米手机？',
   '我想要2000元以上的苹果手机',
   '什么时候发货？',
-<<<<<<< HEAD
   '如何退货？'
-=======
-  '如何退货？',
-  '价格是多少？',
-  //'帮我推荐500元以下的商品',
-  '我想买华为的手机'
->>>>>>> c9eadacee5ed0110a18e451b8a34a4ddf2f5ce84
 ]);
 
 // WebSocket实例
@@ -193,7 +171,7 @@ const isProductList = (content) => {
 // 格式化消息（处理换行和特殊字符）
 const formatMessage = (content) => {
   if (!content) return '';
-  
+
   // 保留换行符
   return content
     .replace(/\n/g, '<br>')
@@ -204,26 +182,26 @@ const formatMessage = (content) => {
 // 格式化时间
 const formatTime = (timestamp) => {
   if (!timestamp) return '';
-  
+
   const date = new Date(timestamp);
-  return date.toLocaleTimeString('zh-CN', { 
-    hour: '2-digit', 
-    minute: '2-digit' 
+  return date.toLocaleTimeString('zh-CN', {
+    hour: '2-digit',
+    minute: '2-digit'
   });
 };
 
 // 增强的滚动到底部函数
 const scrollToBottom = () => {
   if (!autoScrollEnabled.value) return;
-  
+
   nextTick(() => {
     if (scrollAnchor.value) {
-      scrollAnchor.value.scrollIntoView({ 
-        behavior: 'smooth', 
-        block: 'end' 
+      scrollAnchor.value.scrollIntoView({
+        behavior: 'smooth',
+        block: 'end'
       });
     }
-    
+
     setTimeout(() => {
       if (chatHistory.value) {
         chatHistory.value.scrollTop = chatHistory.value.scrollHeight;
@@ -236,9 +214,9 @@ const scrollToBottom = () => {
 const forceScrollToBottom = () => {
   nextTick(() => {
     if (scrollAnchor.value) {
-      scrollAnchor.value.scrollIntoView({ 
-        behavior: 'smooth', 
-        block: 'end' 
+      scrollAnchor.value.scrollIntoView({
+        behavior: 'smooth',
+        block: 'end'
       });
     }
   });
@@ -247,13 +225,13 @@ const forceScrollToBottom = () => {
 // 检查用户是否在手动滚动
 const checkUserScroll = () => {
   if (!chatHistory.value) return;
-  
+
   const { scrollTop, scrollHeight, clientHeight } = chatHistory.value;
   const isAtBottom = scrollHeight - scrollTop - clientHeight < 50;
-  
+
   if (scrollTop < 100) {
     autoScrollEnabled.value = false;
-  } 
+  }
   else if (isAtBottom) {
     autoScrollEnabled.value = true;
     forceScrollToBottom();
@@ -264,9 +242,9 @@ const checkUserScroll = () => {
 const initWebSocket = () => {
   try {
     const wsUrl = getWebSocketUrl();
-    
+
     console.log('WebSocket连接地址:', wsUrl);
-     fetch('http://localhost:9091/test/ws-status')
+    fetch('http://localhost:9091/test/ws-status')
       .then(response => {
         console.log('✅ 后端服务可达');
         return response.text();
@@ -282,24 +260,24 @@ const initWebSocket = () => {
 
     ws = new WebSocket(wsUrl);
     // ws = new WebSocket('ws://localhost:9091/ai/chat');
-    
-        ws.onopen = (event) => {
+
+    ws.onopen = (event) => {
       console.log('✅ WebSocket连接成功');
       isConnected.value = true;
       addSystemMessage('已连接到智能客服');
       forceScrollToBottom();
     };
-    
+
     ws.onclose = (event) => {
       console.log('🔌 WebSocket连接关闭');
       isConnected.value = false;
       isAiTyping.value = false;
       addSystemMessage('连接已断开，正在尝试重新连接...');
       forceScrollToBottom();
-      
+
       setTimeout(initWebSocket, 3000);
     };
-    
+
     ws.onerror = (error) => {
       console.error('❌ WebSocket错误：', error);
       isConnected.value = false;
@@ -307,37 +285,37 @@ const initWebSocket = () => {
       addSystemMessage('连接失败，请检查后端服务是否启动');
       forceScrollToBottom();
     };
-    
+
     ws.onmessage = (event) => {
       try {
         const response = JSON.parse(event.data);
         const { type, content } = response;
-        
+
         if (type === 'stream') {
           currentAiMessage.value += content;
-          
+
           const lastMsg = chatList.value[chatList.value.length - 1];
           if (lastMsg && lastMsg.type === 'ai') {
             lastMsg.content = currentAiMessage.value;
           } else {
-            chatList.value.push({ 
-              type: 'ai', 
+            chatList.value.push({
+              type: 'ai',
               content: currentAiMessage.value,
               time: Date.now()
             });
           }
-          
+
           isAiTyping.value = true;
           forceScrollToBottom();
-          
+
         } else if (type === 'end') {
           isAiTyping.value = false;
           currentAiMessage.value = '';
-          
+
           setTimeout(() => {
             forceScrollToBottom();
           }, 100);
-          
+
         } else if (type === 'error') {
           addErrorMessage(content);
           isAiTyping.value = false;
@@ -352,20 +330,20 @@ const initWebSocket = () => {
         forceScrollToBottom();
       }
     };
-    
+
   } catch (error) {
     console.error('创建WebSocket连接失败:', error);
     addSystemMessage('连接失败: ' + error.message);
     forceScrollToBottom();
-    
+
     setTimeout(initWebSocket, 5000);
   }
 };
 
 // 添加用户消息
 const addUserMessage = (text) => {
-  chatList.value.push({ 
-    type: 'user', 
+  chatList.value.push({
+    type: 'user',
     content: text,
     time: Date.now()
   });
@@ -375,8 +353,8 @@ const addUserMessage = (text) => {
 
 // 添加系统消息
 const addSystemMessage = (text) => {
-  chatList.value.push({ 
-    type: 'ai', 
+  chatList.value.push({
+    type: 'ai',
     content: `系统提示：${text}`,
     time: Date.now()
   });
@@ -385,8 +363,8 @@ const addSystemMessage = (text) => {
 
 // 添加错误消息
 const addErrorMessage = (text) => {
-  chatList.value.push({ 
-    type: 'ai', 
+  chatList.value.push({
+    type: 'ai',
     content: `错误：${text}`,
     time: Date.now()
   });
@@ -399,17 +377,17 @@ const sendMessage = () => {
   if (!text || !isConnected.value) {
     return;
   }
-  
+
   addUserMessage(text);
-  
+
   ws.send(JSON.stringify({
     question: text,
     productId: null,
     userId: currentUserId.value
   }));
-  
+
   inputMsg.value = '';
-  
+
   nextTick(() => {
     if (chatInput.value) {
       chatInput.value.focus();
@@ -423,7 +401,7 @@ const useExample = (example) => {
     addSystemMessage('连接未建立，请等待连接成功');
     return;
   }
-  
+
   inputMsg.value = example;
   sendMessage();
 };
@@ -457,17 +435,17 @@ const scrollToBottomManually = () => {
 // 生命周期钩子
 onMounted(() => {
   initWebSocket();
-  
+
   nextTick(() => {
     if (chatInput.value) {
       chatInput.value.focus();
     }
   });
-  
+
   if (chatHistory.value) {
     chatHistory.value.addEventListener('scroll', checkUserScroll);
   }
-  
+
   document.addEventListener('keydown', (e) => {
     if (e.ctrlKey && e.key === 'ArrowDown') {
       e.preventDefault();
@@ -480,12 +458,12 @@ onUnmounted(() => {
   if (ws) {
     ws.close();
   }
-  
+
   if (chatHistory.value) {
     chatHistory.value.removeEventListener('scroll', checkUserScroll);
   }
-  
-  document.removeEventListener('keydown', () => {});
+
+  document.removeEventListener('keydown', () => { });
 });
 </script>
 
@@ -763,7 +741,8 @@ onUnmounted(() => {
 }
 
 /* 消息样式 */
-.user-msg, .ai-msg {
+.user-msg,
+.ai-msg {
   display: flex;
   align-items: flex-start;
   max-width: 100%;
@@ -1045,6 +1024,7 @@ onUnmounted(() => {
     opacity: 0;
     transform: translateY(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -1056,6 +1036,7 @@ onUnmounted(() => {
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -1067,9 +1048,11 @@ onUnmounted(() => {
     transform: scale(0.9);
     opacity: 0;
   }
+
   70% {
     transform: scale(1.05);
   }
+
   100% {
     transform: scale(1);
     opacity: 1;
@@ -1077,18 +1060,25 @@ onUnmounted(() => {
 }
 
 @keyframes typing {
-  0%, 60%, 100% {
+
+  0%,
+  60%,
+  100% {
     transform: translateY(0);
   }
+
   30% {
     transform: translateY(-4px);
   }
 }
 
 @keyframes float {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0);
   }
+
   50% {
     transform: translateY(-10px);
   }
@@ -1100,39 +1090,39 @@ onUnmounted(() => {
     border: none;
     height: 100vh;
   }
-  
+
   .chat-header {
     padding: 12px;
   }
-  
+
   .chat-history {
     padding: 12px;
   }
-  
+
   .avatar {
     width: 36px;
     height: 36px;
   }
-  
+
   .msg-content {
     max-width: 85%;
     padding: 12px 16px;
   }
-  
+
   .msg-content.product-list {
     max-width: 95%;
   }
-  
+
   .user-icon {
     width: 32px;
     height: 32px;
   }
-  
+
   .welcome-message {
     max-width: 90%;
     padding: 20px;
   }
-  
+
   .welcome-close-btn {
     top: 6px;
     right: 8px;

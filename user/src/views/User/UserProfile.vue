@@ -137,12 +137,6 @@
                       <span class="balance-highlight">¥{{ formatPrice(userInfo.balance || 0) }}</span>
                     </el-descriptions-item>
                   </el-descriptions>
-
-                  <div class="account-actions">
-                    <el-button type="primary" @click="handleRecharge">充值</el-button>
-                    <el-button @click="handleWithdraw">提现</el-button>
-                    <el-button @click="handleTransactionHistory">交易记录</el-button>
-                  </div>
                 </div>
               </el-tab-pane>
 

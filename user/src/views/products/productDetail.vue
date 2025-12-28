@@ -104,14 +104,6 @@ const zoomVisible = ref(false)
 const zoomPosition = ref({ x: 0, y: 0 })
 const zoomImageUrl = ref('')
 
-// 商品规格选择
-const selectedSpecs = ref([])
-const productSpecs = ref([
-  { name: '颜色', options: ['黑色', '白色', '红色', '蓝色'] },
-  { name: '尺寸', options: ['S', 'M', 'L', 'XL'] },
-  { name: '版本', options: ['标准版', '旗舰版', '尊享版'] }
-])
-
 // 加载商品数据
 const loadProductData = async () => {
   const productId = route.query.id
@@ -395,101 +387,7 @@ const calculateCommentStatsFromData = () => {
 // 模拟评论数据（修改版）
 const getMockComments = () => {
   const rootComments = [
-    {
-      commentId: 1,
-      productId: product.value.id,
-      userId: 1,
-      parentId: 0, // 根评论的 parentId 为 0
-      nickName: '张先生',
-      avatar: '/src/assets/images/default-avatar.png',
-      content: '商品质量很好，发货速度也很快，非常满意！',
-      score: 5, // 根评论有评分
-      images: [],
-      likeCount: 12,
-      replyCount: 3,
-      createTime: '2025-12-20 10:30:00',
-      isAnonymous: 0,
-      children: [
-        {
-          commentId: 11,
-          productId: product.value.id,
-          userId: 2,
-          parentId: 1, // 回复的 parentId 为根评论的ID
-          nickName: '客服小张',
-          avatar: '/src/assets/images/service-avatar.png',
-          content: '感谢您的认可！我们会继续努力提供更好的服务。',
-          score: 0, // 回复没有评分
-          images: [],
-          likeCount: 2,
-          replyCount: 0,
-          createTime: '2025-12-20 11:00:00',
-          isAnonymous: 0
-        },
-        {
-          commentId: 12,
-          productId: product.value.id,
-          userId: 3,
-          parentId: 1,
-          nickName: '李女士',
-          avatar: '/src/assets/images/default-avatar.png',
-          content: '我也买了这款，确实不错！',
-          score: 0, // 回复没有评分
-          images: [],
-          likeCount: 1,
-          replyCount: 0,
-          createTime: '2025-12-20 14:30:00',
-          isAnonymous: 0
-        }
-      ]
-    },
-    {
-      commentId: 2,
-      productId: product.value.id,
-      userId: 2,
-      parentId: 0, // 根评论
-      nickName: '李小姐',
-      avatar: '/src/assets/images/default-avatar.png',
-      content: '性价比很高，使用起来很方便，会推荐给朋友。',
-      score: 4, // 根评论有评分
-      images: [],
-      likeCount: 5,
-      replyCount: 1,
-      createTime: '2025-12-19 14:20:00',
-      isAnonymous: 0,
-      children: [
-        {
-          commentId: 21,
-          productId: product.value.id,
-          userId: 4,
-          parentId: 2,
-          nickName: '店铺客服',
-          avatar: '/src/assets/images/service-avatar.png',
-          content: '感谢您的支持！期待您再次光临。',
-          score: 0, // 回复没有评分
-          images: [],
-          likeCount: 0,
-          replyCount: 0,
-          createTime: '2025-12-19 15:00:00',
-          isAnonymous: 0
-        }
-      ]
-    },
-    {
-      commentId: 3,
-      productId: product.value.id,
-      userId: 3,
-      parentId: 0,
-      nickName: '王先生',
-      avatar: '/src/assets/images/default-avatar.png',
-      content: '中规中矩，没有想象中好。',
-      score: 3, // 根评论有评分
-      images: [],
-      likeCount: 2,
-      replyCount: 0,
-      createTime: '2025-12-18 09:15:00',
-      isAnonymous: 0,
-      children: []
-    }
+
   ]
 
   // 计算根评论的统计
@@ -600,11 +498,6 @@ const changeMainImage = (index) => {
   zoomVisible.value = false
 }
 
-// 选择规格
-const selectSpec = (specIndex, optionIndex) => {
-  selectedSpecs.value[specIndex] = productSpecs.value[specIndex].options[optionIndex]
-}
-
 // 数量变化处理
 const handleQuantityChange = (value) => {
   if (value > (product.value.stock || 999)) {
@@ -633,10 +526,10 @@ const handleAddToCart = async () => {
   }
 
   // 验证是否选择了所有规格
-  if (productSpecs.value.length > 0 && selectedSpecs.value.length < productSpecs.value.length) {
-    ElMessage.warning('请选择所有商品规格')
-    return
-  }
+  // if (productSpecs.value.length > 0 && selectedSpecs.value.length < productSpecs.value.length) {
+  //   ElMessage.warning('请选择所有商品规格')
+  //   return
+  // }
 
   // 验证库存
   if (quantity.value > (product.value.stock || 0)) {
@@ -655,7 +548,6 @@ const handleAddToCart = async () => {
       productUnitPrice: product.value.price,
       selected: 1,
       productTotalPrice: product.value.price * quantity.value,
-      specs: selectedSpecs.value.join(','), // 传递规格信息
       shopId: product.value.shopId
     }
 
@@ -682,10 +574,10 @@ const handleBuyNow = async () => {
   }
 
   // 验证是否选择了所有规格
-  if (productSpecs.value.length > 0 && selectedSpecs.value.length < productSpecs.value.length) {
-    ElMessage.warning('请选择所有商品规格')
-    return
-  }
+  // if (productSpecs.value.length > 0 && selectedSpecs.value.length < productSpecs.value.length) {
+  //   ElMessage.warning('请选择所有商品规格')
+  //   return
+  // }
 
   // 验证库存
   if (quantity.value > (product.value.stock || 0)) {
@@ -1018,7 +910,7 @@ onMounted(() => {
                                       <div class="sub-reply-user-name">
                                         <span v-if="subReply.userId === shopInfo.userId" class="shop-tag">商家</span>
                                         {{ subReply.isAnonymous === 1 ? '匿名用户' : (subReply.nickName ||
-                                        `用户${subReply.userId}`) }}
+                                          `用户${subReply.userId}`) }}
                                       </div>
                                       <div class="sub-reply-time">{{ formatTime(subReply.createTime) }}</div>
                                     </div>
@@ -1103,18 +995,6 @@ onMounted(() => {
                       <Service />
                     </el-icon>
                     <span>7天无理由退货</span>
-                  </div>
-                </div>
-
-                <!-- 规格选择 -->
-                <div v-for="(spec, specIndex) in productSpecs" :key="spec.name" class="spec-section">
-                  <div class="spec-label">{{ spec.name }}</div>
-                  <div class="spec-options">
-                    <div v-for="(option, optionIndex) in spec.options" :key="option"
-                      :class="['spec-option', { selected: selectedSpecs[specIndex] === option }]"
-                      @click="selectSpec(specIndex, optionIndex)">
-                      {{ option }}
-                    </div>
                   </div>
                 </div>
 
@@ -1919,47 +1799,6 @@ onMounted(() => {
 .service-item .el-icon {
   color: #52c41a;
   font-size: 14px;
-}
-
-/* 规格选择 */
-.spec-section {
-  margin-bottom: 20px;
-}
-
-.spec-label {
-  font-size: 14px;
-  color: #333;
-  margin-bottom: 10px;
-  font-weight: 500;
-}
-
-.spec-options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.spec-option {
-  padding: 8px 16px;
-  border: 1px solid #dcdfe6;
-  border-radius: 4px;
-  background: #fff;
-  color: #333;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 13px;
-  user-select: none;
-}
-
-.spec-option:hover {
-  border-color: #ff5000;
-  color: #ff5000;
-}
-
-.spec-option.selected {
-  background: #ff5000;
-  border-color: #ff5000;
-  color: #fff;
 }
 
 /* 数量选择 */
