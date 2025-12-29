@@ -150,7 +150,7 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
             comment.setReplyCount(0L);
         }
         if (comment.getStatus() == null) {
-            comment.setStatus(2); // 默认审核中
+            comment.setStatus(1); // 默认正常（无需审核）
         }
         if (comment.getIsAnonymous() == null) {
             comment.setIsAnonymous(0); // 默认不匿名
