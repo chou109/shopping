@@ -357,7 +357,7 @@ const handleSelectAll = async (selected) => {
     })
     // 调用API更新后端状态
     await batchSelectCart(selected ? 1 : 0)
-    ElMessage.success('选择状态已更新')
+    // ElMessage.success('选择状态已更新')
   } catch (error) {
     console.error('更新全选状态失败:', error)
     ElMessage.error('更新失败')
