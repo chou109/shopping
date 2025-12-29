@@ -15,11 +15,11 @@
                 <span class="stat-label">全部商品</span>
               </div>
               <div class="stat-item">
-                <span class="stat-value">{{ shopInfo.fansCount || 0 }}</span>
+                <span class="stat-value">{{ shopInfo.followerCount || 0 }}</span>
                 <span class="stat-label">粉丝</span>
               </div>
               <div class="stat-item">
-                <span class="stat-value">{{ formatScore(shopInfo.score) }}</span>
+                <span class="stat-value">{{ formatScore(shopInfo.shopScore) }}</span>
                 <span class="stat-label">店铺评分</span>
               </div>
             </div>
@@ -275,6 +275,8 @@ const handleTabClick = (tab) => {
 // 加载店铺数据
 const loadShopData = async () => {
   const shopId = route.query.id
+  console.log('店铺ID:', shopId)
+  
   if (!shopId) {
     ElMessage.error('店铺ID不存在')
     return
@@ -284,14 +286,23 @@ const loadShopData = async () => {
   try {
     // 获取店铺信息
     const shopRes = await getShopInfo(shopId)
+    console.log('店铺信息API响应:', shopRes)
     if (shopRes.code === 200) {
       shopInfo.value = shopRes.data || {}
+      console.log('店铺信息:', shopInfo.value)
+    } else {
+      console.error('获取店铺信息失败:', shopRes.msg)
+      ElMessage.error(shopRes.msg || '获取店铺信息失败')
     }
 
     // 获取店铺商品
     const productRes = await getShopProducts(shopId)
+    console.log('店铺商品API响应:', productRes)
     if (productRes.code === 200) {
       products.value = productRes.data || []
+      console.log('商品列表:', products.value)
+    } else {
+      console.error('获取店铺商品失败:', productRes.msg)
     }
   } catch (error) {
     console.error('加载店铺数据失败:', error)

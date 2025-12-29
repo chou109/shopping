@@ -465,6 +465,11 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
         Date expireTime = DateUtils.addMinutes(DateUtils.getNowDate(), ORDER_EXPIRE_MINUTES);
         orderInfo.setExpireTime(expireTime);
 
+        // 如果有盲盒标记，设置为盲盒订单
+        if (remark != null && remark.contains("盲盒")) {
+            orderInfo.setIsBlindBox(true);
+        }
+
         orderInfo.setCreateTime(DateUtils.getNowDate());
         orderInfoMapper.insertOrderInfo(orderInfo);
 

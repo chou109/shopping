@@ -253,7 +253,7 @@
             </el-col>
             <el-col :span="12">
               <el-form-item label="联系电话" prop="receivePhone">
-                <el-input v-model="form.receivePhone" placeholder="请输入联系电话" />
+                <el-input v-model="form.receivePhone" placeholder="请输入联系电话" maxlength="11" />
               </el-form-item>
             </el-col>
           </el-row>
@@ -345,7 +345,8 @@ const data = reactive({
       { required: true, message: "收货人不能为空", trigger: "blur" }
     ],
     receivePhone: [
-      { required: true, message: "联系电话不能为空", trigger: "blur" }
+      { required: true, message: "联系电话不能为空", trigger: "blur" },
+      { pattern: /^1[3-9]\d{9}$/, message: "请输入11位正确的手机号码", trigger: "blur" }
     ],
     street: [
       { required: true, message: "详细地址不能为空", trigger: "blur" }

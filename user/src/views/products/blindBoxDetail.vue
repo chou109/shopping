@@ -684,24 +684,58 @@ onMounted(() => {
 
 /* 面包屑导航 */
 .breadcrumb-nav {
-  height: 40px;
-  background: #fff;
-  border-bottom: 1px solid #e5e5e5;
+  padding: 16px 0;
+  background: linear-gradient(135deg, #f8f9fa 0%, #fff 100%);
+  border-bottom: 1px solid #eee;
+}
+
+.breadcrumb-nav .container {
   display: flex;
   align-items: center;
 }
 
 .breadcrumb-nav .el-breadcrumb {
-  font-size: 12px;
-  color: #666;
+  font-size: 14px;
+}
+
+.breadcrumb-nav :deep(.el-breadcrumb__separator) {
+  color: #c0c4cc;
+  margin: 0 12px;
 }
 
 .breadcrumb-nav :deep(.el-breadcrumb__inner) {
-  color: #666;
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 6px;
+  color: #606266;
+  font-weight: 500;
+  transition: all 0.25s ease;
 }
 
 .breadcrumb-nav :deep(.el-breadcrumb__inner:hover) {
+  background: rgba(255, 80, 0, 0.08);
   color: #ff5000;
+}
+
+.breadcrumb-nav :deep(.el-breadcrumb__item:last-child .el-breadcrumb__inner) {
+  background: rgba(255, 80, 0, 0.1);
+  color: #303133;
+  font-weight: 600;
+  padding-left: 16px;
+  position: relative;
+}
+
+.breadcrumb-nav :deep(.el-breadcrumb__item:last-child .el-breadcrumb__inner::before) {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 14px;
+  background: #ff5000;
+  border-radius: 2px;
 }
 
 /* 主商品区域 */

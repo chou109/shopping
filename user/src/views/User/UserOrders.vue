@@ -115,20 +115,20 @@
 
                 <!-- 20：待发货 → 退款（盲盒订单禁止退款） -->
                 <template v-else-if="order.status === 20">
-                  <span v-if="order.isBlindBox" class="no-refund-tip">盲盒订单不支持退款</span>
+                  <span v-if="order.isBlindBox || hasBlindBoxResult(order)" class="no-refund-tip">盲盒订单不支持退款</span>
                   <el-button v-else type="warning" size="small" @click="handleRefund(order)">申请退款</el-button>
                 </template>
 
                 <!-- 30：待收货 → 收货/退款 -->
                 <template v-else-if="order.status === 30">
                   <el-button type="primary" size="small" @click="handleConfirmReceipt(order)">确认收货</el-button>
-                  <el-button v-if="!order.isBlindBox" type="warning" size="small" @click="handleRefund(order)">申请退款</el-button>
+                  <el-button v-if="!order.isBlindBox && !hasBlindBoxResult(order)" type="warning" size="small" @click="handleRefund(order)">申请退款</el-button>
                 </template>
 
                 <!-- 40：待评价 → 评价/退款 -->
                 <template v-else-if="order.status === 40">
                   <el-button type="primary" size="small" @click="handleReview(order)">去评价</el-button>
-                  <el-button v-if="!order.isBlindBox" type="warning" size="small" @click="handleRefund(order)">申请退款</el-button>
+                  <el-button v-if="!order.isBlindBox && !hasBlindBoxResult(order)" type="warning" size="small" @click="handleRefund(order)">申请退款</el-button>
                 </template>
 
                 <!-- 50：交易完成 → 详情/删除 -->
@@ -335,6 +335,46 @@
       </div>
       <template #footer>
         <el-button @click="detailDialogVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 评价弹窗 -->
+    <el-dialog v-model="reviewDialogVisible" title="订单评价" width="650px" :close-on-click-modal="false">
+      <div class="review-dialog-content">
+        <div v-for="(item, index) in reviewItems" :key="index" class="review-item">
+          <!-- 商品信息 -->
+          <div class="review-product">
+            <img :src="getProductImageUrl(item.productMainImage)" class="product-img" @error="handleImageError" />
+            <div class="product-name">{{ item.productName }}</div>
+          </div>
+
+          <!-- 评分 -->
+          <div class="review-score">
+            <span class="label">商品评分：</span>
+            <el-rate v-model="item.score" :texts="['很差', '较差', '一般', '较好', '非常好']" show-text />
+          </div>
+
+          <!-- 评价内容 -->
+          <div class="review-content">
+            <el-input
+              v-model="item.content"
+              type="textarea"
+              :rows="3"
+              placeholder="请分享您的购物体验，帮助其他买家做出更好的选择~"
+              maxlength="500"
+              show-word-limit
+            />
+          </div>
+
+          <!-- 匿名评价 -->
+          <div class="review-anonymous">
+            <el-checkbox v-model="item.isAnonymous">匿名评价</el-checkbox>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="reviewDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="submittingReview" @click="submitReviewHandler">提交评价</el-button>
       </template>
     </el-dialog>
   </div>
@@ -1638,5 +1678,67 @@ onMounted(() => {
   color: #ff5000;
   font-size: 20px;
   font-weight: 700;
+}
+
+/* 评价弹窗样式 */
+.review-dialog-content {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.review-item {
+  padding: 20px;
+  background: #fafafa;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.review-item:last-child {
+  margin-bottom: 0;
+}
+
+.review-product {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #eee;
+  margin-bottom: 16px;
+}
+
+.review-product .product-img {
+  width: 60px;
+  height: 60px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1px solid #eee;
+}
+
+.review-product .product-name {
+  flex: 1;
+  font-size: 14px;
+  color: #333;
+  font-weight: 500;
+}
+
+.review-score {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.review-score .label {
+  font-size: 14px;
+  color: #666;
+  margin-right: 12px;
+}
+
+.review-content {
+  margin-bottom: 12px;
+}
+
+.review-anonymous {
+  display: flex;
+  justify-content: flex-end;
 }
 </style>

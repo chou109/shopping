@@ -115,17 +115,19 @@ public class DashboardController extends BaseController
                     "linear-gradient(135deg, #722ed1, #b37feb)", 5.2));
             
         } else {
-            // 商家视角
+            // 商家视角 - 根据店铺ID筛选
             Shop myShop = shopService.selectShopByUserId(userId);
             
             if (myShop != null) {
-                // 1. 我的商品数
+                Long myShopId = myShop.getId();
+                
+                // 1. 我的商品数 - 通过shopId筛选
                 Product productQuery = new Product();
-                productQuery.setCreateUser(userId);
+                productQuery.setShopId(myShopId);
                 List<Product> myProducts = productService.selectProductList(productQuery);
                 int myProductCount = myProducts != null ? myProducts.size() : 0;
                 
-                // 2. 我的订单数（待处理）
+                // 2. 我的订单数（待发货 status=20）
                 int pendingOrders = 0;
                 OrderInfo orderQuery = new OrderInfo();
                 List<OrderInfo> allOrders = orderInfoService.selectOrderInfoList(orderQuery);
@@ -135,7 +137,7 @@ public class DashboardController extends BaseController
                         myProductIds.add(p.getId());
                     }
                     for (OrderInfo order : allOrders) {
-                        if (order.getStatus() != null && order.getStatus() == 30) { // 待发货
+                        if (order.getStatus() != null && order.getStatus() == 20) { // 待发货
                             if (order.getOrderDetails() != null) {
                                 for (OrderDetail detail : order.getOrderDetails()) {
                                     if (myProductIds.contains(detail.getProductId())) {
@@ -209,15 +211,18 @@ public class DashboardController extends BaseController
         OrderInfo orderQuery = new OrderInfo();
         List<OrderInfo> allOrders = orderInfoService.selectOrderInfoList(orderQuery);
         
-        // 如果是商家，过滤自己的商品订单
+        // 如果是商家，过滤自己店铺的商品订单
         Set<Long> myProductIds = new HashSet<>();
         if (!isAdmin) {
-            Product productQuery = new Product();
-            productQuery.setCreateUser(userId);
-            List<Product> myProducts = productService.selectProductList(productQuery);
-            if (myProducts != null) {
-                for (Product p : myProducts) {
-                    myProductIds.add(p.getId());
+            Shop myShop = shopService.selectShopByUserId(userId);
+            if (myShop != null) {
+                Product productQuery = new Product();
+                productQuery.setShopId(myShop.getId());
+                List<Product> myProducts = productService.selectProductList(productQuery);
+                if (myProducts != null) {
+                    for (Product p : myProducts) {
+                        myProductIds.add(p.getId());
+                    }
                 }
             }
         }
@@ -295,12 +300,17 @@ public class DashboardController extends BaseController
         if (isAdmin) {
             hotProducts = productService.selectHotProductList(limit);
         } else {
-            // 商家只看自己的热门商品
-            Product query = new Product();
-            query.setCreateUser(userId);
-            query.setHotFlag(1);
-            List<Product> myHotProducts = productService.selectProductList(query);
-            hotProducts = myHotProducts != null ? myHotProducts.subList(0, Math.min(limit, myHotProducts.size())) : new ArrayList<>();
+            // 商家只看自己店铺的热门商品
+            Shop myShop = shopService.selectShopByUserId(userId);
+            if (myShop != null) {
+                Product query = new Product();
+                query.setShopId(myShop.getId());
+                query.setHotFlag(1);
+                List<Product> myHotProducts = productService.selectProductList(query);
+                hotProducts = myHotProducts != null ? myHotProducts.subList(0, Math.min(limit, myHotProducts.size())) : new ArrayList<>();
+            } else {
+                hotProducts = new ArrayList<>();
+            }
         }
         
         return success(hotProducts);
@@ -331,14 +341,17 @@ public class DashboardController extends BaseController
             if (isAdmin) {
                 recentOrders = allOrders.subList(0, Math.min(limit, allOrders.size()));
             } else {
-                // 商家只看自己商品的订单
-                Product productQuery = new Product();
-                productQuery.setCreateUser(userId);
-                List<Product> myProducts = productService.selectProductList(productQuery);
+                // 商家只看自己店铺商品的订单
+                Shop myShop = shopService.selectShopByUserId(userId);
                 Set<Long> myProductIds = new HashSet<>();
-                if (myProducts != null) {
-                    for (Product p : myProducts) {
-                        myProductIds.add(p.getId());
+                if (myShop != null) {
+                    Product productQuery = new Product();
+                    productQuery.setShopId(myShop.getId());
+                    List<Product> myProducts = productService.selectProductList(productQuery);
+                    if (myProducts != null) {
+                        for (Product p : myProducts) {
+                            myProductIds.add(p.getId());
+                        }
                     }
                 }
                 
@@ -375,7 +388,10 @@ public class DashboardController extends BaseController
         // 获取商品列表
         Product productQuery = new Product();
         if (!isAdmin) {
-            productQuery.setCreateUser(userId);
+            Shop myShop = shopService.selectShopByUserId(userId);
+            if (myShop != null) {
+                productQuery.setShopId(myShop.getId());
+            }
         }
         List<Product> products = productService.selectProductList(productQuery);
         
@@ -433,15 +449,18 @@ public class DashboardController extends BaseController
         OrderInfo orderQuery = new OrderInfo();
         List<OrderInfo> allOrders = orderInfoService.selectOrderInfoList(orderQuery);
         
-        // 如果是商家，过滤自己的商品订单
+        // 如果是商家，过滤自己店铺的商品订单
         Set<Long> myProductIds = new HashSet<>();
         if (!isAdmin) {
-            Product productQuery = new Product();
-            productQuery.setCreateUser(userId);
-            List<Product> myProducts = productService.selectProductList(productQuery);
-            if (myProducts != null) {
-                for (Product p : myProducts) {
-                    myProductIds.add(p.getId());
+            Shop myShop = shopService.selectShopByUserId(userId);
+            if (myShop != null) {
+                Product productQuery = new Product();
+                productQuery.setShopId(myShop.getId());
+                List<Product> myProducts = productService.selectProductList(productQuery);
+                if (myProducts != null) {
+                    for (Product p : myProducts) {
+                        myProductIds.add(p.getId());
+                    }
                 }
             }
         }
@@ -449,12 +468,11 @@ public class DashboardController extends BaseController
         // 统计各状态订单数量
         Map<Integer, Integer> statusCount = new HashMap<>();
         statusCount.put(10, 0); // 待付款
-        statusCount.put(20, 0); // 已付款
-        statusCount.put(30, 0); // 待发货
-        statusCount.put(40, 0); // 已发货
-        statusCount.put(50, 0); // 已完成
-        statusCount.put(60, 0); // 退款中
-        statusCount.put(70, 0); // 已取消
+        statusCount.put(20, 0); // 待发货
+        statusCount.put(30, 0); // 待收货
+        statusCount.put(40, 0); // 待评价
+        statusCount.put(50, 0); // 交易完成
+        statusCount.put(60, 0); // 已取消
         
         if (allOrders != null) {
             for (OrderInfo order : allOrders) {
@@ -481,11 +499,11 @@ public class DashboardController extends BaseController
         
         List<Map<String, Object>> result = new ArrayList<>();
         result.add(createStatusItem("待付款", statusCount.get(10), "#faad14"));
-        result.add(createStatusItem("已付款", statusCount.get(20), "#1890ff"));
-        result.add(createStatusItem("待发货", statusCount.get(30), "#722ed1"));
-        result.add(createStatusItem("已发货", statusCount.get(40), "#13c2c2"));
-        result.add(createStatusItem("已完成", statusCount.get(50), "#52c41a"));
-        result.add(createStatusItem("已取消", statusCount.get(70), "#8c8c8c"));
+        result.add(createStatusItem("待发货", statusCount.get(20), "#1890ff"));
+        result.add(createStatusItem("待收货", statusCount.get(30), "#722ed1"));
+        result.add(createStatusItem("待评价", statusCount.get(40), "#13c2c2"));
+        result.add(createStatusItem("交易完成", statusCount.get(50), "#52c41a"));
+        result.add(createStatusItem("已取消", statusCount.get(60), "#8c8c8c"));
         
         return success(result);
     }
@@ -554,14 +572,16 @@ public class DashboardController extends BaseController
             result.put("followerCount", myShop.getFollowerCount());
         }
         
-        // 获取我的商品数
+        // 获取我的商品数 - 通过shopId筛选
         Product productQuery = new Product();
-        productQuery.setCreateUser(userId);
+        if (myShop != null) {
+            productQuery.setShopId(myShop.getId());
+        }
         List<Product> myProducts = productService.selectProductList(productQuery);
         result.put("totalProducts", myProducts != null ? myProducts.size() : 0);
         
         // 获取相关订单统计
-        int pendingOrders = 0; // 待发货
+        int pendingOrders = 0; // 待发货(status=20)
         int todayOrders = 0; // 今日订单
         BigDecimal todaySales = BigDecimal.ZERO;
         
@@ -589,8 +609,8 @@ public class DashboardController extends BaseController
                 }
                 
                 if (isMyOrder) {
-                    // 待发货订单
-                    if (order.getStatus() != null && order.getStatus() == 30) {
+                    // 待发货订单 (status=20)
+                    if (order.getStatus() != null && order.getStatus() == 20) {
                         pendingOrders++;
                     }
                     

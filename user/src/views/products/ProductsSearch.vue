@@ -485,11 +485,54 @@ watch(() => route.query, (newQuery) => {
 
 .breadcrumb-nav {
   margin-bottom: 20px;
-  padding: 0 10px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #fff 100%);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .breadcrumb-nav .el-breadcrumb {
   font-size: 14px;
+}
+
+.breadcrumb-nav :deep(.el-breadcrumb__separator) {
+  color: #c0c4cc;
+  margin: 0 12px;
+}
+
+.breadcrumb-nav :deep(.el-breadcrumb__inner) {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 6px;
+  color: #606266;
+  font-weight: 500;
+  transition: all 0.25s ease;
+}
+
+.breadcrumb-nav :deep(.el-breadcrumb__inner:hover) {
+  background: rgba(255, 68, 0, 0.08);
+  color: #FF4400;
+}
+
+.breadcrumb-nav :deep(.el-breadcrumb__item:last-child .el-breadcrumb__inner) {
+  background: rgba(255, 68, 0, 0.1);
+  color: #303133;
+  font-weight: 600;
+  padding-left: 16px;
+  position: relative;
+}
+
+.breadcrumb-nav :deep(.el-breadcrumb__item:last-child .el-breadcrumb__inner::before) {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 14px;
+  background: #FF4400;
+  border-radius: 2px;
 }
 
 .search-header {

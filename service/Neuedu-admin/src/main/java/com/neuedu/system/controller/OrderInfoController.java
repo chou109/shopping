@@ -444,18 +444,73 @@ public class OrderInfoController extends BaseController {
 class OrderInfoAdminController extends BaseController
 {
     private final IOrderInfoService orderInfoService;
+    
+    @Autowired
+    private IProductService productService;
+    
+    @Autowired
+    private com.neuedu.system.service.IShopService shopService;
 
     @Operation(summary = "查询订单列表（管理员）")
     @PreAuthorize("@ss.hasPermi('system:order:list')")
     @GetMapping("/list")
     public TableDataInfo list(OrderInfo orderInfo)
     {
-        // startPage() 会自动从请求中获取 pageNum 和 pageSize
-        startPage();
-        List<OrderInfo> list = orderInfoService.selectOrderInfoList(orderInfo);
-
-        // getDataTable() 会返回包含 total、rows 等信息的 TableDataInfo
-        return getDataTable(list);
+        Long currentUserId = SecurityUtils.getUserId();
+        boolean isAdmin = (currentUserId != null && currentUserId == 1L);
+        
+        if (isAdmin) {
+            // 超级管理员查看所有订单
+            startPage();
+            List<OrderInfo> list = orderInfoService.selectOrderInfoList(orderInfo);
+            return getDataTable(list);
+        } else {
+            // 商家只能查看自己店铺的订单
+            // 先获取店铺和商品信息（不受分页影响）
+            com.neuedu.system.domain.Shop myShop = shopService.selectShopByUserId(currentUserId);
+            if (myShop == null) {
+                return getDataTable(new java.util.ArrayList<>());
+            }
+            
+            // 获取商家店铺的所有商品ID
+            Product productQuery = new Product();
+            productQuery.setShopId(myShop.getId());
+            List<Product> myProducts = productService.selectProductList(productQuery);
+            
+            if (myProducts == null || myProducts.isEmpty()) {
+                return getDataTable(new java.util.ArrayList<>());
+            }
+            
+            java.util.Set<Long> myProductIds = new java.util.HashSet<>();
+            for (Product p : myProducts) {
+                myProductIds.add(p.getId());
+            }
+            
+            // 查询所有订单（不分页），然后过滤出包含商家商品的订单
+            List<OrderInfo> allOrders = orderInfoService.selectOrderInfoList(orderInfo);
+            List<OrderInfo> myOrders = new java.util.ArrayList<>();
+            
+            if (allOrders != null) {
+                for (OrderInfo order : allOrders) {
+                    if (order.getOrderDetails() != null) {
+                        for (OrderDetail detail : order.getOrderDetails()) {
+                            if (myProductIds.contains(detail.getProductId())) {
+                                myOrders.add(order);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // 手动构建分页结果
+            TableDataInfo rspData = new TableDataInfo();
+            rspData.setCode(com.neuedu.common.constant.HttpStatus.SUCCESS);
+            rspData.setMsg("查询成功");
+            rspData.setRows(myOrders);
+            rspData.setTotal(myOrders.size());
+            return rspData;
+        }
     }
 
     /**

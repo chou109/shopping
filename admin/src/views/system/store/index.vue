@@ -297,7 +297,7 @@
           <el-input v-model="form.description" type="textarea" placeholder="请输入店铺描述" rows="3" />
         </el-form-item>
         <el-form-item label="联系电话" prop="contactPhone">
-          <el-input v-model="form.contactPhone" placeholder="请输入联系电话" />
+          <el-input v-model="form.contactPhone" placeholder="请输入联系电话" maxlength="11" />
         </el-form-item>
         <el-form-item label="联系地址" prop="contactAddress">
           <el-input v-model="form.contactAddress" placeholder="请输入联系地址" />
@@ -469,7 +469,8 @@ const data = reactive({
       { required: true, message: "店铺logo不能为空", trigger: "change" }
     ],
     contactPhone: [
-      { required: true, message: "联系电话不能为空", trigger: "blur" }
+      { required: true, message: "联系电话不能为空", trigger: "blur" },
+      { pattern: /^1[3-9]\d{9}$/, message: "请输入11位正确的手机号码", trigger: "blur" }
     ],
     contactAddress: [
       { required: true, message: "联系地址不能为空", trigger: "blur" }

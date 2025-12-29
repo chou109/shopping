@@ -125,7 +125,7 @@ public class Product extends BaseEntity
     /** 店铺id */
     @Schema(title = "店铺id")
     @Excel(name = "店铺id")
-    @TableField(exist = false)
+    @TableField("shop_id")
     private Long shopId;
 
     /** 是否为盲盒商品 */

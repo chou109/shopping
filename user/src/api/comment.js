@@ -20,7 +20,7 @@ export function deleteComment(commentId) {
 // 提交评价
 export function submitReview(data) {
   return request({
-    url: '/system/comment',
+    url: '/system/comment/publish',
     method: 'post',
     data: data
   })

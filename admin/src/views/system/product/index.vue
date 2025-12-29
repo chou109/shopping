@@ -329,6 +329,7 @@ const LOCAL_CATEGORY_OPTIONS = Object.entries(LOCAL_CATEGORY_MAP).map(([id, name
 }));
 import { listProduct, getProduct, delProduct, addProduct, updateProduct, updateProductStatus, updateProductHotFlag } from "@/api/system/product";
 import { listCategoryFront } from "@/api/system/category";
+import { getMyShop } from "@/api/system/dashboard";
 import { ArrowDown, ArrowRight } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import useUserStore from '@/store/modules/user';
@@ -351,6 +352,7 @@ const categoryTree = ref([]);
 const activeParentId = ref(null);
 const activeChildren = ref([]);
 const categoryTreeOptions = ref([]);
+const myShopId = ref(null);  // 当前用户的店铺ID
 
 const data = reactive({
   form: {},
@@ -546,9 +548,9 @@ function getList() {
   const params = { ...queryParams.value };
   
   // user_id=1 是超级管理员，可查看所有商品
-  // user_id=2 是商家，只能查看自己创建的商品
-  if (userStore.userId !== 1) {
-    params.createUser = userStore.userId;
+  // 其他用户只能查看自己店铺的商品
+  if (userStore.userId !== 1 && myShopId.value) {
+    params.shopId = myShopId.value;
   }
 
   Object.keys(params).forEach(key => {
@@ -559,6 +561,7 @@ function getList() {
 
   listProduct(params).then(response => {
     productList.value = response.rows;
+    console.log(productList.value)
     total.value = response.total;
     loading.value = false;
   }).catch(() => {
@@ -726,10 +729,29 @@ function toggleHot(row) {
   }).catch(() => { });
 }
 
+/** 加载当前用户的店铺信息 */
+async function loadMyShop() {
+  const userStore = useUserStore();
+  // 管理员无需加载店铺信息
+  if (userStore.userId === 1) {
+    return;
+  }
+  try {
+    const response = await getMyShop();
+    if (response.code === 200 && response.data) {
+      myShopId.value = response.data.id;
+      console.log('当前用户店铺ID:', myShopId.value);
+    }
+  } catch (error) {
+    console.error('加载店铺信息失败:', error);
+  }
+}
+
 // 组件挂载时加载数据
-onMounted(() => {
+onMounted(async () => {
   loadCategoryTree();
-  getList();
+  await loadMyShop();  // 先加载店铺信息
+  getList();           // 再加载商品列表
 });
 </script>
 

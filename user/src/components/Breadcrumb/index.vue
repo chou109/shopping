@@ -1,19 +1,38 @@
 <template>
-  <el-breadcrumb class="app-breadcrumb" separator="/">
-    <transition-group name="breadcrumb">
-      <el-breadcrumb-item v-for="(item,index) in levelList" :key="item.path">
-        <span v-if="item.redirect==='noRedirect'||index==levelList.length-1" class="no-redirect">{{ item.meta.title }}</span>
-        <a v-else @click.prevent="handleLink(item)">{{ item.meta.title }}</a>
-      </el-breadcrumb-item>
-    </transition-group>
-  </el-breadcrumb>
+  <div class="breadcrumb-wrapper">
+    <el-breadcrumb class="app-breadcrumb" :separator-icon="ArrowRight">
+      <transition-group name="breadcrumb">
+        <el-breadcrumb-item v-for="(item,index) in levelList" :key="item.path">
+          <template v-if="index === 0">
+            <span class="home-link" @click="handleLink(item)">
+              <el-icon class="home-icon"><HomeFilled /></el-icon>
+              <span>{{ item.meta.title }}</span>
+            </span>
+          </template>
+          <template v-else-if="item.redirect==='noRedirect'||index==levelList.length-1">
+            <span class="current-page">{{ item.meta.title }}</span>
+          </template>
+          <template v-else>
+            <a class="breadcrumb-link" @click.prevent="handleLink(item)">{{ item.meta.title }}</a>
+          </template>
+        </el-breadcrumb-item>
+      </transition-group>
+    </el-breadcrumb>
+  </div>
 </template>
 
 <script>
+import { HomeFilled, ArrowRight } from '@element-plus/icons-vue'
+
 export default {
+  components: {
+    HomeFilled,
+    ArrowRight
+  },
   data() {
     return {
-      levelList: null
+      levelList: null,
+      ArrowRight
     }
   },
   watch: {
@@ -60,15 +79,104 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.app-breadcrumb.el-breadcrumb {
-  display: inline-block;
-  font-size: 14px;
-  line-height: 50px;
-  margin-left: 8px;
+.breadcrumb-wrapper {
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #fff 100%);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  margin: 0 0 16px 0;
+}
 
-  .no-redirect {
-    color: #97a8be;
-    cursor: text;
+.app-breadcrumb.el-breadcrumb {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  line-height: 1.5;
+
+  :deep(.el-breadcrumb__separator) {
+    color: #c0c4cc;
+    margin: 0 10px;
   }
+
+  :deep(.el-breadcrumb__inner) {
+    display: flex;
+    align-items: center;
+  }
+
+  .home-link {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #606266;
+    cursor: pointer;
+    padding: 4px 10px;
+    border-radius: 6px;
+    transition: all 0.25s ease;
+    font-weight: 500;
+
+    .home-icon {
+      font-size: 16px;
+      color: #ff6b35;
+    }
+
+    &:hover {
+      background: rgba(255, 107, 53, 0.08);
+      color: #ff6b35;
+    }
+  }
+
+  .breadcrumb-link {
+    color: #606266;
+    cursor: pointer;
+    padding: 4px 10px;
+    border-radius: 6px;
+    transition: all 0.25s ease;
+    text-decoration: none;
+    font-weight: 500;
+
+    &:hover {
+      background: rgba(255, 107, 53, 0.08);
+      color: #ff6b35;
+    }
+  }
+
+  .current-page {
+    color: #303133;
+    font-weight: 600;
+    padding: 4px 10px;
+    background: rgba(255, 107, 53, 0.1);
+    border-radius: 6px;
+    position: relative;
+
+    &::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 3px;
+      height: 14px;
+      background: #ff6b35;
+      border-radius: 2px;
+    }
+  }
+}
+
+/* 动画 */
+.breadcrumb-enter-active,
+.breadcrumb-leave-active {
+  transition: all 0.3s ease;
+}
+
+.breadcrumb-enter-from {
+  opacity: 0;
+  transform: translateX(-10px);
+}
+
+.breadcrumb-leave-to {
+  opacity: 0;
+  transform: translateX(10px);
 }
 </style>

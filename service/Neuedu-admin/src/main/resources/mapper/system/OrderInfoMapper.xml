@@ -36,6 +36,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="refundAmount"    column="refund_amount"    />
         <result property="refundTime"    column="refund_time"    />
         <result property="refundReason"    column="refund_reason"    />
+        <result property="isBlindBox"    column="is_blind_box"    />
         <!-- 关联用户信息 -->
         <association property="user" javaType="User">
             <id property="id" column="user_id" />
@@ -92,6 +93,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         oi.refund_amount,
         oi.refund_time,
         oi.refund_reason,
+        oi.is_blind_box,
         <!-- 用户信息 -->
         u.user_name,
         u.nickname,
@@ -197,6 +199,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="refundAmount != null">refund_amount,</if>
             <if test="refundTime != null">refund_time,</if>
             <if test="refundReason != null">refund_reason,</if>
+            <if test="isBlindBox != null">is_blind_box,</if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="createTime != null">#{createTime},</if>
@@ -229,6 +232,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="refundAmount != null">#{refundAmount},</if>
             <if test="refundTime != null">#{refundTime},</if>
             <if test="refundReason != null">#{refundReason},</if>
+            <if test="isBlindBox != null">#{isBlindBox},</if>
         </trim>
     </insert>
 
@@ -253,6 +257,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="refundAmount != null">refund_amount = #{refundAmount},</if>
             <if test="refundTime != null">refund_time = #{refundTime},</if>
             <if test="refundReason != null">refund_reason = #{refundReason},</if>
+            <if test="isBlindBox != null">is_blind_box = #{isBlindBox},</if>
         </trim>
         where id = #{id} and delete_flag = 0
     </update>

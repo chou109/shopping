@@ -49,14 +49,20 @@ public class ProductController extends BaseController
         // 获取当前登录用户ID
         Long currentUserId = getUserId();
         System.out.println("当前登录用户ID: " + currentUserId);
+        System.out.println("前端传入的shopId: " + product.getShopId());
 
-        // 如果不是超级管理员(ID=1),则只查询该用户的商品
-        if (currentUserId != null && currentUserId != 1L) {
-            product.setCreateUser(currentUserId);
-            System.out.println("设置查询条件 shopId: " + currentUserId);
-        } else {
-            System.out.println("超级管理员登录,查询所有商品");
+        // 如果不是超级管理员(ID=1)，且前端没有传shopId，则根据用户的店铺ID查询
+        // 前端已经传了shopId，直接使用即可，不再覆盖
+        if (currentUserId != null && currentUserId != 1L && product.getShopId() == null) {
+            // 根据用户ID查询其店铺
+            Shop myShop = shopService.selectShopByUserId(currentUserId);
+            if (myShop != null) {
+                product.setShopId(myShop.getId());
+                System.out.println("根据用户查询到店铺ID: " + myShop.getId());
+            }
         }
+        
+        System.out.println("最终查询条件 shopId: " + product.getShopId());
         
         List<Product> list = productService.selectProductList(product);
         System.out.println("查询到的商品数量: " + (list != null ? list.size() : 0));
@@ -129,13 +135,14 @@ public class ProductController extends BaseController
     @GetMapping("/shop/{shopId}")
     public AjaxResult byShop(@PathVariable Long shopId)
     {
-        // 先查询店铺获取店主用户ID
+        // 先验证店铺是否存在
         Shop shop = shopService.selectShopById(shopId);
         if (shop == null) {
             return error("店铺不存在");
         }
+        // 通过 shop_id 查询商品
         Product query = new Product();
-        query.setCreateUser(shop.getUserId()); // 使用店主用户ID查询
+        query.setShopId(shopId);
         query.setStatus(1); // 只查询上架商品
         List<Product> list = productService.selectProductList(query);
         return success(list);

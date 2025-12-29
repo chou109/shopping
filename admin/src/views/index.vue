@@ -108,7 +108,7 @@
             <template #header>
               <div class="card-header">
                 <h3>热门商品</h3>
-                <el-button type="primary" link @click="gotoProducts">查看全部</el-button>
+                <el-button type="primary" link @click="handleAction('product')" >查看全部</el-button>
               </div>
             </template>
             <div class="products-list" v-loading="loading.hotProducts">
@@ -140,7 +140,7 @@
             <template #header>
               <div class="card-header">
                 <h3>最新订单</h3>
-                <el-button type="primary" link @click="gotoOrders">查看全部</el-button>
+                <el-button type="primary" link @click="handleAction('order')">查看全部</el-button>
               </div>
             </template>
             <div class="orders-list" v-loading="loading.recentOrders">
@@ -170,25 +170,6 @@
           <h3>商品分类分布</h3>
         </template>
         <div ref="categoryChart" class="chart-container" v-loading="loading.categoryStats"></div>
-      </el-card>
-    </div>
-
-    <!-- 快捷操作 -->
-    <div class="quick-section">
-      <el-card shadow="hover">
-        <template #header>
-          <h3>快捷操作</h3>
-        </template>
-        <div class="quick-grid">
-          <div v-for="item in quickActions" :key="item.name" class="quick-item" @click="handleQuickAction(item)">
-            <div class="quick-icon" :style="{ background: item.color }">
-              <el-icon :size="24">
-                <component :is="item.icon" />
-              </el-icon>
-            </div>
-            <div class="quick-name">{{ item.name }}</div>
-          </div>
-        </div>
       </el-card>
     </div>
   </div>
@@ -264,24 +245,6 @@ const categoryStats = ref([])
 const orderStatusData = ref([])
 const salesTrendData = ref({ dates: [], amounts: [], orderCounts: [] })
 
-// 快捷操作
-const quickActions = computed(() => {
-  const baseActions = [
-    { name: '新增商品', icon: Plus, color: '#1890ff', action: 'addProduct' },
-    { name: '商品管理', icon: ShoppingCart, color: '#52c41a', action: 'productList' },
-    { name: '订单管理', icon: List, color: '#faad14', action: 'orderList' },
-    { name: '店铺设置', icon: Setting, color: '#722ed1', action: 'shopSetting' }
-  ]
-  
-  if (statistics.value.role === 'admin') {
-    baseActions.push(
-      { name: '用户管理', icon: User, color: '#f5222d', action: 'userManage' },
-      { name: '数据导出', icon: Download, color: '#13c2c2', action: 'exportData' }
-    )
-  }
-  
-  return baseActions
-})
 
 // 获取问候语
 const getGreeting = () => {
@@ -335,12 +298,11 @@ const formatTime = (time) => {
 const getOrderStatusType = (status) => {
   const typeMap = {
     10: 'warning',  // 待付款
-    20: 'primary',  // 已付款
-    30: '',         // 待发货
-    40: 'info',     // 已发货
-    50: 'success',  // 已完成
-    60: 'danger',   // 退款中
-    70: 'info'      // 已取消
+    20: 'primary',  // 待发货
+    30: 'info',     // 待收货
+    40: '',         // 待评价
+    50: 'success',  // 交易完成
+    60: 'danger'    // 已取消
   }
   return typeMap[status] || 'info'
 }
@@ -349,12 +311,11 @@ const getOrderStatusType = (status) => {
 const getOrderStatusText = (status) => {
   const textMap = {
     10: '待付款',
-    20: '已付款',
-    30: '待发货',
-    40: '已发货',
-    50: '已完成',
-    60: '退款中',
-    70: '已取消'
+    20: '待发货',
+    30: '待收货',
+    40: '待评价',
+    50: '交易完成',
+    60: '已取消'
   }
   return textMap[status] || '未知'
 }

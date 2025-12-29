@@ -144,7 +144,7 @@
           <el-input v-model="form.contacts" placeholder="请输入联系人" />
         </el-form-item>
         <el-form-item label="联系电话" prop="contactPhone">
-          <el-input v-model="form.contactPhone" placeholder="请输入联系电话" />
+          <el-input v-model="form.contactPhone" placeholder="请输入联系电话" maxlength="11" />
         </el-form-item>
        
         <el-form-item label="状态" prop="status">
@@ -198,6 +198,9 @@ const data = reactive({
     userName: null
   },
   rules: {
+    contactPhone: [
+      { pattern: /^1[3-9]\d{9}$/, message: "请输入11位正确的手机号码", trigger: "blur" }
+    ]
   }
 });
 

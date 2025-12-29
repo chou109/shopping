@@ -187,6 +187,11 @@ public class OrderInfo extends BaseEntity
     @Excel(name = "退款原因")
     private String refundReason;
 
+    /** 是否为盲盒订单 */
+    @Schema(title = "是否为盲盒订单")
+    @Excel(name = "是否为盲盒订单")
+    private Boolean isBlindBox;
+
     /** 关联用户信息（非数据库字段） */
     @Schema(title = "关联用户信息")
     @TableField(exist = false)
