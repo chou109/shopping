@@ -163,6 +163,7 @@ const totalUnreadCount = ref(0)
 
 const messageListRef = ref(null)
 const scrollAnchor = ref(null)
+let messageLoadVersion = 0
 
 // 快捷回复
 const quickReplies = ref([
@@ -182,6 +183,10 @@ const loadSessions = async () => {
       sessionList.value = response.data || []
       // 计算总未读数
       totalUnreadCount.value = sessionList.value.reduce((sum, s) => sum + (s.unreadCount || 0), 0)
+      if (currentSession.value) {
+        const updatedSession = sessionList.value.find(session => session.sessionId === currentSession.value.sessionId)
+        if (updatedSession) currentSession.value = updatedSession
+      }
     }
   } catch (error) {
     console.error('加载会话列表失败:', error)
@@ -198,32 +203,42 @@ const refreshSessions = () => {
 
 // 选择会话
 const selectSession = async (session) => {
+  if (currentSession.value?.sessionId !== session.sessionId) inputMessage.value = ''
   currentSession.value = session
-  await loadMessages(session.sessionId)
+  const loaded = await loadMessages(session.sessionId)
   // 标记为已读
-  if (session.unreadCount > 0) {
-    await markAsRead(session.sessionId)
-    session.unreadCount = 0
-    totalUnreadCount.value = sessionList.value.reduce((sum, s) => sum + (s.unreadCount || 0), 0)
+  if (loaded && currentSession.value?.sessionId === session.sessionId && session.unreadCount > 0) {
+    try {
+      await markAsRead(session.sessionId)
+      session.unreadCount = 0
+      totalUnreadCount.value = sessionList.value.reduce((sum, s) => sum + (s.unreadCount || 0), 0)
+    } catch (error) {
+      console.error('标记会话已读失败:', error)
+    }
   }
 }
 
 // 加载消息列表
 const loadMessages = async (sessionId) => {
+  const requestVersion = ++messageLoadVersion
   loadingMessages.value = true
   try {
     const response = await getSessionMessages(sessionId)
-    if (response.code === 200) {
+    if (response.code === 200 && requestVersion === messageLoadVersion && currentSession.value?.sessionId === sessionId) {
       messageList.value = response.data || []
       await nextTick()
       scrollToBottom()
+      return true
     }
   } catch (error) {
-    console.error('加载消息失败:', error)
-    ElMessage.error('加载消息失败')
+    if (requestVersion === messageLoadVersion) {
+      console.error('加载消息失败:', error)
+      ElMessage.error('加载消息失败')
+    }
   } finally {
-    loadingMessages.value = false
+    if (requestVersion === messageLoadVersion) loadingMessages.value = false
   }
+  return false
 }
 
 // 发送回复
@@ -231,20 +246,27 @@ const sendReply = async () => {
   if (!inputMessage.value.trim() || !currentSession.value || sending.value) return
 
   const content = inputMessage.value.trim()
+  const sessionId = currentSession.value.sessionId
   sending.value = true
 
   try {
-    const response = await replyMessage(currentSession.value.sessionId, content, 1)
+    const response = await replyMessage(sessionId, content, 1)
     if (response.code === 200) {
-      // 添加消息到列表
-      messageList.value.push(response.data)
-      inputMessage.value = ''
-      await nextTick()
-      scrollToBottom()
-
-      // 更新会话的最后消息
-      currentSession.value.lastMessage = content
-      currentSession.value.lastMessageTime = new Date().toISOString()
+      if (currentSession.value?.sessionId === sessionId && inputMessage.value === content) inputMessage.value = ''
+      if (currentSession.value?.sessionId === sessionId) {
+        if (response.data) {
+          messageList.value.push(response.data)
+          await nextTick()
+          scrollToBottom()
+        } else {
+          await loadMessages(sessionId)
+        }
+      }
+      const session = sessionList.value.find(item => item.sessionId === sessionId)
+      if (session) {
+        session.lastMessage = content
+        session.lastMessageTime = new Date().toISOString()
+      }
 
       ElMessage.success('回复成功')
     } else {
@@ -316,8 +338,11 @@ const formatMsgTime = (timeStr) => {
 
 // 定时刷新
 let refreshTimer = null
+let refreshInFlight = false
 const startRefresh = () => {
   refreshTimer = setInterval(async () => {
+    if (refreshInFlight) return
+    refreshInFlight = true
     // 刷新会话列表
     try {
       const response = await getSessionList()
@@ -330,12 +355,15 @@ const startRefresh = () => {
     }
 
     // 如果有选中的会话，刷新消息
-    if (currentSession.value) {
+    const sessionId = currentSession.value?.sessionId
+    if (sessionId) {
       try {
-        const response = await getSessionMessages(currentSession.value.sessionId)
-        if (response.code === 200) {
+        const response = await getSessionMessages(sessionId)
+        if (response.code === 200 && currentSession.value?.sessionId === sessionId) {
           const newMessages = response.data || []
-          if (newMessages.length > messageList.value.length) {
+          const oldIds = messageList.value.map(message => message.id)
+          const newIds = newMessages.map(message => message.id)
+          if (oldIds.length !== newIds.length || oldIds.some((id, index) => id !== newIds[index])) {
             messageList.value = newMessages
             await nextTick()
             scrollToBottom()
@@ -345,6 +373,7 @@ const startRefresh = () => {
         console.error('刷新消息失败:', error)
       }
     }
+    refreshInFlight = false
   }, 5000)
 }
 
@@ -361,6 +390,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  messageLoadVersion += 1
   stopRefresh()
 })
 </script>

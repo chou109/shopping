@@ -108,7 +108,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick, computed } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useStore } from 'vuex'
 import { ElMessage } from 'element-plus'
@@ -128,6 +128,7 @@ const sending = ref(false)
 const unreadCount = ref(0)
 const messageListRef = ref(null)
 const scrollAnchor = ref(null)
+let messageLoadVersion = 0
 
 // 获取路由参数
 const receiverId = computed(() => {
@@ -162,22 +163,31 @@ const goBack = () => {
 
 // 加载消息列表
 const loadMessages = async () => {
+  const requestReceiverId = receiverId.value
+  const requestVersion = ++messageLoadVersion
   loading.value = true
   try {
     // 根据receiverId获取与指定接收者的对话
-    const response = await getMessages(receiverId.value)
-    if (response.code === 200) {
+    const response = await getMessages(requestReceiverId)
+    if (response.code === 200 && requestVersion === messageLoadVersion) {
       messages.value = response.data || []
       await nextTick()
       scrollToBottom()
       // 标记已读，传递receiverId
-      markAsRead(receiverId.value)
+      try {
+        await markAsRead(requestReceiverId)
+        await loadUnreadCount()
+      } catch (error) {
+        console.warn('标记消息已读失败:', error)
+      }
     }
   } catch (error) {
-    console.error('加载消息失败:', error)
-    ElMessage.error('加载消息失败')
+    if (requestVersion === messageLoadVersion) {
+      console.error('加载消息失败:', error)
+      ElMessage.error('加载消息失败')
+    }
   } finally {
-    loading.value = false
+    if (requestVersion === messageLoadVersion) loading.value = false
   }
 }
 
@@ -220,6 +230,8 @@ const sendMessage = async () => {
       const index = messages.value.findIndex(m => m.id === tempMessage.id)
       if (index !== -1 && response.data) {
         messages.value[index] = response.data
+      } else if (!response.data) {
+        await loadMessages()
       }
     } else {
       // 发送失败，移除临时消息
@@ -279,21 +291,35 @@ const formatTime = (timeStr) => {
 
 // 定时刷新消息
 let refreshTimer = null
+let refreshInFlight = false
 const startRefresh = () => {
   refreshTimer = setInterval(async () => {
+    if (refreshInFlight) return
+    refreshInFlight = true
+    const requestReceiverId = receiverId.value
     try {
-      const response = await getMessages(receiverId.value)
+      const response = await getMessages(requestReceiverId)
+      if (requestReceiverId !== receiverId.value) return
       if (response.code === 200) {
         const newMessages = response.data || []
-        if (newMessages.length > messages.value.length) {
+        const oldIds = messages.value.map(message => message.id)
+        const newIds = newMessages.map(message => message.id)
+        if (oldIds.length !== newIds.length || oldIds.some((id, index) => id !== newIds[index])) {
           messages.value = newMessages
           await nextTick()
           scrollToBottom()
-          markAsRead()
+          try {
+            await markAsRead(requestReceiverId)
+            await loadUnreadCount()
+          } catch (error) {
+            console.warn('标记消息已读失败:', error)
+          }
         }
       }
     } catch (error) {
       console.error('刷新消息失败:', error)
+    } finally {
+      refreshInFlight = false
     }
   }, 5000) // 每5秒刷新一次
 }
@@ -311,9 +337,14 @@ onMounted(() => {
   startRefresh()
 })
 
+watch(receiverId, () => {
+  messages.value = []
+  loadMessages()
+})
+
 // 组件卸载时停止刷新
-import { onUnmounted } from 'vue'
 onUnmounted(() => {
+  messageLoadVersion += 1
   stopRefresh()
 })
 </script>
