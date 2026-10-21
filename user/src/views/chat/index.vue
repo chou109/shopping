@@ -5,10 +5,10 @@
       <button type="button" class="back-btn" aria-label="返回上一页" @click="goBack">←</button>
       <div class="service-info">
         <div class="service-avatar">
-          <img :src="aiAvatarImage" alt="AI客服头像" class="ai-avatar">
+          <img :src="aiAvatarImage" alt="商城助手头像" class="ai-avatar">
         </div>
         <div class="service-name-status">
-          <div class="service-name">智能客服小蜜</div>
+          <div class="service-name">商城助手</div>
           <div class="service-status">
             <span class="online-dot" :class="{ online: isConnected }"></span>
             {{ isConnected ? '在线' : '连接中...' }}
@@ -23,20 +23,20 @@
 
     <!-- 聊天区域 -->
     <div class="chat-container" ref="chatContainer">
-      <!-- 欢迎消息（添加了关闭按钮） -->
+      <!-- 欢迎消息 -->
       <div class="welcome-message" v-if="showWelcomeMessage">
         <button type="button" class="welcome-close-btn" aria-label="关闭欢迎提示" @click="closeWelcomeMessage">×</button>
         <div class="welcome-content">
           <div class="welcome-icon">🤖</div>
           <div class="welcome-title">👋 您好！</div>
-          <div class="welcome-text">我是智能客服小蜜，很高兴为您服务~</div>
+          <div class="welcome-text">我是商城助手，可以帮您查询商品和商城常见问题。</div>
           <div class="welcome-tips">
             我可以帮您：
             <span class="tip-item">• 查询商品信息</span>
             <span class="tip-item">• 推荐商品</span>
             <span class="tip-item">• 解答售后问题</span>
-            <span class="tip-item">• 查询物流信息</span>
-            <span class="tip-item">• 查询订单状态</span>
+            <span class="tip-item">• 了解发货与物流信息</span>
+            <span class="tip-item">• 登录后在“我的订单”查看订单状态</span>
           </div>
         </div>
       </div>
@@ -47,7 +47,7 @@
           :ref="el => { if (el && index === chatList.length - 1) lastMessageRef = el }">
           <template v-if="msg.type === 'ai'">
             <div class="avatar-wrapper ai-avatar-wrapper">
-              <img :src="aiAvatarImage" class="avatar ai-avatar" alt="AI客服">
+              <img :src="aiAvatarImage" class="avatar ai-avatar" alt="商城助手">
               <div class="avatar-badge ai-badge">AI</div>
             </div>
           </template>
@@ -66,7 +66,7 @@
         <!-- AI正在输入指示器 -->
         <div v-if="isAiTyping" class="ai-msg typing-indicator">
           <div class="avatar-wrapper ai-avatar-wrapper">
-            <img :src="aiAvatarImage" class="avatar ai-avatar" alt="AI客服">
+            <img :src="aiAvatarImage" class="avatar ai-avatar" alt="商城助手">
             <div class="avatar-badge ai-badge">AI</div>
           </div>
           <div class="typing-bubble">
@@ -123,10 +123,6 @@ import { getWebSocketUrl } from '@/utils/request';
 // Vuex store
 const store = useStore();
 
-// 获取当前用户ID
-const currentUserId = computed(() => {
-  return store.state.user?.userId || localStorage.getItem('userId') || null;
-});
 const userAvatarImage = computed(() => store.state.user?.avatar || DEFAULT_AVATAR_IMAGE)
 // 响应式数据
 const chatList = ref([]);
@@ -261,7 +257,7 @@ const initWebSocket = () => {
     ws.onopen = (event) => {
       if (isUnmounted) return;
       isConnected.value = true;
-      addSystemMessage('已连接到智能客服');
+      addSystemMessage('已连接到商城助手');
       forceScrollToBottom();
     };
 
@@ -381,8 +377,7 @@ const sendMessage = () => {
 
   ws.send(JSON.stringify({
     question: text,
-    productId: null,
-    userId: currentUserId.value
+    productId: null
   }));
 
   inputMsg.value = '';

@@ -5,15 +5,11 @@ import com.neuedu.system.demoai.model.PriceCondition;
 import com.neuedu.system.demoai.model.PriceExtractResult;
 import com.neuedu.system.demoai.service.CategoryService;
 import com.neuedu.system.demoai.service.ProductService;
-import com.neuedu.system.demoai.service.OrderService;
-import com.neuedu.system.domain.OrderInfo;
-import com.neuedu.system.domain.OrderDetail;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
@@ -29,21 +25,17 @@ public class ZhipuAIService {
     @Autowired
     private CategoryService categoryService;
 
-    @Autowired
-    private OrderService orderService;
-
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     // 记录业务逻辑调试信息
     private void logBusinessInfo(String operation, Map<String, Object> context, String userQuestion) {
         if (context != null) {
-            log.debug("{} - 业务逻辑上下文: 品牌={}, 价格条件={}, 问题={}",
+            log.debug("{} - 业务逻辑上下文: 品牌={}, 价格条件={}",
                     operation,
                     context.get("brand"),
-                    context.get("priceResult") != null ? context.get("priceResult") : "无",
-                    userQuestion);
+                    context.get("priceResult") != null ? context.get("priceResult") : "无");
         } else {
-            log.debug("{} - 业务逻辑无上下文, 问题={}", operation, userQuestion);
+            log.debug("{} - 业务逻辑无上下文", operation);
         }
     }
 
@@ -55,17 +47,14 @@ public class ZhipuAIService {
             knowledge.append("用户咨询了商品ID为").append(productId).append("的商品。");
         }
 
-        knowledge.append("\n电商平台知识：")
-                .append("\n1. 商品分类：手机数码、家用办公、精品服饰、珠宝饰品、美妆护肤、生鲜绿植")
-                .append("\n2. 发货时效：下单后1-3个工作日内发货，物流时效3-7天")
-                .append("\n3. 售后政策：7天无理由退货，15天内质量问题可换货")
-                .append("\n4. 支付方式：支持支付宝、微信支付、银行卡支付")
-                .append("\n5. 运费政策：全场满99元包邮，不满99元收取8元运费");
+        knowledge.append("\n商城能力说明：商品信息和订单状态以页面及服务端记录为准。")
+                .append("当前仅接入余额支付；没有统一配送时效、物流轨迹、运费模板、促销优惠或通用退换货规则。")
+                .append("符合条件的订单可按页面提供的流程申请退款，结果以实际订单状态为准；不得对未配置的政策作承诺。");
 
         return knowledge.toString();
     }
 
-    // 流式聊天 - 模拟流式输出
+    // 对本地规则回复做分段输出，不调用外部大模型。
     public void streamChat(String userQuestion, String knowledge, Consumer<String> callback) {
         try {
             String response = processLocalChat(userQuestion, knowledge);
@@ -112,23 +101,23 @@ public class ZhipuAIService {
         String lowerQuestion = userQuestion.toLowerCase();
 
         if (lowerQuestion.matches(".*(你好|您好|hello|hi|早上好|下午好|晚上好).*")) {
-            return "您好！我是智能客服，很高兴为您服务！有什么可以帮您的吗？";
+            return "您好！我是商城助手，很高兴为您服务！有什么可以帮您的吗？";
         }
 
         if (lowerQuestion.matches(".*(发货|快递|物流|配送|多久到|什么时候到|几天到).*")) {
-            return "一般情况下，商品会在下单后1-3个工作日内发货，物流时效为3-7天，具体时间以物流公司实际配送为准。";
+            return "目前订单记录会显示发货状态和发货时间，但平台尚未接入承运商轨迹或统一配送时效。请登录后在“我的订单”查看订单状态，具体发货安排可咨询店铺。";
         }
 
         if (lowerQuestion.matches(".*(退货|退款|售后|维修|质量|坏了|破损).*")) {
-            return "我们支持7天无理由退货，15天内质量问题可换货。具体售后政策请查看商品详情页的售后说明，或联系客服处理。";
+            return "符合条件的订单可在“我的订单”中按页面提示申请退款，处理结果以订单状态为准。平台目前没有统一的无理由退货或换货规则；请查看店铺售后说明或联系店铺客服。";
         }
 
         if (lowerQuestion.matches(".*(支付|付款|怎么付|怎么买|如何购买).*")) {
-            return "我们支持多种支付方式：支付宝、微信支付、银行卡支付。您可以选择方便的方式进行支付。";
+            return "目前结算支持账户余额支付，支付宝、微信支付和银行卡支付尚未接入。您可以在下单时查看账户余额及实际可用的支付选项。";
         }
 
         if (lowerQuestion.matches(".*(优惠|打折|促销|活动|便宜|降价).*")) {
-            return "目前平台有满减、折扣等多种优惠活动，具体活动详情请查看商品页面或活动专区。";
+            return "目前没有统一的优惠或满减查询服务，请以商品详情页显示的价格和店铺公告为准。";
         }
 
         // 处理价格查询请求
@@ -141,12 +130,10 @@ public class ZhipuAIService {
             return handleProductRecommendation(userQuestion);
         }
 
-        return "感谢您的咨询！我主要可以帮助您：\n" +
-                "1. 商品推荐和查询\n" +
-                "2. 价格和优惠信息\n" +
-                "3. 发货和物流信息\n" +
-                "4. 售后和退换货政策\n" +
-                "5. 支付方式咨询\n" +
+        return "感谢您的咨询！我可以帮您：\n" +
+                "1. 查询和推荐商品\n" +
+                "2. 查询商品价格\n" +
+                "3. 说明当前支付、发货和售后流程\n" +
                 "请告诉我您具体想了解什么，我会尽力为您解答。";
     }
 
@@ -154,7 +141,7 @@ public class ZhipuAIService {
      * 专门处理商品价格查询
      */
     public String handleProductPriceQuery(String userQuestion) {
-        log.info("处理商品价格查询：{}", userQuestion);
+        log.info("处理商品价格查询请求");
 
         // 1. 尝试提取商品名称
         String productName = extractProductNameForQuery(userQuestion);
@@ -847,7 +834,7 @@ public class ZhipuAIService {
         PriceExtractResult priceResult = extractPriceInfo(userQuestion);
 
         // 添加调试日志
-        log.info("用户查询：{}", userQuestion);
+        log.info("处理商品推荐查询请求");
         log.info("提取的品牌：{}", brand);
         log.info("提取的类别关键词：{}", categoryKeywords);
         log.info("提取的价格结果：{}", priceResult != null ?
@@ -1064,7 +1051,7 @@ public class ZhipuAIService {
         }
 
         if (products.isEmpty()) {
-            log.warn("没有找到符合条件的商品，用户查询：{}", userQuestion);
+            log.warn("没有找到符合条件的商品");
 
             // 提供更详细的错误信息
             StringBuilder errorMsg = new StringBuilder();
@@ -2158,7 +2145,7 @@ public class ZhipuAIService {
         }
         
         // 2. 订单查询关键词
-        return lowerQuestion.matches(".*(订单|我的订单|查订单|查看订单|订单状态|订单进度|物流|配送|发货).*") ||
+        return lowerQuestion.matches(".*(订单|我的订单|查订单|查看订单|订单状态|订单进度|订单号|单号|编号).*") ||
                lowerQuestion.matches(".*(订单号|单号|编号).*(o\\d{20}|\\d{14,20}).*") ||
                lowerQuestion.matches(".*(到哪了|发了没|什么时候到|几号到|收到没).*");
     }
@@ -2167,281 +2154,7 @@ public class ZhipuAIService {
      * 处理订单查询请求
      */
     public String handleOrderQuery(String userQuestion, Long userId) {
-        log.info("处理订单查询请求：{}, userId={}", userQuestion, userId);
-
-        // 1. 尝试从问题中提取订单号
-        String orderNo = extractOrderNoFromQuestion(userQuestion);
-        
-        if (orderNo != null && !orderNo.isEmpty()) {
-            // 查询特定订单
-            return querySpecificOrder(orderNo);
-        }
-
-        // 2. 如果没有订单号，查询用户所有订单
-        if (userId != null) {
-            // 判断是否查询特定状态的订单
-            Integer status = extractOrderStatusFromQuestion(userQuestion);
-            return queryUserOrders(userId, status);
-        }
-
-        return "请提供您的订单号,或者告诉我您想查询哪种状态的订单(如:待付款、已发货等)。";
+        return "为保护订单信息，请登录后前往“我的订单”查看。当前客服会话不提供订单查询。";
     }
 
-    /**
-     * 从问题中提取订单号
-     */
-    private String extractOrderNoFromQuestion(String question) {
-        // 匹配格式: O + 14位数字 + 6位随机数
-        Pattern pattern = Pattern.compile("(O\\d{20})");
-        Matcher matcher = pattern.matcher(question);
-        
-        if (matcher.find()) {
-            return matcher.group(1);
-        }
-        
-        // 尝试匹配纯数字订单号
-        pattern = Pattern.compile("(\\d{14,20})");
-        matcher = pattern.matcher(question);
-        
-        if (matcher.find()) {
-            String number = matcher.group(1);
-            // 如果是纯数字，尝试添加O前缀
-            if (number.length() == 20) {
-                return "O" + number;
-            }
-        }
-        
-        return null;
-    }
-
-    /**
-     * 从问题中提取订单状态
-     */
-    private Integer extractOrderStatusFromQuestion(String question) {
-        String lowerQuestion = question.toLowerCase();
-        
-        if (lowerQuestion.matches(".*(待付款|未付款|等待付款|待支付).*")) {
-            return 10; // 待付款
-        } else if (lowerQuestion.matches(".*(已付款|已支付|付过款).*")) {
-            return 20; // 已付款
-        } else if (lowerQuestion.matches(".*(待发货|未发货|等待发货).*")) {
-            return 30; // 待发货
-        } else if (lowerQuestion.matches(".*(已发货|发货了|在途|配送中).*")) {
-            return 40; // 已发货
-        } else if (lowerQuestion.matches(".*(待收货|未收货|等待收货).*")) {
-            return 50; // 待收货
-        } else if (lowerQuestion.matches(".*(已完成|已收货|完成).*")) {
-            return 60; // 已完成
-        } else if (lowerQuestion.matches(".*(已取消|取消了).*")) {
-            return 70; // 已取消
-        } else if (lowerQuestion.matches(".*(退款中|申请退款).*")) {
-            return 80; // 退款中
-        } else if (lowerQuestion.matches(".*(已退款|退款成功).*")) {
-            return 90; // 已退款
-        }
-        
-        return null; // 查询所有订单
-    }
-
-    /**
-     * 查询特定订单
-     */
-    private String querySpecificOrder(String orderNo) {
-        OrderInfo orderInfo = orderService.getOrderByOrderNo(orderNo);
-        
-        if (orderInfo == null) {
-            return "未找到订单号为【" + orderNo + "】的订单信息，请检查订单号是否正确。";
-        }
-        
-        return buildOrderDetailResponse(orderInfo);
-    }
-
-    /**
-     * 查询用户订单列表
-     */
-    private String queryUserOrders(Long userId, Integer status) {
-        List<OrderInfo> orders = orderService.getOrdersByUserId(userId, status);
-        
-        if (orders == null || orders.isEmpty()) {
-            if (status != null) {
-                return "您暂时没有状态为【" + getOrderStatusDesc(status) + "】的订单。";
-            }
-            return "您暂时还没有订单哦，快去看看喜欢的商品吧！";
-        }
-        
-        return buildOrderListResponse(orders, status);
-    }
-
-    /**
-     * 构建订单详情响应
-     */
-    private String buildOrderDetailResponse(OrderInfo orderInfo) {
-        StringBuilder response = new StringBuilder();
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        
-        response.append("📦 **订单详情**\n\n");
-        response.append("🔖 **订单编号**：").append(orderInfo.getOrderNo()).append("\n");
-        response.append("📌 **订单状态**：").append(orderInfo.getStatusDesc()).append("\n");
-        response.append("💰 **订单金额**：").append(orderInfo.getPayment()).append(" 元\n");
-        
-        // 根据状态显示不同信息
-        if (orderInfo.getStatus() == 10) {
-            // 待付款
-            response.append("⏰ **下单时间**：").append(dateFormat.format(orderInfo.getCreateTime())).append("\n");
-            if (orderInfo.getExpireTime() != null) {
-                response.append("⚠️ **超时时间**：").append(dateFormat.format(orderInfo.getExpireTime())).append("\n");
-                response.append("\n💡 **温馨提示**：订单将在超时后自动取消，请及时支付。");
-            }
-        } else if (orderInfo.getStatus() == 20) {
-            // 已付款
-            if (orderInfo.getPaymentTime() != null) {
-                response.append("💳 **支付时间**：").append(dateFormat.format(orderInfo.getPaymentTime())).append("\n");
-            }
-            if (orderInfo.getPaymentTypeDesc() != null) {
-                response.append("💳 **支付方式**：").append(orderInfo.getPaymentTypeDesc()).append("\n");
-            }
-            response.append("\n💡 **温馨提示**：您的订单正在处理中，请耐心等待。");
-        } else if (orderInfo.getStatus() == 30) {
-            // 待发货
-            if (orderInfo.getPaymentTime() != null) {
-                response.append("💳 **支付时间**：").append(dateFormat.format(orderInfo.getPaymentTime())).append("\n");
-            }
-            if (orderInfo.getPaymentTypeDesc() != null) {
-                response.append("💳 **支付方式**：").append(orderInfo.getPaymentTypeDesc()).append("\n");
-            }
-            response.append("\n💡 **温馨提示**：您的订单正在准备中，预计1-3个工作日内发货。");
-        } else if (orderInfo.getStatus() == 40) {
-            // 已发货
-            if (orderInfo.getShipTime() != null) {
-                response.append("🚚 **发货时间**：").append(dateFormat.format(orderInfo.getShipTime())).append("\n");
-            }
-            response.append("📍 **收货地址**：").append(buildAddressString(orderInfo)).append("\n");
-            response.append("📞 **收货人**：").append(orderInfo.getReceiveName())
-                    .append(" ").append(orderInfo.getReceivePhone()).append("\n");
-            response.append("\n💡 **温馨提示**：商品已发出，预计3-7天送达，请保持电话畅通。");
-        } else if (orderInfo.getStatus() == 50) {
-            // 待收货
-            if (orderInfo.getPaymentTime() != null) {
-                response.append("💳 **支付时间**：").append(dateFormat.format(orderInfo.getPaymentTime())).append("\n");
-            }
-            if (orderInfo.getPaymentTypeDesc() != null) {
-                response.append("💳 **支付方式**：").append(orderInfo.getPaymentTypeDesc()).append("\n");
-            }
-            if (orderInfo.getShipTime() != null) {
-                response.append("🚚 **发货时间**：").append(dateFormat.format(orderInfo.getShipTime())).append("\n");
-            }
-            response.append("📍 **收货地址**：").append(buildAddressString(orderInfo)).append("\n");
-            response.append("📞 **收货人**：").append(orderInfo.getReceiveName())
-                    .append(" ").append(orderInfo.getReceivePhone()).append("\n");
-            response.append("\n💡 **温馨提示**：商品正在配送中，请注意查收，收到后请确认收货。");
-        } else if (orderInfo.getStatus() == 60) {
-            // 已完成
-            response.append("✅ **收货时间**：").append(dateFormat.format(orderInfo.getReceiveTime())).append("\n");
-            response.append("\n💡 **温馨提示**：感谢您的购买，期待您的再次光临！");
-        } else if (orderInfo.getStatus() == 70) {
-            // 已取消
-            response.append("❌ **取消时间**：").append(dateFormat.format(orderInfo.getCancelTime())).append("\n");
-            if (orderInfo.getCancelReason() != null) {
-                response.append("📝 **取消原因**：").append(orderInfo.getCancelReason()).append("\n");
-            }
-        } else if (orderInfo.getStatus() == 90) {
-            // 已退款
-            response.append("💸 **退款金额**：").append(orderInfo.getRefundAmount()).append(" 元\n");
-            response.append("⏰ **退款时间**：").append(dateFormat.format(orderInfo.getRefundTime())).append("\n");
-            if (orderInfo.getRefundReason() != null) {
-                response.append("📝 **退款原因**：").append(orderInfo.getRefundReason()).append("\n");
-            }
-        }
-        
-        // 显示订单商品信息
-        if (orderInfo.getOrderDetails() != null && !orderInfo.getOrderDetails().isEmpty()) {
-            response.append("\n📋 **订单商品**：\n");
-            for (int i = 0; i < orderInfo.getOrderDetails().size(); i++) {
-                OrderDetail detail = orderInfo.getOrderDetails().get(i);
-                response.append((i + 1)).append(". ").append(detail.getProductName())
-                        .append(" × ").append(detail.getQuantity())
-                        .append(" (¥").append(detail.getCurrentUnitPrice()).append(")\n");
-            }
-        }
-        
-        return response.toString();
-    }
-
-    /**
-     * 构建订单列表响应
-     */
-    private String buildOrderListResponse(List<OrderInfo> orders, Integer status) {
-        StringBuilder response = new StringBuilder();
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
-        
-        if (status != null) {
-            response.append("📋 **").append(getOrderStatusDesc(status)).append("订单列表**\n\n");
-        } else {
-            response.append("📋 **我的订单列表**\n\n");
-        }
-        
-        int displayCount = Math.min(orders.size(), 5);
-        for (int i = 0; i < displayCount; i++) {
-            OrderInfo order = orders.get(i);
-            response.append((i + 1)).append(". 订单号：").append(order.getOrderNo()).append("\n");
-            response.append("   状态：").append(order.getStatusDesc()).append("\n");
-            response.append("   金额：¥").append(order.getPayment()).append("\n");
-            response.append("   时间：").append(dateFormat.format(order.getCreateTime())).append("\n");
-            
-            if (i < displayCount - 1) {
-                response.append("\n");
-            }
-        }
-        
-        if (orders.size() > displayCount) {
-            response.append("\n📊 共 ").append(orders.size())
-                    .append(" 个订单，已显示最新 ").append(displayCount).append(" 个。\n");
-        }
-        
-        response.append("\n💡 **提示**：发送订单号可查看详细信息。");
-        
-        return response.toString();
-    }
-
-    /**
-     * 构建地址字符串
-     */
-    private String buildAddressString(OrderInfo orderInfo) {
-        StringBuilder address = new StringBuilder();
-        
-        if (orderInfo.getProvince() != null) {
-            address.append(orderInfo.getProvince());
-        }
-        if (orderInfo.getCity() != null) {
-            address.append(orderInfo.getCity());
-        }
-        if (orderInfo.getArea() != null) {
-            address.append(orderInfo.getArea());
-        }
-        if (orderInfo.getStreet() != null) {
-            address.append(orderInfo.getStreet());
-        }
-        
-        return address.toString();
-    }
-
-    /**
-     * 获取订单状态描述
-     */
-    private String getOrderStatusDesc(Integer status) {
-        if (status == null) return "未知";
-        
-        switch (status) {
-            case 10: return "待付款";
-            case 20: return "已付款";
-            case 30: return "待发货";
-            case 40: return "已发货";
-            case 50: return "待收货";
-            case 60: return "已完成";
-            case 70: return "已取消";
-            case 80: return "退款中";
-            case 90: return "已退款";
-            default: return "未知";
-        }
-    }
 }

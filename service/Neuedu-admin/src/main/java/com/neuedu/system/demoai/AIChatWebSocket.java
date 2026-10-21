@@ -2,6 +2,7 @@ package com.neuedu.system.demoai;
 
 import com.neuedu.system.demoai.model.PriceCondition;
 import com.neuedu.system.demoai.model.PriceExtractResult;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,13 +37,12 @@ public class AIChatWebSocket {
 
     @OnMessage
     public void onMessage(String message, Session session) {
-        log.info("收到用户{}消息：{}", session.getId(), message);
+        log.info("收到客服消息，会话ID={}，内容长度={}", session.getId(), message == null ? 0 : message.length());
 
         try {
             ChatRequest request = objectMapper.readValue(message, ChatRequest.class);
             String userQuestion = request.getQuestion().trim();
             Long productId = request.getProductId();
-            Long userId = request.getUserId(); // 新增：获取用户ID
 
             if (userQuestion.isEmpty()) {
                 sendMessage(session, buildResponse("stream", "请问您想咨询什么问题呢？"));
@@ -52,7 +52,7 @@ public class AIChatWebSocket {
 
             // 新增：处理订单查询请求
             if (zhipuAIService.isOrderQueryRequest(userQuestion)) {
-                String response = zhipuAIService.handleOrderQuery(userQuestion, userId);
+                String response = "为保护订单信息，请登录后前往“我的订单”查看。当前客服会话不提供订单查询。";
                 sendMessage(session, buildResponse("stream", response));
                 sendMessage(session, buildResponse("end", ""));
                 return;
@@ -72,7 +72,7 @@ public class AIChatWebSocket {
             // 检查是否需要清除上下文：当用户明确指定新品牌或新类型时
             boolean shouldClearContext = shouldClearExistingContext(userQuestion, context);
             if (shouldClearContext && context != null) {
-                log.info("清除旧上下文，用户查询：{}", userQuestion);
+                log.info("清除客服会话旧查询上下文，会话ID={}", session.getId());
                 context.clear();
                 USER_CONTEXT.put(session, context);
             }
@@ -138,24 +138,12 @@ public class AIChatWebSocket {
             }
             // 处理其他类型的请求
             if (userQuestion.matches(".*(你好|您好|hello|hi).*")) {
-                sendMessage(session, buildResponse("stream", "您好！我是智能客服，很高兴为您服务！"));
+                sendMessage(session, buildResponse("stream", "您好！我是商城助手，很高兴为您服务！"));
                 sendMessage(session, buildResponse("end", ""));
                 return;
             }
 
-            if (userQuestion.matches(".*(发货|快递|物流|配送|多久到|什么时候到).*")) {
-                sendMessage(session, buildResponse("stream", "一般情况下，商品会在下单后1-3个工作日内发货，物流时效为3-7天，具体时间以物流公司实际配送为准。"));
-                sendMessage(session, buildResponse("end", ""));
-                return;
-            }
-
-            if (userQuestion.matches(".*(退货|退款|售后|维修|质量).*")) {
-                sendMessage(session, buildResponse("stream", "我们支持7天无理由退货，15天内质量问题可换货。具体售后政策请查看商品详情页的售后说明，或联系客服处理。"));
-                sendMessage(session, buildResponse("end", ""));
-                return;
-            }
-
-            // 原有AI调用逻辑
+            // 本地规则回复；当前项目未连接外部大模型。
             String knowledge = zhipuAIService.getEcommerceKnowledge(userQuestion, productId);
             zhipuAIService.streamChat(userQuestion, knowledge, content -> {
                 sendMessage(session, buildResponse("stream", content));
@@ -221,25 +209,6 @@ public class AIChatWebSocket {
 
         return hasProductWord && hasQueryWord;
     }
-
-    // 日志记录方法 - 加在 AIChatWebSocket 类中
-    private void logContextInfo(String operation, Session session, Map<String, Object> context, String userQuestion) {
-        if (context != null) {
-            log.info("{} - 用户{}上下文: 品牌={}, 类型={}, 价格条件={}, 问题={}",
-                    operation,
-                    session.getId(),
-                    context.get("brand"),
-                    context.get("type"),
-                    context.get("priceResult") != null ? context.get("priceResult") : "无",
-                    userQuestion);
-        } else {
-            log.info("{} - 用户{}无上下文, 问题={}",
-                    operation,
-                    session.getId(),
-                    userQuestion);
-        }
-    }
-
 
     // 新增：判断是否需要清除现有上下文
     private boolean shouldClearExistingContext(String userQuestion, Map<String, Object> context) {
@@ -394,19 +363,16 @@ public class AIChatWebSocket {
     }
 
     // 内部类：聊天请求
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class ChatRequest {
         private String question;
         private Long productId;
-        private Long userId; // 新增：用户ID字段
 
         public String getQuestion() { return question; }
         public void setQuestion(String question) { this.question = question; }
 
         public Long getProductId() { return productId; }
         public void setProductId(Long productId) { this.productId = productId; }
-
-        public Long getUserId() { return userId; }
-        public void setUserId(Long userId) { this.userId = userId; }
     }
 //    @Bean
 //    public WebMvcConfigurer corsConfigurer() {
