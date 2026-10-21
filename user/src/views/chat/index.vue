@@ -52,7 +52,7 @@
             </div>
           </template>
           <div class="msg-content" :class="{ 'product-list': isProductList(msg.content) }">
-            <span v-html="formatMessage(msg.content)"></span>
+            <span v-html="formatChatMessage(msg.content)"></span>
             <div class="msg-time">{{ formatTime(msg.time) }}</div>
           </div>
           <template v-if="msg.type === 'user'">
@@ -115,6 +115,7 @@
 <script setup>
 import aiAvatarImage from '@/assets/logo/logo.png'
 import { DEFAULT_AVATAR_IMAGE } from '@/utils/image'
+import { formatChatMessage } from '@/utils/chat'
 import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue';
 import { useStore } from 'vuex';
 import { getWebSocketUrl } from '@/utils/request';
@@ -188,17 +189,6 @@ const closeWelcomeMessage = () => {
 // 判断是否是商品列表
 const isProductList = (content) => {
   return content.includes('商品列表') || content.includes('AI 智能推荐');
-};
-
-// 格式化消息（处理换行和特殊字符）
-const formatMessage = (content) => {
-  if (!content) return '';
-
-  // 保留换行符
-  return content
-    .replace(/\n/g, '<br>')
-    .replace(/【(.*?)】/g, '<strong class="highlight">【$1】</strong>')
-    .replace(/价格：\s*(\d+(\.\d{1,2})?)元/g, '价格：<span class="price">$1元</span>');
 };
 
 // 格式化时间
