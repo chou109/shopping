@@ -53,6 +53,7 @@
                     </router-link>
                   </h3>
                   <p class="product-subtitle">{{ item.productSubtitle }}</p>
+                  <el-tag v-if="item.priceChanged" type="warning" size="small">商品价格已更新，结算按当前价</el-tag>
                   <div class="product-spec" v-if="item.specifications">
                     {{ item.specifications }}
                   </div>
@@ -68,12 +69,12 @@
 
                   <!-- 数量控制 -->
                   <div class="quantity-control">
-                    <el-button size="small" :disabled="item.quantity <= 1" @click="decreaseQuantity(item)">
+                    <el-button size="small" :disabled="item.quantity <= 1 || cartItemStock(item) === 0" @click="decreaseQuantity(item)">
                       -
                     </el-button>
-                    <el-input-number v-model="item.quantity" :min="1" :max="item.stock ?? 999" :disabled="item.stock === 0" size="small"
+                    <el-input-number v-model="item.quantity" :min="1" :max="cartItemStock(item) ?? 999" :disabled="cartItemStock(item) === 0" size="small"
                       controls-position="right" @change="updateQuantity(item)" />
-                    <el-button size="small" :disabled="item.stock != null && item.quantity >= item.stock"
+                    <el-button size="small" :disabled="cartItemStock(item) != null && item.quantity >= cartItemStock(item)"
                       @click="increaseQuantity(item)">
                       +
                     </el-button>
@@ -246,10 +247,12 @@ const loadCartData = async () => {
       cartItems.value.forEach(item => {
         // 后端返回的selected是数字(0/1)，需要转换为布尔值
         item.selected = item.selected === 1 || item.selected === true
-        // 计算小计
-        if (item.productUnitPrice && item.quantity && !item.productTotalPrice) {
-          item.productTotalPrice = item.productUnitPrice * item.quantity
+        const currentPrice = item.product?.price
+        item.priceChanged = currentPrice != null && Number(currentPrice) !== Number(item.productUnitPrice)
+        if (currentPrice != null) {
+          item.productUnitPrice = Number(currentPrice)
         }
+        item.productTotalPrice = Number(item.productUnitPrice || 0) * Number(item.quantity || 0)
       })
     } else {
       ElMessage.error('获取购物车数据失败')
@@ -300,7 +303,7 @@ const handleItemSelect = async (item) => {
 
 // 增加数量
 const increaseQuantity = async (item) => {
-  const stockLimit = item.stock ?? 999
+  const stockLimit = cartItemStock(item) ?? 999
   if (item.quantity >= stockLimit) {
     ElMessage.warning('库存不足')
     return
@@ -326,7 +329,7 @@ const updateQuantity = async (item) => {
     item.quantity = 1
   }
 
-  const stockLimit = item.stock ?? 999
+  const stockLimit = cartItemStock(item) ?? 999
   if (item.quantity > stockLimit) {
     item.quantity = stockLimit
     ElMessage.warning('库存不足')
@@ -457,7 +460,7 @@ const handleCheckout = async () => {
     ElMessage.warning('盲盒请前往盲盒页面购买')
     return
   }
-  if (selected.some(item => item.stock != null && item.quantity > item.stock)) {
+  if (selected.some(item => cartItemStock(item) != null && item.quantity > cartItemStock(item))) {
     ElMessage.warning('部分商品库存不足，请调整数量后再结算')
     await loadCartData()
     return
@@ -559,6 +562,11 @@ const isBlindBoxCartItem = (item) => isBlindBoxProduct(item.product || {
   productId: item.productId,
   isBlindBox: item.isBlindBox
 })
+
+const cartItemStock = (item) => {
+  const stock = item.product?.stock ?? item.stock
+  return stock == null ? null : Number(stock)
+}
 
 const productDetailLocation = (item) => ({
   path: isBlindBoxCartItem(item) ? '/product/blind-box' : '/product/detail',
