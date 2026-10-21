@@ -122,6 +122,7 @@
                 <!-- 30：待收货 → 收货/退款 -->
                 <template v-else-if="order.status === 30">
                   <el-button type="primary" size="small" @click="handleConfirmReceipt(order)">确认收货</el-button>
+                  <el-button size="small" @click="viewLogistics(order)">查看物流</el-button>
                   <el-button v-if="!order.isBlindBox && !hasBlindBoxResult(order)" type="warning" size="small" @click="handleRefund(order)">申请退款</el-button>
                 </template>
 
@@ -240,6 +241,27 @@
       <template #footer>
         <el-button @click="refundDialogVisible = false">取消</el-button>
         <el-button type="danger" :loading="refunding" @click="submitRefund">提交申请</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 物流信息弹窗：当前服务仅保存发货时间，未接入承运商轨迹 -->
+    <el-dialog v-model="logisticsDialogVisible" title="物流信息" width="480px">
+      <el-descriptions v-if="logisticsOrder" :column="1" border>
+        <el-descriptions-item label="订单编号">{{ logisticsOrder.orderNo }}</el-descriptions-item>
+        <el-descriptions-item label="订单状态">{{ logisticsOrder.statusDesc }}</el-descriptions-item>
+        <el-descriptions-item label="发货时间">
+          {{ logisticsOrder.shipTime ? formatTime(logisticsOrder.shipTime) : '暂无发货记录' }}
+        </el-descriptions-item>
+      </el-descriptions>
+      <el-alert
+        title="暂无物流轨迹信息，商家尚未录入承运商和运单号。"
+        type="info"
+        :closable="false"
+        show-icon
+        style="margin-top: 16px"
+      />
+      <template #footer>
+        <el-button @click="logisticsDialogVisible = false">关闭</el-button>
       </template>
     </el-dialog>
 
@@ -739,6 +761,8 @@ const goProductDetail = (productId) => {
 // 查看订单详情
 const detailDialogVisible = ref(false)
 const detailOrder = ref(null)
+const logisticsDialogVisible = ref(false)
+const logisticsOrder = ref(null)
 
 const viewOrderDetail = (order) => {
   detailOrder.value = order
@@ -747,7 +771,8 @@ const viewOrderDetail = (order) => {
 
 // 查看物流
 const viewLogistics = (order) => {
-  ElMessage.info('物流查询功能开发中')
+  logisticsOrder.value = order
+  logisticsDialogVisible.value = true
 }
 
 // 立即付款
