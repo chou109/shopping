@@ -221,14 +221,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  		update sys_user set password = #{password} where user_name = #{userName}
 	</update>
 
-	<update id="updateUserBalance">
-		update sys_user set balance = #{balance}, update_time = sysdate() where user_id = #{userId}
-	</update>
-
 	<update id="deductUserBalance">
 		update sys_user
 		set balance = ifnull(balance, 0) - #{amount}, update_time = sysdate()
 		where user_id = #{userId} and ifnull(balance, 0) &gt;= #{amount}
+	</update>
+
+	<update id="adjustUserBalance">
+		update sys_user
+		set balance = ifnull(balance, 0) + #{amount}, update_time = sysdate()
+		where user_id = #{userId}
+		  and ifnull(balance, 0) + #{amount} &gt;= 0
+		  and ifnull(balance, 0) + #{amount} &lt;= 30000
 	</update>
 	
 	<delete id="deleteUserById" parameterType="Long">

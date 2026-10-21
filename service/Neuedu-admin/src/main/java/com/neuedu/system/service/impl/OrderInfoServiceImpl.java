@@ -45,9 +45,6 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
     private IUserAddressService userAddressService;
 
     @Autowired
-    private IUserService userService;
-
-    @Autowired
     private ISysUserService sysUserService;
 
     @Autowired(required = false)
@@ -675,10 +672,8 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
             if (OrderStatusConstants.WAIT_SHIP.equals(orderInfo.getStatus())) {
                 // 退款到原支付方式
                 if (orderInfo.getPaymentType().equals(OrderStatusConstants.PAYMENT_BALANCE)) {
-                    // 退回余额
-                    User user = userService.getById(orderInfo.getUserId());
-                    user.setBalance(user.getBalance().add(orderInfo.getPayment()));
-                    userService.updateById(user);
+                    // 通过统一的原子余额增量更新，避免退款覆盖并发扣款。
+                    sysUserService.updateUserBalance(orderInfo.getUserId(), orderInfo.getPayment());
                 }
                 // 其他支付方式的退款逻辑...
             }

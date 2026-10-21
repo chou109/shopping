@@ -596,8 +596,11 @@ public class SysUserServiceImpl implements ISysUserService
             throw new ServiceException("充值失败，当前账户余额为" + currentBalance + "元，当前最大充值金额为" + maxRecharge + "元");
         }
 
-        // 更新余额
-        return userMapper.updateUserBalance(userId, newBalance) > 0;
+        // 使用增量 SQL，避免并发退款、充值和支付互相覆盖余额。
+        if (userMapper.adjustUserBalance(userId, amount) == 0) {
+            throw new ServiceException("余额已发生变化，请刷新后重试");
+        }
+        return true;
     }
 
     /**

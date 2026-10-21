@@ -134,15 +134,9 @@ public interface SysUserMapper
      */
     public SysUser checkEmailUnique(String email);
 
-    /**
-     * 更新用户余额
-     *
-     * @param userId 用户ID
-     * @param balance 新余额
-     * @return 结果
-     */
-    public int updateUserBalance(@Param("userId") Long userId, @Param("balance") BigDecimal balance);
-
     /** 余额充足时原子扣减余额。 */
     public int deductUserBalance(@Param("userId") Long userId, @Param("amount") BigDecimal amount);
+
+    /** 以余额增量的方式原子调整账户余额。 */
+    public int adjustUserBalance(@Param("userId") Long userId, @Param("amount") BigDecimal amount);
 }
