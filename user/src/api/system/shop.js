@@ -4,7 +4,8 @@ import request from '@/utils/request'
 export function getShopInfo(id) {
   return request({
     url: `/system/shop/public/${id}`,
-    method: 'get'
+    method: 'get',
+    headers: { isToken: false }
   })
 }
 
@@ -12,7 +13,8 @@ export function getShopInfo(id) {
 export function getShopProducts(shopId) {
   return request({
     url: `/system/product/shop/${shopId}`,
-    method: 'get'
+    method: 'get',
+    headers: { isToken: false }
   })
 }
 
@@ -21,7 +23,8 @@ export function searchShop(keyword, status) {
   return request({
     url: '/system/shop/search',
     method: 'get',
-    params: { keyword, status }
+    params: { keyword, status },
+    headers: { isToken: false }
   })
 }
 
@@ -30,7 +33,8 @@ export function listHotShop(limit = 10) {
   return request({
     url: '/system/shop/hot',
     method: 'get',
-    params: { limit }
+    params: { limit },
+    headers: { isToken: false }
   })
 }
 

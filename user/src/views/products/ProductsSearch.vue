@@ -159,7 +159,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
 import api from "@/utils/request.js"
-import { getCategory } from '@/api/system/category'
+import { getFrontCategoryTree } from '@/api/system/category'
 import { getProductImageUrl, handleImageError } from '@/utils/image'
 import { isBlindBoxProduct } from '@/utils/product'
 import { searchShop, listHotShop } from '@/api/system/shop'
@@ -188,11 +188,19 @@ const loadCategoryName = async () => {
   }
 
   try {
-    const response = await getCategory(categoryId.value)
-    console.log('分类详情响应:', response)
+    const response = await getFrontCategoryTree()
+    const findCategory = (categories = []) => {
+      for (const category of categories) {
+        if (String(category.id) === String(categoryId.value)) return category
+        const child = findCategory(category.children || [])
+        if (child) return child
+      }
+      return null
+    }
 
-    if (response.code === 200 && response.data) {
-      categoryName.value = response.data.name || `ID: ${categoryId.value}`
+    if (response.code === 200 && Array.isArray(response.data)) {
+      const category = findCategory(response.data)
+      categoryName.value = category?.name || `ID: ${categoryId.value}`
     } else {
       categoryName.value = `ID: ${categoryId.value}`
     }
@@ -347,7 +355,8 @@ const loadSearchResults = () => {
     // 按分类搜索商品
     api({
       url: `/system/product/category/${categoryId.value}`,
-      method: 'get'
+        method: 'get',
+        headers: { isToken: false }
     })
       .then((res) => {
         if (requestVersion !== searchRequestVersion) return
@@ -379,7 +388,8 @@ const loadSearchResults = () => {
       api({
         url: '/system/product/search',
         method: 'get',
-        params: { keyword: keyword.value }
+        params: { keyword: keyword.value },
+        headers: { isToken: false }
       }),
       // 搜索店铺
       searchShop(keyword.value)
@@ -425,7 +435,8 @@ const loadSearchResults = () => {
       api({
         url: '/system/product/hot',
         method: 'get',
-        params: { limit: 20 }
+        params: { limit: 20 },
+        headers: { isToken: false }
       }),
       // 加载热门店铺
       listHotShop(10)

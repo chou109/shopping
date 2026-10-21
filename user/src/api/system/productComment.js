@@ -49,7 +49,8 @@ export function getProductCommentsFront(productId, score, hasImages) {
 export function getProductCommentStats(productId) {
   return request({
     url: `/system/comment/product/${productId}/statistics`,
-    method: 'get'
+    method: 'get',
+    headers: { isToken: false }
   })
 }
 
@@ -159,7 +160,8 @@ export function getCommentWithReplies(commentId) {
 export function getCommentTree(productId) {
   return request({
     url: `/system/comment/product/${productId}/tree`,
-    method: 'get'
+    method: 'get',
+    headers: { isToken: false }
   })
 }
 
@@ -168,6 +170,7 @@ export function getCommentTreePage(productId, pageNum = 1, pageSize = 10) {
   return request({
     url: `/system/comment/product/${productId}/tree/page`,
     method: 'get',
-    params: { pageNum, pageSize }
+    params: { pageNum, pageSize },
+    headers: { isToken: false }
   })
 }

@@ -14,7 +14,8 @@ export function listProductRandom(query) {
   return request({
     url: '/system/product/list/random',
     method: 'get',
-    params: query
+    params: query,
+    headers: { isToken: false }
   })
 }
 
@@ -23,7 +24,8 @@ export function listProductHot(limit = 10) {
   return request({
     url: '/system/product/hot',
     method: 'get',
-    params: { limit }
+    params: { limit },
+    headers: { isToken: false }
   })
 }
 
@@ -31,7 +33,8 @@ export function listProductHot(limit = 10) {
 export function listProductByCategory(categoryId) {
   return request({
     url: `/system/product/category/${categoryId}`,
-    method: 'get'
+    method: 'get',
+    headers: { isToken: false }
   })
 }
 
@@ -39,7 +42,8 @@ export function listProductByCategory(categoryId) {
 export function listProductByActivity(activityId) {
   return request({
     url: `/system/product/activity/${activityId}`,
-    method: 'get'
+    method: 'get',
+    headers: { isToken: false }
   })
 }
 
@@ -48,7 +52,8 @@ export function searchProduct(keyword) {
   return request({
     url: '/system/product/search',
     method: 'get',
-    params: { keyword }
+    params: { keyword },
+    headers: { isToken: false }
   })
 }
 
@@ -56,7 +61,8 @@ export function searchProduct(keyword) {
 export function getProduct(id) {
   return request({
     url: '/system/product/' + id,
-    method: 'get'
+    method: 'get',
+    headers: { isToken: false }
   })
 }
 

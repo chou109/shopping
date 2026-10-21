@@ -101,7 +101,8 @@ export function changeCategoryHotFlag(data) {
 export function getEnabledCategories() {
   return request({
     url: '/system/category/enabled/list',
-    method: 'get'
+    method: 'get',
+    headers: { isToken: false }
   })
 }
 
@@ -109,7 +110,8 @@ export function getEnabledCategories() {
 export function getHotCategories() {
   return request({
     url: '/system/category/hot/list',
-    method: 'get'
+    method: 'get',
+    headers: { isToken: false }
   })
 }
 
@@ -117,6 +119,7 @@ export function getHotCategories() {
 export function getFrontCategoryTree() {
   return request({
     url: '/system/category/front/tree',
-    method: 'get'
+    method: 'get',
+    headers: { isToken: false }
   })
 }
