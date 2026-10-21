@@ -195,7 +195,7 @@
     </div>
 
     <!-- 头像上传对话框 -->
-    <el-dialog title="更换头像" v-model="avatarDialogVisible" width="400px" :before-close="handleAvatarClose">
+    <el-dialog title="更换头像" v-model="avatarDialogVisible" width="400px" :before-close="handleAvatarClose" @close="clearAvatarPreview">
       <div class="avatar-dialog">
         <div class="avatar-preview" v-if="avatarPreviewUrl">
           <img :src="avatarPreviewUrl" alt="头像预览" />
@@ -220,7 +220,7 @@
         </div>
       </div>
       <template #footer>
-        <el-button @click="avatarDialogVisible = false">取消</el-button>
+        <el-button @click="handleAvatarCancel">取消</el-button>
         <el-button type="primary" @click="submitAvatar" :loading="avatarLoading">确定</el-button>
       </template>
     </el-dialog>
@@ -358,6 +358,7 @@ import { DEFAULT_AVATAR_IMAGE, getProductImageUrl } from '@/utils/image'
 import { getFavoriteStats } from '@/api/system/favorite'
 import { getFootprintCount, getOrderCount } from '@/api/system/stats'
 import { AreaDataService } from '@/utils/areaService.mjs'
+import { addressLabelOptions, formatFullAddress, getAddressLabelName } from '@/utils/profile.mjs'
 // 导入地址管理相关的API
 import {
   getMyAddressList,
@@ -575,6 +576,13 @@ const handleAvatarClose = (done) => {
   done()
 }
 
+const handleAvatarCancel = () => {
+  if (avatarLoading.value) return
+  clearAvatarPreview()
+  uploadFile.value = null
+  avatarDialogVisible.value = false
+}
+
 const beforeAvatarUpload = (file) => {
   const isImage = ['image/jpeg', 'image/png'].includes(file.type)
   const isSmallEnough = file.size / 1024 / 1024 <= 2
@@ -664,7 +672,6 @@ const currentAddressId = ref(null)
 
 // 地址列表数据
 const addressList = ref([])
-const defaultAddress = ref(null)
 
 // 地址表单数据
 const addressForm = reactive({
@@ -720,14 +727,6 @@ const addressRules = {
     { min: 5, max: 200, message: '详细地址长度在 5 到 200 个字符', trigger: 'blur' }
   ]
 }
-
-// 地址标签选项
-const addressLabelOptions = [
-  { value: 1, label: '家' },
-  { value: 2, label: '公司' },
-  { value: 3, label: '学校' },
-  { value: 4, label: '其他' }
-]
 
 const areaService = new AreaDataService()
 let provinceRequestId = 0
@@ -961,8 +960,6 @@ const loadAddressList = async () => {
     const response = await getMyAddressList()
     if (response.code === 200) {
       addressList.value = response.data || []
-      // 查找默认地址
-      defaultAddress.value = addressList.value.find(addr => addr.defaultFlag === 1) || null
     } else {
       ElMessage.error(response.msg || '获取地址列表失败')
     }
@@ -1262,13 +1259,6 @@ const handleAddressSubmit = async () => {
   }
 }
 
-// 根据编码获取区域名称的辅助函数
-const getAreaNameByCode = (areaList, code) => {
-  if (!code || !areaList || areaList.length === 0) return ''
-  const area = areaList.find(item => item.code === code)
-  return area ? area.name : ''
-}
-
 // 删除地址
 const handleDeleteAddress = async (addressId) => {
   if (addressMutations.value.has(addressId)) return
@@ -1320,18 +1310,6 @@ const handleSetDefaultAddress = async (addressId) => {
   } finally {
     addressMutations.value.delete(addressId)
   }
-}
-
-// 获取地址标签名称
-const getAddressLabelName = (label) => {
-  const option = addressLabelOptions.find(opt => opt.value === label)
-  return option ? option.label : '其他'
-}
-
-// 格式化完整地址
-const formatFullAddress = (address) => {
-  const { province, city, area, street } = address
-  return `${province}${city}${area}${street}`
 }
 
 // 关闭地址对话框时的处理
