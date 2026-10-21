@@ -84,7 +84,8 @@ public interface UserFootprintMapper extends BaseMapper<UserFootprint>
      * @param userId 用户ID
      * @return 足迹列表
      */
-    public List<UserFootprint> selectFootprintByUserId(@Param("userId") Long userId);
+    public List<UserFootprint> selectFootprintByUserId(@Param("userId") Long userId,
+                                                       @Param("targetType") Integer targetType);
 
     /**
      * 查询用户最近浏览的足迹

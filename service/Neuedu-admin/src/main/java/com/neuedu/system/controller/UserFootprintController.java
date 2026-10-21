@@ -135,10 +135,11 @@ public class UserFootprintController extends BaseController
     @Operation(summary = "查询用户的足迹列表")
     @PreAuthorize("@ss.hasPermi('system:footprint:list')")
     @GetMapping("/user/{userId}")
-    public TableDataInfo listByUser(@PathVariable Long userId)
+    public TableDataInfo listByUser(@PathVariable Long userId,
+                                    @RequestParam(value = "targetType", required = false) Integer targetType)
     {
         startPage();
-        List<UserFootprint> list = userFootprintService.selectFootprintByUserId(userId);
+        List<UserFootprint> list = userFootprintService.selectFootprintByUserId(userId, targetType);
         return getDataTable(list);
     }
 

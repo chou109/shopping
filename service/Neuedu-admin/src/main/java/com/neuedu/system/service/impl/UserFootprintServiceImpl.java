@@ -118,9 +118,9 @@ public class UserFootprintServiceImpl extends ServiceImpl<UserFootprintMapper, U
      * @return 足迹列表
      */
     @Override
-    public List<UserFootprint> selectFootprintByUserId(Long userId)
+    public List<UserFootprint> selectFootprintByUserId(Long userId, Integer targetType)
     {
-        return userFootprintMapper.selectFootprintByUserId(userId);
+        return userFootprintMapper.selectFootprintByUserId(userId, targetType);
     }
 
     /**

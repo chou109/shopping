@@ -7,7 +7,8 @@ export function listFootprintByUser(userId, params = {}) {
     method: 'get',
     params: {
       pageNum: params.pageNum || 1,
-      pageSize: params.pageSize || 1000  // 默认获取全部
+      pageSize: params.pageSize || 20,
+      targetType: params.targetType
     }
   })
 }

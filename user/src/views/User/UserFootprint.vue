@@ -20,8 +20,8 @@
       <!-- 统计信息 -->
       <div class="filter-stats">
         <span class="stat-item">共 {{ totalCount }} 条记录</span>
-        <span class="stat-item" v-if="activeFilter === 'shop'">店铺: {{ filteredFootprints.length }} 个</span>
-        <span class="stat-item" v-if="activeFilter === 'product'">商品: {{ filteredFootprints.length }} 个</span>
+        <span class="stat-item" v-if="activeFilter === 'shop'">店铺: {{ totalCount }} 个</span>
+        <span class="stat-item" v-if="activeFilter === 'product'">商品: {{ totalCount }} 个</span>
       </div>
     </div>
 
@@ -129,8 +129,10 @@ const activeFilter = ref('all') // 当前激活的筛选类型：all, shop, prod
 // 懒加载相关
 const footprintListRef = ref(null)
 const pageSize = 10
-const displayCount = ref(10)
 const loadingMore = ref(false)
+const pageNum = ref(1)
+const totalCount = ref(0)
+let footprintRequestId = 0
 
 // 注入父组件的滚动容器引用
 const scrollContainer = inject('scrollContainer', null)
@@ -160,39 +162,23 @@ const handleItemClick = (item) => {
 
 // 筛选后的足迹数据
 const filteredFootprints = computed(() => {
-  if (!footprints.value || footprints.value.length === 0) {
-    return []
-  }
-
-  switch (activeFilter.value) {
-    case 'shop':
-      return footprints.value.filter(item => item.targetType === 2)
-    case 'product':
-      return footprints.value.filter(item => item.targetType === 1)
-    case 'all':
-    default:
-      return footprints.value
-  }
+  return footprints.value
 })
 
-// 显示的足迹（懒加载）
+// 当前已从服务端分页加载的足迹
 const displayedFootprints = computed(() => {
-  return filteredFootprints.value.slice(0, displayCount.value)
+  return filteredFootprints.value
 })
 
 // 是否还有更多
 const hasMore = computed(() => {
-  return displayCount.value < filteredFootprints.value.length
+  return footprints.value.length < totalCount.value
 })
 
 // 加载更多
 const loadMore = () => {
-  if (loadingMore.value || !hasMore.value) return
-  loadingMore.value = true
-  setTimeout(() => {
-    displayCount.value += pageSize
-    loadingMore.value = false
-  }, 300)
+  if (loadingMore.value || loading.value || !hasMore.value) return
+  loadFootprints(false)
 }
 
 // 滚动加载更多（监听父容器 .user-content 的滚动事件）
@@ -206,11 +192,6 @@ const handleScroll = () => {
     loadMore()
   }
 }
-
-// 总记录数
-const totalCount = computed(() => {
-  return footprints.value ? footprints.value.length : 0
-})
 
 // 按日期分组（使用懒加载后的数据）
 const groupedFootprints = computed(() => {
@@ -242,9 +223,8 @@ const groupedFootprints = computed(() => {
 
 // 处理筛选变化
 const handleFilterChange = (filterType) => {
-  console.log('筛选类型改变为:', filterType)
   activeFilter.value = filterType
-  displayCount.value = pageSize // 重置显示数量
+  loadFootprints(true)
 }
 
 // 获取类型徽章样式
@@ -381,7 +361,7 @@ const getTypeText = (type) => {
 }
 
 // 加载足迹数据
-const loadFootprints = async () => {
+const loadFootprints = async (reset = true) => {
   const userId = store.state.user?.userId
 
   if (!userId) {
@@ -390,23 +370,41 @@ const loadFootprints = async () => {
     return
   }
 
-  loading.value = true
+  if (reset) {
+    pageNum.value = 1
+    totalCount.value = 0
+    footprints.value = []
+    loading.value = true
+  } else {
+    loadingMore.value = true
+  }
+  const requestId = ++footprintRequestId
+  const requestedPageNum = pageNum.value
   try {
-    const response = await listFootprintByUser(userId)
+    const targetType = activeFilter.value === 'shop' ? 2 : activeFilter.value === 'product' ? 1 : undefined
+    const response = await listFootprintByUser(userId, {
+      pageNum: requestedPageNum,
+      pageSize,
+      targetType
+    })
+    if (requestId !== footprintRequestId) return
     if (response.code === 200) {
-      footprints.value = response.rows || []
-      // 按最后浏览时间倒序排列
-      footprints.value.sort((a, b) => new Date(b.lastBrowseTime) - new Date(a.lastBrowseTime))
+      const rows = response.rows || []
+      footprints.value = reset ? rows : footprints.value.concat(rows)
+      totalCount.value = Number(response.total) || 0
+      pageNum.value += 1
     } else {
       ElMessage.error(response.msg || '获取足迹数据失败')
-      footprints.value = []
     }
   } catch (error) {
+    if (requestId !== footprintRequestId) return
     console.error('加载足迹数据失败:', error)
     ElMessage.error('加载足迹数据失败')
-    footprints.value = []
   } finally {
-    loading.value = false
+    if (requestId === footprintRequestId) {
+      loading.value = false
+      loadingMore.value = false
+    }
   }
 }
 
@@ -454,6 +452,7 @@ const handleClearAll = async () => {
     if (response.code === 200) {
       ElMessage.success('清空成功')
       footprints.value = []
+      totalCount.value = 0
     } else {
       ElMessage.error(response.msg || '清空失败')
     }

@@ -79,7 +79,7 @@ public interface IUserFootprintService extends IService<UserFootprint>
      * @param userId 用户ID
      * @return 足迹列表
      */
-    public List<UserFootprint> selectFootprintByUserId(Long userId);
+    public List<UserFootprint> selectFootprintByUserId(Long userId, Integer targetType);
 
     /**
      * 查询用户最近浏览的足迹（前N条）
