@@ -51,6 +51,8 @@ pnpm --dir user install --frozen-lockfile
 echo "安装管理端依赖（锁文件冻结）"
 pnpm --dir admin install --frozen-lockfile
 
+echo "检查大小写敏感的源码导入"
+node scripts/check-case-sensitive-imports.mjs
 echo "检查 Vue 模板引用"
 node scripts/check-vue-template-bindings.mjs
 

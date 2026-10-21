@@ -84,14 +84,14 @@ import { getUsers } from '@/api/system/user'
 import { DEFAULT_AVATAR_IMAGE, getProductImageUrl } from '@/utils/image'
 
 // 导入各个功能组件
-import UserProfile from '@/views/user/UserProfile.vue'
-import UserOrders from '@/views/user/UserOrders.vue'
-import ShoppingCartPage from '@/views/user/ShoppingCart.vue'
-import UserFootprint from '@/views/user/UserFootprint.vue'
-import FavoriteShops from '@/views/user/FavoriteShops.vue'
-import FavoriteProducts from '@/views/user/FavoriteProducts.vue'
-import UserReviews from '@/views/user/UserReviews.vue'
-import UserMessage from '@/views/user/UserMessage.vue'
+import UserProfile from '@/views/User/UserProfile.vue'
+import UserOrders from '@/views/User/UserOrders.vue'
+import ShoppingCartPage from '@/views/User/ShoppingCart.vue'
+import UserFootprint from '@/views/User/UserFootprint.vue'
+import FavoriteShops from '@/views/User/FavoriteShops.vue'
+import FavoriteProducts from '@/views/User/FavoriteProducts.vue'
+import UserReviews from '@/views/User/UserReviews.vue'
+import UserMessage from '@/views/User/UserMessage.vue'
 const props = defineProps({
   page: { type: String, default: 'profile' },
   query: { type: Object, default: () => ({}) }
