@@ -55,14 +55,7 @@ export default defineConfig(({ mode, command }) => {
           // 这里不需要 rewrite，因为要保持路径 /ai/chat 不变
         }
       },
-      '/ws': {
-          target: 'ws://localhost:9091',
-          ws: true,
-          changeOrigin: true,
-          secure: false,
-          rewrite: (path) => path.replace(/^\/ws/, '/ai/chat')
-        },
-           hmr: {
+      hmr: {
         protocol: 'ws',
         host: 'localhost',
         port: 18183,
