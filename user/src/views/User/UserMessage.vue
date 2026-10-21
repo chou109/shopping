@@ -13,7 +13,9 @@
 
       <!-- 会话列表 -->
       <div v-else class="session-list">
-        <div v-for="session in sessionList" :key="session.sessionId" class="session-item" @click="openChat(session)">
+        <div v-for="session in sessionList" :key="session.sessionId" class="session-item" role="button"
+          tabindex="0" :aria-label="`打开与${session.shopName || '客服'}的消息`" @click="openChat(session)"
+          @keydown.enter.prevent="openChat(session)" @keydown.space.prevent="openChat(session)">
           <div class="session-avatar">
             <el-icon v-if="!session.shopLogo" class="default-avatar">
               <Shop />
@@ -180,6 +182,11 @@ onMounted(() => {
 
 .session-item:hover {
   background: #fafafa;
+}
+
+.session-item:focus-visible {
+  outline: 3px solid #ee0a24;
+  outline-offset: -3px;
 }
 
 .session-item:last-child {
