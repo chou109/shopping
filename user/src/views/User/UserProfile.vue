@@ -166,12 +166,15 @@
                       </div>
                       <div class="address-actions">
                         <el-button v-if="address.defaultFlag !== 1" type="text"
+                          :loading="addressMutations.has(address.id)"
+                          :disabled="addressMutations.has(address.id)"
                           @click="handleSetDefaultAddress(address.id)">
                           设为默认
                         </el-button>
                         <el-button type="text" @click="openEditAddressDialog(address)">编辑</el-button>
                         <el-button type="text" @click="handleDeleteAddress(address.id)"
-                          :disabled="address.defaultFlag === 1">
+                          :loading="addressMutations.has(address.id)"
+                          :disabled="address.defaultFlag === 1 || addressMutations.has(address.id)">
                           删除
                         </el-button>
                       </div>
@@ -655,6 +658,7 @@ const passwordRules = {
 // 地址管理相关变量
 const addressDialogVisible = ref(false)
 const addressLoading = ref(false)
+const addressMutations = ref(new Set())
 const isEditAddress = ref(false)
 const currentAddressId = ref(null)
 
@@ -1267,6 +1271,8 @@ const getAreaNameByCode = (areaList, code) => {
 
 // 删除地址
 const handleDeleteAddress = async (addressId) => {
+  if (addressMutations.value.has(addressId)) return
+  addressMutations.value.add(addressId)
   try {
     await ElMessageBox.confirm('确定要删除这个地址吗？', '提示', {
       confirmButtonText: '确定',
@@ -1287,11 +1293,15 @@ const handleDeleteAddress = async (addressId) => {
       console.error('删除地址失败:', error)
       ElMessage.error('地址删除失败')
     }
+  } finally {
+    addressMutations.value.delete(addressId)
   }
 }
 
 // 设置默认地址
 const handleSetDefaultAddress = async (addressId) => {
+  if (addressMutations.value.has(addressId)) return
+  addressMutations.value.add(addressId)
   try {
     const response = await setDefaultAddress({
       addressId: addressId,
@@ -1307,6 +1317,8 @@ const handleSetDefaultAddress = async (addressId) => {
   } catch (error) {
     console.error('设置默认地址失败:', error)
     ElMessage.error('设置默认地址失败')
+  } finally {
+    addressMutations.value.delete(addressId)
   }
 }
 
