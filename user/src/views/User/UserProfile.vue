@@ -1323,7 +1323,6 @@ const handleAddressDialogClose = () => {
 
 onMounted(() => {
   loadUserInfo()
-  loadAddressList()
 })
 </script>
 
