@@ -293,7 +293,7 @@ const loadProductComments = async () => {
       }
 
       if (productComments.value.length === 0) {
-        productComments.value = getMockComments()
+        productComments.value = []
         commentPageParams.value.total = productComments.value.length
       }
 
@@ -301,13 +301,13 @@ const loadProductComments = async () => {
       commentStats.value = calculateCommentStatsFromData()
     } else {
       console.warn('评论API返回错误:', response.msg || '未知错误')
-      productComments.value = getMockComments()
+      productComments.value = []
       commentPageParams.value.total = productComments.value.length
       commentStats.value = calculateCommentStatsFromData()
     }
   } catch (error) {
     console.error('加载商品评价失败:', error)
-    productComments.value = getMockComments()
+    productComments.value = []
     commentPageParams.value.total = productComments.value.length
     commentStats.value = calculateCommentStatsFromData()
   } finally {
@@ -384,57 +384,6 @@ const calculateCommentStatsFromData = () => {
     total,
     averageScore,
     scoreDistribution
-  }
-}
-
-// 模拟评论数据（修改版）
-const getMockComments = () => {
-  const rootComments = [
-
-  ]
-
-  // 计算根评论的统计
-  const total = rootComments.length
-  const totalScore = rootComments.reduce((sum, comment) => sum + (comment.score || 0), 0)
-  const averageScore = total > 0 ? parseFloat((totalScore / total).toFixed(1)) : 0
-
-  // 计算评分分布
-  const scoreDistribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
-  rootComments.forEach(comment => {
-    const score = comment.score || 0
-    if (score >= 1 && score <= 5) {
-      scoreDistribution[score] = (scoreDistribution[score] || 0) + 1
-    }
-  })
-
-  // 设置统计
-  commentStats.value = {
-    total,
-    averageScore,
-    scoreDistribution
-  }
-
-  return rootComments
-}
-
-// 模拟统计信息（修改版）
-const getMockCommentStats = () => {
-  // 根据上面的模拟数据计算
-  // 只有根评论计入统计：5星1条，4星1条，3星1条
-  const total = 3
-  const totalScore = 5 + 4 + 3
-  const averageScore = parseFloat((totalScore / total).toFixed(1))
-
-  return {
-    total: total,
-    averageScore: averageScore,
-    scoreDistribution: {
-      5: 1,
-      4: 1,
-      3: 1,
-      2: 0,
-      1: 0
-    }
   }
 }
 

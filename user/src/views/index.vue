@@ -117,7 +117,7 @@
 
       <!-- 商品懒加载列表区域 -->
       <div class="lazy-products-section">
-        <LazyProductList ref="lazyProductListRef" />
+        <LazyProductList />
       </div>
     </main>
 
@@ -180,8 +180,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useStore } from 'vuex'
 import {
   Search,
@@ -197,10 +197,8 @@ import LazyProductList from '@/views/index/LazyProductList.vue'
 import FixedSidebar from '@/views/index/FixedSidebar.vue'
 
 const router = useRouter()
-const route = useRoute()
 const store = useStore()
 const searchKeyword = ref('')
-const lazyProductListRef = ref(null)
 
 // 用户信息
 const userInfo = computed(() => {
@@ -226,38 +224,16 @@ const userInfo = computed(() => {
   return {}
 })
 
-// 购物车、订单、收藏和评价数量
-const cartCount = ref(0)
-const orderCount = ref(0)
-const productFavoriteCount = ref(0)
-const shopFavoriteCount = ref(0)
-const reviewCount = ref(0)
-
-// 消息未读数量
-const messageUnreadCount = ref(0)
 const showBackTop = ref(false)
 
 // 页面加载时获取数据
 onMounted(() => {
-  if (userInfo.value.name) {
-    loadNavData()
-    loadMessageUnreadCount()
-  }
-  // 监听滚动事件
-  window.addEventListener('scroll', handleScroll)
+  window.addEventListener('scroll', handleScroll, { passive: true })
 })
 
-// 加载消息未读数量
-const loadMessageUnreadCount = async () => {
-  try {
-    const response = await getUnreadCount()
-    if (response.code === 200) {
-      messageUnreadCount.value = response.data || 0
-    }
-  } catch (error) {
-    console.error('获取消息未读数量失败:', error)
-  }
-}
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll)
+})
 
 // 跳转到人工客服页面
 const goToCustomerService = () => {
@@ -276,128 +252,6 @@ const handleScroll = () => {
 // 滚动到顶部
 const scrollToTop = () => {
   window.scrollTo({ top: 0, behavior: 'smooth' })
-}
-
-// 格式化数量显示
-const formatCount = (count) => {
-  if (count > 99) return '99+'
-  return count.toString()
-}
-
-// 加载导航栏数据
-const loadNavData = async () => {
-  await Promise.all([
-    getCartCount(),
-    getOrderCount(),
-    getFavoriteStats(),
-    getReviewCount()
-  ])
-}
-
-// 获取购物车数量
-const getCartCount = async () => {
-  try {
-    // 这里调用购物车数量接口
-    // const response = await api.get('/system/cart/count')
-    // if (response.code === 200) {
-    //   cartCount.value = response.data.count || 0
-    // }
-
-    // 模拟数据
-    cartCount.value = 3
-  } catch (error) {
-    console.error('获取购物车数量失败:', error)
-  }
-}
-
-// 获取订单数量
-const getOrderCount = async () => {
-  try {
-    // 这里调用订单数量接口
-    // const response = await api.get('/system/orderDetail/count')
-    // if (response.code === 200) {
-    //   orderCount.value = response.data.count || 0
-    // }
-
-    // 模拟数据
-    orderCount.value = 5
-  } catch (error) {
-    console.error('获取订单数量失败:', error)
-  }
-}
-
-// 获取收藏统计
-const getFavoriteStats = async () => {
-  try {
-    // 这里调用收藏统计接口
-    // const response = await api.get('/system/favorite/my/stats')
-    // if (response.code === 200) {
-    //   productFavoriteCount.value = response.data.productCount || 0
-    //   shopFavoriteCount.value = response.data.shopCount || 0
-    // }
-
-    // 模拟数据
-    productFavoriteCount.value = 5
-    shopFavoriteCount.value = 2
-  } catch (error) {
-    console.error('获取收藏统计失败:', error)
-  }
-}
-
-// 获取评价数量
-const getReviewCount = async () => {
-  try {
-    // 这里需要新增评价相关的接口
-    // const response = await api.get('/system/review/my/count')
-    // if (response.code === 200) {
-    //   reviewCount.value = response.data.count || 0
-    // }
-
-    // 模拟数据
-    reviewCount.value = 7
-  } catch (error) {
-    console.error('获取评价数量失败:', error)
-  }
-}
-
-// 获取订单列表
-const getOrderList = async () => {
-  try {
-    // 这里调用订单列表接口
-    // const response = await api.get('/system/orderDetail/list')
-  } catch (error) {
-    console.error('获取订单列表失败:', error)
-  }
-}
-
-// 获取店铺收藏
-const getShopFavorites = async () => {
-  try {
-    // 这里调用店铺收藏接口
-    // const response = await api.get('/system/favorite/my/shops')
-  } catch (error) {
-    console.error('获取店铺收藏失败:', error)
-  }
-}
-
-// 获取商品收藏
-const getProductFavorites = async () => {
-  try {
-    // 这里调用商品收藏接口
-    // const response = await api.get('/system/favorite/my/products')
-  } catch (error) {
-    console.error('获取商品收藏失败:', error)
-  }
-}
-
-// 获取我的评价
-const getMyReviews = async () => {
-  try {
-    // 这里需要新增评价相关的接口
-    // const response = await api.get('/system/review/my')
-  } catch (error) {
-    console.error('获取我的评价失败:', error)
-  }
 }
 
 const handleSearch = () => {

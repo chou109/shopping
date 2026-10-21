@@ -88,9 +88,8 @@ const router = useRouter()
 // 响应式数据
 const isHidden = ref(false)
 const scrollY = ref(0)
-const cartCount = ref(0)
 const messageCount = ref(0) // 未读消息数量
-const chatUnreadCount = ref(0) // AI助手未读消息数量
+let refreshInterval = null
 
 // 计算当前路由路径
 const currentRoute = computed(() => route.path)
@@ -178,22 +177,10 @@ const scrollToTop = () => {
 
 // 滚动事件处理
 const handleScroll = () => {
-  scrollY.value = window.scrollY || document.documentElement.scrollTop
-
-  // 向下滚动时隐藏，向上滚动时显示
+  const previousScrollY = scrollY.value
   const currentScrollY = window.scrollY || document.documentElement.scrollTop
-  if (currentScrollY > scrollY.value && currentScrollY > 200) {
-    isHidden.value = true
-  } else {
-    isHidden.value = false
-  }
-
+  isHidden.value = currentScrollY > previousScrollY && currentScrollY > 200
   scrollY.value = currentScrollY
-}
-
-// 获取购物车数量（模拟数据）
-const getCartCount = () => {
-  cartCount.value = 3 // 模拟数据
 }
 
 // 获取未读消息数量
@@ -205,10 +192,8 @@ const getMessageCount = async () => {
   }
   try {
     const response = await getUnreadCount()
-    console.log('未读消息数量API响应:', response)
     if (response.code === 200) {
       messageCount.value = response.data || 0
-      console.log('未读消息数量:', messageCount.value)
     }
   } catch (error) {
     console.error('获取未读消息数量失败:', error)
@@ -216,29 +201,23 @@ const getMessageCount = async () => {
   }
 }
 
-// 获取AI助手未读消息数量（模拟数据）
-const getChatUnreadCount = () => {
-  chatUnreadCount.value = 2 // 模拟未读消息数量
-}
-
 // 生命周期
 onMounted(() => {
   window.addEventListener('scroll', handleScroll, { passive: true })
-  getCartCount()
   getMessageCount()
-  getChatUnreadCount()
 
   // 初始化滚动位置
   scrollY.value = window.scrollY || document.documentElement.scrollTop
 
   // 定时刷新未读消息数量
-  const refreshInterval = setInterval(() => {
+  refreshInterval = setInterval(() => {
     getMessageCount()
-  }, 2000) // 每2秒刷新一次
+  }, 30000)
 })
 
 onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll)
+  if (refreshInterval) clearInterval(refreshInterval)
 })
 </script>
 

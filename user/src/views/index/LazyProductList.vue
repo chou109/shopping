@@ -1,19 +1,5 @@
 <template>
   <div class="lazy-product-list-container">
-    <!-- 排序选项（预留，后期可添加） -->
-    <div class="sort-options" v-if="false">
-      <div class="sort-container">
-        <span class="sort-label">排序：</span>
-        <el-radio-group v-model="sortType" @change="handleSortChange">
-          <el-radio label="random">随机推荐</el-radio>
-          <el-radio label="new">最新上架</el-radio>
-          <el-radio label="hot">热门商品</el-radio>
-          <el-radio label="price_asc">价格从低到高</el-radio>
-          <el-radio label="price_desc">价格从高到低</el-radio>
-        </el-radio-group>
-      </div>
-    </div>
-
     <!-- 商品列表 - 网格布局 -->
     <div class="products-container">
       <div class="products-grid">
@@ -56,7 +42,12 @@
       </div>
 
       <!-- 没有更多数据 -->
-      <div v-if="!loading && hasMore === false && products.length > 0" class="no-more-container">
+      <div v-if="loadError && !loading" class="load-error-container">
+        <span>{{ loadError }}</span>
+        <el-button link type="primary" @click="retryLoadProducts">重试</el-button>
+      </div>
+
+      <div v-if="!loading && !loadError && hasMore === false && products.length > 0" class="no-more-container">
         <div class="no-more-content">
           <el-icon class="no-more-icon">
             <CircleCheck />
@@ -66,7 +57,7 @@
       </div>
 
       <!-- 空状态 -->
-      <div v-if="!loading && products.length === 0" class="empty-container">
+      <div v-if="!loading && !loadError && products.length === 0" class="empty-container">
         <el-empty description="暂无商品数据">
           <template #image>
             <el-icon :size="80">
@@ -81,7 +72,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
@@ -97,22 +88,10 @@ const router = useRouter()
 // 商品数据
 const products = ref([])
 const loading = ref(false)
+const loadError = ref('')
 const hasMore = ref(true)
 const currentPage = ref(1)
 const pageSize = ref(20)
-
-// 排序和筛选相关（预留接口）
-const sortType = ref('random') // random, new, hot, price_asc, price_desc
-
-// 网格列数计算
-const gridColumnCount = computed(() => {
-  const width = window.innerWidth
-  if (width < 640) return 2      // 手机：2列
-  if (width < 768) return 2      // 小平板：2列
-  if (width < 1024) return 3     // 大平板：3列
-  if (width < 1280) return 4     // 小电脑：4列
-  return 5                       // 大电脑：5列
-})
 
 // 格式化价格
 const formatPrice = (price) => {
@@ -138,11 +117,13 @@ const loadProducts = async (reset = false) => {
     currentPage.value = 1
     products.value = []
     hasMore.value = true
+    loadError.value = ''
   }
 
   if (!hasMore.value) return
 
   loading.value = true
+  loadError.value = ''
 
   try {
     const response = await api({
@@ -151,8 +132,6 @@ const loadProducts = async (reset = false) => {
       params: {
         pageNum: currentPage.value,
         pageSize: pageSize.value,
-        sortType: sortType.value,
-        random: sortType.value === 'random' ? 1 : 0,
         needSalesCount: 1,
         status: 1 // 只查询上架商品
       }
@@ -170,16 +149,10 @@ const loadProducts = async (reset = false) => {
         return !isIdMatch && !isFlagMatch
       })
 
-      // 为商品添加销量数据
-      const enhancedProducts = newProducts.map(product => ({
-        ...product,
-        salesCount: product.salesCount || Math.floor(Math.random() * 1000)
-      }))
-
       if (reset) {
-        products.value = enhancedProducts
+        products.value = newProducts
       } else {
-        products.value = [...products.value, ...enhancedProducts]
+        products.value = [...products.value, ...newProducts]
       }
 
       // 判断是否还有更多数据
@@ -192,12 +165,14 @@ const loadProducts = async (reset = false) => {
         hasMore.value = true
       }
     } else {
-      ElMessage.error(response.msg || '加载商品失败')
+      loadError.value = response.msg || '加载商品失败，请重试'
+      ElMessage.error(loadError.value)
       hasMore.value = false
     }
   } catch (error) {
     console.error('加载商品失败:', error)
-    ElMessage.error('加载商品失败，请稍后重试')
+    loadError.value = '加载商品失败，请检查网络后重试'
+    ElMessage.error(loadError.value)
     hasMore.value = false
   } finally {
     loading.value = false
@@ -238,14 +213,14 @@ const handleProductClick = (productId) => {
   })
 }
 
-// 排序改变事件（预留）
-const handleSortChange = () => {
-  resetAndLoadProducts()
-}
-
 // 重置并重新加载商品
 const resetAndLoadProducts = () => {
   loadProducts(true)
+}
+
+const retryLoadProducts = () => {
+  hasMore.value = true
+  loadProducts()
 }
 
 // 初始加载
@@ -472,6 +447,15 @@ defineExpose({
 .no-more-container {
   padding: 30px 0;
   text-align: center;
+}
+
+.load-error-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px 16px;
+  color: #737373;
 }
 
 .no-more-content {
