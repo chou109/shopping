@@ -73,8 +73,6 @@ public class SysUserController extends BaseController
     @PutMapping("/password")
     public AjaxResult updatePassword(@RequestBody Map<String, String> params)
     {
-        System.out.println("=== 修改密码 ===");
-
         try {
             Long userId = SecurityUtils.getUserId();
             if (userId == null) {
@@ -85,11 +83,6 @@ public class SysUserController extends BaseController
             String oldPassword = params.get("oldPassword");
             String newPassword = params.get("newPassword");
             String confirmPassword = params.get("confirmPassword");
-
-            System.out.println("参数检查:");
-            System.out.println("- 原密码: " + (StringUtils.isNotEmpty(oldPassword) ? "已提供" : "为空"));
-            System.out.println("- 新密码: " + (StringUtils.isNotEmpty(newPassword) ? "已提供" : "为空"));
-            System.out.println("- 确认密码: " + (StringUtils.isNotEmpty(confirmPassword) ? "已提供" : "为空"));
 
             // 参数验证
             if (StringUtils.isEmpty(oldPassword)) {
@@ -117,12 +110,8 @@ public class SysUserController extends BaseController
                 return error("用户不存在");
             }
 
-            System.out.println("开始验证原密码...");
-            System.out.println("用户当前密码hash: " + user.getPassword());
-
             // 验证原密码
             boolean passwordMatches = SecurityUtils.matchesPassword(oldPassword, user.getPassword());
-            System.out.println("密码验证结果: " + passwordMatches);
 
             if (!passwordMatches) {
                 return error("原密码错误");
@@ -130,14 +119,12 @@ public class SysUserController extends BaseController
 
             // 加密新密码
             String encryptedPassword = SecurityUtils.encryptPassword(newPassword);
-            System.out.println("加密后的新密码: " + encryptedPassword);
 
             // 更新密码
             user.setPassword(encryptedPassword);
             user.setUpdateBy(SecurityUtils.getUsername());
 
             int rows = userService.resetPwd(user);
-            System.out.println("更新密码影响行数: " + rows);
 
             if (rows > 0) {
                 return success("密码修改成功");
@@ -146,9 +133,7 @@ public class SysUserController extends BaseController
             }
 
         } catch (Exception e) {
-            System.out.println("修改密码异常: " + e.getMessage());
-            e.printStackTrace();
-            return error("修改密码失败: " + e.getMessage());
+            return error("修改密码失败，请稍后重试");
         }
     }
 
@@ -210,33 +195,19 @@ public class SysUserController extends BaseController
     @GetMapping("/current")
     public AjaxResult getCurrentUserInfo()
     {
-        System.out.println("=== 开始获取当前用户信息 ===");
-
         // 获取当前用户ID
         Long currentUserId = getUserId();
-        System.out.println("获取到的用户ID: " + currentUserId);
 
         if (currentUserId == null) {
-            System.out.println("错误：用户未登录，getUserId() 返回 null");
             return error("用户未登录");
         }
 
-        // 获取当前用户名（用于调试）
-        String username = getUsername();
-        System.out.println("当前用户名: " + username);
-
         // 查询用户信息
-        System.out.println("开始查询用户信息，用户ID: " + currentUserId);
         SysUser sysUser = userService.selectUserById(currentUserId);
 
         if (sysUser == null) {
-            System.out.println("错误：用户不存在，用户ID: " + currentUserId);
             return error("用户不存在");
         }
-
-        System.out.println("查询到的用户: " + sysUser.getUserName());
-        System.out.println("用户邮箱: " + sysUser.getEmail());
-        System.out.println("用户手机: " + sysUser.getPhonenumber());
 
         // 创建一个新的Map，只包含用户需要的信息
         Map<String, Object> profile = new HashMap<>();
@@ -251,7 +222,6 @@ public class SysUserController extends BaseController
         profile.put("balance", sysUser.getBalance());
         profile.put("userType", sysUser.getUserType());
 
-        System.out.println("=== 成功获取用户信息 ===");
         return success(profile);
     }
 

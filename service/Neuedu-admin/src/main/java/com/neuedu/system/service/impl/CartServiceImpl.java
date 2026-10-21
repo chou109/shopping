@@ -219,6 +219,13 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements IC
         return cartMapper.deleteCartByIds(ids);
     }
 
+    @Override
+    public int deleteCartByIdsForUser(Long[] ids, Long userId)
+    {
+        if (userId == null || ids == null || ids.length == 0) return 0;
+        return cartMapper.deleteCartByIdsForUser(ids, userId);
+    }
+
     /**
      * 删除购物车信息
      * 
@@ -229,6 +236,13 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements IC
     public int deleteCartById(Long id)
     {
         return cartMapper.deleteCartById(id);
+    }
+
+    @Override
+    public int deleteCartByIdForUser(Long id, Long userId)
+    {
+        if (id == null || userId == null) return 0;
+        return cartMapper.deleteCartByIdForUser(id, userId);
     }
 
     /**

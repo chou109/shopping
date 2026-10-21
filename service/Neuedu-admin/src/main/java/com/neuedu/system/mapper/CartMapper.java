@@ -84,6 +84,8 @@ public interface CartMapper extends BaseMapper<Cart>
      */
     public int deleteCartById(Long id);
 
+    public int deleteCartByIdForUser(@Param("id") Long id, @Param("userId") Long userId);
+
     /**
      * 批量删除购物车
      * 
@@ -91,4 +93,6 @@ public interface CartMapper extends BaseMapper<Cart>
      * @return 结果
      */
     public int deleteCartByIds(Long[] ids);
+
+    public int deleteCartByIdsForUser(@Param("ids") Long[] ids, @Param("userId") Long userId);
 }

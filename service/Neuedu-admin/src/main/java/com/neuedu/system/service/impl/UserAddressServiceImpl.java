@@ -43,9 +43,7 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
     @Override
     public UserAddress selectUserAddressById(Long id)
     {
-        System.out.println("查询地址ID: " + id);
         UserAddress address = userAddressMapper.selectUserAddressById(id);
-        System.out.println("查询结果: " + address);
         if (address != null) {
             enrichAddressInfo(address);
         }

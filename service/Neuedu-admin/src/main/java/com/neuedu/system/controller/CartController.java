@@ -78,7 +78,13 @@ public class CartController extends BaseController
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {
-        return success(cartService.selectCartById(id));
+        Cart cart = cartService.selectCartById(id);
+        Long currentUserId = SecurityUtils.getUserId();
+        if (cart != null && !SecurityUtils.isAdmin(currentUserId)
+            && !currentUserId.equals(cart.getUserId())) {
+            return error("无权查看此购物车");
+        }
+        return success(cart);
     }
 
     /**
@@ -133,7 +139,11 @@ public class CartController extends BaseController
 	@DeleteMapping("/{id}")
     public AjaxResult remove(@PathVariable Long id)
     {
-        return toAjax(cartService.deleteCartById(id));
+        Long userId = SecurityUtils.getUserId();
+        int result = SecurityUtils.isAdmin(userId)
+            ? cartService.deleteCartById(id)
+            : cartService.deleteCartByIdForUser(id, userId);
+        return toAjax(result);
     }
 
 
@@ -146,7 +156,11 @@ public class CartController extends BaseController
     @DeleteMapping("/batch")
     public AjaxResult removeBatch(@RequestBody Long[] ids)
     {
-        return toAjax(cartService.deleteCartByIds(ids));
+        Long userId = SecurityUtils.getUserId();
+        int result = SecurityUtils.isAdmin(userId)
+            ? cartService.deleteCartByIds(ids)
+            : cartService.deleteCartByIdsForUser(ids, userId);
+        return toAjax(result);
     }
 
     /**

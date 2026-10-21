@@ -86,6 +86,8 @@ public interface ICartService extends IService<Cart>
      */
     public int deleteCartByIds(Long[] ids);
 
+    public int deleteCartByIdsForUser(Long[] ids, Long userId);
+
     /**
      * 删除购物车信息
      * 
@@ -93,6 +95,8 @@ public interface ICartService extends IService<Cart>
      * @return 结果
      */
     public int deleteCartById(Long id);
+
+    public int deleteCartByIdForUser(Long id, Long userId);
 
 
     /**

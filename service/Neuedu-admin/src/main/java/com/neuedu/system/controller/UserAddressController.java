@@ -181,9 +181,6 @@ public class UserAddressController extends BaseController
     @PutMapping
     public AjaxResult edit(@Validated @RequestBody UserAddress userAddress)
     {
-        System.out.println("收到编辑地址请求，ID: " + userAddress.getId());
-        System.out.println("请求数据: " + userAddress);
-
         // 验证地址信息
         if (!userAddressService.validateAddress(userAddress)) {
             return error("地址信息不完整，请填写所有必填项");
@@ -191,15 +188,11 @@ public class UserAddressController extends BaseController
 
         // 权限校验：普通用户只能修改自己的地址，管理员可以修改所有
         UserAddress existingAddress = userAddressService.selectUserAddressById(userAddress.getId());
-        System.out.println("查询到的现有地址: " + existingAddress);
-
         if (existingAddress == null) {
-            System.out.println("地址不存在，ID: " + userAddress.getId());
             return error("地址不存在");
         }
 
         Long currentUserId = getUserId();
-        System.out.println("当前用户ID: " + currentUserId + ", 地址创建人: " + existingAddress.getCreateUser());
 
         if (!SecurityUtils.isAdmin(currentUserId) && !existingAddress.getCreateUser().equals(currentUserId)) {
             return error("没有权限修改此地址");
@@ -211,10 +204,7 @@ public class UserAddressController extends BaseController
         // 保持原有创建人
         userAddress.setCreateUser(existingAddress.getCreateUser());
 
-        System.out.println("更新前的地址数据: " + userAddress);
-
         int result = userAddressService.updateUserAddress(userAddress);
-        System.out.println("更新结果: " + result);
 
         return toAjax(result);
     }
