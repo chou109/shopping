@@ -497,14 +497,14 @@ onMounted(() => {
                 <div class="quantity-section">
                   <div class="quantity-label">数量</div>
                   <div class="quantity-control">
-                    <button class="quantity-btn minus" disabled>
+                    <button type="button" class="quantity-btn minus" disabled>
                       <el-icon>
                         <Minus />
                       </el-icon>
                     </button>
                     <input v-model.number="quantity" type="number" min="1" max="1"
                       class="quantity-input" readonly />
-                    <button class="quantity-btn plus" disabled>
+                    <button type="button" class="quantity-btn plus" disabled>
                       <el-icon>
                         <Plus />
                       </el-icon>
@@ -516,7 +516,7 @@ onMounted(() => {
                 <!-- 操作按钮 -->
                 <div class="action-buttons">
                   <!-- 盲盒不支持加入购物车，只能直接购买 -->
-                  <button class="btn buy-now full-width" @click="handleBuyNow" :disabled="product.stock === 0">
+                  <button type="button" class="btn buy-now full-width" @click="handleBuyNow" :disabled="product.stock === 0">
                     立即购买
                   </button>
                 </div>

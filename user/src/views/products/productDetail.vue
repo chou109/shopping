@@ -1035,14 +1035,14 @@ watch(() => route.query.id, (newId, oldId) => {
                 <div class="quantity-section">
                   <div class="quantity-label">数量</div>
                   <div class="quantity-control">
-                    <button class="quantity-btn minus" @click="decreaseQuantity" :disabled="quantity <= 1">
+                    <button type="button" class="quantity-btn minus" @click="decreaseQuantity" :disabled="quantity <= 1">
                       <el-icon>
                         <Minus />
                       </el-icon>
                     </button>
                     <input v-model.number="quantity" type="number" min="1" :max="product.stock || 999"
                       class="quantity-input" @change="handleQuantityChange" />
-                    <button class="quantity-btn plus" @click="increaseQuantity"
+                    <button type="button" class="quantity-btn plus" @click="increaseQuantity"
                       :disabled="quantity >= (product.stock || 999)">
                       <el-icon>
                         <Plus />
@@ -1054,7 +1054,7 @@ watch(() => route.query.id, (newId, oldId) => {
 
                 <!-- 操作按钮 -->
                 <div class="action-buttons">
-                  <button class="btn add-cart" :class="{ loading: addingToCart }" @click="handleAddToCart"
+                  <button type="button" class="btn add-cart" :class="{ loading: addingToCart }" @click="handleAddToCart"
                     :disabled="product.stock === 0">
                     <el-icon>
                       <ShoppingCartFull />
@@ -1062,10 +1062,10 @@ watch(() => route.query.id, (newId, oldId) => {
                     <span v-if="!addingToCart">加入购物车</span>
                     <span v-else>添加中...</span>
                   </button>
-                  <button class="btn buy-now" @click="handleBuyNow" :disabled="product.stock === 0">
+                  <button type="button" class="btn buy-now" @click="handleBuyNow" :disabled="product.stock === 0">
                     立即购买
                   </button>
-                  <button class="btn favorite" @click="handleToggleFavorite">
+                  <button type="button" class="btn favorite" @click="handleToggleFavorite">
                     <el-icon :class="{ 'favorited': isFavorite }">
                       <StarFilled v-if="isFavorite" />
                       <Star v-else />

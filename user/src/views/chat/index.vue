@@ -85,7 +85,7 @@
       <div class="quick-replies" v-if="!isAiTyping && showQuickReplies">
         <div class="quick-reply-title">💭 不知道问什么？试试这些：</div>
         <div class="quick-reply-buttons">
-          <button v-for="(example, index) in exampleQuestions" :key="index" @click="useExample(example)"
+          <button type="button" v-for="(example, index) in exampleQuestions" :key="index" @click="useExample(example)"
             :disabled="!isConnected" class="quick-reply-btn">
             {{ example }}
           </button>
@@ -101,7 +101,7 @@
           <input v-model="inputMsg" placeholder="请输入您想咨询的问题..." @keyup.enter="sendMessage"
             @keyup.ctrl.enter="inputMsg += '\n'" :disabled="!isConnected" class="chat-input" ref="chatInput" />
           <div class="input-actions">
-            <button @click="sendMessage" :disabled="!isConnected || !inputMsg.trim()" class="send-btn">
+            <button type="button" @click="sendMessage" :disabled="!isConnected || !inputMsg.trim()" class="send-btn">
               <span v-if="isConnected">发送</span>
               <span v-else>连接中...</span>
             </button>
