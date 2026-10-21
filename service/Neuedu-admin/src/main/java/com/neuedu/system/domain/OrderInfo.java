@@ -192,6 +192,11 @@ public class OrderInfo extends BaseEntity
     @Excel(name = "是否为盲盒订单")
     private Boolean isBlindBox;
 
+    /** 管理端订单查询的店铺范围（非数据库字段） */
+    @Schema(hidden = true)
+    @TableField(exist = false)
+    private Long shopId;
+
     /** 关联用户信息（非数据库字段） */
     @Schema(title = "关联用户信息")
     @TableField(exist = false)

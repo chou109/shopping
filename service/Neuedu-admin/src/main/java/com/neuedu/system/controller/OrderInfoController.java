@@ -509,60 +509,11 @@ class OrderInfoAdminController extends BaseController
     public TableDataInfo list(OrderInfo orderInfo)
     {
         Long currentUserId = SecurityUtils.getUserId();
-        boolean isAdmin = (currentUserId != null && currentUserId == 1L);
-        
-        if (isAdmin) {
-            // 超级管理员查看所有订单
-            startPage();
-            List<OrderInfo> list = orderInfoService.selectOrderInfoList(orderInfo);
-            return getDataTable(list);
-        } else {
-            // 商家只能查看自己店铺的订单
-            // 先获取店铺和商品信息（不受分页影响）
-            com.neuedu.system.domain.Shop myShop = shopService.selectShopByUserId(currentUserId);
-            if (myShop == null) {
-                return getDataTable(new java.util.ArrayList<>());
-            }
-            
-            // 获取商家店铺的所有商品ID
-            Product productQuery = new Product();
-            productQuery.setShopId(myShop.getId());
-            List<Product> myProducts = productService.selectProductList(productQuery);
-            
-            if (myProducts == null || myProducts.isEmpty()) {
-                return getDataTable(new java.util.ArrayList<>());
-            }
-            
-            java.util.Set<Long> myProductIds = new java.util.HashSet<>();
-            for (Product p : myProducts) {
-                myProductIds.add(p.getId());
-            }
-            
-            // 查询所有订单（不分页），然后过滤出包含商家商品的订单
-            List<OrderInfo> allOrders = orderInfoService.selectOrderInfoList(orderInfo);
-            List<OrderInfo> myOrders = new java.util.ArrayList<>();
-            
-            if (allOrders != null) {
-                for (OrderInfo order : allOrders) {
-                    if (order.getOrderDetails() != null) {
-                        for (OrderDetail detail : order.getOrderDetails()) {
-                            if (myProductIds.contains(detail.getProductId())) {
-                                myOrders.add(order);
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-            
-            // 手动构建分页结果
-            TableDataInfo rspData = new TableDataInfo();
-            rspData.setCode(com.neuedu.common.constant.HttpStatus.SUCCESS);
-            rspData.setMsg("查询成功");
-            rspData.setRows(myOrders);
-            rspData.setTotal(myOrders.size());
-            return rspData;
+        if (!applyShopScope(orderInfo, currentUserId)) {
+            return getDataTable(new java.util.ArrayList<>());
         }
+        startPage();
+        return getDataTable(orderInfoService.selectOrderInfoList(orderInfo));
     }
 
     /**
@@ -574,9 +525,31 @@ class OrderInfoAdminController extends BaseController
     @PostMapping("/export")
     public void export(HttpServletResponse response, OrderInfo orderInfo)
     {
+        if (!applyShopScope(orderInfo, SecurityUtils.getUserId())) {
+            ExcelUtil<OrderInfo> emptyUtil = new ExcelUtil<OrderInfo>(OrderInfo.class);
+            emptyUtil.exportExcel(response, new java.util.ArrayList<>(), "订单数据");
+            return;
+        }
         List<OrderInfo> list = orderInfoService.selectOrderInfoList(orderInfo);
         ExcelUtil<OrderInfo> util = new ExcelUtil<OrderInfo>(OrderInfo.class);
         util.exportExcel(response, list, "订单数据");
+    }
+
+    boolean applyShopScope(OrderInfo orderInfo, Long currentUserId)
+    {
+        if (currentUserId != null && currentUserId == 1L) {
+            orderInfo.setShopId(null);
+            return true;
+        }
+        if (currentUserId == null) {
+            return false;
+        }
+        com.neuedu.system.domain.Shop myShop = shopService.selectShopByUserId(currentUserId);
+        if (myShop == null || myShop.getId() == null) {
+            return false;
+        }
+        orderInfo.setShopId(myShop.getId());
+        return true;
     }
 
     /**

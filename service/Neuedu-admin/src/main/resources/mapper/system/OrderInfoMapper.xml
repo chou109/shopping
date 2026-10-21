@@ -122,6 +122,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="receiveName != null  and receiveName != ''"> and oi.receive_name like concat('%', #{receiveName}, '%')</if>
         <if test="receivePhone != null  and receivePhone != ''"> and oi.receive_phone = #{receivePhone}</if>
         <if test="createTime != null "> and date(oi.create_time) = date(#{createTime})</if>
+        <if test="shopId != null">
+            and exists (
+                select 1
+                from order_detail od
+                inner join product p on p.product_id = od.product_id and p.delete_flag = 0
+                where od.order_no = oi.order_no
+                  and od.delete_flag = 0
+                  and p.shop_id = #{shopId}
+            )
+        </if>
     </sql>
 
     <!-- 根据订单编号查询订单 -->
