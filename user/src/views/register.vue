@@ -1,12 +1,12 @@
 <template>
   <div class="register-container">
     <div class="header">
-      <img src="@/assets/logo/logo.png" class="logo" />
+      <img src="@/assets/logo/logo.png" class="logo" alt="" aria-hidden="true" />
       <div class="title">网购商城 - 用户注册</div>
     </div>
 
     <div class="register-box">
-      <img src="@/assets/images/login-sub-bg.webp" class="sub-bg" />
+      <img src="@/assets/images/login-sub-bg.webp" class="sub-bg" alt="" aria-hidden="true" />
 
       <form class="register-form" @submit.prevent="handleRegister">
         <h3 class="title">用户注册</h3>

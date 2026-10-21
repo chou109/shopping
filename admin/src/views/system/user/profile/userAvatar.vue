@@ -21,7 +21,7 @@
         </el-col>
         <el-col :xs="24" :md="12" :style="{ height: '350px' }">
           <div class="avatar-upload-preview">
-            <img :src="options.previews.url" :style="options.previews.img" />
+            <img :src="options.previews.url" :style="options.previews.img" alt="裁剪后的头像预览" />
           </div>
         </el-col>
       </el-row>

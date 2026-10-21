@@ -2,7 +2,7 @@
   <div style="display: flex; justify-content: space-between;align-items: center;" class="header">
     <router-link to="/">
       <div class="title-wrapper">
-        <img src="@/assets/logo/logo.png" class="logo" /><span class="title">网购商城</span>
+        <img src="@/assets/logo/logo.png" class="logo" alt="" aria-hidden="true" /><span class="title">网购商城</span>
       </div>
     </router-link>
     <el-tabs v-model="activeName" class="tabs" :stretch="true" @tab-click="handleTabChange">

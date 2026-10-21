@@ -1,10 +1,9 @@
 <template>
   <div class="header">
-    <img src="@/assets/logo/logo.png" class="logo" />
+    <img src="@/assets/logo/logo.png" class="logo" alt="" aria-hidden="true" />
     <div class="title">网购商城</div>
   </div>
   <div class="login">
-    <!-- <img src="@/assets/logo/OIP-C.webp" class="sub-bg" /> -->
     <el-form ref="loginForm" :model="loginForm" :rules="loginRules" class="login-form">
       <h3 class="title">欢迎登录</h3>
       <el-form-item prop="username">

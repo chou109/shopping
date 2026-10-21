@@ -20,6 +20,19 @@ function collectVueFiles(directory) {
   return files
 }
 
+function collectImageAltIssues(node, filename) {
+  const issues = []
+  if (node.type === 1 && node.tag === 'img') {
+    const hasAlt = node.props.some(property =>
+      (property.type === 6 && property.name === 'alt') ||
+      (property.type === 7 && property.name === 'bind' && property.arg?.content === 'alt')
+    )
+    if (!hasAlt) issues.push(`${path.relative(root, filename)}:${node.loc.start.line}: <img> 缺少 alt 属性`)
+  }
+  for (const child of node.children || []) issues.push(...collectImageAltIssues(child, filename))
+  return issues
+}
+
 for (const sourceRoot of sourceRoots) {
   for (const filename of collectVueFiles(path.join(root, sourceRoot))) {
     const source = readFileSync(filename, 'utf8')
@@ -30,7 +43,16 @@ for (const sourceRoot of sourceRoots) {
     }
 
     const { descriptor } = parsed
-    if (!descriptor.scriptSetup || !descriptor.template) continue
+    if (!descriptor.template) continue
+
+    const templateOptions = { source: descriptor.template.content, filename, id: filename }
+    const parsedTemplate = compileTemplate(templateOptions)
+    if (parsedTemplate.errors.length) {
+      failures.push(`${path.relative(root, filename)}: ${parsedTemplate.errors.join('; ')}`)
+      continue
+    }
+    failures.push(...collectImageAltIssues(parsedTemplate.ast, filename))
+    if (!descriptor.scriptSetup) continue
 
     try {
       const script = compileScript(descriptor, { id: filename })
@@ -62,5 +84,5 @@ if (failures.length) {
   for (const failure of failures) console.error(`- ${failure}`)
   process.exitCode = 1
 } else {
-  console.log('Vue 模板引用检查通过')
+  console.log('Vue 模板引用与图片替代文本检查通过')
 }
