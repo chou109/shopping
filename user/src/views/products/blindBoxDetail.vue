@@ -1,20 +1,18 @@
 <script setup>
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   CircleCheck,
-  ShoppingCart,
-  ShoppingCartFull,
   Timer,
   Plus,
   Minus
 } from '@element-plus/icons-vue'
-import { addCart } from '@/api/system/cart'
 import { createBlindBoxOrder, payOrder, checkBlindBoxPurchase } from '@/api/system/orderInfo'
 import { getMyAddressList } from '@/api/system/address'
 import { getToken } from '@/utils/auth'
 import PurchaseDialog from '@/components/PurchaseDialog/index.vue'
+import { getBlindBoxOrderFailureMessage } from '@/utils/blindBoxCheckout.mjs'
 
 // 导入盲盒图片
 import BlindBoxImage1 from '@/assets/BlindBox/BlindBox.png'
@@ -56,7 +54,6 @@ const product = ref({
   id: 9999,
   name: "随机商品盲盒 好货低价易购 官方正品 省钱省心",
   price: 500,
-  stock: 9999,
   mainImage: imageUrls[0],
   subImages: imageUrls,
   categoryId: 0,
@@ -69,7 +66,6 @@ const product = ref({
 // 商品图片相关
 const currentImageIndex = ref(0)
 const quantity = ref(1)
-const addingToCart = ref(false)
 
 // 购买弹窗相关
 const purchaseDialogVisible = ref(false)
@@ -160,82 +156,12 @@ const changeMainImage = (index) => {
 }
 
 // 数量变化处理
-const handleQuantityChange = (value) => {
-  if (value > (product.value.stock || 999)) {
-    ElMessage.warning('库存不足')
-    quantity.value = product.value.stock || 1
-  }
-}
-
-const increaseQuantity = () => {
-  if (quantity.value < (product.value.stock || 999)) {
-    quantity.value++
-  }
-}
-
-const decreaseQuantity = () => {
-  if (quantity.value > 1) {
-    quantity.value--
-  }
-}
-
-// 添加到购物车
-const handleAddToCart = async () => {
-  if (!ensureLoginForAction()) return
-
-  if (!product.value.id) {
-    ElMessage.warning('商品信息不完整')
-    return
-  }
-
-  // 验证库存
-  if (quantity.value > (product.value.stock || 0)) {
-    ElMessage.warning('库存不足')
-    return
-  }
-
-  addingToCart.value = true
-  try {
-    const cartData = {
-      productId: product.value.id,
-      productName: product.value.name,
-      productMainImage: imageUrls[0],
-      quantity: quantity.value,
-      productUnitPrice: product.value.price,
-      selected: 1,
-      productTotalPrice: product.value.price * quantity.value,
-      specs: '',
-      shopId: product.value.shopId,
-      isBlindBox: true
-    }
-
-    const response = await addCart(cartData)
-
-    if (response.code === 200) {
-      ElMessage.success('已成功加入购物车')
-    } else {
-      ElMessage.error(response.msg || '加入购物车失败')
-    }
-  } catch (error) {
-    console.error('添加到购物车失败:', error)
-    ElMessage.error('添加到购物车失败，请稍后重试')
-  } finally {
-    addingToCart.value = false
-  }
-}
-
 // 立即购买
 const handleBuyNow = async () => {
   if (!ensureLoginForAction()) return
 
   if (!product.value.id) {
     ElMessage.warning('商品信息不完整')
-    return
-  }
-
-  // 验证库存
-  if (quantity.value > (product.value.stock || 0)) {
-    ElMessage.warning('库存不足')
     return
   }
 
@@ -270,7 +196,7 @@ const handleBuyNow = async () => {
     // 准备购买数据，但不生成订单
     purchaseOrder.value = {
       // 创建临时订单对象
-      orderNo: 'PAY_' + Date.now(),
+      orderNo: '',
       totalAmount: product.value.price * quantity.value,
       orderStatus: 0, // 待支付状态
       isBlindBox: true,
@@ -324,9 +250,9 @@ const handlePayNow = async (orderData) => {
     const createResponse = await createBlindBoxOrder(orderData.addressId || purchaseOrder.value.addressId)
     if (createResponse.code !== 200) throw new Error(createResponse.msg || '创建盲盒订单失败')
     const order = createResponse.data
+    if (order?.orderNo) purchaseOrder.value.orderNo = order.orderNo
     const prize = order.orderDetails?.[0]
     if (!order.orderNo || !prize) throw new Error('服务端未返回有效的抽奖结果')
-    purchaseOrder.value.orderNo = order.orderNo
     purchaseOrder.value.paymentType = orderData.paymentType
     lotteryResult.value = {
       name: prize.productName?.replace('【盲盒】', '') || '中奖商品',
@@ -348,7 +274,7 @@ const handlePayNow = async (orderData) => {
     ElMessage.success(`已抽中${lotteryResult.value.name}，支付成功`)
   } catch (error) {
     if (purchaseOrder.value.orderNo) {
-      ElMessage.warning('奖品订单已生成，请到订单页面完成支付')
+      ElMessage.warning(getBlindBoxOrderFailureMessage(purchaseOrder.value.orderNo))
     } else {
       ElMessage.error(error.message || '创建盲盒订单失败，请稍后重试')
     }
@@ -403,9 +329,6 @@ onMounted(() => {
                     class="main-image" 
                     ref="mainImageRef"
                   />
-                  <div v-if="product.stock === 0" class="out-of-stock">
-                    已售罄
-                  </div>
                 </div>
 
                 <!-- 放大镜预览区域 -->
@@ -427,11 +350,12 @@ onMounted(() => {
 
               <!-- 缩略图列表 -->
               <div class="thumbnail-list">
-                <div v-for="(img, index) in imageUrls" :key="index"
-                  :class="['thumbnail-item', { active: currentImageIndex === index }]" 
+                <button v-for="(img, index) in imageUrls" :key="index" type="button"
+                  :class="['thumbnail-item', { active: currentImageIndex === index }]"
+                  :aria-label="`查看第 ${index + 1} 张盲盒图片`" :aria-pressed="currentImageIndex === index"
                   @click="changeMainImage(index)">
                   <img :src="img" :alt="`${product.name}-${index + 1}`" />
-                </div>
+                </button>
               </div>
             </div>
 
@@ -473,7 +397,7 @@ onMounted(() => {
                     </div>
                   </div>
                   <div class="price-extra">
-                    <span class="stock">库存 {{ product.stock || 0 }} 件</span>
+                    <span class="stock">每人限购 1 件</span>
                   </div>
                 </div>
 
@@ -516,7 +440,7 @@ onMounted(() => {
                 <!-- 操作按钮 -->
                 <div class="action-buttons">
                   <!-- 盲盒不支持加入购物车，只能直接购买 -->
-                  <button type="button" class="btn buy-now full-width" @click="handleBuyNow" :disabled="product.stock === 0">
+                  <button type="button" class="btn buy-now full-width" @click="handleBuyNow" :disabled="checkoutInFlight">
                     立即购买
                   </button>
                 </div>
@@ -725,21 +649,6 @@ onMounted(() => {
   object-fit: contain;
 }
 
-.out-of-stock {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-  font-weight: bold;
-}
-
 /* 放大镜预览区域 */
 .zoom-preview {
   position: absolute;
@@ -778,6 +687,10 @@ onMounted(() => {
 }
 
 .thumbnail-item {
+  display: block;
+  padding: 0;
+  color: inherit;
+  font: inherit;
   width: 80px;
   height: 80px;
   border: 2px solid transparent;
@@ -792,6 +705,11 @@ onMounted(() => {
 .thumbnail-item:hover,
 .thumbnail-item.active {
   border-color: #ff5000;
+}
+
+.thumbnail-item:focus-visible {
+  outline: 2px solid #ff5000;
+  outline-offset: 2px;
 }
 
 .thumbnail-item img {
