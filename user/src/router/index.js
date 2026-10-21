@@ -54,7 +54,7 @@ export const constantRoutes = [
       }
     ]
   },
-  // AI客服聊天页面
+  // 商城助手页面
   {
     path: '/chat',
     component: Layout,
@@ -64,7 +64,7 @@ export const constantRoutes = [
         name: 'Chat',
         component: () => import('@/views/chat/index.vue'),
         meta: {
-          title: 'AI客服',
+          title: '商城助手',
           icon: 'chat-dot-round',
           requiresAuth: true
         }

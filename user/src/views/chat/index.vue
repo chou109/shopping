@@ -11,7 +11,7 @@
           <div class="service-name">商城助手</div>
           <div class="service-status">
             <span class="online-dot" :class="{ online: isConnected }"></span>
-            {{ isConnected ? '在线' : '连接中...' }}
+            {{ isConnected ? '自动回复在线' : '正在连接自动回复...' }}
           </div>
         </div>
       </div>
@@ -35,8 +35,8 @@
             <span class="tip-item">• 查询商品信息</span>
             <span class="tip-item">• 推荐商品</span>
             <span class="tip-item">• 解答售后问题</span>
-            <span class="tip-item">• 了解发货与物流信息</span>
-            <span class="tip-item">• 登录后在“我的订单”查看订单状态</span>
+            <span class="tip-item">• 了解如何查看订单状态</span>
+            <span class="tip-item">• 登录后在“我的订单”查看发货信息</span>
           </div>
         </div>
       </div>
@@ -48,7 +48,7 @@
           <template v-if="msg.type === 'ai'">
             <div class="avatar-wrapper ai-avatar-wrapper">
               <img :src="aiAvatarImage" class="avatar ai-avatar" alt="商城助手">
-              <div class="avatar-badge ai-badge">AI</div>
+              <div class="avatar-badge ai-badge">助手</div>
             </div>
           </template>
           <div class="msg-content" :class="{ 'product-list': isProductList(msg.content) }">
@@ -63,14 +63,14 @@
           </template>
         </div>
 
-        <!-- AI正在输入指示器 -->
+        <!-- 助手正在回复指示器 -->
         <div v-if="isAiTyping" class="ai-msg typing-indicator">
           <div class="avatar-wrapper ai-avatar-wrapper">
             <img :src="aiAvatarImage" class="avatar ai-avatar" alt="商城助手">
-            <div class="avatar-badge ai-badge">AI</div>
+            <div class="avatar-badge ai-badge">助手</div>
           </div>
           <div class="typing-bubble">
-            <div class="typing-text">AI正在输入...</div>
+            <div class="typing-text">商城助手正在回复...</div>
             <div class="typing-dots">
               <span></span><span></span><span></span>
             </div>
