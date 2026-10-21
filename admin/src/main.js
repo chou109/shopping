@@ -1,10 +1,6 @@
 import { createApp } from 'vue'
 
-import Cookies from 'js-cookie'
-
-import ElementPlus from 'element-plus'
-import locale from 'element-plus/dist/locale/zh-cn.mjs'// 中文语言
-import 'element-plus/dist/index.css'
+import { ElLoading, ElMessage, ElMessageBox, ElNotification } from 'element-plus'
 
 import '@/assets/styles/index.scss' // global css
 
@@ -77,11 +73,13 @@ app.component('svg-icon', SvgIcon)
 
 directive(app)
 
-// 使用element-plus 并且设置全局的大小
-app.use(ElementPlus, {
-  locale: locale,
-  // 支持 large、default、small
-  size: Cookies.get('size') || 'default'
-})
+// 保留项目中使用的 Element Plus 全局提示 API；组件样式由 Vite 按需加载。
+app.config.globalProperties.$message = ElMessage
+app.config.globalProperties.$notify = ElNotification
+app.config.globalProperties.$loading = ElLoading.service
+app.config.globalProperties.$msgbox = ElMessageBox
+app.config.globalProperties.$alert = ElMessageBox.alert
+app.config.globalProperties.$confirm = ElMessageBox.confirm
+app.config.globalProperties.$prompt = ElMessageBox.prompt
 
 app.mount('#app')
