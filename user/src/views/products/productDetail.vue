@@ -54,23 +54,27 @@ const product = ref({
   shopId: null,
   category: {}
 })
+const productLoading = ref(false)
+const productLoadError = ref('')
+let productRequestId = 0
 
 // 店铺信息
 const shopInfo = ref({
   id: 0,
   userId: 0, // 店铺主人ID，用于发送消息
-  shopName: '',
+  shopName: '店铺信息加载中',
   shopLogo: '',
   shopBanner: '',
   description: '',
   contactPhone: '',
   contactAddress: '',
-  shopScore: 0,
-  salesCount: 0,
-  productCount: 0,
-  followerCount: 0,
+  shopScore: null,
+  salesCount: null,
+  productCount: null,
+  followerCount: null,
   status: 1
 })
+const shopInfoLoadError = ref(false)
 
 // 商品评价数据
 const productComments = ref([])
@@ -106,6 +110,7 @@ const zoomImageUrl = ref('')
 
 // 加载商品数据
 const loadProductData = async () => {
+  const requestId = ++productRequestId
   const productId = route.query.id
 
   if (!productId) {
@@ -114,14 +119,36 @@ const loadProductData = async () => {
     return
   }
 
+  productLoading.value = true
+  productLoadError.value = ''
+  product.value = {
+    id: 0, name: '', subTitle: '', price: 0, stock: 0, mainImage: '', subImages: '',
+    categoryId: 0, categoryName: '', shopId: null, category: {}
+  }
+  shopInfo.value = {
+    id: 0, userId: 0, shopName: '店铺信息加载中', shopLogo: '', shopBanner: '',
+    description: '', contactPhone: '', contactAddress: '', shopScore: null,
+    salesCount: null, productCount: null, followerCount: null, status: 1
+  }
+  shopInfoLoadError.value = false
+  productComments.value = []
+  commentLoading.value = false
+  commentStats.value = { total: 0, averageScore: 0, scoreDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } }
+  commentPageParams.value.total = 0
+  currentImageIndex.value = 0
+  quantity.value = 1
+  activeTab.value = 'detail'
+  zoomVisible.value = false
+  isFavorite.value = false
   try {
     const response = await getProduct(productId)
+    if (requestId !== productRequestId) return
 
     if (response.code === 200 && response.data) {
       product.value = response.data
       if (getToken()) {
         recordFootprint({ targetType: 1, targetId: route.query.id }).catch(() => {})
-        checkProductFavorite(productId) // 检查是否已收藏
+        checkProductFavorite(productId, requestId) // 检查是否已收藏
       }
 
       if (!product.value.category && product.value.categoryId) {
@@ -131,76 +158,58 @@ const loadProductData = async () => {
         }
       }
 
-      loadShopInfo(product.value.shopId)
-      // loadShopInfo(product.value.shopId)
-      loadProductComments()
-      loadCommentStats()
+      loadShopInfo(product.value.shopId, requestId)
+      loadProductComments(productId, requestId)
+      loadCommentStats(productId, requestId)
     } else {
-      ElMessage.error(response.msg || '获取商品信息失败')
-      router.push('/products')
+      productLoadError.value = response.msg || '获取商品信息失败，请重试'
     }
   } catch (error) {
+    if (requestId !== productRequestId) return
     console.error('加载商品数据失败:', error)
-    ElMessage.error('加载商品数据失败')
-    router.push('/products')
+    const errorMessage = String(error?.message || error || '')
+    productLoadError.value = /商品不存在|商品已下架/.test(errorMessage)
+      ? '该商品不存在或已下架'
+      : '商品信息加载失败，请检查网络后重试'
+  } finally {
+    if (requestId === productRequestId) productLoading.value = false
   }
 }
 
 // 加载店铺信息
-const loadShopInfo = async (shopId) => {
+const loadShopInfo = async (shopId, requestId = productRequestId) => {
+  shopInfoLoadError.value = false
   try {
     const response = await getShopInfo(shopId)
+    if (requestId !== productRequestId) return
 
     if (response.code === 200 && response.data) {
+      const score = response.data.shopScore ?? response.data.score
+      const salesCount = response.data.salesCount ?? response.data.sales
       shopInfo.value = {
         id: response.data.id || response.data.shopId || 0,
         userId: response.data.userId || 0, // 店铺主人ID
-        shopName: response.data.shopName || response.data.name || '官方旗舰店',
+        shopName: response.data.shopName || response.data.name || '店铺信息暂不可用',
         shopLogo: response.data.shopLogo || response.data.logo || '',
         shopBanner: response.data.shopBanner || response.data.banner || '',
         description: response.data.description || '',
         contactPhone: response.data.contactPhone || response.data.phone || '',
         contactAddress: response.data.contactAddress || response.data.address || '',
-        shopScore: parseFloat(response.data.shopScore || response.data.score || 0),
-        salesCount: response.data.salesCount || response.data.sales || 0,
-        productCount: response.data.productCount || response.data.productCount || 0,
-        followerCount: response.data.followerCount || response.data.followers || 0,
+        shopScore: score == null || !Number.isFinite(Number(score)) ? null : Number(score),
+        salesCount: salesCount == null || !Number.isFinite(Number(salesCount)) ? null : Number(salesCount),
+        productCount: response.data.productCount ?? null,
+        followerCount: response.data.followerCount ?? response.data.followers ?? null,
         status: response.data.status || 1
       }
     } else {
-      shopInfo.value = {
-        id: shopId,
-        userId: 0, // 店铺主人ID
-        shopName: '官方旗舰店',
-        shopLogo: '',
-        shopBanner: '',
-        description: '优质商品，诚信经营',
-        contactPhone: '400-000-0000',
-        contactAddress: '',
-        shopScore: 5.0,
-        salesCount: 0,
-        productCount: 0,
-        followerCount: 0,
-        status: 1
-      }
+      shopInfoLoadError.value = true
+      shopInfo.value = { ...shopInfo.value, id: shopId || 0, userId: 0, shopName: '店铺信息暂不可用', shopScore: null, salesCount: null }
     }
   } catch (error) {
+    if (requestId !== productRequestId) return
     console.error('加载店铺信息失败:', error)
-    shopInfo.value = {
-      id: shopId,
-      userId: 0, // 店铺主人ID
-      shopName: '官方旗舰店',
-      shopLogo: '',
-      shopBanner: '',
-      description: '优质商品，诚信经营',
-      contactPhone: '400-000-0000',
-      contactAddress: '',
-      shopScore: 5.0,
-      salesCount: 0,
-      productCount: 0,
-      followerCount: 0,
-      status: 1
-    }
+    shopInfoLoadError.value = true
+    shopInfo.value = { ...shopInfo.value, id: shopId || 0, userId: 0, shopName: '店铺信息暂不可用', shopScore: null, salesCount: null }
   }
 }
 
@@ -217,7 +226,11 @@ const goToShopPage = () => {
 // 联系客服（跳转到人工客服页面，传递店铺主人ID）
 const contactCustomerService = () => {
   // 获取店铺主人ID作为消息接收者
-  const receiverId = shopInfo.value.userId || 0
+  const receiverId = shopInfo.value.userId
+  if (!receiverId) {
+    ElMessage.warning('店铺客服信息暂不可用')
+    return
+  }
   router.push({
     path: '/customer-service',
     query: {
@@ -229,12 +242,13 @@ const contactCustomerService = () => {
 }
 
 // 加载商品评价
-const loadProductComments = async () => {
-  if (!product.value.id) return
+const loadProductComments = async (productId = product.value.id, requestId = productRequestId) => {
+  if (!productId) return
 
   commentLoading.value = true
   try {
-    const response = await getCommentTree(product.value.id)
+    const response = await getCommentTree(productId)
+    if (requestId !== productRequestId) return
 
     if (response.code === 200) {
       let comments = []
@@ -260,7 +274,7 @@ const loadProductComments = async () => {
         // 标准化评论数据结构，确保必要字段存在
         const normalizeComment = (comment) => ({
           commentId: comment.commentId || comment.id || 0,
-          productId: comment.productId || product.value.id,
+          productId: comment.productId || productId,
           userId: comment.userId || 0,
           parentId: comment.parentId || comment.pid || 0,
           nickName: comment.nickName || comment.userName || comment.username || '',
@@ -299,22 +313,24 @@ const loadProductComments = async () => {
       commentStats.value = calculateCommentStatsFromData()
     }
   } catch (error) {
+    if (requestId !== productRequestId) return
     console.error('加载商品评价失败:', error)
     productComments.value = []
     commentPageParams.value.total = productComments.value.length
     commentStats.value = calculateCommentStatsFromData()
   } finally {
-    commentLoading.value = false
+    if (requestId === productRequestId) commentLoading.value = false
   }
 }
 
 // 加载评价统计
-const loadCommentStats = async () => {
-  if (!product.value.id) return
+const loadCommentStats = async (productId = product.value.id, requestId = productRequestId) => {
+  if (!productId) return
 
   try {
     // 先尝试使用独立API
-    const response = await getProductCommentStats(product.value.id)
+    const response = await getProductCommentStats(productId)
+    if (requestId !== productRequestId) return
 
     if (response.code === 200 && response.data) {
       const statsData = response.data
@@ -329,6 +345,7 @@ const loadCommentStats = async () => {
       commentStats.value = calculateCommentStatsFromData()
     }
   } catch (error) {
+    if (requestId !== productRequestId) return
     console.error('加载评价统计失败:', error)
     // 自己计算统计
     commentStats.value = calculateCommentStatsFromData()
@@ -641,10 +658,10 @@ const handlePayNow = async (orderData) => {
 }
 
 // 检查商品是否已收藏
-const checkProductFavorite = async (productId) => {
+const checkProductFavorite = async (productId, requestId = productRequestId) => {
   try {
     const res = await checkFavorite(1, productId, { silentAuthFailure: true }) // 登录失效时不打断公开详情页浏览
-    if (res.code === 200 && res.data) {
+    if (requestId === productRequestId && res.code === 200 && res.data) {
       isFavorite.value = res.data.isFavorite || false
     }
   } catch (e) {
@@ -702,6 +719,10 @@ const formatTime = (timeString) => {
 onMounted(() => {
   loadProductData()
 })
+
+watch(() => route.query.id, (newId, oldId) => {
+  if (newId !== oldId) loadProductData()
+})
 </script>
 
 <template>
@@ -719,8 +740,21 @@ onMounted(() => {
       </div>
     </div>
 
+    <div v-if="productLoadError" class="container">
+      <el-alert :title="productLoadError" type="error" :closable="false" show-icon>
+        <template #default>
+          <el-button link type="primary" @click="loadProductData">重试</el-button>
+          <el-button link @click="router.push('/products')">返回商品列表</el-button>
+        </template>
+      </el-alert>
+    </div>
+
     <!-- 主商品区域 -->
-    <div class="product-main">
+    <div v-else-if="productLoading && !product.id" class="container product-loading">
+      <el-skeleton :rows="8" animated />
+    </div>
+
+    <div v-else-if="product.id" v-loading="productLoading" class="product-main">
       <div class="container">
         <div class="product-layout">
           <!-- 左侧区域：商品图片和详情/评价 -->
@@ -765,9 +799,10 @@ onMounted(() => {
                   </div>
                   <div class="shop-info">
                     <div class="shop-name">{{ shopInfo.shopName }}</div>
+                    <el-button v-if="shopInfoLoadError" link type="primary" @click="loadShopInfo(product.shopId)">重试加载店铺</el-button>
                     <div class="shop-rating">
-                      <span class="rating-score">{{ shopInfo.shopScore.toFixed(1) }}</span>
-                      <div class="stars">
+                      <span class="rating-score">{{ shopInfo.shopScore == null ? '暂无评分' : shopInfo.shopScore.toFixed(1) }}</span>
+                      <div v-if="shopInfo.shopScore != null" class="stars">
                         <span v-for="n in 5" :key="n"
                           :class="['star', { active: n <= Math.floor(shopInfo.shopScore) }]">★</span>
                       </div>
@@ -778,7 +813,7 @@ onMounted(() => {
                     <el-button size="small" class="enter-shop" @click="goToShopPage">
                       进店逛逛
                     </el-button>
-                    <el-button size="small" class="contact-service" @click="contactCustomerService">
+                    <el-button size="small" class="contact-service" :disabled="!shopInfo.userId" @click="contactCustomerService">
                       联系客服
                     </el-button>
                   </div>
@@ -970,7 +1005,7 @@ onMounted(() => {
                     </div>
                   </div>
                   <div class="price-extra">
-                    <span class="sales">月销量 {{ shopInfo.salesCount || 0 }} 件</span>
+                    <span class="sales" v-if="shopInfo.salesCount != null">月销量 {{ shopInfo.salesCount }} 件</span>
                     <span class="stock">库存 {{ product.stock || 0 }} 件</span>
                   </div>
                 </div>
