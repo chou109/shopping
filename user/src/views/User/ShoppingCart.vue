@@ -101,6 +101,15 @@
               <h3>结算信息</h3>
             </div>
 
+            <el-alert
+              v-if="hasMultipleSelectedShops"
+              class="multi-shop-alert"
+              title="所选商品来自多个店铺，请按店铺分开选择并结算"
+              type="warning"
+              :closable="false"
+              show-icon
+            />
+
             <div class="price-details">
               <div class="price-row">
                 <span class="label">商品总价</span>
@@ -113,7 +122,7 @@
             </div>
 
             <div class="checkout-actions">
-              <el-button type="danger" size="large" class="checkout-btn" :disabled="selectedCount === 0"
+              <el-button type="danger" size="large" class="checkout-btn" :disabled="selectedCount === 0 || hasMultipleSelectedShops"
                 @click="handleCheckout">
                 去结算 ({{ selectedCount }}件)
               </el-button>
@@ -177,6 +186,11 @@ const selectedItems = computed(() => {
 
 const selectedCount = computed(() => {
   return selectedItems.value.length
+})
+
+const hasMultipleSelectedShops = computed(() => {
+  const shopIds = new Set(selectedItems.value.map(item => item.product?.shopId ?? null))
+  return shopIds.size > 1
 })
 
 const isAllSelected = computed({
@@ -421,6 +435,10 @@ const handleCheckout = async () => {
   const selected = selectedItems.value
   if (selected.length === 0) {
     ElMessage.warning('请先选择要结算的商品')
+    return
+  }
+  if (hasMultipleSelectedShops.value) {
+    ElMessage.warning('所选商品来自多个店铺，请按店铺分开选择并结算')
     return
   }
   if (selected.some(item => item.productId === 9999 || item.productName?.includes('盲盒'))) {

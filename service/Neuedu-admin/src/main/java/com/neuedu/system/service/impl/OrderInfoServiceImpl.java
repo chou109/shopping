@@ -169,6 +169,7 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
 
         // 4. 验证商品库存和价格
         BigDecimal totalAmount = BigDecimal.ZERO;
+        Set<Long> selectedShopIds = new HashSet<>();
         for (Cart cartItem : cartItems) {
             Product product = productService.selectProductById(cartItem.getProductId());
             if (product == null) {
@@ -189,12 +190,16 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
             if (product.getPrice() == null) {
                 throw new RuntimeException("商品价格无效: " + product.getName());
             }
+            selectedShopIds.add(product.getShopId());
             cartItem.setProductName(product.getName());
             cartItem.setProductSubtitle(product.getSubTitle());
             cartItem.setProductMainImage(product.getMainImage());
             cartItem.setProductUnitPrice(product.getPrice());
             cartItem.setProductTotalPrice(product.getPrice().multiply(new BigDecimal(cartItem.getQuantity())));
             totalAmount = totalAmount.add(cartItem.getProductTotalPrice());
+        }
+        if (selectedShopIds.size() > 1) {
+            throw new RuntimeException("购物车所选商品来自多个店铺，请分店选择商品后结算");
         }
 
         // 5. 生成订单号

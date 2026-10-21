@@ -41,6 +41,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <result property="price" column="p_price" />
             <result property="stock" column="p_stock" />
             <result property="status" column="p_status" />
+            <result property="shopId" column="p_shop_id" />
         </association>
 
         <!-- 关联活动信息 -->
@@ -97,6 +98,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         p.price as p_price,
         p.stock as p_stock,
         p.status as p_status,
+        p.shop_id as p_shop_id,
         <!-- 活动信息 -->
         a.name as a_name,
         a.status as a_status,
