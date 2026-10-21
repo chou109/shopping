@@ -3,7 +3,7 @@
     <!-- 页面标题 -->
     <div class="page-header">
       <div class="page-actions">
-        <el-button type="danger" plain :disabled="cartItems.length === 0" @click="handleClearCart">
+        <el-button type="danger" plain :disabled="cartItems.length === 0 || clearingCart" :loading="clearingCart" @click="handleClearCart">
           清空购物车
         </el-button>
       </div>
@@ -72,12 +72,12 @@
 
                   <!-- 数量控制 -->
                   <div class="quantity-control">
-                    <el-button size="small" :disabled="item.quantity <= 1 || cartItemStock(item) === 0" @click="decreaseQuantity(item)">
+                    <el-button size="small" :disabled="quantitySavingIds.has(item.id) || item.quantity <= 1 || cartItemStock(item) === 0" @click="decreaseQuantity(item)">
                       -
                     </el-button>
-                    <el-input-number v-model="item.quantity" :min="1" :max="cartItemStock(item) ?? 999" :disabled="cartItemStock(item) === 0" size="small"
+                    <el-input-number v-model="item.quantity" :min="1" :max="cartItemStock(item) ?? 999" :disabled="quantitySavingIds.has(item.id) || cartItemStock(item) === 0" size="small"
                       controls-position="right" @change="updateQuantity(item)" />
-                    <el-button size="small" :disabled="cartItemStock(item) != null && item.quantity >= cartItemStock(item)"
+                    <el-button size="small" :disabled="quantitySavingIds.has(item.id) || (cartItemStock(item) != null && item.quantity >= cartItemStock(item))"
                       @click="increaseQuantity(item)">
                       +
                     </el-button>
@@ -89,7 +89,8 @@
 
                 <!-- 操作按钮 -->
                 <div class="item-actions">
-                  <el-button type="danger" text size="small" @click="handleDeleteItem(item.id)">
+                  <el-button type="danger" text size="small" :loading="deletingCartIds.has(item.id)"
+                    :disabled="deletingCartIds.has(item.id)" @click="handleDeleteItem(item.id)">
                     删除
                   </el-button>
                   <el-button type="primary" text size="small" @click="addToFavorites(item)">
@@ -179,8 +180,11 @@ const router = useRouter()
 const store = useStore()
 const loading = ref(false)
 const batchDeleting = ref(false)
+const clearingCart = ref(false)
 const selectionSavingIds = ref(new Set())
 const selectionBatchSaving = ref(false)
+const quantitySavingIds = ref(new Set())
+const deletingCartIds = ref(new Set())
 
 // 购物车数据
 const cartItems = ref([])
@@ -318,6 +322,7 @@ const handleItemSelect = async (item) => {
 
 // 增加数量
 const increaseQuantity = async (item) => {
+  if (quantitySavingIds.value.has(item.id)) return
   const stockLimit = cartItemStock(item) ?? 999
   if (item.quantity >= stockLimit) {
     ElMessage.warning('库存不足')
@@ -330,6 +335,7 @@ const increaseQuantity = async (item) => {
 
 // 减少数量
 const decreaseQuantity = async (item) => {
+  if (quantitySavingIds.value.has(item.id)) return
   if (item.quantity <= 1) {
     return
   }
@@ -340,6 +346,7 @@ const decreaseQuantity = async (item) => {
 
 // 更新数量
 const updateQuantity = async (item) => {
+  if (quantitySavingIds.value.has(item.id)) return
   if (item.quantity < 1) {
     item.quantity = 1
   }
@@ -355,6 +362,8 @@ const updateQuantity = async (item) => {
 
 // 更新购物车商品
 const updateCartItem = async (item) => {
+  if (quantitySavingIds.value.has(item.id)) return
+  quantitySavingIds.value.add(item.id)
   try {
     // 重新计算小计
     item.productTotalPrice = item.productUnitPrice * item.quantity
@@ -367,18 +376,21 @@ const updateCartItem = async (item) => {
 
     if (response.code === 200) {
       return
-    } else {
-      ElMessage.error(response.msg || '更新失败')
     }
+    throw new Error(response.msg || '更新失败')
   } catch (error) {
     console.error('更新购物车失败:', error)
-    ElMessage.error('更新失败')
+    ElMessage.error(error.message || '更新失败')
+    await loadCartData()
+  } finally {
+    quantitySavingIds.value.delete(item.id)
   }
-  await loadCartData()
 }
 
 // 删除单个商品
 const handleDeleteItem = async (itemId) => {
+  if (deletingCartIds.value.has(itemId)) return
+  deletingCartIds.value.add(itemId)
   try {
     await ElMessageBox.confirm('确定要删除这个商品吗？', '提示', {
       confirmButtonText: '确定',
@@ -398,6 +410,8 @@ const handleDeleteItem = async (itemId) => {
       console.error('删除商品失败:', error)
       ElMessage.error('删除失败')
     }
+  } finally {
+    deletingCartIds.value.delete(itemId)
   }
 }
 
@@ -409,6 +423,7 @@ const handleBatchDelete = async () => {
     return
   }
 
+  batchDeleting.value = true
   const selectedIds = selectedItems.value.map(item => item.id)
   try {
     await ElMessageBox.confirm(`确定要删除选中的 ${selectedIds.length} 件商品吗？`, '提示', {
@@ -417,7 +432,6 @@ const handleBatchDelete = async () => {
       type: 'warning'
     })
 
-    batchDeleting.value = true
     const response = await batchDelCart(selectedIds)
     if (response.code !== 200) throw new Error(response.msg || '删除失败')
     cartItems.value = cartItems.value.filter(item => !selectedIds.includes(item.id))
@@ -433,11 +447,13 @@ const handleBatchDelete = async () => {
 
 // 清空购物车
 const handleClearCart = async () => {
+  if (clearingCart.value) return
   if (cartItems.value.length === 0) {
     ElMessage.warning('购物车已经是空的')
     return
   }
 
+  clearingCart.value = true
   try {
     await ElMessageBox.confirm('确定要清空购物车吗？', '提示', {
       confirmButtonText: '确定',
@@ -457,6 +473,8 @@ const handleClearCart = async () => {
       console.error('清空购物车失败:', error)
       ElMessage.error('清空失败')
     }
+  } finally {
+    clearingCart.value = false
   }
 }
 
