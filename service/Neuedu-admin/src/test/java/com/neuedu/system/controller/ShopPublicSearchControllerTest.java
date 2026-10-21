@@ -11,6 +11,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 public class ShopPublicSearchControllerTest {
     @Test
@@ -31,6 +32,18 @@ public class ShopPublicSearchControllerTest {
         assertEquals("coffee", queriedKeyword[0]);
         assertEquals(Integer.valueOf(1), queriedStatus[0]);
         assertEquals(200, result.get("code"));
+    }
+
+    @Test
+    public void publicDetailsRejectInactiveShops() {
+        Shop shop = new Shop();
+        shop.setStatus(2);
+        IShopService service = proxy(IShopService.class, (methodName, args) ->
+            "selectShopById".equals(methodName) ? shop : null);
+
+        AjaxResult result = new ShopController(service).getPublicInfo(4L);
+
+        assertNotEquals(200, result.get("code"));
     }
 
     private interface ProxyCall {

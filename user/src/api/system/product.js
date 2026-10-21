@@ -60,7 +60,7 @@ export function searchProduct(keyword) {
 // 查询商品详细
 export function getProduct(id) {
   return request({
-    url: '/system/product/' + id,
+    url: '/system/product/public/' + id,
     method: 'get',
     headers: { isToken: false }
   })

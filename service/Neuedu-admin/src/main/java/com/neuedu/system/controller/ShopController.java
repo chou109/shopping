@@ -96,7 +96,11 @@ public class ShopController extends BaseController
     @GetMapping(value = "/public/{id}")
     public AjaxResult getPublicInfo(@PathVariable("id") Long id)
     {
-        return success(shopService.selectShopById(id));
+        Shop shop = shopService.selectShopById(id);
+        if (shop == null || !Integer.valueOf(1).equals(shop.getStatus())) {
+            return error("店铺不存在或已停止营业");
+        }
+        return success(shop);
     }
 
     /**

@@ -153,11 +153,25 @@ public class ProductController extends BaseController
      * 获取商品详细信息
      */
     @Operation(summary = "获取商品详细信息")
-//    @PreAuthorize("@ss.hasPermi('system:product:query')")
+    @PreAuthorize("@ss.hasPermi('system:product:query')")
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {
         return success(productService.selectProductById(id));
+    }
+
+    /**
+     * 获取上架商品公开信息
+     */
+    @Operation(summary = "获取商品公开信息")
+    @GetMapping(value = "/public/{id}")
+    public AjaxResult getPublicInfo(@PathVariable("id") Long id)
+    {
+        Product product = productService.selectProductById(id);
+        if (product == null || !Integer.valueOf(1).equals(product.getStatus())) {
+            return error("商品不存在或已下架");
+        }
+        return success(product);
     }
 
     /**
