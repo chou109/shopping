@@ -21,3 +21,10 @@ test('binds Enter on both password and captcha inputs to the Vue 3 login handler
   assert.deepEqual(compiled.errors, [])
   assert.equal(compiled.code.split('onKeyup: _withKeys(_ctx.handleLogin').length - 1, 2)
 })
+
+test('keeps user-info loading in the login error chain and clears a partial login', () => {
+  const source = readFileSync(filename, 'utf8')
+  assert.match(source, /\.then\(\(\) => this\.\$store\.dispatch\("GetInfo"\)\)/)
+  assert.match(source, /this\.\$store\.dispatch\('FedLogOut'\)\.finally\(/)
+  assert.match(source, /验证码加载失败，请点击验证码区域重试/)
+})

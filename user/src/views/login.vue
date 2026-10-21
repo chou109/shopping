@@ -123,9 +123,16 @@ export default {
       window.location.href = qqLoginUrl;
     },
     getCode() {
-      getCodeImg().then(res => {
+      return getCodeImg().then(res => {
+        if (!res || !res.img || !res.uuid) {
+          throw new Error('验证码响应无效');
+        }
         this.codeUrl = "data:image/gif;base64," + res.img;
         this.loginForm.uuid = res.uuid;
+      }).catch(() => {
+        this.codeUrl = '';
+        this.loginForm.uuid = '';
+        this.msgError('验证码加载失败，请点击验证码区域重试');
       });
     },
     getCookie() {
@@ -151,21 +158,24 @@ export default {
             Cookies.remove("password");
             Cookies.remove('rememberMe');
           }
-          this.$store.dispatch("Login", this.loginForm).then(() => {
-            this.$store.dispatch("GetInfo").then(() => {
+          this.$store.dispatch("Login", this.loginForm)
+            .then(() => this.$store.dispatch("GetInfo"))
+            .then(() => {
+              this.loading = false;
               // 处理跳转逻辑
               if (this.redirect && this.redirect !== '/register') {
-                // 跳转到之前想访问的页面
                 this.$router.push({ path: this.redirect });
               } else {
-                // 默认跳转到首页
                 this.$router.push({ path: "/index" });
               }
+            })
+            .catch(() => {
+              // 登录成功但用户资料加载失败时清除令牌，避免停留在不完整的登录状态。
+              this.$store.dispatch('FedLogOut').finally(() => {
+                this.loading = false;
+                this.getCode();
+              });
             });
-          }).catch(() => {
-            this.loading = false;
-            this.getCode();
-          });
         }
       });
     }
