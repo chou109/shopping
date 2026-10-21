@@ -67,7 +67,7 @@
     <div class="toolbar-wrapper">
       <div class="action-buttons">
         <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:info:remove']">删除</el-button>
-        <el-button type="primary" plain :disabled="!hasShippableOrders" @click="handleBatchShip" v-hasPermi="['system:info:edit', 'system:order:edit']">
+        <el-button type="primary" plain :loading="batchShipping" :disabled="!hasShippableOrders || batchShipping || shippingOrderNo !== null" @click="handleBatchShip" v-hasPermi="['system:info:edit', 'system:order:edit']">
           <el-icon><Van /></el-icon>一键发货
         </el-button>
         <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['system:info:export']">导出</el-button>
@@ -77,7 +77,8 @@
 
     <!-- 数据表格卡片 -->
     <el-card class="table-card" shadow="hover">
-      <el-table 
+      <el-table
+        ref="infoTableRef"
         v-loading="loading" 
         :data="infoList" 
         @selection-change="handleSelectionChange"
@@ -146,6 +147,8 @@
                 type="warning" 
                 size="small"
                 round
+                :loading="shippingSubmitting && shippingOrderNo === scope.row.orderNo"
+                :disabled="batchShipping || shippingOrderNo !== null"
                 @click="handleShipOrder(scope.row)" 
                 v-hasPermi="['system:info:edit', 'system:order:edit']"
               ><el-icon><Van /></el-icon>发货</el-button>
@@ -298,11 +301,12 @@
 
 <script setup name="Info">
 import { listInfo, getInfo, delInfo, shipInfo } from "@/api/system/info";
-import { User, Phone, Location, Van, Wallet } from '@element-plus/icons-vue';
+import { User, Phone, Location, Van } from '@element-plus/icons-vue';
 
 const { proxy } = getCurrentInstance();
 
 const infoList = ref([]);
+const infoTableRef = ref(null);
 const open = ref(false);
 const loading = ref(true);
 const showSearch = ref(true);
@@ -312,6 +316,10 @@ const single = ref(true);
 const multiple = ref(true);
 const total = ref(0);
 const title = ref("");
+const batchShipping = ref(false);
+const shippingOrderNo = ref(null);
+const shippingSubmitting = ref(false);
+let listRequestId = 0;
 
 const data = reactive({
   form: {},
@@ -361,22 +369,22 @@ const hasShippableOrders = computed(() => {
 
 /** 查询订单列表 */
 function getList() {
+  const requestId = ++listRequestId;
   loading.value = true;
+  infoTableRef.value?.clearSelection();
   
   const params = { ...queryParams.value };
-  
-  // 调试：查看请求参数
-  
-  // ... 处理参数的代码 ...
-  
-  listInfo(params).then(response => {
-    // 调试：查看响应数据
-    
-    infoList.value = response.rows;
-    total.value = response.total;  // 这里应该是正确的总记录数
-    loading.value = false;
-  }).catch(() => {
-    loading.value = false;
+
+  return listInfo(params).then(response => {
+    if (requestId !== listRequestId) return;
+    infoList.value = response.rows || [];
+    total.value = Number(response.total) || 0;
+  }).catch(error => {
+    if (requestId === listRequestId) {
+      proxy.$modal.msgError(error?.message || "查询订单失败");
+    }
+  }).finally(() => {
+    if (requestId === listRequestId) loading.value = false;
   });
 }
 
@@ -496,20 +504,33 @@ function handleExport() {
   proxy.download('system/info/export', params, `info_${new Date().getTime()}.xlsx`)
 }
 
-/** 一键发货操作 */
-function handleShipOrder(row) {
-  proxy.$modal.confirm(`确认要将订单“${row.orderNo}”发货吗？`).then(() => {
-    return shipInfo(row.orderNo);
-  }).then(() => {
+function isConfirmDismissed(error) {
+  return error === "cancel" || error === "close";
+}
+
+/** 单笔发货 */
+async function handleShipOrder(row) {
+  if (batchShipping.value || shippingOrderNo.value !== null) return;
+  shippingOrderNo.value = row.orderNo;
+  try {
+    await proxy.$modal.confirm(`确认要将订单“${row.orderNo}”发货吗？`);
+    shippingSubmitting.value = true;
+    await shipInfo(row.orderNo);
     proxy.$modal.msgSuccess("发货成功！");
-    getList();
-  }).catch(error => {
-    if (error && error.message) proxy.$modal.msgError("发货失败：" + error.message);
-  });
+    await getList();
+  } catch (error) {
+    if (!isConfirmDismissed(error)) {
+      proxy.$modal.msgError("发货失败：" + (error?.message || error || "请稍后重试"));
+    }
+  } finally {
+    shippingSubmitting.value = false;
+    shippingOrderNo.value = null;
+  }
 }
 
 /** 批量发货操作 */
-function handleBatchShip() {
+async function handleBatchShip() {
+  if (batchShipping.value || shippingOrderNo.value !== null) return;
   // 筛选出待发货的订单
   const shippableOrders = selectedRows.value.filter(row => row.status === 20);
   
@@ -519,7 +540,9 @@ function handleBatchShip() {
   }
   
   const orderNos = shippableOrders.map(order => order.orderNo).join(', ');
-  proxy.$modal.confirm(`确认要批量发货以下 ${shippableOrders.length} 个订单吗？\n${orderNos}`).then(async () => {
+  batchShipping.value = true;
+  try {
+    await proxy.$modal.confirm(`确认要批量发货以下 ${shippableOrders.length} 个订单吗？\n${orderNos}`);
     let successCount = 0;
     let failCount = 0;
     
@@ -534,11 +557,17 @@ function handleBatchShip() {
     
     if (successCount > 0) {
       proxy.$modal.msgSuccess(`成功发货 ${successCount} 个订单` + (failCount > 0 ? `，失败 ${failCount} 个` : ''));
-      getList();
     } else {
       proxy.$modal.msgError("发货失败");
     }
-  }).catch(() => {});
+    await getList();
+  } catch (error) {
+    if (!isConfirmDismissed(error)) {
+      proxy.$modal.msgError("批量发货失败：" + (error?.message || error || "请稍后重试"));
+    }
+  } finally {
+    batchShipping.value = false;
+  }
 }
 
 /** 获取状态标签类型 */
