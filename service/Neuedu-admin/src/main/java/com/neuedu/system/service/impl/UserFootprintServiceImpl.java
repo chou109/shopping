@@ -2,6 +2,8 @@ package com.neuedu.system.service.impl;
 import com.neuedu.system.domain.Activity;
 import com.neuedu.system.domain.Product;
 import com.neuedu.system.domain.Shop;
+import com.neuedu.system.domain.Category;
+import com.neuedu.system.service.ICategoryService;
 import com.neuedu.system.service.IActivityService;
 import com.neuedu.system.service.IProductService;
 import com.neuedu.system.service.IShopService;
@@ -30,6 +32,7 @@ public class UserFootprintServiceImpl extends ServiceImpl<UserFootprintMapper, U
     private final IProductService productService;
     private final IShopService shopService;
     private final IActivityService activityService;
+    private final ICategoryService categoryService;
     /**
      * 查询用户足迹
      * 
@@ -73,7 +76,7 @@ public class UserFootprintServiceImpl extends ServiceImpl<UserFootprintMapper, U
         // 1. 先查询是否已有记录
         UserFootprint existing = userFootprintMapper.selectFootprintByUserAndTarget(userId, targetType, targetId);
 
-        // 2. 获取目标信息（需要调用商品或店铺服务，这里假设有外部方法获取）
+        // 2. 获取目标信息
         FootprintTargetInfo targetInfo = getTargetInfo(targetType, targetId);
 
         if (existing != null) {
@@ -257,7 +260,7 @@ public class UserFootprintServiceImpl extends ServiceImpl<UserFootprintMapper, U
     }
 
     /**
-     * 获取目标信息（模拟方法，需要根据实际情况实现）
+     * 获取足迹目标的最新展示信息
      */
     private FootprintTargetInfo getTargetInfo(Integer targetType, Long targetId) {
         FootprintTargetInfo info = new FootprintTargetInfo();
@@ -271,9 +274,9 @@ public class UserFootprintServiceImpl extends ServiceImpl<UserFootprintMapper, U
                         info.setImage(product.getMainImage());
                         info.setPrice(product.getPrice());
                         info.setCategoryId(product.getCategoryId());
-                        // 这里需要获取分类名称，可能需要调用分类服务
-                        // 暂时先设置为空，后续可以完善
-                        info.setCategoryName("");
+                        Category category = product.getCategoryId() == null
+                                ? null : categoryService.selectCategoryById(product.getCategoryId());
+                        info.setCategoryName(category == null ? "" : category.getName());
                     }
                     break;
 
