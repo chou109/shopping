@@ -184,54 +184,7 @@
       </template>
     </el-dialog>
 
-    <!-- 当前退款接口会立即取消待发货订单并将全额退回余额 -->
-    <el-dialog v-model="refundDialogVisible" title="取消订单并退款" width="600px">
-      <el-alert title="仅待发货订单可操作；确认后订单会立即取消，款项全额退回账户余额。" type="warning" :closable="false" show-icon />
-      <el-form ref="refundFormRef" :model="refundForm" :rules="refundRules" label-width="100px">
-        <!-- 商品信息 -->
-        <el-form-item label="商品信息">
-          <div class="refund-product-info">
-            <div v-for="(detail, index) in currentOrder?.orderDetails" :key="index" class="refund-product-item">
-              <div class="product-image">
-                <img :src="getProductImageUrl(detail.productMainImage)" :alt="detail.productName"
-                  @error="handleImageError" />
-              </div>
-              <div class="product-info">
-                <div class="product-name">{{ detail.productName }}</div>
-                <div class="product-spec" v-if="detail.specifications">{{ detail.specifications }}</div>
-                <div class="product-quantity">数量：{{ detail.quantity }}</div>
-              </div>
-            </div>
-          </div>
-        </el-form-item>
-
-        <!-- 申请原因 -->
-        <el-form-item label="申请原因" prop="reason">
-          <el-select v-model="refundForm.reason" placeholder="请选择申请原因" style="width: 100%">
-            <el-option label="不想要了" value="不想要了" />
-            <el-option label="重量/数量/大小等描述不符" value="重量/数量/大小等描述不符" />
-            <el-option label="图片/品种/口味/标签等描述不符" value="图片/品种/口味/标签等描述不符" />
-            <el-option label="包装/商品破损" value="包装/商品破损" />
-            <el-option label="少件/漏发" value="少件/漏发" />
-            <el-option label="商品变质/发霉/有异物" value="商品变质/发霉/有异物" />
-            <el-option label="生产日期/保质期与商品描述不符" value="生产日期/保质期与商品描述不符" />
-            <el-option label="质量问题" value="质量问题" />
-            <el-option label="商家发错货" value="商家发错货" />
-            <el-option label="假冒品牌" value="假冒品牌" />
-            <el-option label="其他原因" value="其他原因" />
-          </el-select>
-        </el-form-item>
-
-        <!-- 退款金额 -->
-        <el-form-item label="退款金额">
-          <div class="refund-amount">¥{{ formatPrice(currentOrder?.payment) }}</div>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="refundDialogVisible = false">取消</el-button>
-        <el-button type="danger" :loading="refunding" @click="submitRefund">确认取消并退款</el-button>
-      </template>
-    </el-dialog>
+    <OrderRefundDialog v-model="refundDialogVisible" :order="currentOrder" :loading="refunding" @submit="submitRefund" />
 
     <!-- 物流信息弹窗：当前服务仅保存发货时间，未接入承运商轨迹 -->
     <el-dialog v-model="logisticsDialogVisible" title="物流信息" width="480px">
@@ -376,6 +329,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import OrderRefundDialog from '@/components/OrderRefundDialog.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Location, Star, StarFilled } from '@element-plus/icons-vue'
 import { getMyOrders, payOrder, cancelOrder, confirmReceipt, delInfo, applyRefund } from '@/api/system/orderInfo'
@@ -422,15 +376,6 @@ const cancelling = ref(false)
 
 // 退款相关
 const refundDialogVisible = ref(false)
-const refundFormRef = ref()
-const refundForm = ref({
-  reason: ''
-})
-const refundRules = ref({
-  reason: [
-    { required: true, message: '请选择申请原因', trigger: 'change' }
-  ],
-})
 const refunding = ref(false)
 
 // 评价相关
@@ -851,45 +796,28 @@ const handleRefund = (order) => {
     return
   }
   currentOrder.value = order
-  // 初始化退款表单
-  refundForm.value = {
-    reason: ''
-  }
   refundDialogVisible.value = true
 }
 
 // 提交退款申请
-const submitRefund = async () => {
+const submitRefund = async (reason) => {
   if (!currentOrder.value) return
-
-  // 表单验证
-  if (!refundFormRef.value) return
-  await refundFormRef.value.validate(async (valid) => {
-    if (!valid) return
-
-    refunding.value = true
-    try {
-      const refundData = {
-        orderNo: currentOrder.value.orderNo,
-        reason: refundForm.value.reason
-      }
-
-      // 调用退款API
-      const res = await applyRefund(refundData)
-      if (res.code === 200) {
-        ElMessage.success('订单已取消，款项已退回账户余额')
-        refundDialogVisible.value = false
-        loadOrders()
-        loadOrderCounts()
-      } else {
-        ElMessage.error(res.msg || '取消退款失败')
-      }
-    } catch (e) {
-      ElMessage.error('取消退款失败：' + (e.message || '未知错误'))
-    } finally {
-      refunding.value = false
+  refunding.value = true
+  try {
+    const res = await applyRefund({ orderNo: currentOrder.value.orderNo, reason })
+    if (res.code === 200) {
+      ElMessage.success('订单已取消，款项已退回账户余额')
+      refundDialogVisible.value = false
+      loadOrders()
+      loadOrderCounts()
+    } else {
+      ElMessage.error(res.msg || '取消退款失败')
     }
-  })
+  } catch (e) {
+    ElMessage.error('取消退款失败：' + (e.message || '未知错误'))
+  } finally {
+    refunding.value = false
+  }
 }
 
 // 去评价
@@ -1270,73 +1198,6 @@ onMounted(() => {
 .pay-dialog-content strong {
   color: #ff5000;
   font-size: 24px;
-}
-
-/* 退款弹窗样式 */
-.refund-product-info {
-  max-height: 200px;
-  overflow-y: auto;
-  padding: 10px;
-  background: #fafafa;
-  border-radius: 6px;
-}
-
-.refund-product-item {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 12px 0;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.refund-product-item:last-child {
-  border-bottom: none;
-}
-
-.refund-product-item .product-image {
-  width: 60px;
-  height: 60px;
-  flex-shrink: 0;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.refund-product-item .product-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.refund-product-item .product-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.refund-product-item .product-name {
-  font-size: 13px;
-  color: #333;
-  margin-bottom: 4px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.refund-product-item .product-spec {
-  font-size: 12px;
-  color: #999;
-  margin-bottom: 4px;
-}
-
-.refund-product-item .product-quantity {
-  font-size: 12px;
-  color: #666;
-}
-
-.refund-amount {
-  color: #ff5000;
-  font-size: 20px;
-  font-weight: 700;
-  padding: 10px 0;
 }
 
 /* 抽奖弹窗样式 */
