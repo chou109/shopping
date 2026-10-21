@@ -195,10 +195,4 @@ const router = createRouter({
   },
 })
 
-// 添加路由守卫进行调试
-router.beforeEach((to, from, next) => {
-  console.log('路由跳转:', from.path, '->', to.path, to.params)
-  next()
-})
-
 export default router

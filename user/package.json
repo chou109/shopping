@@ -9,7 +9,8 @@
     "build": "vite build",
     "build:prod": "vite build",
     "build:stage": "vite build --mode staging",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --test"
   },
   "repository": {
     "type": "git",
