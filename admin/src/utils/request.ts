@@ -7,6 +7,7 @@ import cache from '@/plugins/cache'
 import { saveAs } from 'file-saver'
 import useUserStore from '@/store/modules/user'
 import router from '@/router'
+import { buildClientHeaders } from '@/utils/clientHeaders.mjs'
 
 let downloadLoadingInstance: any;
 // 是否显示重新登录
@@ -34,11 +35,9 @@ service.interceptors.request.use((config: AxiosRequestConfig<RequestConfig>) => 
 
   // 添加客户端标识
   const port = window.location.port || '80';
-  const clientType = 'admin';
 
   // 添加到请求头（安全写法）
-  config.headers['X-Client-Type'] = clientType;
-  config.headers['X-Client-Port'] = port;
+  Object.assign(config.headers, buildClientHeaders(port));
 
   if (getToken() && !isToken) {
     // 让每个请求携带自定义token 请根据实际情况自行修改

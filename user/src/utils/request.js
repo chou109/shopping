@@ -6,6 +6,7 @@ import { tansParams, blobValidate } from '@/utils/ruoyi'
 import cache from '@/plugins/cache'
 import { saveAs } from 'file-saver'
 import useUserStore from '@/store/modules/user'
+import { buildClientHeaders } from '@/utils/clientHeaders.mjs'
 
 let downloadLoadingInstance;
 // 是否显示重新登录
@@ -28,13 +29,11 @@ service.interceptors.request.use(config => {
   const isRepeatSubmit = (config.headers || {}).repeatSubmit === false
 
   const port = window.location.port || '80';
-  const clientType = 'user';
 
   // 添加到请求头（修改这里）
   config.headers = {
     ...config.headers,
-    'X-Client-Type': clientType,
-    'X-Client-Port': port
+    ...buildClientHeaders(port)
   };
 
   if (getToken() && !isToken) {
