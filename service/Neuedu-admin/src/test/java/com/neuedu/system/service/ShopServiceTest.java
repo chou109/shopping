@@ -58,11 +58,22 @@ public class ShopServiceTest {
         assertEquals("允许更新的资料", fixture.updatedShop.getShopName());
     }
 
+    @Test
+    public void looksUpShopUsingItsOwnerUserId() throws Exception {
+        ShopFixture fixture = new ShopFixture(null);
+
+        Shop shop = fixture.service.selectShopByUserId(27L);
+
+        assertEquals(Long.valueOf(27L), fixture.queriedOwnerUserId);
+        assertEquals(Long.valueOf(27L), shop.getUserId());
+    }
+
     private static class ShopFixture {
         private final ShopServiceImpl service;
         private int insertCalls;
         private int updateCalls;
         private Shop updatedShop;
+        private Long queriedOwnerUserId;
 
         private ShopFixture(Object owner) throws Exception {
             ShopMapper mapper = proxy(ShopMapper.class, (methodName, args) -> {
@@ -74,6 +85,12 @@ public class ShopServiceTest {
                     updateCalls++;
                     updatedShop = (Shop) args[0];
                     return 1;
+                }
+                if ("selectShopByUserId".equals(methodName)) {
+                    queriedOwnerUserId = (Long) args[0];
+                    Shop shop = new Shop();
+                    shop.setUserId(queriedOwnerUserId);
+                    return shop;
                 }
                 return null;
             });

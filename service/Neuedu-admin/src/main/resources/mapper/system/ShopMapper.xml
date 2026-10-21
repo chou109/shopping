@@ -57,10 +57,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where id = #{id} and delete_flag = 0
     </select>
 
-    <!-- 新增：根据用户ID查询店铺（通过create_user字段查询，用于商家查看自己的店铺） -->
+    <!-- 按店铺所有者查询；create_user 是审计字段，不能用于判定商家归属。 -->
     <select id="selectShopByUserId" parameterType="Long" resultMap="ShopResult">
         <include refid="selectShopVo"/>
-        where create_user = #{userId} and delete_flag = 0
+        where user_id = #{userId} and delete_flag = 0
         LIMIT 1
     </select>
 
