@@ -537,7 +537,7 @@ class OrderInfoAdminController extends BaseController
 
     boolean applyShopScope(OrderInfo orderInfo, Long currentUserId)
     {
-        if (currentUserId != null && currentUserId == 1L) {
+        if (isAdministrator(currentUserId)) {
             orderInfo.setShopId(null);
             return true;
         }
@@ -552,9 +552,14 @@ class OrderInfoAdminController extends BaseController
         return true;
     }
 
+    boolean isAdministrator(Long currentUserId)
+    {
+        return Long.valueOf(1L).equals(currentUserId);
+    }
+
     boolean canViewOrder(OrderInfo orderInfo, Long currentUserId)
     {
-        if (currentUserId != null && currentUserId == 1L) {
+        if (isAdministrator(currentUserId)) {
             return true;
         }
         if (currentUserId == null || orderInfo == null || orderInfo.getOrderDetails() == null
@@ -723,6 +728,9 @@ class OrderInfoAdminController extends BaseController
     @PostMapping
     public AjaxResult add(@RequestBody OrderInfo orderInfo)
     {
+        if (!isAdministrator(SecurityUtils.getUserId())) {
+            return error("仅管理员可新增订单");
+        }
         return toAjax(orderInfoService.insertOrderInfo(orderInfo));
     }
 
@@ -735,6 +743,9 @@ class OrderInfoAdminController extends BaseController
     @PutMapping
     public AjaxResult edit(@RequestBody OrderInfo orderInfo)
     {
+        if (!isAdministrator(SecurityUtils.getUserId())) {
+            return error("仅管理员可修改订单");
+        }
         return toAjax(orderInfoService.updateOrderInfo(orderInfo));
     }
 
@@ -747,6 +758,9 @@ class OrderInfoAdminController extends BaseController
 	@DeleteMapping("/{ids}")
     public AjaxResult remove(@PathVariable( name = "ids" ) Long[] ids) 
     {
+        if (!isAdministrator(SecurityUtils.getUserId())) {
+            return error("仅管理员可删除订单");
+        }
         return toAjax(orderInfoService.deleteOrderInfoByIds(ids));
     }
 }

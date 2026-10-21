@@ -65,6 +65,15 @@ public class OrderInfoAdminControllerTest {
         assertTrue(controllerFor(null, new AtomicInteger(), null).canViewOrder(order, 1L));
     }
 
+    @Test
+    public void onlyAdministratorIdentityCanUseGenericOrderManagement() throws Exception {
+        OrderInfoAdminController controller = controllerFor(null, new AtomicInteger());
+
+        assertTrue(controller.isAdministrator(1L));
+        assertFalse(controller.isAdministrator(71L));
+        assertFalse(controller.isAdministrator(null));
+    }
+
     private OrderInfo orderWithProduct(Long productId) {
         OrderDetail detail = new OrderDetail();
         detail.setProductId(productId);
