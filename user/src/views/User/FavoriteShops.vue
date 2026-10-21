@@ -42,7 +42,8 @@
             </div>
           </router-link>
           <div class="shop-actions">
-            <el-button type="danger" size="small" plain @click="handleRemoveFavorite(item)">
+            <el-button type="danger" size="small" plain :loading="removingFavoriteIds.has(item.favoriteId)"
+              :disabled="removingFavoriteIds.has(item.favoriteId)" @click="handleRemoveFavorite(item)">
               取消关注
             </el-button>
             <el-button type="primary" size="small" @click="goShopDetail(item.targetId)">
@@ -67,6 +68,7 @@ const router = useRouter()
 // 响应式数据
 const loading = ref(false)
 const favoriteList = ref([])
+const removingFavoriteIds = ref(new Set())
 
 // 加载收藏列表
 const loadFavorites = async () => {
@@ -86,6 +88,8 @@ const loadFavorites = async () => {
 
 // 取消关注
 const handleRemoveFavorite = async (item) => {
+  if (removingFavoriteIds.value.has(item.favoriteId)) return
+  removingFavoriteIds.value.add(item.favoriteId)
   try {
     await ElMessageBox.confirm('确定要取消关注该店铺吗？', '取消关注', {
       confirmButtonText: '确定',
@@ -105,6 +109,8 @@ const handleRemoveFavorite = async (item) => {
     if (e !== 'cancel') {
       ElMessage.error('操作失败')
     }
+  } finally {
+    removingFavoriteIds.value.delete(item.favoriteId)
   }
 }
 

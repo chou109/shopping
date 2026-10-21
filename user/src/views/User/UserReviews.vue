@@ -67,7 +67,9 @@
             </span>
             <el-popconfirm title="确定要删除这条评价吗？" @confirm="handleDelete(review.commentId)">
               <template #reference>
-                <el-button type="danger" link size="small">删除</el-button>
+                <el-button type="danger" link size="small"
+                  :loading="deletingCommentIds.has(review.commentId)"
+                  :disabled="deletingCommentIds.has(review.commentId)">删除</el-button>
               </template>
             </el-popconfirm>
           </div>
@@ -96,6 +98,7 @@ const router = useRouter()
 
 const loading = ref(false)
 const reviews = ref([])
+const deletingCommentIds = ref(new Set())
 const total = ref(0)
 const queryParams = ref({
   pageNum: 1,
@@ -155,12 +158,16 @@ const goShopping = () => {
 
 // 删除评价
 const handleDelete = async (commentId) => {
+  if (deletingCommentIds.value.has(commentId)) return
+  deletingCommentIds.value.add(commentId)
   try {
     await deleteComment(commentId)
     ElMessage.success('删除成功')
-    fetchReviews()
+    await fetchReviews()
   } catch (error) {
     ElMessage.error('删除失败')
+  } finally {
+    deletingCommentIds.value.delete(commentId)
   }
 }
 

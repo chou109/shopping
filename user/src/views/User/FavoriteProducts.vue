@@ -32,6 +32,8 @@
             </div>
           </button>
           <button type="button" class="favorite-btn" :aria-label="`取消收藏：${item.productName}`"
+            :disabled="removingFavoriteIds.has(item.favoriteId)"
+            :aria-busy="removingFavoriteIds.has(item.favoriteId)"
             @click="handleRemoveFavorite(item)">
               <el-icon>
                 <Star />
@@ -56,6 +58,7 @@ const router = useRouter()
 // 响应式数据
 const loading = ref(false)
 const favoriteList = ref([])
+const removingFavoriteIds = ref(new Set())
 
 // 加载收藏列表
 const loadFavorites = async () => {
@@ -75,6 +78,8 @@ const loadFavorites = async () => {
 
 // 取消收藏
 const handleRemoveFavorite = async (item) => {
+  if (removingFavoriteIds.value.has(item.favoriteId)) return
+  removingFavoriteIds.value.add(item.favoriteId)
   try {
     await ElMessageBox.confirm('确定要取消收藏该商品吗？', '取消收藏', {
       confirmButtonText: '确定',
@@ -94,6 +99,8 @@ const handleRemoveFavorite = async (item) => {
     if (e !== 'cancel') {
       ElMessage.error('操作失败')
     }
+  } finally {
+    removingFavoriteIds.value.delete(item.favoriteId)
   }
 }
 
