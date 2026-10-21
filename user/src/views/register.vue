@@ -79,12 +79,14 @@
 
         <!-- 协议 -->
         <div class="form-item">
-          <label class="agreement-checkbox">
-            <input type="checkbox" v-model="registerForm.agreed" :disabled="loading" class="checkbox-input" />
-            <span class="checkbox-custom"></span>
-            我已阅读并同意
-            <span class="agreement-link" @click="showAgreement">《用户注册协议》</span>
-          </label>
+          <div class="agreement-checkbox">
+            <label class="agreement-control">
+              <input type="checkbox" v-model="registerForm.agreed" :disabled="loading" class="checkbox-input" />
+              <span class="checkbox-custom"></span>
+              我已阅读并同意
+            </label>
+            <button type="button" class="agreement-link" @click="showAgreement">《用户注册协议》</button>
+          </div>
         </div>
 
         <!-- 注册按钮 -->
@@ -499,13 +501,26 @@ onMounted(() => {
 .agreement-checkbox {
   display: flex;
   align-items: center;
-  cursor: pointer;
   font-size: 14px;
   color: #606266;
 }
 
+.agreement-control {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+
 .checkbox-input {
-  display: none;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .checkbox-custom {
@@ -535,10 +550,24 @@ onMounted(() => {
   transform: rotate(45deg);
 }
 
+.checkbox-input:focus-visible + .checkbox-custom {
+  outline: 2px solid #409EFF;
+  outline-offset: 2px;
+}
+
 .agreement-link {
   color: #409EFF;
   margin-left: 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
   cursor: pointer;
+}
+
+.agreement-link:focus-visible {
+  outline: 2px solid #409EFF;
+  outline-offset: 2px;
 }
 
 .agreement-link:hover {
