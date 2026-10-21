@@ -12,6 +12,7 @@ import org.junit.Test;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -62,6 +63,10 @@ public class OrderInfoAdminControllerTest {
         assertTrue(controllerFor(ownedShop, new AtomicInteger(), 12L).canViewOrder(order, 71L));
         assertFalse(controllerFor(ownedShop, new AtomicInteger(), 99L).canViewOrder(order, 71L));
         assertFalse(controllerFor(ownedShop, new AtomicInteger(), null).canViewOrder(order, 71L));
+        assertFalse(controllerFor(ownedShop, new AtomicInteger(), 12L)
+                .canViewOrder(orderWithProducts(44L, 45L), 71L));
+        Shop shopWithoutId = new Shop();
+        assertFalse(controllerFor(shopWithoutId, new AtomicInteger(), 12L).canViewOrder(order, 71L));
         assertTrue(controllerFor(null, new AtomicInteger(), null).canViewOrder(order, 1L));
     }
 
@@ -79,6 +84,16 @@ public class OrderInfoAdminControllerTest {
         detail.setProductId(productId);
         OrderInfo order = new OrderInfo();
         order.setOrderDetails(Collections.singletonList(detail));
+        return order;
+    }
+
+    private OrderInfo orderWithProducts(Long... productIds) {
+        OrderInfo order = new OrderInfo();
+        order.setOrderDetails(Arrays.stream(productIds).map(productId -> {
+            OrderDetail detail = new OrderDetail();
+            detail.setProductId(productId);
+            return detail;
+        }).collect(java.util.stream.Collectors.toList()));
         return order;
     }
 
@@ -102,7 +117,8 @@ public class OrderInfoAdminControllerTest {
         IProductService productService = proxy(IProductService.class, (method, args) -> {
             if ("selectProductById".equals(method) && productShopId != null) {
                 Product product = new Product();
-                product.setShopId(productShopId);
+                Long requestedId = (Long) args[0];
+                product.setShopId(Long.valueOf(45L).equals(requestedId) ? 99L : productShopId);
                 return product;
             }
             return null;

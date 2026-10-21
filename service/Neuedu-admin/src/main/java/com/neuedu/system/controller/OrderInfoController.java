@@ -567,12 +567,18 @@ class OrderInfoAdminController extends BaseController
             return false;
         }
         com.neuedu.system.domain.Shop myShop = shopService.selectShopByUserId(currentUserId);
-        if (myShop == null || myShop.getId() == null) {
+        return allOrderProductsBelongToShop(orderInfo, myShop);
+    }
+
+    private boolean allOrderProductsBelongToShop(OrderInfo orderInfo, com.neuedu.system.domain.Shop shop)
+    {
+        if (shop == null || shop.getId() == null || orderInfo == null || orderInfo.getOrderDetails() == null
+                || orderInfo.getOrderDetails().isEmpty()) {
             return false;
         }
         for (OrderDetail detail : orderInfo.getOrderDetails()) {
             Product product = productService.selectProductById(detail.getProductId());
-            if (product == null || !myShop.getId().equals(product.getShopId())) {
+            if (product == null || !shop.getId().equals(product.getShopId())) {
                 return false;
             }
         }
@@ -659,14 +665,8 @@ class OrderInfoAdminController extends BaseController
         if (currentUserId != 1L) {
             com.neuedu.system.domain.Shop shop = shopService.selectShopByUserId(currentUserId);
             OrderInfo order = orderInfoService.selectOrderInfoByOrderNo(orderNo);
-            if (shop == null || order == null || order.getOrderDetails() == null || order.getOrderDetails().isEmpty()) {
-                return error("无权操作此订单");
-            }
-            for (OrderDetail detail : order.getOrderDetails()) {
-                Product product = productService.selectProductById(detail.getProductId());
-                if (product == null || !shop.getId().equals(product.getShopId())) {
-                    return error("订单包含其他店铺商品，无法由当前店铺发货");
-                }
+            if (!allOrderProductsBelongToShop(order, shop)) {
+                return error("订单仅允许所属店铺操作，且不能包含其他店铺或失效商品");
             }
         }
         try {
