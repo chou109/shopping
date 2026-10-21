@@ -23,7 +23,7 @@
               <span class="selected-count">已选 {{ selectedCount }} 件商品</span>
             </div>
             <div class="toolbar-right">
-              <el-button type="text" @click="handleBatchDelete" :disabled="selectedCount === 0">
+              <el-button type="text" @click="handleBatchDelete" :disabled="selectedCount === 0" :loading="batchDeleting">
                 删除选中
               </el-button>
             </div>
@@ -164,7 +164,7 @@ import { useStore } from 'vuex'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Lock } from '@element-plus/icons-vue'
 import { BLIND_BOX_IMAGE, getProductImageUrl, handleImageError } from '@/utils/image'
-import { listCart, updateCart, delCart, clearCart, batchSelectCart } from '@/api/system/cart'
+import { listCart, updateCart, delCart, batchDelCart, clearCart, batchSelectCart } from '@/api/system/cart'
 import { createOrderFromCart, payOrder } from '@/api/system/orderInfo'
 import { getMyAddressList } from '@/api/system/address'
 import { addFavorite } from '@/api/system/favorite'
@@ -173,6 +173,7 @@ import PurchaseDialog from '@/components/PurchaseDialog/index.vue'
 const router = useRouter()
 const store = useStore()
 const loading = ref(false)
+const batchDeleting = ref(false)
 
 // 购物车数据
 const cartItems = ref([])
@@ -383,25 +384,31 @@ const handleDeleteItem = async (itemId) => {
 
 // 批量删除
 const handleBatchDelete = async () => {
+  if (batchDeleting.value) return
   if (selectedCount.value === 0) {
     ElMessage.warning('请先选择要删除的商品')
     return
   }
 
+  const selectedIds = selectedItems.value.map(item => item.id)
   try {
-    await ElMessageBox.confirm(`确定要删除选中的 ${selectedCount.value} 件商品吗？`, '提示', {
+    await ElMessageBox.confirm(`确定要删除选中的 ${selectedIds.length} 件商品吗？`, '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning'
     })
 
-    cartItems.value = cartItems.value.filter(item => !item.selected)
+    batchDeleting.value = true
+    const response = await batchDelCart(selectedIds)
+    if (response.code !== 200) throw new Error(response.msg || '删除失败')
+    cartItems.value = cartItems.value.filter(item => !selectedIds.includes(item.id))
     ElMessage.success('删除成功')
   } catch (error) {
-    if (error !== 'cancel') {
+    if (error !== 'cancel' && error !== 'close') {
       console.error('批量删除失败:', error)
-      ElMessage.error('删除失败')
     }
+  } finally {
+    batchDeleting.value = false
   }
 }
 
