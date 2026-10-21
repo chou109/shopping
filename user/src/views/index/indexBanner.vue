@@ -10,6 +10,8 @@ import { getFrontCategoryTree } from '@/api/system/category';
 
 const router = useRouter()
 const banners = ref([])
+const bannerCarousel = ref(null)
+const activeBannerIndex = ref(0)
 const categories = ref([])  // 存储分类数据
 const loading = ref(false)
 const carouselHeight = ref('400px')
@@ -74,6 +76,20 @@ const loadBanners = function () {
   ]
 
   loading.value = false
+}
+
+const handleBannerChange = (currentIndex) => {
+  activeBannerIndex.value = currentIndex
+}
+
+const selectBanner = (index) => {
+  bannerCarousel.value?.setActiveItem(index)
+}
+
+const moveBanner = (offset) => {
+  if (!banners.value.length) return
+  const nextIndex = (activeBannerIndex.value + offset + banners.value.length) % banners.value.length
+  selectBanner(nextIndex)
 }
 
 // 加载分类数据
@@ -194,8 +210,15 @@ onUnmounted(() => {
 
     <!-- 轮播图 - 分类导航不随轮播图轮播 -->
     <div class="banner-wrapper">
-      <el-carousel :interval="5000" :height="carouselHeight" indicator-position="outside"
-        :arrow="windowWidth > 768 ? 'always' : 'never'">
+      <el-carousel
+        ref="bannerCarousel"
+        :interval="5000"
+        :height="carouselHeight"
+        :indicator="false"
+        indicator-position="none"
+        arrow="never"
+        @change="handleBannerChange"
+      >
         <el-carousel-item v-for="banner in banners" :key="banner.id">
           <router-link :to="banner.link" class="banner-item" :aria-label="`查看商品：${banner.title}`">
             <img :src="banner.imageUrl" :alt="banner.title || 'Banner'" class="banner-image"
@@ -207,6 +230,24 @@ onUnmounted(() => {
           </router-link>
         </el-carousel-item>
       </el-carousel>
+      <div v-if="banners.length > 1" class="banner-controls" role="group" aria-label="首页轮播图切换">
+        <button type="button" class="banner-arrow" aria-label="上一张轮播图" @click="moveBanner(-1)">
+          <span aria-hidden="true">‹</span>
+        </button>
+        <button
+          v-for="(banner, index) in banners"
+          :key="`banner-control-${banner.id}`"
+          type="button"
+          class="banner-indicator"
+          :class="{ 'is-active': activeBannerIndex === index }"
+          :aria-label="`显示第 ${index + 1} 张轮播图：${banner.title}`"
+          :aria-current="activeBannerIndex === index ? 'true' : null"
+          @click="selectBanner(index)"
+        />
+        <button type="button" class="banner-arrow" aria-label="下一张轮播图" @click="moveBanner(1)">
+          <span aria-hidden="true">›</span>
+        </button>
+      </div>
     </div>
 
     <!-- 右侧跳转模块 -->
@@ -250,6 +291,7 @@ onUnmounted(() => {
 }
 
 .banner-wrapper {
+  position: relative;
   border-radius: 0 0 0 0;
   overflow: hidden;
   position: relative;
@@ -707,6 +749,55 @@ onUnmounted(() => {
   .banner-content p {
     font-size: 12px;
   }
+}
+
+.banner-controls {
+  position: absolute;
+  z-index: 2;
+  bottom: 12px;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transform: translateX(-50%);
+}
+
+.banner-arrow,
+.banner-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: 999px;
+  background: rgba(30, 41, 59, 0.62);
+  color: #fff;
+  cursor: pointer;
+}
+
+.banner-arrow span {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.banner-indicator {
+  min-width: 24px;
+  min-height: 24px;
+  border-width: 2px;
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.banner-indicator.is-active {
+  background: #fff;
+  box-shadow: 0 0 0 2px rgba(30, 41, 59, 0.45);
+}
+
+.banner-arrow:focus-visible,
+.banner-indicator:focus-visible {
+  outline: 3px solid #fbbf24;
+  outline-offset: 2px;
 }
 
 @media (max-width: 480px) {
