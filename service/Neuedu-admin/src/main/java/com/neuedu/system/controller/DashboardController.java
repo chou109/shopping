@@ -106,13 +106,13 @@ public class DashboardController extends BaseController
             int totalUsers = allUsers != null ? allUsers.size() : 0;
             
             statsCards.add(createStatsCard("总商品数", String.valueOf(totalProducts), "ShoppingCart", 
-                    "linear-gradient(135deg, #1890ff, #36cfc9)", 8.5));
+                    "linear-gradient(135deg, #1890ff, #36cfc9)"));
             statsCards.add(createStatsCard("订单数量", String.valueOf(totalOrders), "List", 
-                    "linear-gradient(135deg, #52c41a, #95de64)", 12.3));
+                    "linear-gradient(135deg, #52c41a, #95de64)"));
             statsCards.add(createStatsCard("销售总额", "¥" + totalSales.setScale(2, BigDecimal.ROUND_HALF_UP), "Money", 
-                    "linear-gradient(135deg, #faad14, #ffc53d)", 15.7));
+                    "linear-gradient(135deg, #faad14, #ffc53d)"));
             statsCards.add(createStatsCard("店铺数量", String.valueOf(totalShops), "Shop", 
-                    "linear-gradient(135deg, #722ed1, #b37feb)", 5.2));
+                    "linear-gradient(135deg, #722ed1, #b37feb)"));
             
         } else {
             // 商家视角 - 根据店铺ID筛选
@@ -157,23 +157,23 @@ public class DashboardController extends BaseController
                 BigDecimal shopScore = myShop.getShopScore() != null ? myShop.getShopScore() : BigDecimal.ZERO;
                 
                 statsCards.add(createStatsCard("我的商品", String.valueOf(myProductCount), "ShoppingCart", 
-                        "linear-gradient(135deg, #1890ff, #36cfc9)", 3.2));
+                        "linear-gradient(135deg, #1890ff, #36cfc9)"));
                 statsCards.add(createStatsCard("待发货订单", String.valueOf(pendingOrders), "List", 
-                        "linear-gradient(135deg, #f5222d, #ff7875)", 0.0));
+                        "linear-gradient(135deg, #f5222d, #ff7875)"));
                 statsCards.add(createStatsCard("店铺销量", String.valueOf(salesCount), "TrendCharts", 
-                        "linear-gradient(135deg, #52c41a, #95de64)", 8.6));
+                        "linear-gradient(135deg, #52c41a, #95de64)"));
                 statsCards.add(createStatsCard("店铺评分", shopScore.setScale(1, BigDecimal.ROUND_HALF_UP) + "分", "Star", 
-                        "linear-gradient(135deg, #faad14, #ffc53d)", 2.1));
+                        "linear-gradient(135deg, #faad14, #ffc53d)"));
             } else {
                 // 没有店铺
                 statsCards.add(createStatsCard("我的商品", "0", "ShoppingCart", 
-                        "linear-gradient(135deg, #1890ff, #36cfc9)", 0.0));
+                        "linear-gradient(135deg, #1890ff, #36cfc9)"));
                 statsCards.add(createStatsCard("待发货订单", "0", "List", 
-                        "linear-gradient(135deg, #f5222d, #ff7875)", 0.0));
+                        "linear-gradient(135deg, #f5222d, #ff7875)"));
                 statsCards.add(createStatsCard("店铺销量", "0", "TrendCharts", 
-                        "linear-gradient(135deg, #52c41a, #95de64)", 0.0));
+                        "linear-gradient(135deg, #52c41a, #95de64)"));
                 statsCards.add(createStatsCard("店铺评分", "0分", "Star", 
-                        "linear-gradient(135deg, #faad14, #ffc53d)", 0.0));
+                        "linear-gradient(135deg, #faad14, #ffc53d)"));
             }
         }
         
@@ -633,13 +633,12 @@ public class DashboardController extends BaseController
         return result;
     }
 
-    private Map<String, Object> createStatsCard(String title, String value, String icon, String color, double trend) {
+    static Map<String, Object> createStatsCard(String title, String value, String icon, String color) {
         Map<String, Object> card = new HashMap<>();
         card.put("title", title);
         card.put("value", value);
         card.put("icon", icon);
         card.put("color", color);
-        card.put("trend", trend);
         return card;
     }
 

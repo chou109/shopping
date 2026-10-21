@@ -58,11 +58,6 @@
               <div class="stat-info">
                 <div class="stat-title">{{ stat.title }}</div>
                 <div class="stat-value">{{ stat.value }}</div>
-                <div class="stat-trend" :class="stat.trend > 0 ? 'trend-up' : 'trend-down'" v-if="stat.trend !== 0">
-                  <el-icon v-if="stat.trend > 0"><Top /></el-icon>
-                  <el-icon v-else><Bottom /></el-icon>
-                  {{ Math.abs(stat.trend) }}%
-                </div>
               </div>
             </div>
           </el-card>
@@ -180,7 +175,7 @@ import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import echarts from '@/utils/echarts'
 import {
-  ShoppingCart, List, Shop, User, Top, Bottom,
+  ShoppingCart, List, Shop, User,
   Plus, Edit, Setting, Picture, TrendCharts,
   Money, Star, Document, Upload, Download, Search
 } from '@element-plus/icons-vue'
@@ -774,16 +769,6 @@ onUnmounted(() => {
           margin-bottom: 4px;
         }
         
-        .stat-trend {
-          display: flex;
-          align-items: center;
-          font-size: 12px;
-          
-          &.trend-up { color: #52c41a; }
-          &.trend-down { color: #f5222d; }
-          
-          .el-icon { margin-right: 4px; }
-        }
       }
     }
   }
