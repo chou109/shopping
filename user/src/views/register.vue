@@ -6,7 +6,7 @@
     </div>
 
     <div class="register-box">
-      <img src="@/assets/images/login-sub-bg.png" class="sub-bg" />
+      <img src="@/assets/images/login-sub-bg.webp" class="sub-bg" />
 
       <form class="register-form" @submit.prevent="handleRegister">
         <h3 class="title">用户注册</h3>
