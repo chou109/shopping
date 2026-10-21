@@ -68,6 +68,21 @@ public class OrderCartCheckoutServiceTest {
         assertEquals(0, fixture.cartClears);
     }
 
+    @Test
+    public void rejectsDirectOrderWhenTheStoreIsClosed() throws Exception {
+        CheckoutFixture fixture = new CheckoutFixture(false, false);
+
+        try {
+            fixture.service.createDirectOrder(7L, 101L, 1, 9L);
+            fail("Expected a closed shop to be rejected");
+        } catch (RuntimeException error) {
+            assertEquals("商品所属店铺未营业", error.getMessage());
+        }
+
+        assertEquals(0, fixture.orderInserts);
+        assertEquals(0, fixture.stockUpdates);
+    }
+
     private static class CheckoutFixture {
         private final OrderInfoServiceImpl service = new OrderInfoServiceImpl();
         private final Map<Long, Product> products = new HashMap<>();
