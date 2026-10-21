@@ -119,13 +119,14 @@
         <div class="input-area">
           <div class="quick-replies">
             <span class="quick-label">快捷回复：</span>
-            <el-tag v-for="(reply, index) in quickReplies" :key="index" class="quick-tag" @click="useQuickReply(reply)"
-              effect="plain" size="small">
+            <button v-for="(reply, index) in quickReplies" :key="index" type="button" class="quick-tag"
+              :aria-label="`填入快捷回复：${reply}`" @click="useQuickReply(reply)">
               {{ reply }}
-            </el-tag>
+            </button>
           </div>
           <div class="input-wrapper">
-            <el-input v-model="inputMessage" type="textarea" :rows="3" :maxlength="500" placeholder="输入回复内容..."
+            <el-input v-model="inputMessage" type="textarea" :rows="3" :maxlength="500"
+              label="回复客服会话的消息" placeholder="输入回复内容..."
               @keyup.ctrl.enter="sendReply" resize="none" />
             <div class="input-actions">
               <span class="char-count">{{ inputMessage.length }}/500</span>
@@ -661,11 +662,24 @@ onUnmounted(() => {
 }
 
 .quick-tag {
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  padding: 5px 9px;
+  background: white;
+  color: #606266;
+  font: inherit;
+  line-height: 1.2;
   cursor: pointer;
 
   &:hover {
-    border-color: #ff5500;
-    color: #ff5500;
+    border-color: #c6e2ff;
+    color: #409eff;
+    background: #ecf5ff;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #409eff;
+    outline-offset: 2px;
   }
 }
 
