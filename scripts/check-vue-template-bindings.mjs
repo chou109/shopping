@@ -33,6 +33,22 @@ function collectImageAltIssues(node, filename) {
   return issues
 }
 
+function collectAnchorIssues(node, filename) {
+  const issues = []
+  if (node.type === 1 && node.tag === 'a') {
+    const hasHref = node.props.some(property =>
+      (property.type === 6 && property.name === 'href') ||
+      (property.type === 7 && property.name === 'bind' && property.arg?.content === 'href')
+    )
+    const hasClick = node.props.some(property => property.type === 7 && property.name === 'on' && property.arg?.content === 'click')
+    if (hasClick && !hasHref) {
+      issues.push(`${path.relative(root, filename)}:${node.loc.start.line}: 可点击的 <a> 缺少 href，请使用链接或按钮语义`)
+    }
+  }
+  for (const child of node.children || []) issues.push(...collectAnchorIssues(child, filename))
+  return issues
+}
+
 function collectLegacySlotIssues(node, filename) {
   const issues = []
   if (node.type === 1 && node.props.some(property => property.type === 6 && property.name === 'slot')) {
@@ -66,6 +82,7 @@ for (const sourceRoot of sourceRoots) {
       continue
     }
     failures.push(...collectImageAltIssues(parsedTemplate.ast, filename))
+    failures.push(...collectAnchorIssues(parsedTemplate.ast, filename))
     failures.push(...collectLegacySlotIssues(parsedTemplate.ast, filename))
     if (!descriptor.scriptSetup) continue
 

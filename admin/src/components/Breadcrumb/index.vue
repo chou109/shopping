@@ -3,7 +3,7 @@
     <transition-group name="breadcrumb">
       <el-breadcrumb-item v-for="(item,index) in levelList" :key="item.path">
         <span v-if="item.redirect === 'noRedirect' || index == levelList.length - 1" class="no-redirect">{{ item.meta.title }}</span>
-        <a v-else @click.prevent="handleLink(item)">{{ item.meta.title }}</a>
+        <button v-else type="button" class="breadcrumb-link" @click="handleLink(item)">{{ item.meta.title }}</button>
       </el-breadcrumb-item>
     </transition-group>
   </el-breadcrumb>
@@ -61,6 +61,21 @@ getBreadcrumb();
   .no-redirect {
     color: #97a8be;
     cursor: text;
+  }
+
+  .breadcrumb-link {
+    padding: 0;
+    border: 0;
+    color: inherit;
+    background: transparent;
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .breadcrumb-link:focus-visible {
+    outline: 2px solid var(--el-color-primary);
+    outline-offset: 3px;
+    border-radius: 2px;
   }
 }
 </style>
