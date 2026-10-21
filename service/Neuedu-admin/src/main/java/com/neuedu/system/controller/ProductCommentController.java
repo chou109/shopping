@@ -176,6 +176,7 @@ public class ProductCommentController extends BaseController
      * 点赞评论
      */
     @Operation(summary = "点赞评论")
+    @PreAuthorize("isAuthenticated()")
     @PostMapping("/{commentId}/like")
     public AjaxResult likeComment(@PathVariable Long commentId) {
         boolean result = productCommentService.likeComment(commentId);
@@ -186,6 +187,7 @@ public class ProductCommentController extends BaseController
      * 取消点赞评论
      */
     @Operation(summary = "取消点赞评论")
+    @PreAuthorize("isAuthenticated()")
     @PostMapping("/{commentId}/unlike")
     public AjaxResult unlikeComment(@PathVariable Long commentId) {
         boolean result = productCommentService.unlikeComment(commentId);
