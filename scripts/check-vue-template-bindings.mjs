@@ -66,8 +66,13 @@ function collectButtonIssues(node, filename) {
 
 function collectClickableElementIssues(node, filename) {
   const issues = []
-  const nonSemanticElements = new Set(['div', 'span', 'li', 'td', 'i'])
-  if (node.type === 1 && nonSemanticElements.has(node.tag)) {
+  const nativeInteractiveElements = new Set([
+    'a', 'button', 'input', 'select', 'textarea', 'option', 'summary', 'details', 'label', 'audio', 'video', 'area'
+  ])
+  const isNativeNonInteractiveElement = node.type === 1 &&
+    !node.tag.includes('-') &&
+    !nativeInteractiveElements.has(node.tag)
+  if (isNativeNonInteractiveElement) {
     const props = node.props || []
     const hasClick = props.some(property => property.type === 7 && property.name === 'on' && property.arg?.content === 'click')
     if (hasClick) {
