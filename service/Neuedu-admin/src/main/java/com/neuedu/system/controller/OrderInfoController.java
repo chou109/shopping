@@ -504,7 +504,7 @@ class OrderInfoAdminController extends BaseController
     private com.neuedu.system.service.IShopService shopService;
 
     @Operation(summary = "查询订单列表（管理员）")
-    @PreAuthorize("@ss.hasPermi('system:order:list')")
+    @PreAuthorize("@ss.hasAnyPermi('system:info:list,system:order:list')")
     @GetMapping("/list")
     public TableDataInfo list(OrderInfo orderInfo)
     {

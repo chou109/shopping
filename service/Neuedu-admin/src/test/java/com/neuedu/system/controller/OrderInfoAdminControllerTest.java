@@ -7,6 +7,7 @@ import com.neuedu.system.domain.Shop;
 import com.neuedu.system.service.IOrderInfoService;
 import com.neuedu.system.service.IProductService;
 import com.neuedu.system.service.IShopService;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.junit.Test;
 
 import java.lang.reflect.Field;
@@ -77,6 +78,14 @@ public class OrderInfoAdminControllerTest {
         assertTrue(controller.isAdministrator(1L));
         assertFalse(controller.isAdministrator(71L));
         assertFalse(controller.isAdministrator(null));
+    }
+
+    @Test
+    public void orderListAcceptsSeedMenuPermissionAndExistingApiPermission() throws Exception {
+        PreAuthorize authorization = OrderInfoAdminController.class
+                .getMethod("list", OrderInfo.class).getAnnotation(PreAuthorize.class);
+
+        assertEquals("@ss.hasAnyPermi('system:info:list,system:order:list')", authorization.value());
     }
 
     private OrderInfo orderWithProduct(Long productId) {
