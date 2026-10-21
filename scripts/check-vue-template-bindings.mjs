@@ -38,6 +38,11 @@ function collectLegacySlotIssues(node, filename) {
   if (node.type === 1 && node.props.some(property => property.type === 6 && property.name === 'slot')) {
     issues.push(`${path.relative(root, filename)}:${node.loc.start.line}: 使用了 Vue 2 的 slot 属性，请改用 Vue 3 命名插槽语法`)
   }
+  if (node.type === 1 && node.props.some(property =>
+    property.type === 7 && property.name === 'on' && !property.arg && property.exp?.content === '$listeners'
+  )) {
+    issues.push(`${path.relative(root, filename)}:${node.loc.start.line}: Vue 3 已移除 $listeners，请依赖根节点事件透传`)
+  }
   for (const child of node.children || []) issues.push(...collectLegacySlotIssues(child, filename))
   return issues
 }
