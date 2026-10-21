@@ -327,6 +327,7 @@
 import { listProduct, getProduct, delProduct, addProduct, updateProduct, updateProductStatus, updateProductHotFlag } from "@/api/system/product";
 import { listCategoryFront } from "@/api/system/category";
 import { getMyShop } from "@/api/system/dashboard";
+import { buildCategoryOptions, buildCategoryTree } from '@/utils/product-category.mjs';
 import { ArrowDown } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import useUserStore from '@/store/modules/user';
@@ -418,81 +419,8 @@ async function loadCategoryTree() {
 }
 
 /** 将平铺数据转换为树形结构 */
-function buildCategoryTree(flatCategories) {
-  const categoryMap = {};
-  const tree = [];
-
-  flatCategories.forEach(category => {
-    categoryMap[category.id] = {
-      ...category,
-      children: []
-    };
-  });
-
-  flatCategories.forEach(category => {
-    const node = categoryMap[category.id];
-
-    if (category.parentId === null || category.parentId === 0 || !categoryMap[category.parentId]) {
-      tree.push(node);
-    } else {
-      const parent = categoryMap[category.parentId];
-      if (parent) {
-        parent.children.push(node);
-      } else {
-        tree.push(node);
-      }
-    }
-  });
-
-  return tree;
-}
-
 function generateCategoryOptions() {
-  const result = [];
-
-  const flatten = (categories, level = 0) => {
-    categories.forEach(category => {
-      const hasChildren = category.children && category.children.length > 0;
-
-      if (!hasChildren) {
-        const parentNames = getParentPath(categoryTree.value, category.id);
-        const displayName = parentNames.length > 0
-          ? `${parentNames.join(' / ')} / ${category.name}`
-          : category.name;
-
-        result.push({
-          id: category.id,
-          name: displayName,
-          originalName: category.name,
-          level: level
-        });
-      }
-
-      if (hasChildren) {
-        flatten(category.children, level + 1);
-      }
-    });
-  };
-
-  flatten(categoryTree.value);
-  categoryTreeOptions.value = result;
-}
-
-/** 获取分类的父级路径 */
-function getParentPath(tree, categoryId, path = []) {
-  for (const node of tree) {
-    if (node.id === categoryId) {
-      return path;
-    }
-
-    if (node.children && node.children.length > 0) {
-      const childPath = getParentPath(node.children, categoryId, [...path, node.name]);
-      if (childPath !== null) {
-        return childPath;
-      }
-    }
-  }
-  return null;
+  categoryTreeOptions.value = buildCategoryOptions(categoryTree.value);
 }
 
 /** 查询商品列表 */

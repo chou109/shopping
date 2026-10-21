@@ -1,0 +1,51 @@
+export const buildCategoryTree = categories => {
+  const categoryMap = {}
+  const tree = []
+
+  categories.forEach(category => {
+    categoryMap[category.id] = { ...category, children: [] }
+  })
+
+  categories.forEach(category => {
+    const node = categoryMap[category.id]
+    const parent = categoryMap[category.parentId]
+    if (category.parentId == null || category.parentId === 0 || !parent) {
+      tree.push(node)
+    } else {
+      parent.children.push(node)
+    }
+  })
+
+  return tree
+}
+
+const getParentPath = (tree, categoryId, path = []) => {
+  for (const node of tree) {
+    if (String(node.id) === String(categoryId)) return path
+    const childPath = getParentPath(node.children || [], categoryId, [...path, node.name])
+    if (childPath !== null) return childPath
+  }
+  return null
+}
+
+export const buildCategoryOptions = tree => {
+  const result = []
+  const visit = (categories, level = 0) => {
+    categories.forEach(category => {
+      const children = category.children || []
+      if (children.length === 0) {
+        const parents = getParentPath(tree, category.id) || []
+        result.push({
+          id: category.id,
+          name: parents.length ? `${parents.join(' / ')} / ${category.name}` : category.name,
+          originalName: category.name,
+          level
+        })
+      } else {
+        visit(children, level + 1)
+      }
+    })
+  }
+  visit(tree)
+  return result
+}
