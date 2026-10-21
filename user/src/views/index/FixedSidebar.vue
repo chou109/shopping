@@ -34,15 +34,15 @@
       <div class="item-text">消息</div>
     </button>
 
-    <!-- 客服/AI助手 -->
+    <!-- 商城助手 -->
     <button v-if="showServiceButton" type="button" class="sidebar-item" @click="goToChat"
-      :title="currentRoute.includes('/chat') ? '当前已在AI助手页' : 'AI助手'">
+      :title="currentRoute.includes('/chat') ? '当前已在商城助手页' : '商城助手'">
       <div class="item-icon">
         <el-icon>
           <Headset />
         </el-icon>
       </div>
-      <div class="item-text">AI助手</div>
+      <div class="item-text">商城助手</div>
     </button>
 
     <!-- 人工客服 -->
@@ -108,7 +108,7 @@ const showMessageButton = computed(() => {
 })
 
 const showServiceButton = computed(() => {
-  // 如果当前已经在chat页面，就不显示AI助手按钮
+  // 如果当前已经在商城助手页面，就不显示入口
   return !currentRoute.value.includes('/chat')
 })
 
@@ -146,7 +146,7 @@ const goToMessage = () => {
   }
 }
 
-// 跳转到AI助手页面
+// 跳转到商城助手页面
 const goToChat = () => {
   if (showServiceButton.value) {
     router.push('/chat')
