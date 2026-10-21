@@ -87,6 +87,8 @@ const options = reactive({
 
 /** 编辑头像 */
 function editCropper() {
+  options.img = userStore.avatar;
+  options.previews = {};
   open.value = true;
 }
 /** 打开弹出层结束时的回调 */
@@ -125,7 +127,7 @@ function beforeUpload(file) {
 function uploadImg() {
   proxy.$refs.cropper.getCropBlob(data => {
     let formData = new FormData();
-    formData.append("avatarfile", data, this.options.filename);
+    formData.append("avatarfile", data, options.filename);
     uploadAvatar(formData).then(response => {
       open.value = false;
       options.img = import.meta.env.VITE_APP_BASE_API + response.imgUrl;
@@ -142,7 +144,7 @@ function realTime(data) {
 /** 关闭窗口 */
 function closeDialog() {
   options.img = userStore.avatar;
-  options.visible = false;
+  visible.value = false;
 }
 </script>
 
