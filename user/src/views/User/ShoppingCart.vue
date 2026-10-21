@@ -17,7 +17,8 @@
           <!-- 购物车工具栏 -->
           <div class="cart-toolbar">
             <div class="toolbar-left">
-              <el-checkbox v-model="isAllSelected" @change="handleSelectAll" :indeterminate="isIndeterminate">
+              <el-checkbox v-model="isAllSelected" :disabled="selectionBatchSaving || selectionSavingIds.size > 0"
+                @change="handleSelectAll" :indeterminate="isIndeterminate">
                 全选
               </el-checkbox>
               <span class="selected-count">已选 {{ selectedCount }} 件商品</span>
@@ -34,7 +35,8 @@
             <div v-for="item in cartItems" :key="item.id" class="cart-item" :class="{ selected: item.selected }">
               <div class="item-select">
                 <el-checkbox v-model="item.selected" :aria-label="`选择商品：${item.productName}`"
-                  :disabled="selectionSavingIds.has(item.id)" @change="handleItemSelect(item)" />
+                  :disabled="selectionBatchSaving || selectionSavingIds.has(item.id)"
+                  @change="handleItemSelect(item)" />
               </div>
 
               <div class="item-content">
@@ -178,6 +180,7 @@ const store = useStore()
 const loading = ref(false)
 const batchDeleting = ref(false)
 const selectionSavingIds = ref(new Set())
+const selectionBatchSaving = ref(false)
 
 // 购物车数据
 const cartItems = ref([])
@@ -272,6 +275,8 @@ const loadCartData = async () => {
 
 // 全选/取消全选
 const handleSelectAll = async (selected) => {
+  if (selectionBatchSaving.value || selectionSavingIds.value.size > 0) return
+  selectionBatchSaving.value = true
   try {
     // 更新前端状态
     cartItems.value.forEach(item => {
@@ -285,12 +290,14 @@ const handleSelectAll = async (selected) => {
     console.error('更新全选状态失败:', error)
     ElMessage.error('更新失败')
     await loadCartData()
+  } finally {
+    selectionBatchSaving.value = false
   }
 }
 
 // 单个商品选择
 const handleItemSelect = async (item) => {
-  if (selectionSavingIds.value.has(item.id)) return
+  if (selectionBatchSaving.value || selectionSavingIds.value.has(item.id)) return
   selectionSavingIds.value = new Set([...selectionSavingIds.value, item.id])
   try {
     const response = await updateCart(item.id, {
