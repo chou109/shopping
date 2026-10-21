@@ -1,8 +1,8 @@
 package com.neuedu.common.exception.user;
 
 /**
- * ÓÃ»§´íÎó×î´ó´ÎÊıÒì³£Àà
- * 
+ * ç”¨æˆ·å¯†ç é‡è¯•æ¬¡æ•°è¶…é™å¼‚å¸¸ã€‚
+ *
  * @author ruoyi
  */
 public class UserPasswordRetryLimitExceedException extends UserException
