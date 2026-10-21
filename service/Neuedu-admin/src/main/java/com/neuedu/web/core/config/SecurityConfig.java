@@ -118,6 +118,17 @@ public class SecurityConfig {
                     .antMatchers("/system/shop/hot").permitAll()
                     .antMatchers("/system/shop/search").permitAll()
                     .antMatchers("/system/product/shop/**").permitAll()
+                    // 商品浏览页和商品详情页允许访客读取；写入及管理接口仍需登录
+                    .antMatchers(HttpMethod.GET,
+                            "/system/category/enabled/list",
+                            "/system/category/hot/list",
+                            "/system/category/front/tree",
+                            "/system/product/hot",
+                            "/system/product/category/**",
+                            "/system/product/activity/**",
+                            "/system/product/search",
+                            "/system/product/*",
+                            "/system/comment/product/**").permitAll()
                     // QQ登录接口
                     .antMatchers("/qq/**").permitAll()
                     // === 临时修改：允许所有认证用户访问所有接口 ===
