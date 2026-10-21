@@ -224,6 +224,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 	<update id="updateUserBalance">
 		update sys_user set balance = #{balance}, update_time = sysdate() where user_id = #{userId}
 	</update>
+
+	<update id="deductUserBalance">
+		update sys_user
+		set balance = ifnull(balance, 0) - #{amount}, update_time = sysdate()
+		where user_id = #{userId} and ifnull(balance, 0) &gt;= #{amount}
+	</update>
 	
 	<delete id="deleteUserById" parameterType="Long">
  		update sys_user set del_flag = '2' where user_id = #{userId}
@@ -236,4 +242,4 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </foreach> 
  	</delete>
 	
-</mapper> 
+</mapper>

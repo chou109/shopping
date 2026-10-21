@@ -142,4 +142,7 @@ public interface SysUserMapper
      * @return 结果
      */
     public int updateUserBalance(@Param("userId") Long userId, @Param("balance") BigDecimal balance);
+
+    /** 余额充足时原子扣减余额。 */
+    public int deductUserBalance(@Param("userId") Long userId, @Param("amount") BigDecimal amount);
 }

@@ -222,6 +222,9 @@ public interface ISysUserService
      */
     public boolean updateUserBalance(Long userId, BigDecimal amount);
 
+    /** 余额充足时原子扣减余额。 */
+    public boolean deductUserBalance(Long userId, BigDecimal amount);
+
     /**
      * 获取用户余额
      *

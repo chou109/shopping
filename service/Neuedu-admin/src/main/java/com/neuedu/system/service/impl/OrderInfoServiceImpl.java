@@ -589,9 +589,6 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
             if (userBalance.compareTo(orderInfo.getPayment()) < 0) {
                 throw new RuntimeException("余额不足，当前余额" + userBalance + "元，需支付" + orderInfo.getPayment() + "元");
             }
-            // 扣减余额
-            BigDecimal newBalance = userBalance.subtract(orderInfo.getPayment());
-            sysUserService.updateUserBalance(orderInfo.getUserId(), orderInfo.getPayment().negate());
         }
 
         // 更新订单状态
@@ -599,6 +596,12 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
                 OrderStatusConstants.getPaymentTypeDesc(paymentType));
 
         if (result > 0) {
+            // 先用订单状态条件更新抢占支付，再由数据库保证余额充足时原子扣款。
+            // 扣款失败抛出异常，事务会回滚前面的订单状态更新。
+            if (!sysUserService.deductUserBalance(orderInfo.getUserId(), orderInfo.getPayment())) {
+                throw new RuntimeException("余额不足，请刷新后重试");
+            }
+
             // 记录状态变更
             if (orderStatusRecordService != null) {
                 orderStatusRecordService.recordOrderStatus(

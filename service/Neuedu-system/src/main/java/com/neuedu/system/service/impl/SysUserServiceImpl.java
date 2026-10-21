@@ -601,6 +601,18 @@ public class SysUserServiceImpl implements ISysUserService
     }
 
     /**
+     * 余额充足时由数据库原子扣减，避免并发消费导致余额透支。
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean deductUserBalance(Long userId, BigDecimal amount) {
+        if (userId == null || amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new ServiceException("用户ID和正数扣减金额不能为空");
+        }
+        return userMapper.deductUserBalance(userId, amount) > 0;
+    }
+
+    /**
      * 获取用户余额
      */
     @Override
