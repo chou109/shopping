@@ -32,6 +32,7 @@
 import { computed, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getProductImageUrl, handleImageError } from '@/utils/image'
+import { buildOrderReviewItems } from '@/utils/orderReview.mjs'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -47,14 +48,7 @@ const visible = computed({
 
 watch(() => props.modelValue, value => {
   if (value) {
-    reviewItems.value = (props.order?.orderDetails || []).map(item => ({
-      productId: item.productId,
-      productName: item.productName,
-      productMainImage: item.productMainImage,
-      score: 5,
-      content: '',
-      isAnonymous: false
-    }))
+    reviewItems.value = buildOrderReviewItems(props.order)
   }
 })
 

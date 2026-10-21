@@ -171,6 +171,7 @@ import { getMyOrders, payOrder, cancelOrder, confirmReceipt, delInfo, applyRefun
 import { submitReview, completeOrder } from '@/api/comment'
 import { getProductImageUrl, handleImageError } from '@/utils/image'
 import { isBlindBoxOrder } from '@/utils/order.mjs'
+import { submitOrderReviewBatch } from '@/utils/orderReview.mjs'
 import { useOrderList } from '@/composables/useOrderList.mjs'
 import {
   formatOrderPrice as formatPrice,
@@ -376,19 +377,7 @@ const submitReviewHandler = async (reviewItems) => {
 
   submittingReview.value = true
   try {
-    // 批量提交评价
-    for (const item of reviewItems) {
-      await submitReview({
-        productId: item.productId,
-        orderId: reviewingOrder.value.id,
-        content: item.content || '用户未填写评价内容',
-        score: item.score,
-        isAnonymous: item.isAnonymous ? 1 : 0
-      })
-    }
-
-    // 更新订单状态为已完成
-    await completeOrder(reviewingOrder.value.orderNo)
+    await submitOrderReviewBatch(reviewingOrder.value, reviewItems, submitReview, completeOrder)
 
     ElMessage.success('评价成功')
     reviewDialogVisible.value = false
