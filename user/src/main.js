@@ -18,38 +18,11 @@ import 'virtual:svg-icons-register'
 import SvgIcon from '@/components/SvgIcon'
 
 import './permission' // permission control
-import { getDicts } from "@/api/system/dict/data";
-import { getConfigKey } from "@/api/system/config";
-import { parseTime, resetForm, addDateRange, selectDictLabel, selectDictLabels, download, handleTree,getSysUserList } from "@/utils/neu";
-import { getQueryData } from "@/api/query/comQuery";
-import { getBaseUrl } from '@/utils/env'
 
 const app = createApp(App)
 
-// 全局方法挂载
-app.config.globalProperties.getDicts = getDicts
-app.config.globalProperties.getConfigKey = getConfigKey
-app.config.globalProperties.parseTime = parseTime
-app.config.globalProperties.resetForm = resetForm
-app.config.globalProperties.addDateRange = addDateRange
-app.config.globalProperties.selectDictLabel = selectDictLabel
-app.config.globalProperties.selectDictLabels = selectDictLabels
-app.config.globalProperties.download = download
-app.config.globalProperties.handleTree = handleTree
-app.config.globalProperties.getSysUserList = getSysUserList
-app.config.globalProperties.getQueryData = getQueryData
-app.config.globalProperties.getBaseUrl = getBaseUrl
-
-app.config.globalProperties.msgSuccess = function (msg) {
-this.$message({ showClose: true, message: msg, type: "success" });
-}
-
 app.config.globalProperties.msgError = function (msg) {
   this.$message({ showClose: true, message: msg, type: "error" });
-}
-
-app.config.globalProperties.msgInfo = function (msg) {
-  this.$message.info(msg);
 }
 
 app.use(permission)
