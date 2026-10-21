@@ -139,28 +139,24 @@ const loading = ref(false)
 // 输入处理函数
 const onUsernameInput = (e) => {
   const value = e.target.value
-  console.log('用户名输入:', value)
   registerForm.value.username = value
   validateUsername()
 }
 
 const onPasswordInput = (e) => {
   const value = e.target.value
-  console.log('密码输入:', value)
   registerForm.value.password = value
   validatePassword()
 }
 
 const onConfirmPasswordInput = (e) => {
   const value = e.target.value
-  console.log('确认密码输入:', value)
   registerForm.value.confirmPassword = value
   validateConfirmPassword()
 }
 
 const onCodeInput = (e) => {
   const value = e.target.value
-  console.log('验证码输入:', value)
   registerForm.value.code = value
   validateCode()
 }

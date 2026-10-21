@@ -243,7 +243,6 @@ function getList() {
   listCategoryFront().then(response => {
     if (response.code === 200) {
       const data = response.data || []
-      console.log('树形接口返回数据:', data)
       // 添加层级信息
       const addLevelInfo = (items, level = 1) => {
         return items.map(item => {

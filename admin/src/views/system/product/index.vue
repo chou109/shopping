@@ -451,7 +451,6 @@ function flattenCategoryTree(treeData, level = 0) {
 async function loadCategoryTree() {
   try {
     const response = await listCategoryFront();
-    console.log('Category tree response:', response);
 
     if (response && response.data) {
       const categories = response.data;
@@ -588,7 +587,6 @@ function getList() {
 
   listProduct(params).then(response => {
     productList.value = response.rows;
-    console.log(productList.value)
     total.value = response.total;
     loading.value = false;
   }).catch(() => {
@@ -635,7 +633,6 @@ function reset() {
 /** 搜索按钮操作 */
 function handleQuery() {
   queryParams.value.pageNum = 1;
-  console.log('Query params:', queryParams.value);
   getList();
 }
 
@@ -769,7 +766,6 @@ async function loadMyShop() {
     const response = await getMyShop();
     if (response.code === 200 && response.data) {
       myShopId.value = response.data.id;
-      console.log('当前用户店铺ID:', myShopId.value);
     }
   } catch (error) {
     console.error('加载店铺信息失败:', error);

@@ -629,7 +629,6 @@ const loadProvinces = async () => {
   try {
     provinces.value = await areaService.getProvinces()
 
-    console.log('省份数据加载完成，总数:', provinces.value.length)
   } catch (error) {
     console.error('加载省份数据失败:', error)
     ElMessage.error('加载省份数据失败')
@@ -648,7 +647,6 @@ const isMunicipality = (provinceCode) => {
 
 // 省份改变时加载城市
 const handleProvinceChange = async (provinceCode) => {
-  console.log('省份改变:', provinceCode);
 
   // 确保 provinceCode 是字符串而不是数组
   if (Array.isArray(provinceCode)) {
@@ -674,7 +672,6 @@ const handleProvinceChange = async (provinceCode) => {
 
   // 如果是直辖市，直接加载区县数据，跳过地级市
   if (isMunicipality(provinceCode)) {
-    console.log('检测到直辖市，直接加载区县数据');
 
     // 直辖市没有地级市，直接设置city为直辖市名称
     addressForm.city = province.name;
@@ -685,7 +682,6 @@ const handleProvinceChange = async (provinceCode) => {
     try {
       // 直辖市的数据通常挂在省级代码下
       areas.value = await areaService.getAreas(provinceCode);
-      console.log('直辖市区县数据加载完成:', areas.value);
     } catch (error) {
       console.error('加载直辖市区县数据失败:', error);
       // 尝试备用方案：使用直辖市的标准区县代码
@@ -698,7 +694,6 @@ const handleProvinceChange = async (provinceCode) => {
     cityLoading.value = true;
     try {
       cities.value = await areaService.getCities(provinceCode);
-      console.log('加载的城市:', cities.value);
     } catch (error) {
       console.error('加载城市失败:', error);
       ElMessage.error('加载城市数据失败');
@@ -710,7 +705,6 @@ const handleProvinceChange = async (provinceCode) => {
 
 // 城市改变时加载区县
 const handleCityChange = async (cityCode) => {
-  console.log('城市改变:', cityCode);
 
   // 确保 cityCode 是字符串而不是数组
   if (Array.isArray(cityCode)) {
@@ -734,7 +728,6 @@ const handleCityChange = async (cityCode) => {
   // 如果是直辖市，已经在上一步处理了区县数据，这里不需要重复加载
   const currentProvinceCode = addressForm.provinceCode;
   if (currentProvinceCode && isMunicipality(currentProvinceCode)) {
-    console.log('直辖市，跳过区县加载');
     return;
   }
 
@@ -742,7 +735,6 @@ const handleCityChange = async (cityCode) => {
   areaLoading.value = true;
   try {
     areas.value = await areaService.getAreas(cityCode);
-    console.log('加载的区域:', areas.value);
   } catch (error) {
     console.error('加载区域失败:', error);
     ElMessage.error('加载区域数据失败');
@@ -807,7 +799,6 @@ const loadMunicipalityAreas = async (provinceCode) => {
 
 // 区县改变时更新数据
 const handleAreaChange = (areaCode) => {
-  console.log('区域改变:', areaCode);
 
   // 确保 areaCode 是字符串而不是数组
   if (Array.isArray(areaCode)) {
@@ -887,8 +878,6 @@ const openEditAddressDialog = async (address) => {
   isEditAddress.value = true
   currentAddressId.value = address.id
 
-  console.log('=== 编辑地址原始数据 ===', address)
-
   // 重置表单（不清空省市区编码，等待数据加载后设置）
   Object.keys(addressForm).forEach(key => {
     if (key === 'addressLabel') {
@@ -912,13 +901,9 @@ const openEditAddressDialog = async (address) => {
   addressForm.addressLabel = address.addressLabel || 1
   addressForm.defaultFlag = address.defaultFlag || 0
 
-  console.log('基本字段设置完成')
-
   // 确保省份数据已加载
   if (provinces.value.length === 0) {
-    console.log('开始加载省份数据...')
     await loadProvinces()
-    console.log('省份数据加载完成:', provinces.value.length)
   }
 
   // 先打开对话框
@@ -926,12 +911,10 @@ const openEditAddressDialog = async (address) => {
 
   // 等待对话框DOM渲染完成
   await nextTick()
-  console.log('对话框渲染完成')
 
   // 加载并设置省市区数据
   await loadEditAddressData(address)
 
-  console.log('=== 编辑地址对话框打开完成 ===')
 }
 
 // 监听省份编码变化，自动加载城市（仅在新增时触发）
@@ -945,8 +928,6 @@ watch(() => addressForm.provinceCode, async (newVal, oldVal) => {
     newVal = newVal[0]
     addressForm.provinceCode = newVal
   }
-
-  console.log('监听到省份编码变化（新增模式）:', newVal)
 
   // 设置省份名称
   const province = provinces.value.find(p => p.code === newVal)
@@ -975,8 +956,6 @@ watch(() => addressForm.cityCode, async (newVal, oldVal) => {
     addressForm.cityCode = newVal
   }
 
-  console.log('监听到城市编码变化（新增模式）:', newVal)
-
   // 设置城市名称
   const city = cities.value.find(c => c.code === newVal)
   if (city && addressForm.city !== city.name) {
@@ -998,8 +977,6 @@ watch(() => addressForm.areaCode, (newVal) => {
     newVal = newVal[0]
     addressForm.areaCode = newVal
   }
-
-  console.log('监听到区域编码变化:', newVal)
 
   // 设置区域名称
   const area = areas.value.find(a => a.code === newVal)
@@ -1128,8 +1105,6 @@ const handleAddressSubmit = async () => {
       const area = areas.value.find(a => a.code === submitData.areaCode)
       if (area) submitData.area = area.name
     }
-
-    console.log('最终提交数据:', submitData)
 
     let response
     if (isEditAddress.value) {

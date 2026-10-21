@@ -352,10 +352,8 @@ const loadOrders = async () => {
   try {
     // 获取所有订单，前端根据 statusDesc 筛选
     const res = await getMyOrders()
-    console.log('订单响应:', res)
     if (res.code === 200) {
       let allOrders = res.rows || []
-      console.log('所有订单:', allOrders.map(o => ({ orderNo: o.orderNo, status: o.status, statusDesc: o.statusDesc })))
 
       // 按创建时间倒序排列
       allOrders = allOrders.sort((a, b) => {
@@ -364,7 +362,6 @@ const loadOrders = async () => {
 
       // 根据当前标签筛选
       const statusCode = STATUS_MAP[activeTab.value]
-      console.log('当前标签:', activeTab.value, '筛选状态码:', statusCode)
       if (statusCode !== null) {
         orderList.value = allOrders.filter(order => order.status === statusCode)
       } else {
@@ -373,7 +370,6 @@ const loadOrders = async () => {
       // Post-process orders to handle Blind Box display
       orderList.value.forEach(order => {
         // 调试：打印订单数据结构
-        console.log('订单数据:', order)
 
         if (order.orderDetails && order.orderDetails.length > 0) {
           let wonName = null
@@ -381,22 +377,18 @@ const loadOrders = async () => {
 
           // 1. 检查订单详情项本身是否有盲盒标识
           const detail = order.orderDetails[0]
-          console.log('订单详情:', detail)
 
           // 检查订单详情是否直接包含盲盒结果信息
           if (detail.isBlindBoxResult) {
-            console.log('订单详情直接包含盲盒结果标识')
             // 如果订单详情本身标记了是盲盒结果，可能需要从其他地方获取真实商品信息
             wonName = detail.actualProductName || detail.wonProductName
             wonImage = detail.actualProductImage || detail.wonProductImage
           }
 
           // 2. 检查订单级别的attributes字段
-          console.log('订单attributes:', order.attributes)
           if (!wonName && order.attributes) {
             try {
               const attrs = typeof order.attributes === 'string' ? JSON.parse(order.attributes) : order.attributes
-              console.log('解析后的attributes:', attrs)
               if (attrs) {
                 wonName = attrs.wonProductName || attrs.wonName || attrs.prizeName || attrs.productName
                 wonImage = attrs.wonProductImage || attrs.wonImage || attrs.prizeImage || attrs.productImage
@@ -407,11 +399,9 @@ const loadOrders = async () => {
           }
 
           // 3. 检查是否有extAttributes或其他可能存储中奖信息的字段
-          console.log('订单extAttributes:', order.extAttributes)
           if (!wonName && order.extAttributes) {
             try {
               const extAttrs = typeof order.extAttributes === 'string' ? JSON.parse(order.extAttributes) : order.extAttributes
-              console.log('解析后的extAttributes:', extAttrs)
               if (extAttrs) {
                 wonName = extAttrs.wonProductName || extAttrs.wonName || extAttrs.prizeName || extAttrs.productName
                 wonImage = extAttrs.wonProductImage || extAttrs.wonImage || extAttrs.prizeImage || extAttrs.productImage
@@ -422,13 +412,11 @@ const loadOrders = async () => {
           }
 
           // 4. 检查remark字段（多种可能的格式）
-          console.log('订单remark:', order.remark)
           if (!wonName && order.remark) {
             // 处理【盲盒中奖】格式
             if (order.remark.includes('【盲盒中奖】')) {
               try {
                 const part1 = order.remark.split('【盲盒中奖】')[1]
-                console.log('解析remark第1部分:', part1)
                 if (part1) {
                   // 尝试多种分隔方式
                   let namePart = part1
@@ -445,7 +433,6 @@ const loadOrders = async () => {
                     namePart = part1.split('原价')[0]
                   }
 
-                  console.log('解析remark名称部分:', namePart)
                   if (namePart && namePart.trim()) {
                     wonName = namePart.trim()
                   }
@@ -476,21 +463,16 @@ const loadOrders = async () => {
 
           // 5. 检查订单是否有盲盒标识，可能需要特殊处理
           if ((order.isBlindBox || detail.isBlindBox) && !wonName) {
-            console.log('订单是盲盒但未找到中奖信息')
             // 可以考虑显示一个特殊的提示，或者保留默认名称
           }
 
-          console.log('最终解析结果 - wonName:', wonName, 'wonImage:', wonImage)
-
           // Apply changes
           if (wonName) {
-            console.log('更新商品名称:', detail.productName, '->', wonName)
             detail.productName = wonName
             // 确保订单详情也标记为盲盒结果
             detail.isBlindBoxResult = true
           }
           if (wonImage) {
-            console.log('更新商品图片:', detail.productMainImage, '->', wonImage)
             detail.productMainImage = wonImage
           }
         }

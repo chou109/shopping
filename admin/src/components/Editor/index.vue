@@ -114,7 +114,6 @@ function init() {
         toolbar.addHandler("image", (value) => {
             if (value) {
                 // upload.value.$children[0].$refs.input.click();
-                console.log(value);
             } else {
                 // quill.format("image", false);
             }

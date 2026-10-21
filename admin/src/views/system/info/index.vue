@@ -359,7 +359,6 @@ const hasShippableOrders = computed(() => {
   return selectedRows.value.some(row => row.status === 20);
 });
 
-
 /** 查询订单列表 */
 function getList() {
   loading.value = true;
@@ -367,18 +366,11 @@ function getList() {
   const params = { ...queryParams.value };
   
   // 调试：查看请求参数
-  console.log('请求参数:', JSON.stringify(params, null, 2));
   
   // ... 处理参数的代码 ...
   
   listInfo(params).then(response => {
     // 调试：查看响应数据
-    console.log('响应数据:', {
-      rows: response.rows?.length || 0,
-      total: response.total,
-      pageNum: params.pageNum,
-      pageSize: params.pageSize
-    });
     
     infoList.value = response.rows;
     total.value = response.total;  // 这里应该是正确的总记录数
@@ -458,7 +450,6 @@ function clearStatusFilter() {
   handleQuery();
 }
 
-
 /** 修改按钮操作 */
 function handleUpdate(row) {
   reset();
@@ -479,7 +470,6 @@ function handleUpdate(row) {
     title.value = "订单详情";
   });
 }
-
 
 /** 删除按钮操作 */
 function handleDelete(row) {

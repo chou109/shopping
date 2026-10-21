@@ -245,7 +245,6 @@ const categoryStats = ref([])
 const orderStatusData = ref([])
 const salesTrendData = ref({ dates: [], amounts: [], orderCounts: [] })
 
-
 // 获取问候语
 const getGreeting = () => {
   const hour = new Date().getHours()
@@ -610,21 +609,6 @@ const handleAction = (type) => {
   }
   if (routes[type]) {
     router.push(routes[type])
-  }
-}
-
-// 处理快捷操作
-const handleQuickAction = (item) => {
-  const actions = {
-    'addProduct': () => router.push('/system/product'),
-    'productList': () => router.push('/system/product'),
-    'orderList': () => router.push('/system/info'),
-    'shopSetting': () => router.push('/system/store'),
-    'userManage': () => router.push('/system/user'),
-    'exportData': () => console.log('导出数据')
-  }
-  if (actions[item.action]) {
-    actions[item.action]()
   }
 }
 

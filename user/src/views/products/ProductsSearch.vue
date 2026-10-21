@@ -293,7 +293,6 @@ const emptyDescription = computed(() => {
 
 // 处理筛选变化
 const handleFilterChange = (filterType) => {
-  console.log('筛选类型改变为:', filterType)
   activeFilter.value = filterType
   currentPage.value = 1
 }
@@ -360,7 +359,6 @@ const loadSearchResults = () => {
     })
       .then((res) => {
         if (requestVersion !== searchRequestVersion) return
-        console.log('分类查询响应:', res)
 
         if (res.code === 200) {
           products.value = (res.data || []).filter(product => !isBlindBoxProduct(product))
@@ -396,8 +394,6 @@ const loadSearchResults = () => {
     ])
       .then(([productRes, shopRes]) => {
         if (requestVersion !== searchRequestVersion) return
-        console.log('商品搜索响应:', productRes)
-        console.log('店铺搜索响应:', shopRes)
 
         // 处理商品搜索结果
         if (productRes.code === 200) {
@@ -443,8 +439,6 @@ const loadSearchResults = () => {
     ])
       .then(([productRes, shopRes]) => {
         if (requestVersion !== searchRequestVersion) return
-        console.log('热门商品响应:', productRes)
-        console.log('热门店铺响应:', shopRes)
 
         if (productRes.code === 200) {
           products.value = (productRes.data || []).filter(product => !isBlindBoxProduct(product))
@@ -512,11 +506,6 @@ onMounted(() => {
   keyword.value = route.query.keyword || ''
   categoryId.value = route.query.categoryId || ''
 
-  console.log('页面加载，参数:', {
-    keyword: keyword.value,
-    categoryId: categoryId.value
-  })
-
   loadSearchResults()
 })
 
@@ -526,8 +515,6 @@ watch(() => route.query, (newQuery) => {
   currentPage.value = 1
   categoryName.value = ''
   activeFilter.value = 'all'
-
-  console.log('路由参数变化:', newQuery)
 
   loadSearchResults()
 })

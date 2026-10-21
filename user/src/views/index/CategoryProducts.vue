@@ -27,7 +27,6 @@ const loadProducts = async () => {
   try {
     name.value=props.categoryName
     const response = await listProductByCategory(props.categoryId)
-    console.log(response)
     
     if (response.code === 200) {
       products.value = response.data || []

@@ -79,12 +79,10 @@ const loadBanners = function () {
 const loadCategories = async function () {
   try {
     const response = await getFrontCategoryTree()
-    console.log('分类数据响应:', response)
 
     if (response.code === 200) {
       // 过滤出顶级分类（parentId=0）作为大类
       const topLevelCategories = response.data || []
-      console.log('顶级分类:', topLevelCategories)
 
       // 只显示前6个大类
       categories.value = topLevelCategories.slice(0, 6)

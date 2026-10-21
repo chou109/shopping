@@ -106,7 +106,6 @@ const zoomImageUrl = ref('')
 // 加载商品数据
 const loadProductData = async () => {
   const productId = route.query.id
-  console.log('加载商品详情，ID:', productId)
 
   if (!productId) {
     ElMessage.error('商品不存在')
@@ -116,11 +115,9 @@ const loadProductData = async () => {
 
   try {
     const response = await getProduct(productId)
-    console.log('商品详情API响应:', response)
 
     if (response.code === 200 && response.data) {
       product.value = response.data
-      console.log('商品数据:', product.value)
       if (getToken()) {
         recordFootprint({ targetType: 1, targetId: route.query.id })
         checkProductFavorite(productId) // 检查是否已收藏
@@ -152,7 +149,6 @@ const loadProductData = async () => {
 const loadShopInfo = async (shopId) => {
   try {
     const response = await getShopInfo(shopId)
-    console.log('店铺信息响应:', response)
 
     if (response.code === 200 && response.data) {
       shopInfo.value = {
@@ -221,7 +217,6 @@ const goToShopPage = () => {
 const contactCustomerService = () => {
   // 获取店铺主人ID作为消息接收者
   const receiverId = shopInfo.value.userId || 0
-  console.log('联系客服 - 店铺主人ID:', receiverId, 'shopInfo:', shopInfo.value)
   router.push({
     path: '/customer-service',
     query: {
@@ -239,7 +234,6 @@ const loadProductComments = async () => {
   commentLoading.value = true
   try {
     const response = await getCommentTree(product.value.id)
-    console.log('评论API响应:', response)
 
     if (response.code === 200) {
       let comments = []
