@@ -137,53 +137,19 @@
       </div>
     </div>
 
-    <!-- 支付弹窗 -->
-    <el-dialog v-model="payDialogVisible" title="订单支付" width="400px">
-      <div class="pay-dialog-content">
-        <p>订单金额：<strong>¥{{ formatPrice(currentOrder?.payment) }}</strong></p>
-        <p>支付方式：余额支付</p>
-      </div>
-      <template #footer>
-        <el-button @click="payDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="paying" @click="confirmPay">确认支付</el-button>
-      </template>
-    </el-dialog>
-
-    <!-- 取消订单弹窗 -->
-    <el-dialog v-model="cancelDialogVisible" title="取消订单" width="400px">
-      <el-form>
-        <el-form-item label="取消原因">
-          <el-input v-model="cancelReason" type="textarea" :rows="3" placeholder="请输入取消原因" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="cancelDialogVisible = false">返回</el-button>
-        <el-button type="danger" :loading="cancelling" @click="confirmCancel">确认取消</el-button>
-      </template>
-    </el-dialog>
-
+    <OrderLifecycleDialogs
+      v-model:pay-visible="payDialogVisible"
+      v-model:cancel-visible="cancelDialogVisible"
+      v-model:logistics-visible="logisticsDialogVisible"
+      v-model:cancel-reason="cancelReason"
+      :order="currentOrder"
+      :logistics-order="logisticsOrder"
+      :paying="paying"
+      :cancelling="cancelling"
+      @confirm-pay="confirmPay"
+      @confirm-cancel="confirmCancel"
+    />
     <OrderRefundDialog v-model="refundDialogVisible" :order="currentOrder" :loading="refunding" @submit="submitRefund" />
-
-    <!-- 物流信息弹窗：当前服务仅保存发货时间，未接入承运商轨迹 -->
-    <el-dialog v-model="logisticsDialogVisible" title="物流信息" width="480px">
-      <el-descriptions v-if="logisticsOrder" :column="1" border>
-        <el-descriptions-item label="订单编号">{{ logisticsOrder.orderNo }}</el-descriptions-item>
-        <el-descriptions-item label="订单状态">{{ logisticsOrder.statusDesc }}</el-descriptions-item>
-        <el-descriptions-item label="发货时间">
-          {{ logisticsOrder.shipTime ? formatTime(logisticsOrder.shipTime) : '暂无发货记录' }}
-        </el-descriptions-item>
-      </el-descriptions>
-      <el-alert
-        title="暂无物流轨迹信息，商家尚未录入承运商和运单号。"
-        type="info"
-        :closable="false"
-        show-icon
-        style="margin-top: 16px"
-      />
-      <template #footer>
-        <el-button @click="logisticsDialogVisible = false">关闭</el-button>
-      </template>
-    </el-dialog>
 
     <OrderDetailDialog v-model="detailDialogVisible" :order="detailOrder" />
 
@@ -198,6 +164,7 @@ import OrderRefundDialog from '@/components/OrderRefundDialog.vue'
 import OrderReviewDialog from '@/components/OrderReviewDialog.vue'
 import OrderActions from '@/components/OrderActions.vue'
 import OrderDetailDialog from '@/components/OrderDetailDialog.vue'
+import OrderLifecycleDialogs from '@/components/OrderLifecycleDialogs.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Location } from '@element-plus/icons-vue'
 import { getMyOrders, payOrder, cancelOrder, confirmReceipt, delInfo, applyRefund } from '@/api/system/orderInfo'
@@ -800,22 +767,6 @@ onMounted(() => {
   background: transparent;
   padding: 16px;
   border-radius: 8px;
-}
-
-.pay-dialog-content {
-  text-align: center;
-  padding: 20px 0;
-}
-
-.pay-dialog-content p {
-  margin: 10px 0;
-  font-size: 14px;
-  color: #666;
-}
-
-.pay-dialog-content strong {
-  color: #ff5000;
-  font-size: 24px;
 }
 
 </style>
