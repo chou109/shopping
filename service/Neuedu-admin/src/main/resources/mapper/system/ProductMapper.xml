@@ -23,6 +23,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="stock"    column="stock"    />
         <result property="hotFlag"    column="hot_flag"    />
         <result property="shopId"    column="shop_id"    />
+        <result property="isBlindBox" column="is_blind_box" />
         <!-- 关联分类信息 -->
         <association property="category" javaType="Category">
             <id property="id" column="category_id" />
@@ -62,6 +63,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         p.stock,
         p.hot_flag,
         p.shop_id,
+        p.is_blind_box,
         <!-- 分类信息 -->
         c.name as c_name,
         c.status as c_status,
@@ -92,6 +94,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="price != null "> and p.price = #{price}</if>
         <if test="stock != null "> and p.stock = #{stock}</if>
         <if test="shopId != null "> and p.shop_id = #{shopId}</if>
+        <if test="isBlindBox != null"> and p.is_blind_box = #{isBlindBox}</if>
         <!-- 价格范围查询 -->
         <if test="minPrice != null"> and p.price >= #{minPrice}</if>
         <if test="maxPrice != null"> and p.price &lt;= #{maxPrice}</if>
@@ -174,6 +177,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="stock != null">stock,</if>
             <if test="hotFlag != null">hot_flag,</if>
             <if test="shopId != null">shop_id,</if>
+            <if test="isBlindBox != null">is_blind_box,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="createTime != null">#{createTime},</if>
@@ -193,6 +197,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="stock != null">#{stock},</if>
             <if test="hotFlag != null">#{hotFlag},</if>
             <if test="shopId != null">#{shopId},</if>
+            <if test="isBlindBox != null">#{isBlindBox},</if>
          </trim>
     </insert>
 
@@ -216,6 +221,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="stock != null">stock = #{stock},</if>
             <if test="hotFlag != null">hot_flag = #{hotFlag},</if>
             <if test="shopId != null">shop_id = #{shopId},</if>
+            <if test="isBlindBox != null">is_blind_box = #{isBlindBox},</if>
         </trim>
         where product.id = #{id}
     </update>

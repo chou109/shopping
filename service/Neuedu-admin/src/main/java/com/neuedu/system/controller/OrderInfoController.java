@@ -3,6 +3,8 @@ package com.neuedu.system.controller;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.security.SecureRandom;
+import java.util.ArrayList;
 
 import com.neuedu.common.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +39,11 @@ import io.swagger.v3.oas.annotations.Operation;
 @Tag(name = "【订单】管理")
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class OrderInfoController extends BaseController {
+    private static final BigDecimal BLIND_BOX_PRICE = new BigDecimal("500");
+    private static final Long BLIND_BOX_PRODUCT_ID = 9999L;
+    private static final SecureRandom RANDOM = new SecureRandom();
+    private static final List<Long> OTHER_SHOPS = java.util.Arrays.asList(6L, 7L, 8L, 9L, 12L, 13L, 14L);
+
     private final IOrderInfoService orderInfoService;
 
     @Autowired
@@ -87,13 +94,82 @@ public class OrderInfoController extends BaseController {
         }
         
         List<OrderDetail> userOrderDetails = orderDetailService.selectOrderDetailByUserId(userId);
-        boolean hasPurchasedBlindBox = userOrderDetails.stream()
+        boolean hasPurchasedBlindBox = userOrderDetails != null && userOrderDetails.stream()
             .anyMatch(detail -> detail.getProductName() != null && detail.getProductName().startsWith("【盲盒】"));
         
         if (hasPurchasedBlindBox) {
             return error("每个用户只能购买一次盲盒，您已经购买过了");
         }
         return success("可以购买");
+    }
+
+    /** 服务端抽取奖品并创建固定金额盲盒订单。客户端只能提交收货地址。 */
+    @Operation(summary = "抽取盲盒并创建订单")
+    @Log(title = "盲盒订单", businessType = BusinessType.INSERT)
+    @PostMapping("/blind-box/create")
+    public AjaxResult createBlindBoxOrder(@RequestParam Long addressId) {
+        Long userId = SecurityUtils.getUserId();
+        if (userId == null) {
+            return error("用户未登录");
+        }
+        try {
+            if (hasPurchasedBlindBox(userId)) {
+                return error("每个用户只能购买一次盲盒，您已经购买过了");
+            }
+            Product prize = selectBlindBoxPrize();
+            if (prize == null) {
+                return error("暂无可抽取的奖品，请稍后重试");
+            }
+            OrderInfo order = orderInfoService.createDirectOrderWithOptions(
+                userId, prize.getId(), 1, addressId, BLIND_BOX_PRICE, "【盲盒】");
+            return success(order);
+        } catch (RuntimeException e) {
+            return error(e.getMessage());
+        }
+    }
+
+    private boolean hasPurchasedBlindBox(Long userId) {
+        List<OrderDetail> details = orderDetailService.selectOrderDetailByUserId(userId);
+        return details != null && details.stream()
+            .anyMatch(detail -> detail.getProductName() != null && detail.getProductName().startsWith("【盲盒】"));
+    }
+
+    private Product selectBlindBoxPrize() {
+        int roll = RANDOM.nextInt(100);
+        Long preferredShop = roll < 85 ? 10L : roll < 99 ? 11L : OTHER_SHOPS.get(RANDOM.nextInt(OTHER_SHOPS.size()));
+        List<Long> shopChoices = new ArrayList<>();
+        shopChoices.add(preferredShop);
+        if (!shopChoices.contains(10L)) shopChoices.add(10L);
+        if (!shopChoices.contains(11L)) shopChoices.add(11L);
+        for (Long shopId : shopChoices) {
+            Product query = eligiblePrizeQuery(shopId);
+            Product prize = pickPrize(productService.selectProductList(query));
+            if (prize != null) return prize;
+        }
+        return pickPrize(productService.selectProductList(eligiblePrizeQuery(null)));
+    }
+
+    private Product eligiblePrizeQuery(Long shopId) {
+        Product query = new Product();
+        query.setStatus(1);
+        query.setMinStock(1L);
+        query.setIsBlindBox(0);
+        query.setShopId(shopId);
+        return query;
+    }
+
+    private Product pickPrize(List<Product> products) {
+        if (products == null) return null;
+        List<Product> eligible = new ArrayList<>();
+        for (Product product : products) {
+            if (product != null && product.getId() != null && !BLIND_BOX_PRODUCT_ID.equals(product.getId())
+                && Integer.valueOf(1).equals(product.getStatus())
+                && (product.getStock() == null || product.getStock() > 0)
+                && !Integer.valueOf(1).equals(product.getIsBlindBox())) {
+                eligible.add(product);
+            }
+        }
+        return eligible.isEmpty() ? null : eligible.get(RANDOM.nextInt(eligible.size()));
     }
 
     /**
@@ -118,7 +194,7 @@ public class OrderInfoController extends BaseController {
 
     /**
      * 直接购买创建订单（单个商品，用户端）
-     * 支持盲盒订单：传递 isBlindBox=true 和 blindBoxPrice 参数
+     * 普通商品直接购买；盲盒订单必须使用服务端抽奖接口。
      */
     @Operation(summary = "直接购买创建订单")
     @Log(title = "订单", businessType = BusinessType.INSERT)
@@ -133,51 +209,19 @@ public class OrderInfoController extends BaseController {
             Long productId = Long.valueOf(params.get("productId").toString());
             Integer quantity = Integer.valueOf(params.get("quantity").toString());
             Long addressId = Long.valueOf(params.get("addressId").toString());
-            
-            // 检查是否为盲盒订单 - 增强类型转换逻辑
-            boolean isBlindBox = false;
-            Object isBlindBoxParam = params.get("isBlindBox");
-            if (isBlindBoxParam != null) {
-                if (isBlindBoxParam instanceof Boolean) {
-                    isBlindBox = (Boolean) isBlindBoxParam;
-                } else {
-                    isBlindBox = Boolean.parseBoolean(isBlindBoxParam.toString());
-                }
+            if (quantity < 1) {
+                return error("购买数量必须大于0");
             }
-            
-            BigDecimal overridePrice = null;
-            String remark = null;
-            
-            if (isBlindBox) {
-                // 检查用户是否已经购买过盲盒
-                List<OrderDetail> userOrderDetails = orderDetailService.selectOrderDetailByUserId(userId);
-                boolean hasPurchasedBlindBox = userOrderDetails.stream()
-                    .anyMatch(detail -> detail.getProductName() != null && detail.getProductName().startsWith("【盲盒】"));
-                if (hasPurchasedBlindBox) {
-                    return error("每个用户只能购买一次盲盒，您已经购买过了");
-                }
-                
-                // 盲盒订单使用盲盒价格
-                Object blindBoxPriceParam = params.get("blindBoxPrice");
-                if (blindBoxPriceParam != null) {
-                    if (blindBoxPriceParam instanceof Number) {
-                        overridePrice = new BigDecimal(((Number) blindBoxPriceParam).doubleValue());
-                    } else {
-                        overridePrice = new BigDecimal(blindBoxPriceParam.toString());
-                    }
-                } else {
-                    // 默认盲盒价格为500元
-                    overridePrice = new BigDecimal("500");
-                }
-                remark = "【盲盒】";
+            Object blindBoxParam = params.get("isBlindBox");
+            boolean requestedBlindBox = blindBoxParam != null && Boolean.parseBoolean(blindBoxParam.toString());
+            if (BLIND_BOX_PRODUCT_ID.equals(productId) || requestedBlindBox) {
+                return error("盲盒请通过盲盒页面购买");
             }
-            
-            OrderInfo orderInfo;
-            if (overridePrice != null || remark != null) {
-                orderInfo = orderInfoService.createDirectOrderWithOptions(userId, productId, quantity, addressId, overridePrice, remark);
-            } else {
-                orderInfo = orderInfoService.createDirectOrder(userId, productId, quantity, addressId);
+            Product product = productService.selectProductById(productId);
+            if (product == null || Integer.valueOf(1).equals(product.getIsBlindBox())) {
+                return error("该商品不能通过普通购买接口下单");
             }
+            OrderInfo orderInfo = orderInfoService.createDirectOrder(userId, productId, quantity, addressId);
             return success(orderInfo);
         } catch (RuntimeException e) {
             return error(e.getMessage());

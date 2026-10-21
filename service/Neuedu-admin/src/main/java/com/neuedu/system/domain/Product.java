@@ -131,6 +131,7 @@ public class Product extends BaseEntity
     /** 是否为盲盒商品 */
     @Schema(title = "是否为盲盒商品")
     @Excel(name = "是否为盲盒商品")
+    @TableField("is_blind_box")
     private Integer isBlindBox;
 
     // ============ 查询参数字段（非数据库字段） ============

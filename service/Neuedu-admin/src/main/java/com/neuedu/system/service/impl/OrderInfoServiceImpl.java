@@ -174,6 +174,9 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
             if (product == null) {
                 throw new RuntimeException("商品不存在: " + cartItem.getProductName());
             }
+            if (Integer.valueOf(1).equals(product.getIsBlindBox()) || Long.valueOf(9999L).equals(product.getId())) {
+                throw new RuntimeException("盲盒商品请通过盲盒页面购买");
+            }
             if (product.getStatus() != 1) {
                 throw new RuntimeException("商品已下架: " + cartItem.getProductName());
             }
@@ -310,6 +313,9 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
         Product product = productService.selectProductById(productId);
         if (product == null) {
             throw new RuntimeException("商品不存在");
+        }
+        if (Integer.valueOf(1).equals(product.getIsBlindBox()) || Long.valueOf(9999L).equals(product.getId())) {
+            throw new RuntimeException("盲盒商品请通过盲盒页面购买");
         }
         if (product.getStatus() != 1) {
             throw new RuntimeException("商品已下架");
@@ -529,6 +535,9 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
     @Transactional(rollbackFor = Exception.class)
     public int payOrder(String orderNo, Integer paymentType)
     {
+        if (!OrderStatusConstants.PAYMENT_BALANCE.equals(paymentType)) {
+            throw new RuntimeException("该支付方式尚未接入，请使用余额支付");
+        }
         OrderInfo orderInfo = orderInfoMapper.selectOrderInfoByOrderNo(orderNo);
         if (orderInfo == null) {
             throw new RuntimeException("订单不存在");
