@@ -1,6 +1,8 @@
 <template>
-  <div class="user-info-head" @click="editCropper()">
-    <img :src="options.img" title="点击上传头像" class="img-circle img-lg" />
+  <div class="user-info-head">
+    <button type="button" class="avatar-edit-button" aria-label="修改头像" @click="editCropper()">
+      <img :src="options.img" alt="当前头像" title="点击上传头像" class="img-circle img-lg" />
+    </button>
     <el-dialog :title="title" v-model="open" width="800px" append-to-body @opened="modalOpened" @close="closeDialog">
       <el-row>
         <el-col :xs="24" :md="12" :style="{ height: '350px' }">
@@ -151,6 +153,20 @@ function closeDialog() {
   height: 120px;
 }
 
+.avatar-edit-button {
+  display: block;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+
+.avatar-edit-button:focus-visible {
+  outline: 3px solid var(--el-color-primary);
+  outline-offset: 3px;
+}
+
 .user-info-head:hover:after {
   content: "+";
   position: absolute;
@@ -160,6 +176,7 @@ function closeDialog() {
   bottom: 0;
   color: #eee;
   background: rgba(0, 0, 0, 0.5);
+  pointer-events: none;
   font-size: 24px;
   font-style: normal;
   -webkit-font-smoothing: antialiased;

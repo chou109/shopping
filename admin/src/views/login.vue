@@ -19,7 +19,9 @@
           <template #prefix><svg-icon icon-class="validCode" class="el-input__icon input-icon" /></template>
         </el-input>
         <div class="login-code">
-          <img :src="codeUrl" @click="getCode" class="login-code-img" />
+          <button type="button" class="captcha-refresh" aria-label="刷新验证码" @click="getCode">
+            <img :src="codeUrl" alt="验证码，点击刷新" class="login-code-img" />
+          </button>
         </div>
       </el-form-item>
       <el-checkbox v-model="loginForm.rememberMe" style="margin:0px 0px 25px 0px;">记住密码</el-checkbox>
@@ -196,5 +198,17 @@ getCookie();
 .login-code-img {
   height: 40px;
   padding-left: 12px;
+}
+
+.captcha-refresh {
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.captcha-refresh:focus-visible {
+  outline: 2px solid #409EFF;
+  outline-offset: 3px;
 }
 </style>
