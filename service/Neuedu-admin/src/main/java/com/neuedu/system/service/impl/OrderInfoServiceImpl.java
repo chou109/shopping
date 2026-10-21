@@ -837,9 +837,9 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
             throw new RuntimeException("订单不存在");
         }
 
-        // 验证订单状态（只有待发货的订单可以申请退款）
+        // 当前实现仅支持取消待发货订单并全额退回余额。
         if (!OrderStatusConstants.WAIT_SHIP.equals(orderInfo.getStatus())) {
-            throw new RuntimeException("仅待发货订单可申请退款");
+            throw new RuntimeException("仅待发货订单可取消并退款");
         }
 
         // 获取订单明细
@@ -848,25 +848,31 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
             throw new RuntimeException("订单没有明细");
         }
 
-        // 更新订单状态为已取消
-        orderInfo.setStatus(OrderStatusConstants.CANCELLED);
-        orderInfo.setStatusDesc(OrderStatusConstants.getOrderStatusDesc(OrderStatusConstants.CANCELLED));
-        orderInfo.setCancelReason(reason);
-        orderInfo.setUpdateTime(DateUtils.getNowDate());
-        int result = orderInfoMapper.updateOrderInfo(orderInfo);
+        boolean blindBoxOrder = Boolean.TRUE.equals(orderInfo.getIsBlindBox()) || details.stream().anyMatch(detail ->
+            Long.valueOf(9999L).equals(detail.getProductId())
+                || (detail.getProductName() != null && detail.getProductName().startsWith("【盲盒")));
+        if (blindBoxOrder) {
+            throw new RuntimeException("盲盒订单不支持退款");
+        }
 
-        if (result > 0) {
-            // 返还用户余额（使用 sys_user 表）
-            sysUserService.updateUserBalance(orderInfo.getUserId(), orderInfo.getPayment());
+        // 使用条件更新实现幂等保护，重复或并发请求不能重复退余额。
+        int result = orderInfoMapper.cancelOrderForRefund(
+            orderNo,
+            reason,
+            OrderStatusConstants.WAIT_SHIP,
+            OrderStatusConstants.CANCELLED,
+            OrderStatusConstants.getOrderStatusDesc(OrderStatusConstants.CANCELLED));
 
-            // 恢复商品库存
-            for (OrderDetail detail : details) {
-                // 确保使用正数增加库存
-                productService.updateProductStock(detail.getProductId(), Long.valueOf(Math.abs(detail.getQuantity())));
-            }
+        if (result == 0) {
+            throw new RuntimeException("订单状态已变化，请刷新后重试");
+        }
 
-            // 记录退款日志
-            // 这里可以根据需要记录退款记录到数据库
+        // 返还用户余额（使用 sys_user 表）
+        sysUserService.updateUserBalance(orderInfo.getUserId(), orderInfo.getPayment());
+
+        // 恢复商品库存
+        for (OrderDetail detail : details) {
+            productService.updateProductStock(detail.getProductId(), Long.valueOf(Math.abs(detail.getQuantity())));
         }
 
         return result;

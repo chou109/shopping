@@ -130,6 +130,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where oi.order_no = #{orderNo} and oi.delete_flag = 0
     </select>
 
+    <!-- 原子完成退款取消，只有一个并发请求能从待发货变为已取消 -->
+    <update id="cancelOrderForRefund">
+        update order_info
+        set status = #{cancelledStatus},
+            status_desc = #{statusDesc},
+            cancel_reason = #{reason},
+            update_time = now()
+        where order_no = #{orderNo}
+          and status = #{expectedStatus}
+          and delete_flag = 0
+    </update>
+
     <!-- 查询用户订单列表 -->
     <select id="selectOrderListByUserId" resultMap="OrderInfoResult">
         <include refid="selectOrderInfoVo"/>

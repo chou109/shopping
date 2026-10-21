@@ -113,23 +113,21 @@
                   <el-button type="danger" size="small" @click="handleDeleteOrder(order)">删除订单</el-button>
                 </template>
 
-                <!-- 20：待发货 → 退款（盲盒订单禁止退款） -->
+                <!-- 当前服务仅支持待发货订单取消并退回余额 -->
                 <template v-else-if="order.status === 20">
                   <span v-if="order.isBlindBox || hasBlindBoxResult(order)" class="no-refund-tip">盲盒订单不支持退款</span>
-                  <el-button v-else type="warning" size="small" @click="handleRefund(order)">申请退款</el-button>
+                  <el-button v-else type="warning" size="small" @click="handleRefund(order)">取消并退款</el-button>
                 </template>
 
-                <!-- 30：待收货 → 收货/退款 -->
+                <!-- 30：待收货 → 收货/物流 -->
                 <template v-else-if="order.status === 30">
                   <el-button type="primary" size="small" @click="handleConfirmReceipt(order)">确认收货</el-button>
                   <el-button size="small" @click="viewLogistics(order)">查看物流</el-button>
-                  <el-button v-if="!order.isBlindBox && !hasBlindBoxResult(order)" type="warning" size="small" @click="handleRefund(order)">申请退款</el-button>
                 </template>
 
-                <!-- 40：待评价 → 评价/退款 -->
+                <!-- 40：待评价 → 评价 -->
                 <template v-else-if="order.status === 40">
                   <el-button type="primary" size="small" @click="handleReview(order)">去评价</el-button>
-                  <el-button v-if="!order.isBlindBox && !hasBlindBoxResult(order)" type="warning" size="small" @click="handleRefund(order)">申请退款</el-button>
                 </template>
 
                 <!-- 50：交易完成 → 详情/删除 -->
@@ -186,8 +184,9 @@
       </template>
     </el-dialog>
 
-    <!-- 申请退款弹窗 -->
-    <el-dialog v-model="refundDialogVisible" title="申请退款" width="600px">
+    <!-- 当前退款接口会立即取消待发货订单并将全额退回余额 -->
+    <el-dialog v-model="refundDialogVisible" title="取消订单并退款" width="600px">
+      <el-alert title="仅待发货订单可操作；确认后订单会立即取消，款项全额退回账户余额。" type="warning" :closable="false" show-icon />
       <el-form ref="refundFormRef" :model="refundForm" :rules="refundRules" label-width="100px">
         <!-- 商品信息 -->
         <el-form-item label="商品信息">
@@ -227,20 +226,10 @@
         <el-form-item label="退款金额">
           <div class="refund-amount">¥{{ formatPrice(currentOrder?.payment) }}</div>
         </el-form-item>
-
-        <!-- 申请说明 -->
-        <el-form-item label="申请说明">
-          <el-input v-model="refundForm.description" type="textarea" :rows="3" placeholder="请输入申请说明（可选）" />
-        </el-form-item>
-
-        <!-- 联系电话 -->
-        <el-form-item label="联系电话" prop="contactPhone">
-          <el-input v-model="refundForm.contactPhone" placeholder="请输入联系电话" />
-        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="refundDialogVisible = false">取消</el-button>
-        <el-button type="danger" :loading="refunding" @click="submitRefund">提交申请</el-button>
+        <el-button type="danger" :loading="refunding" @click="submitRefund">确认取消并退款</el-button>
       </template>
     </el-dialog>
 
@@ -435,18 +424,12 @@ const cancelling = ref(false)
 const refundDialogVisible = ref(false)
 const refundFormRef = ref()
 const refundForm = ref({
-  reason: '',
-  description: '',
-  contactPhone: ''
+  reason: ''
 })
 const refundRules = ref({
   reason: [
     { required: true, message: '请选择申请原因', trigger: 'change' }
   ],
-  contactPhone: [
-    { required: true, message: '请输入联系电话', trigger: 'blur' },
-    { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' }
-  ]
 })
 const refunding = ref(false)
 
@@ -858,6 +841,10 @@ const handleConfirmReceipt = async (order) => {
 
 // 申请退款
 const handleRefund = (order) => {
+  if (order.status !== 20) {
+    ElMessage.warning('仅待发货订单可取消并退款')
+    return
+  }
   // 盲盒商品禁止退款
   if (isBlindBoxOrder(order) || order.isBlindBox || hasBlindBoxResult(order)) {
     ElMessage.warning('盲盒订单不支持退款')
@@ -866,9 +853,7 @@ const handleRefund = (order) => {
   currentOrder.value = order
   // 初始化退款表单
   refundForm.value = {
-    reason: '',
-    description: '',
-    contactPhone: order.receivePhone || ''
+    reason: ''
   }
   refundDialogVisible.value = true
 }
@@ -886,23 +871,21 @@ const submitRefund = async () => {
     try {
       const refundData = {
         orderNo: currentOrder.value.orderNo,
-        reason: refundForm.value.reason,
-        description: refundForm.value.description,
-        contactPhone: refundForm.value.contactPhone
+        reason: refundForm.value.reason
       }
 
       // 调用退款API
       const res = await applyRefund(refundData)
       if (res.code === 200) {
-        ElMessage.success('退款申请提交成功')
+        ElMessage.success('订单已取消，款项已退回账户余额')
         refundDialogVisible.value = false
         loadOrders()
         loadOrderCounts()
       } else {
-        ElMessage.error(res.msg || '退款申请提交失败')
+        ElMessage.error(res.msg || '取消退款失败')
       }
     } catch (e) {
-      ElMessage.error('退款申请提交失败：' + (e.message || '未知错误'))
+      ElMessage.error('取消退款失败：' + (e.message || '未知错误'))
     } finally {
       refunding.value = false
     }

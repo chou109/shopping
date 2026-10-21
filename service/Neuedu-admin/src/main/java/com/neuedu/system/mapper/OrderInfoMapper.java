@@ -95,6 +95,15 @@ public interface OrderInfoMapper extends BaseMapper<OrderInfo>
     public int updateOrderStatus(@Param("orderNo") String orderNo, @Param("status") Integer status, @Param("statusDesc") String statusDesc);
 
     /**
+     * 仅在订单仍处于待发货时原子取消，防止并发退款重复入账
+     */
+    public int cancelOrderForRefund(@Param("orderNo") String orderNo,
+                                    @Param("reason") String reason,
+                                    @Param("expectedStatus") Integer expectedStatus,
+                                    @Param("cancelledStatus") Integer cancelledStatus,
+                                    @Param("statusDesc") String statusDesc);
+
+    /**
      * 取消订单
      *
      * @param orderNo 订单编号
