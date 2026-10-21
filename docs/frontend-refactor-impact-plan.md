@@ -194,6 +194,7 @@
 - 注册页透明背景图原先以 1.15 MiB PNG 加入页面资源；已生成并使用保留透明通道的高质量 WebP，production build 中该图从约 1,177 KiB 降至约 511 KiB（减少约 57%），保留原始 PNG 文件。用户端 8 项测试和 production build 通过，开发路由 `/register` 返回 200；仍可继续评估盲盒详情等其他大图，但用户上传商品图片不做破坏性重编码。
 - 盲盒详情中的一张透明商品图原为约 1 MiB PNG；改用高质量 WebP 后 production build 资源约 172 KiB（减少约 83%），保留原图。用户端 8 项测试和 production build 通过；其他盲盒图较小，暂不为很小收益增加重复资产。
 - 两端各有一个未被任何模块导入的 `html2Text` 工具，会将输入内容写入 DOM `innerHTML`；全仓引用核查确认无调用方后已删除，避免留下潜在不安全的 HTML 解析入口。用户端 8 项测试及用户端、管理端 production build 均通过。
+- 管理端登录和注册页共用的背景图从 521 KiB JPG 转为高质量 WebP 后为约 98 KiB（减少约 81%），保留原始 JPG；两页 CSS 均已切换，管理端 production build 通过。
 
 ### 仍需处理与建议
 
