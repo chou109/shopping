@@ -309,6 +309,12 @@ import { getMyOrders, payOrder, cancelOrder, confirmReceipt, delInfo, applyRefun
 import { submitReview, completeOrder } from '@/api/comment'
 import { getProductImageUrl, handleImageError } from '@/utils/image'
 import { isBlindBoxOrder } from '@/utils/order.mjs'
+import {
+  formatOrderPrice as formatPrice,
+  formatOrderTime as formatTime,
+  getOrderStatusClass as getStatusClass,
+  getOrderTotalQuantity as getTotalQuantity
+} from '@/utils/orderDisplay.mjs'
 
 const router = useRouter()
 
@@ -426,41 +432,6 @@ const handleSizeChange = (val) => {
 const handleCurrentChange = (val) => {
   pageNum.value = val
   loadOrders()
-}
-
-// 格式化价格
-const formatPrice = (price) => {
-  if (!price) return '0.00'
-  return parseFloat(price).toFixed(2)
-}
-
-// 格式化时间
-const formatTime = (time) => {
-  if (!time) return ''
-  try {
-    return new Date(time).toLocaleString('zh-CN')
-  } catch (e) {
-    return time
-  }
-}
-
-// 获取状态样式类
-const getStatusClass = (status) => {
-  const classMap = {
-    10: 'status-wait-pay',
-    20: 'status-wait-ship',
-    30: 'status-wait-receive',
-    40: 'status-wait-review',
-    50: 'status-completed',
-    60: 'status-cancelled'
-  }
-  return classMap[status] || ''
-}
-
-// 获取订单总商品数量
-const getTotalQuantity = (order) => {
-  if (!order.orderDetails) return 0
-  return order.orderDetails.reduce((sum, item) => sum + (item.quantity || 0), 0)
 }
 
 // 去购物
