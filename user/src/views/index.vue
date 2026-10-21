@@ -112,6 +112,9 @@
         <IndexBanner />
       </div>
 
+      <!-- 首页精选商品区 -->
+      <FeaturedProducts />
+
       <!-- 商品懒加载列表区域 -->
       <div class="lazy-products-section">
         <LazyProductList ref="lazyProductListRef" />
@@ -189,6 +192,7 @@ import {
   SwitchButton
 } from '@element-plus/icons-vue'
 import IndexBanner from '@/views/index/indexBanner.vue'
+import FeaturedProducts from '@/views/index/FeaturedProducts.vue'
 import LazyProductList from '@/views/index/LazyProductList.vue'
 import FixedSidebar from '@/views/index/FixedSidebar.vue'
 
