@@ -39,7 +39,7 @@
             <div class="balance-section">
               <div class="balance-label">账户余额</div>
               <div class="balance-amount">¥{{ formatPrice(userInfo.balance || 0) }}</div>
-              <el-button type="danger" round size="small" @click="handleRecharge" class="recharge-btn">
+              <el-button type="danger" round size="small" disabled class="recharge-btn">
                 充值暂未开通
               </el-button>
             </div>
@@ -549,8 +549,6 @@ const handlePasswordSubmit = async () => {
     passwordLoading.value = false
   }
 }
-
-const handleRecharge = () => ElMessage.info('充值功能暂未开通')
 
 const openAvatarDialog = () => {
   avatarPreviewUrl.value = ''
