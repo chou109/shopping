@@ -228,6 +228,12 @@ const goToProduct = (id) => {
 
 // 关注店铺
 const followShop = async () => {
+  if (!getToken()) {
+    ElMessage.warning('请先登录后再关注店铺')
+    router.push({ path: '/login', query: { redirect: route.fullPath } })
+    return
+  }
+
   const shopId = route.query.id
   if (!shopId) return
   try {
