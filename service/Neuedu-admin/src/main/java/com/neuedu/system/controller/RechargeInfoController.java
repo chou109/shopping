@@ -1,6 +1,9 @@
 package com.neuedu.system.controller;
 
 import java.util.List;
+import java.time.DateTimeException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import lombok.RequiredArgsConstructor;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -220,8 +223,21 @@ public class RechargeInfoController extends BaseController
             @RequestParam(required = false) String beginDate,
             @RequestParam(required = false) String endDate)
     {
-        // 这里可以调用统计服务，统计充值金额、成功数、失败数等
-        // 由于篇幅限制，这里只返回简单示例
-        return success("统计功能待实现，请根据实际需求开发");
+        try {
+            LocalDate start = beginDate == null || beginDate.trim().isEmpty() ? null : parseDate(beginDate);
+            LocalDate end = endDate == null || endDate.trim().isEmpty() ? null : parseDate(endDate);
+            if (start != null && end != null && start.isAfter(end)) {
+                return AjaxResult.error(400, "开始日期不能晚于结束日期");
+            }
+            return success(rechargeInfoService.selectRechargeStatistics(
+                    start == null ? null : start.format(DateTimeFormatter.ISO_LOCAL_DATE),
+                    end == null ? null : end.format(DateTimeFormatter.ISO_LOCAL_DATE)));
+        } catch (DateTimeException exception) {
+            return AjaxResult.error(400, "日期格式必须为 yyyy-MM-dd");
+        }
+    }
+
+    private LocalDate parseDate(String value) {
+        return LocalDate.parse(value, DateTimeFormatter.ISO_LOCAL_DATE);
     }
 }

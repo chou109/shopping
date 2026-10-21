@@ -2,6 +2,7 @@ package com.neuedu.system.mapper;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import com.neuedu.system.domain.RechargeInfo;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
@@ -63,6 +64,9 @@ public interface RechargeInfoMapper extends BaseMapper<RechargeInfo>
      * @return 总金额
      */
     public BigDecimal selectTotalRechargeByUserId(Long userId);
+
+    Map<String, Object> selectRechargeStatistics(@Param("beginDate") String beginDate,
+            @Param("endDate") String endDate);
 
 
 

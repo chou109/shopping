@@ -2,6 +2,7 @@ package com.neuedu.system.service;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import com.neuedu.system.domain.RechargeInfo;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -60,6 +61,9 @@ public interface IRechargeInfoService extends IService<RechargeInfo>
      * @return 总金额
      */
     public BigDecimal selectTotalRechargeByUserId(Long userId);
+
+    /** 按充值记录创建日期统计充值状态和金额 */
+    Map<String, Object> selectRechargeStatistics(String beginDate, String endDate);
 
     /**
      * 处理支付成功回调

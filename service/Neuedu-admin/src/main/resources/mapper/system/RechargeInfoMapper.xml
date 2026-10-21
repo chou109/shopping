@@ -113,6 +113,27 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where user_id = #{userId} and status = 2
     </select>
 
+    <select id="selectRechargeStatistics" resultType="map">
+        select
+            count(*) as recordCount,
+            coalesce(sum(case when status = 1 then 1 else 0 end), 0) as pendingCount,
+            coalesce(sum(case when status = 2 then 1 else 0 end), 0) as successCount,
+            coalesce(sum(case when status = 3 then 1 else 0 end), 0) as failedCount,
+            coalesce(sum(case when status = 4 then 1 else 0 end), 0) as refundedCount,
+            coalesce(sum(case when status = 2 then balance else 0 end), 0) as successAmount,
+            coalesce(sum(case when status = 4 then balance else 0 end), 0) as refundedAmount,
+            coalesce(sum(case when status = 2 then balance when status = 4 then -balance else 0 end), 0) as netAmount
+        from recharge_info ri
+        <where>
+            <if test="beginDate != null and beginDate != ''">
+                and ri.create_time &gt;= concat(#{beginDate}, ' 00:00:00')
+            </if>
+            <if test="endDate != null and endDate != ''">
+                and ri.create_time &lt; date_add(concat(#{endDate}, ' 00:00:00'), interval 1 day)
+            </if>
+        </where>
+    </select>
+
     <insert id="insertRechargeInfo" parameterType="RechargeInfo" useGeneratedKeys="true" keyProperty="id">
         insert into recharge_info
         <trim prefix="(" suffix=")" suffixOverrides=",">

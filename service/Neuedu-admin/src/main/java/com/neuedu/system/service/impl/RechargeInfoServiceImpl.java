@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.neuedu.common.utils.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -89,6 +90,12 @@ public class RechargeInfoServiceImpl extends ServiceImpl<RechargeInfoMapper, Rec
     public BigDecimal selectTotalRechargeByUserId(Long userId)
     {
         return rechargeInfoMapper.selectTotalRechargeByUserId(userId);
+    }
+
+    @Override
+    public Map<String, Object> selectRechargeStatistics(String beginDate, String endDate)
+    {
+        return rechargeInfoMapper.selectRechargeStatistics(beginDate, endDate);
     }
 
     /**
