@@ -4,6 +4,10 @@
   "description": "Neuedu",
   "author": "Neuedu",
   "license": "MIT",
+  "packageManager": "pnpm@12.3.4",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",

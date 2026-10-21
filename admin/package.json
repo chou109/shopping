@@ -4,6 +4,7 @@
   "description": "网购商城管理系统",
   "author": "国润科技",
   "license": "MIT",
+  "packageManager": "pnpm@12.3.4",
   "scripts": {
     "dev": "vite",
     "build:prod": "vite build",
