@@ -157,6 +157,7 @@ const sortBy = ref('default')
 const priceOrder = ref('asc')
 const viewMode = ref('grid')
 const isFollowed = ref(false)
+let shopRequestId = 0
 
 // 获取图片URL
 const getImageUrl = (path) => {
@@ -222,30 +223,32 @@ const followShop = async () => {
 
   const shopId = route.query.id
   if (!shopId) return
+  const requestId = shopRequestId
   try {
     const res = await toggleFavorite(2, shopId) // 2表示店铺
     if (res.code === 200) {
-      isFollowed.value = res.data // 后端返回 true/false
-      ElMessage.success(isFollowed.value ? '关注成功' : '已取消关注')
+      if (requestId === shopRequestId) {
+        isFollowed.value = res.data // 后端返回 true/false
+        ElMessage.success(isFollowed.value ? '关注成功' : '已取消关注')
+      }
     } else {
-      ElMessage.error(res.msg || '操作失败')
+      if (requestId === shopRequestId) ElMessage.error(res.msg || '操作失败')
     }
   } catch (e) {
-    ElMessage.error('操作失败')
+    if (requestId === shopRequestId) ElMessage.error('操作失败')
   }
 }
 
 // 检查是否已关注
-const checkFollowStatus = async () => {
-  const shopId = route.query.id
+const checkFollowStatus = async (shopId, requestId) => {
   if (!shopId) return
   if (!getToken()) {
-    isFollowed.value = false
+    if (requestId === shopRequestId) isFollowed.value = false
     return
   }
   try {
     const res = await checkFavorite(2, shopId, { silentAuthFailure: true })
-    if (res.code === 200 && res.data) {
+    if (requestId === shopRequestId && res.code === 200 && res.data) {
       isFollowed.value = res.data.isFavorite || false
     }
   } catch (e) {
@@ -284,12 +287,12 @@ const handleTabClick = (tab) => {
 }
 
 // 加载店铺数据
-const loadShopData = async () => {
-  const shopId = route.query.id
+const loadShopData = async (shopId, requestId) => {
   loadError.value = ''
   
   if (!shopId) {
     loadError.value = '店铺 ID 不存在，无法加载店铺信息'
+    loading.value = false
     return
   }
 
@@ -297,6 +300,7 @@ const loadShopData = async () => {
   try {
     // 获取店铺信息
     const shopRes = await getShopInfo(shopId)
+    if (requestId !== shopRequestId) return
     if (shopRes.code === 200) {
       shopInfo.value = shopRes.data || {}
       if (getToken()) {
@@ -311,24 +315,28 @@ const loadShopData = async () => {
 
     // 获取店铺商品
     const productRes = await getShopProducts(shopId)
+    if (requestId !== shopRequestId) return
     if (productRes.code === 200) {
       products.value = (productRes.data || []).filter(product => !isBlindBoxProduct(product))
     } else {
       loadError.value = productRes.msg || '获取店铺商品失败，请重试'
     }
   } catch (error) {
+    if (requestId !== shopRequestId) return
     console.error('加载店铺数据失败:', error)
     loadError.value = error.message || '加载店铺数据失败，请检查网络后重试'
   } finally {
-    loading.value = false
+    if (requestId === shopRequestId) loading.value = false
   }
 }
 
-watch(() => route.query.id, () => {
+watch(() => route.query.id, (shopId) => {
+  const requestId = ++shopRequestId
   products.value = []
   shopInfo.value = {}
-  loadShopData()
-  checkFollowStatus()
+  isFollowed.value = false
+  loadShopData(shopId, requestId)
+  checkFollowStatus(shopId, requestId)
 }, { immediate: true })
 </script>
 
