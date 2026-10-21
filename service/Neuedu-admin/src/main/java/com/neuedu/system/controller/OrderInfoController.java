@@ -641,11 +641,28 @@ class OrderInfoAdminController extends BaseController
      * 发货（管理员端）
      */
     @Operation(summary = "订单发货（管理员）")
-    @PreAuthorize("@ss.hasPermi('system:order:edit')")
+    @PreAuthorize("@ss.hasAnyPermi('system:info:edit,system:order:edit')")
     @Log(title = "订单", businessType = BusinessType.UPDATE)
     @PutMapping("/{orderNo}/ship")
     public AjaxResult shipOrder(@PathVariable String orderNo, @RequestBody Map<String, String> shippingInfo)
     {
+        Long currentUserId = SecurityUtils.getUserId();
+        if (currentUserId == null) {
+            return error("用户未登录");
+        }
+        if (currentUserId != 1L) {
+            com.neuedu.system.domain.Shop shop = shopService.selectShopByUserId(currentUserId);
+            OrderInfo order = orderInfoService.selectOrderInfoByOrderNo(orderNo);
+            if (shop == null || order == null || order.getOrderDetails() == null || order.getOrderDetails().isEmpty()) {
+                return error("无权操作此订单");
+            }
+            for (OrderDetail detail : order.getOrderDetails()) {
+                Product product = productService.selectProductById(detail.getProductId());
+                if (product == null || !shop.getId().equals(product.getShopId())) {
+                    return error("订单包含其他店铺商品，无法由当前店铺发货");
+                }
+            }
+        }
         try {
             int result = orderInfoService.shipOrder(orderNo, shippingInfo);
             return toAjax(result);

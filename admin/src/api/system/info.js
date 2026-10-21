@@ -17,21 +17,12 @@ export function getInfo(id) {
   })
 }
 
-// 新增订单
-export function addInfo(data) {
+// 使用订单状态迁移接口发货，避免直接覆盖状态字段
+export function shipInfo(orderNo) {
   return request({
-    url: '/api/admin/orders/',
-    method: 'post',
-    data: data
-  })
-}
-
-// 修改订单
-export function updateInfo(data) {
-  return request({
-    url: '/api/admin/orders/',
+    url: '/api/admin/orders/' + orderNo + '/ship',
     method: 'put',
-    data: data
+    data: {}
   })
 }
 

@@ -66,7 +66,6 @@
     <!-- 操作按钮区域 -->
     <div class="toolbar-wrapper">
       <div class="action-buttons">
-        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['system:info:edit']">修改</el-button>
         <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:info:remove']">删除</el-button>
         <el-button type="primary" plain :disabled="!hasShippableOrders" @click="handleBatchShip" v-hasPermi="['system:info:edit']">
           <el-icon><Van /></el-icon>一键发货
@@ -140,7 +139,7 @@
         <el-table-column label="操作" align="center" fixed="right" width="160">
           <template #default="scope">
             <div class="action-column">
-              <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:info:edit']">  编辑</el-button>
+              <el-button link type="primary" icon="View" @click="handleUpdate(scope.row)" v-hasPermi="['system:info:query']">查看</el-button>
               <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:info:remove']">删除</el-button>
               <el-button 
                 v-if="scope.row.status === 20"
@@ -168,7 +167,7 @@
 
     <!-- 订单详情/编辑弹窗 -->
     <el-dialog :title="title" v-model="open" width="720px" append-to-body class="order-dialog">
-      <el-form ref="infoRef" :model="form" :rules="rules" label-width="100px" class="order-form">
+      <el-form ref="infoRef" :model="form" :rules="rules" label-width="100px" class="order-form" disabled>
         <!-- 订单基本信息 -->
         <div class="form-section">
           <div class="section-title">订单信息</div>
@@ -290,8 +289,7 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button @click="cancel">取 消</el-button>
-          <el-button type="primary" @click="submitForm">确 定</el-button>
+          <el-button @click="cancel">关闭</el-button>
         </div>
       </template>
     </el-dialog>
@@ -299,7 +297,7 @@
 </template>
 
 <script setup name="Info">
-import { listInfo, getInfo, delInfo, addInfo, updateInfo } from "@/api/system/info";
+import { listInfo, getInfo, delInfo, shipInfo } from "@/api/system/info";
 import { User, Phone, Location, Van, Wallet } from '@element-plus/icons-vue';
 
 const { proxy } = getCurrentInstance();
@@ -478,45 +476,10 @@ function handleUpdate(row) {
       form.value.paymentType = 1;
     }
     open.value = true;
-    title.value = "修改订单";
+    title.value = "订单详情";
   });
 }
 
-
-/** 提交按钮 */
-/** 提交按钮 */
-function submitForm() {
-  proxy.$refs["infoRef"].validate(valid => {
-    if (valid) {
-      // 如果是修改操作
-      if (form.value.id != null) {
-        updateInfo(form.value).then(response => {
-          proxy.$modal.msgSuccess("修改成功");
-          open.value = false;
-          getList();  // 修改成功后重新加载当前页
-        }).catch(error => {
-          proxy.$modal.msgError("修改失败：" + (error.message || "未知错误"));
-        });
-      } else {
-        // 新增操作 - 生成唯一的订单编号
-        if (!form.value.orderNo) {
-          form.value.orderNo = generateOrderNo();
-        }
-        
-        addInfo(form.value).then(response => {
-          proxy.$modal.msgSuccess("新增成功");
-          open.value = false;
-          
-          // 关键修复：新增后回到第一页重新查询
-          queryParams.value.pageNum = 1;
-          getList();
-        }).catch(error => {
-          proxy.$modal.msgError("新增失败：" + (error.message || "未知错误"));
-        });
-      }
-    }
-  });
-}
 
 /** 删除按钮操作 */
 function handleDelete(row) {
@@ -543,43 +506,16 @@ function handleExport() {
   proxy.download('system/info/export', params, `info_${new Date().getTime()}.xlsx`)
 }
 
-/** 处理订单操作（付款、发货等） */
-function handleOrderAction(row) {
-  if (row.status === 0) {
-    // 标记付款
-    proxy.$modal.confirm(`确认要将订单"${row.orderNo}"标记为已付款/待发货吗？`).then(() => {
-      const orderData = { ...row, status: 1 };
-      return updateInfo(orderData);
-    }).then(response => {
-      proxy.$modal.msgSuccess("标记付款成功");
-      getList();
-    }).catch(() => {});
-  } else if (row.status === 1) {
-    // 标记发货
-    proxy.$modal.confirm(`确认要将订单"${row.orderNo}"标记为已发货吗？`).then(() => {
-      const orderData = { ...row, status: 2 };
-      return updateInfo(orderData);
-    }).then(response => {
-      proxy.$modal.msgSuccess("标记发货成功");
-      getList();
-    }).catch(() => {});
-  }
-}
-
 /** 一键发货操作 */
 function handleShipOrder(row) {
   proxy.$modal.confirm(`确认要将订单“${row.orderNo}”发货吗？`).then(() => {
-    const orderData = { 
-      ...row, 
-      status: 30, 
-      statusDesc: '待收货',
-      sendTime: new Date().toISOString().slice(0, 19).replace('T', ' ') 
-    };
-    return updateInfo(orderData);
-  }).then(response => {
+    return shipInfo(row.orderNo);
+  }).then(() => {
     proxy.$modal.msgSuccess("发货成功！");
     getList();
-  }).catch(() => {});
+  }).catch(error => {
+    if (error && error.message) proxy.$modal.msgError("发货失败：" + error.message);
+  });
 }
 
 /** 批量发货操作 */
@@ -599,13 +535,7 @@ function handleBatchShip() {
     
     for (const order of shippableOrders) {
       try {
-        const orderData = { 
-          ...order, 
-          status: 30,
-          statusDesc: '待收货',
-          sendTime: new Date().toISOString().slice(0, 19).replace('T', ' ') 
-        };
-        await updateInfo(orderData);
+        await shipInfo(order.orderNo);
         successCount++;
       } catch (error) {
         failCount++;
@@ -618,22 +548,6 @@ function handleBatchShip() {
     } else {
       proxy.$modal.msgError("发货失败");
     }
-  }).catch(() => {});
-}
-
-/** 标记付款操作 */
-function handleMarkPaid(row) {
-  proxy.$modal.confirm(`确认要将订单“${row.orderNo}”标记为已付款吗？`).then(() => {
-    const orderData = { 
-      ...row, 
-      status: 20, 
-      statusDesc: '待发货',
-      paymentTime: new Date().toISOString().slice(0, 19).replace('T', ' ') 
-    };
-    return updateInfo(orderData);
-  }).then(response => {
-    proxy.$modal.msgSuccess("标记付款成功！");
-    getList();
   }).catch(() => {});
 }
 
