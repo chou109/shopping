@@ -64,7 +64,7 @@ public class QQLoginController {
     public void callback(@RequestParam("code") String code,
                          @RequestParam(value = "msg", required = false) String msg,
                          HttpServletResponse response) throws IOException {
-        log.info("QQ登录回调 - code: {}, msg: {}", code, msg);
+        log.info("收到QQ登录回调");
 
         try {
             // 1. 使用code获取QQ用户信息
@@ -73,17 +73,10 @@ public class QQLoginController {
             
             // 获取原始字符串响应
             String rawResponse = restTemplate.getForObject(userInfoUrl, String.class);
-            log.info("===== QQ用户信息原始响应 =====");
-            log.info(rawResponse);
-            log.info("=============================");
-            
             // 手动解析JSON
             ObjectMapper objectMapper = new ObjectMapper();
             @SuppressWarnings("unchecked")
             Map<String, Object> qqUserInfo = objectMapper.readValue(rawResponse, Map.class);
-            
-            log.info("===== QQ用户信息Map =====");
-            log.info("qqUserInfo: {}", qqUserInfo);
             
             if (qqUserInfo == null) {
                 log.error("获取QQ用户信息失败: 返回null");
@@ -104,7 +97,7 @@ public class QQLoginController {
                 return;
             }
 
-            log.info("QQ用户信息 - openid: {}, nickname: {}", qqOpenid, nickname);
+            log.info("QQ用户身份校验完成");
 
             // 3. 查找或创建用户
             SysUser user = userService.selectUserByQqOpenid(qqOpenid);
@@ -126,7 +119,7 @@ public class QQLoginController {
                 user.setRoleIds(roleIds);
                 
                 userService.insertUser(user);
-                log.info("创建新QQ用户: {}", user.getUserName());
+                log.info("已创建QQ登录用户");
                 
                 // 重新查询获取完整用户信息
                 user = userService.selectUserByQqOpenid(qqOpenid);
@@ -135,7 +128,7 @@ public class QQLoginController {
                 user.setNickName(nickname);
                 user.setAvatar(avatar);
                 userService.updateUserProfile(user);
-                log.info("更新QQ用户信息: {}", user.getUserName());
+                log.info("已更新QQ登录用户资料");
             }
 
             // 4. 生成登录token
@@ -143,14 +136,14 @@ public class QQLoginController {
             LoginUser loginUser = new LoginUser(user.getUserId(), user.getDeptId(), user, permissions);
             String token = tokenService.createToken(loginUser);
 
-            log.info("QQ登录成功 - userId: {}, token: {}", user.getUserId(), token.substring(0, 20) + "...");
+            log.info("QQ登录成功");
 
             // 5. 重定向到前端，携带token
             response.sendRedirect(FRONTEND_CALLBACK_URL + "?token=" + token);
 
         } catch (Exception e) {
-            log.error("QQ登录处理异常", e);
-            response.sendRedirect(FRONTEND_CALLBACK_URL + "?error=" + e.getMessage());
+            log.error("QQ登录处理失败，异常类型={}", e.getClass().getSimpleName());
+            response.sendRedirect(FRONTEND_CALLBACK_URL + "?error=QQ登录失败，请稍后重试");
         }
     }
 
