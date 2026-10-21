@@ -57,17 +57,11 @@
       <div class="nav-content">
         <el-tabs v-model="activeTab" @tab-click="handleTabClick">
           <el-tab-pane label="全部商品" name="all"></el-tab-pane>
-          <el-tab-pane name="price">
-            <template #label>
-              <button type="button" class="price-sort-button" :aria-label="`按价格排序，当前${priceOrder === 'asc' ? '升序' : '降序'}`" :aria-pressed="sortBy === 'price'" @click.stop="togglePriceSort">
-                价格 {{ priceOrder === 'asc' ? '↑' : '↓' }}
-              </button>
-            </template>
-          </el-tab-pane>
+          <el-tab-pane :label="`价格（${priceOrder === 'asc' ? '升序' : '降序'}）`" name="price"></el-tab-pane>
           <el-tab-pane label="销量排行" name="sales"></el-tab-pane>
         </el-tabs>
         <div class="search-box">
-          <el-input v-model="searchKeyword" placeholder="搜索店内商品" clearable @keyup.enter="searchProducts">
+          <el-input v-model="searchKeyword" label="搜索店内商品" placeholder="搜索店内商品" clearable @keyup.enter="searchProducts">
             <template #append>
               <el-button :icon="Search" aria-label="搜索店内商品" @click="searchProducts" />
             </template>
@@ -208,16 +202,6 @@ const filteredProducts = computed(() => {
   return result
 })
 
-// 切换价格排序
-const togglePriceSort = () => {
-  if (sortBy.value === 'price') {
-    priceOrder.value = priceOrder.value === 'asc' ? 'desc' : 'asc'
-  } else {
-    sortBy.value = 'price'
-    priceOrder.value = 'asc'
-  }
-}
-
 // 搜索商品
 const searchProducts = () => {
   // 搜索通过computed自动过滤
@@ -280,6 +264,14 @@ const contactService = () => {
 // Tab点击
 const handleTabClick = (tab) => {
   switch (tab.props.name) {
+    case 'price':
+      if (sortBy.value === 'price') {
+        priceOrder.value = priceOrder.value === 'asc' ? 'desc' : 'asc'
+      } else {
+        sortBy.value = 'price'
+        priceOrder.value = 'asc'
+      }
+      break
     case 'new':
       sortBy.value = 'new'
       break
@@ -341,21 +333,6 @@ watch(() => route.query.id, () => {
 </script>
 
 <style scoped lang="scss">
-.price-sort-button {
-  padding: 0;
-  border: 0;
-  background: none;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-}
-
-.price-sort-button:focus-visible {
-  outline: 2px solid #409EFF;
-  outline-offset: 3px;
-  border-radius: 2px;
-}
-
 .shop-detail-page {
   background: #f5f5f5;
   min-height: 100vh;
