@@ -36,6 +36,7 @@ import { listFootprintByUser, deleteFootprint, recordFootprint } from '@/api/sys
 import { createDirectOrder, payOrder } from '@/api/system/orderInfo'
 import { getMyAddressList } from '@/api/system/address'
 import { toggleFavorite, checkFavorite } from '@/api/system/favorite'
+import { getToken } from '@/utils/auth'
 import PurchaseDialog from '@/components/PurchaseDialog/index.vue'
 
 const route = useRoute()
@@ -122,8 +123,10 @@ const loadProductData = async () => {
     if (response.code === 200 && response.data) {
       product.value = response.data
       console.log('商品数据:', product.value)
-      recordFootprint({ targetType: 1, targetId: route.query.id })
-      checkProductFavorite(productId) // 检查是否已收藏
+      if (getToken()) {
+        recordFootprint({ targetType: 1, targetId: route.query.id })
+        checkProductFavorite(productId) // 检查是否已收藏
+      }
 
       if (!product.value.category && product.value.categoryId) {
         product.value.category = {
