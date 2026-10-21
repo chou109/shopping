@@ -15,25 +15,28 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: 拉取代码
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: 配置 Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 24.21.0
 
       - name: 配置 pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: 12.3.4
           run_install: false
 
       - name: 配置 JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '17'
           cache: maven
+
+      - name: 安装 ripgrep
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y ripgrep
 
       - name: 全项目验证
         run: scripts/verify-project.sh

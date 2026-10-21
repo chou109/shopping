@@ -101,7 +101,7 @@ export const constantRoutes = [
       {
         path: '',
         name: 'UserCenter',
-        component: () => import('@/views/user/UserCenter.vue'),
+        component: () => import('@/views/User/UserCenter.vue'),
         meta: {
           title: '用户中心',
           pageTitles: {

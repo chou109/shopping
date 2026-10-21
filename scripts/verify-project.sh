@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
-for tool in node pnpm java mvn; do
+for tool in node pnpm java mvn rg; do
   if ! command -v "$tool" >/dev/null 2>&1; then
     echo "缺少必需工具：$tool" >&2
     exit 1
