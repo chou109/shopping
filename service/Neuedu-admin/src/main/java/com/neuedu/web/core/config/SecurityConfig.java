@@ -128,6 +128,7 @@ public class SecurityConfig {
                             "/system/product/activity/**",
                             "/system/product/search",
                             "/system/product/*",
+                            "/system/product/public/random",
                             "/system/comment/product/**").permitAll()
                     // QQ登录接口
                     .antMatchers("/qq/**").permitAll()

@@ -256,4 +256,14 @@ public class ProductController extends BaseController
         List<Product> list = productService.selectProductListRandom(product);
         return getDataTable(list);
     }
+
+    /** 查询商城首页随机商品，只返回上架商品 */
+    @GetMapping("/public/random")
+    public TableDataInfo listPublicRandom(Product product)
+    {
+        startPage();
+        product.setStatus(1);
+        List<Product> list = productService.selectProductListRandom(product);
+        return getDataTable(list);
+    }
 }

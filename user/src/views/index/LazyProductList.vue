@@ -146,7 +146,7 @@ const loadProducts = async (reset = false) => {
 
   try {
     const response = await api({
-      url: '/system/product/list/random',
+      url: '/system/product/public/random',
       method: 'get',
       params: {
         pageNum: currentPage.value,
