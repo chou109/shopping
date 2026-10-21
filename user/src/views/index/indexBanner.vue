@@ -1,10 +1,10 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
-import banner1 from '@/assets/banner1.jpg';
+import banner1 from '@/assets/banner1.webp';
 import banner2 from '@/assets/banner2.jpg';
-import banner3 from '@/assets/banner3.jpg';
-import banner4 from '@/assets/banner4.jpg';
+import banner3 from '@/assets/banner3.webp';
+import banner4 from '@/assets/banner4.webp';
 import BlindBox from '@/assets/BlindBox.png';
 import { getFrontCategoryTree } from '@/api/system/category';
 
