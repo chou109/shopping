@@ -1,9 +1,8 @@
 <template>
   <div id="tags-view-container" class="tags-view-container">
     <scroll-pane ref="scrollPaneRef" class="tags-view-wrapper" @scroll="handleScroll">
+      <span v-for="tag in visitedViews" :key="tag.path" class="tags-view-entry">
       <router-link
-        v-for="tag in visitedViews"
-        :key="tag.path"
         :data-path="tag.path"
         :class="isActive(tag) ? 'active' : ''"
         :to="{ path: tag.path, query: tag.query, fullPath: tag.fullPath }"
@@ -11,32 +10,22 @@
         :style="activeStyle(tag)"
         @click.middle="!isAffix(tag) ? closeSelectedTag(tag) : ''"
         @contextmenu.prevent="openMenu(tag, $event)"
+        @keydown="handleTagKeydown(tag, $event)"
       >
         {{ tag.title }}
-        <span v-if="!isAffix(tag)" @click.prevent.stop="closeSelectedTag(tag)">
-          <close class="el-icon-close" style="width: 1em; height: 1em;vertical-align: middle;" />
-        </span>
       </router-link>
+      <button v-if="!isAffix(tag)" type="button" class="tag-close-button" :aria-label="`关闭标签：${tag.title}`" @click="closeSelectedTag(tag)">
+        <close class="el-icon-close" aria-hidden="true" />
+      </button>
+      </span>
     </scroll-pane>
     <ul v-show="visible" :style="{ left: left + 'px', top: top + 'px' }" class="contextmenu">
-      <li @click="refreshSelectedTag(selectedTag)">
-        <refresh-right style="width: 1em; height: 1em;" /> 刷新页面
-      </li>
-      <li v-if="!isAffix(selectedTag)" @click="closeSelectedTag(selectedTag)">
-        <close style="width: 1em; height: 1em;" /> 关闭当前
-      </li>
-      <li @click="closeOthersTags">
-        <circle-close style="width: 1em; height: 1em;" /> 关闭其他
-      </li>
-      <li v-if="!isFirstView()" @click="closeLeftTags">
-        <back style="width: 1em; height: 1em;" /> 关闭左侧
-      </li>
-      <li v-if="!isLastView()" @click="closeRightTags">
-        <right style="width: 1em; height: 1em;" /> 关闭右侧
-      </li>
-      <li @click="closeAllTags(selectedTag)">
-        <circle-close style="width: 1em; height: 1em;" /> 全部关闭
-      </li>
+      <li><button type="button" @click="refreshSelectedTag(selectedTag)"><refresh-right aria-hidden="true" /> 刷新页面</button></li>
+      <li v-if="!isAffix(selectedTag)"><button type="button" @click="closeSelectedTag(selectedTag)"><close aria-hidden="true" /> 关闭当前</button></li>
+      <li><button type="button" @click="closeOthersTags"><circle-close aria-hidden="true" /> 关闭其他</button></li>
+      <li v-if="!isFirstView()"><button type="button" @click="closeLeftTags"><back aria-hidden="true" /> 关闭左侧</button></li>
+      <li v-if="!isLastView()"><button type="button" @click="closeRightTags"><right aria-hidden="true" /> 关闭右侧</button></li>
+      <li><button type="button" @click="closeAllTags(selectedTag)"><circle-close aria-hidden="true" /> 全部关闭</button></li>
     </ul>
   </div>
 </template>
@@ -232,6 +221,14 @@ function openMenu(tag, e) {
   top.value = e.clientY
   visible.value = true
   selectedTag.value = tag
+  nextTick(() => proxy.$el.querySelector('.contextmenu button')?.focus())
+}
+function handleTagKeydown(tag, event) {
+  if ((event.shiftKey && event.key === 'F10') || event.key === 'ContextMenu') {
+    event.preventDefault()
+    const rect = event.currentTarget.getBoundingClientRect()
+    openMenu(tag, { clientX: rect.right, clientY: rect.bottom })
+  }
 }
 function closeMenu() {
   visible.value = false
@@ -249,6 +246,18 @@ function handleScroll() {
   border-bottom: 1px solid #d8dce5;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.12), 0 0 3px 0 rgba(0, 0, 0, 0.04);
   .tags-view-wrapper {
+    .tags-view-entry {
+      display: inline-block;
+      position: relative;
+      margin-left: 5px;
+      margin-top: 4px;
+      &:first-of-type {
+        margin-left: 15px;
+      }
+      &:last-of-type {
+        margin-right: 15px;
+      }
+    }
     .tags-view-item {
       display: inline-block;
       position: relative;
@@ -258,16 +267,9 @@ function handleScroll() {
       border: 1px solid #d8dce5;
       color: #495060;
       background: #fff;
-      padding: 0 8px;
+      padding: 0 24px 0 8px;
       font-size: 12px;
-      margin-left: 5px;
-      margin-top: 4px;
-      &:first-of-type {
-        margin-left: 15px;
-      }
-      &:last-of-type {
-        margin-right: 15px;
-      }
+      text-decoration: none;
       &.active {
         background-color: #42b983;
         color: #fff;
@@ -282,6 +284,30 @@ function handleScroll() {
           position: relative;
           margin-right: 2px;
         }
+      }
+    }
+    .tag-close-button {
+      position: absolute;
+      right: 5px;
+      top: 9px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      padding: 0;
+      border: 0;
+      border-radius: 50%;
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+      &:hover {
+        background: #b4bccc;
+        color: #fff;
+      }
+      &:focus-visible {
+        outline: 2px solid var(--el-color-primary);
+        outline-offset: 1px;
       }
     }
   }
@@ -299,10 +325,25 @@ function handleScroll() {
     box-shadow: 2px 2px 3px 0 rgba(0, 0, 0, 0.3);
     li {
       margin: 0;
-      padding: 7px 16px;
-      cursor: pointer;
-      &:hover {
-        background: #eee;
+      button {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        gap: 6px;
+        padding: 7px 16px;
+        border: 0;
+        background: transparent;
+        color: inherit;
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+        &:hover {
+          background: #eee;
+        }
+        &:focus-visible {
+          outline: 2px solid var(--el-color-primary);
+          outline-offset: -2px;
+        }
       }
     }
   }
@@ -312,7 +353,7 @@ function handleScroll() {
 <style lang="scss">
 //reset element css of el-icon-close
 .tags-view-wrapper {
-  .tags-view-item {
+  .tag-close-button {
     .el-icon-close {
       width: 16px;
       height: 16px;
