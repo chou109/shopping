@@ -207,6 +207,9 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateShopStatus(Long shopId, Integer status) {
+        if (status == null || (status != 1 && status != 2 && status != 3)) {
+            throw new ServiceException("店铺状态无效");
+        }
         Long updateUser = SecurityUtils.getUserId();
         return shopMapper.updateShopStatus(shopId, status, updateUser);
     }

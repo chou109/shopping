@@ -46,17 +46,10 @@ public class ShopController extends BaseController
     public TableDataInfo list(Shop shop)
     {
         Long userId = SecurityUtils.getUserId();
-        // 如果是商家（user_id=2），只能查看自己的店铺
-        if (userId != null && userId == 2L) {
-            Shop myShop = shopService.getMyShop();
-            if (myShop != null) {
-                List<Shop> list = Arrays.asList(myShop);
-                TableDataInfo dataTable = getDataTable(list);
-                dataTable.setTotal(1);
-                return dataTable;
-            } else {
-                return getDataTable(new ArrayList<>());
-            }
+        if (!SecurityUtils.isAdmin(userId)) {
+            Shop myShop = userId == null ? null : shopService.selectShopByUserId(userId);
+            if (myShop == null) return getDataTable(new ArrayList<>());
+            return getDataTable(Arrays.asList(myShop));
         }
         
         startPage();
@@ -73,6 +66,11 @@ public class ShopController extends BaseController
     @PostMapping("/export")
     public void export(HttpServletResponse response, Shop shop)
     {
+        Long userId = SecurityUtils.getUserId();
+        if (!SecurityUtils.isAdmin(userId)) {
+            Shop myShop = shopService.selectShopByUserId(userId);
+            shop.setId(myShop == null ? -1L : myShop.getId());
+        }
         List<Shop> list = shopService.selectShopList(shop);
         ExcelUtil<Shop> util = new ExcelUtil<Shop>(Shop.class);
         util.exportExcel(response, list, "店铺信息数据");
@@ -86,6 +84,7 @@ public class ShopController extends BaseController
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {
+        if (!canManageShop(id, SecurityUtils.getUserId())) return error("无权查看此店铺");
         return success(shopService.selectShopById(id));
     }
 
@@ -112,6 +111,8 @@ public class ShopController extends BaseController
     @PostMapping
     public AjaxResult add(@RequestBody Shop shop)
     {
+        Long userId = SecurityUtils.getUserId();
+        if (!SecurityUtils.isAdmin(userId)) shop.setUserId(userId);
         return toAjax(shopService.insertShop(shop));
     }
 
@@ -124,6 +125,8 @@ public class ShopController extends BaseController
     @PutMapping
     public AjaxResult edit(@RequestBody Shop shop)
     {
+        Long userId = SecurityUtils.getUserId();
+        if (!canManageShop(shop.getId(), userId)) return error("无权修改此店铺");
         return toAjax(shopService.updateShop(shop));
     }
 
@@ -136,6 +139,7 @@ public class ShopController extends BaseController
 	@DeleteMapping("/{ids}")
     public AjaxResult remove(@PathVariable( name = "ids" ) Long[] ids) 
     {
+        if (!SecurityUtils.isAdmin(SecurityUtils.getUserId())) return error("只有管理员可以删除店铺");
         return toAjax(shopService.deleteShopByIds(ids));
     }
 
@@ -161,6 +165,9 @@ public class ShopController extends BaseController
     public AjaxResult updateStatus(@RequestBody Map<String, Object> params) {
         Long shopId = Long.valueOf(params.get("shopId").toString());
         Integer status = Integer.valueOf(params.get("status").toString());
+        Long userId = SecurityUtils.getUserId();
+        if (!canManageShop(shopId, userId)) return error("无权修改此店铺状态");
+        if (!SecurityUtils.isAdmin(userId) && status != 2) return error("商家只能暂停自己的店铺，恢复营业需管理员审核");
         return toAjax(shopService.updateShopStatus(shopId, status));
     }
 
@@ -172,6 +179,7 @@ public class ShopController extends BaseController
     @Log(title = "店铺信息", businessType = BusinessType.DELETE)
     @DeleteMapping("/logic/{id}")
     public AjaxResult removeLogic(@PathVariable Long id) {
+        if (!SecurityUtils.isAdmin(SecurityUtils.getUserId())) return error("只有管理员可以删除店铺");
         return toAjax(shopService.deleteShopLogicById(id));
     }
 
@@ -183,6 +191,7 @@ public class ShopController extends BaseController
     @Log(title = "店铺信息", businessType = BusinessType.DELETE)
     @DeleteMapping("/logic/batch/{ids}")
     public AjaxResult removeLogicBatch(@PathVariable Long[] ids) {
+        if (!SecurityUtils.isAdmin(SecurityUtils.getUserId())) return error("只有管理员可以删除店铺");
         return toAjax(shopService.deleteShopLogicByIds(ids));
     }
 
@@ -212,6 +221,7 @@ public class ShopController extends BaseController
     @PreAuthorize("@ss.hasPermi('system:shop:query')")
     @GetMapping("/statistics/{id}")
     public AjaxResult getStatistics(@PathVariable Long id) {
+        if (!canManageShop(id, SecurityUtils.getUserId())) return error("无权查看此店铺统计");
         return success(shopService.getShopStatistics(id));
     }
 
@@ -224,6 +234,7 @@ public class ShopController extends BaseController
     @PostMapping("/increaseSales/{shopId}")
     public AjaxResult increaseSales(@PathVariable Long shopId,
                                     @RequestParam Long quantity) {
+        if (!SecurityUtils.isAdmin(SecurityUtils.getUserId())) return error("只有管理员可以调整店铺销量");
         return toAjax(shopService.increaseSales(shopId, quantity));
     }
 
@@ -236,6 +247,7 @@ public class ShopController extends BaseController
     @PostMapping("/updateScore/{shopId}")
     public AjaxResult updateScore(@PathVariable Long shopId,
                                   @RequestParam BigDecimal score) {
+        if (!SecurityUtils.isAdmin(SecurityUtils.getUserId())) return error("只有管理员可以调整店铺评分");
         return toAjax(shopService.updateShopScore(shopId, score));
     }
 
@@ -248,6 +260,7 @@ public class ShopController extends BaseController
     @PostMapping("/updateLogo/{id}")
     public AjaxResult updateLogo(@PathVariable Long id,
                                  @RequestBody Map<String, String> params) {
+        if (!canManageShop(id, SecurityUtils.getUserId())) return error("无权修改此店铺资料");
         Shop shop = new Shop();
         shop.setId(id);
         shop.setShopLogo(params.get("logoUrl"));
@@ -263,9 +276,18 @@ public class ShopController extends BaseController
     @PostMapping("/updateBanner/{id}")
     public AjaxResult updateBanner(@PathVariable Long id,
                                    @RequestBody Map<String, String> params) {
+        if (!canManageShop(id, SecurityUtils.getUserId())) return error("无权修改此店铺资料");
         Shop shop = new Shop();
         shop.setId(id);
         shop.setShopBanner(params.get("bannerUrl"));
         return toAjax(shopService.updateShop(shop));
+    }
+
+    boolean canManageShop(Long shopId, Long userId)
+    {
+        if (SecurityUtils.isAdmin(userId)) return true;
+        if (shopId == null || userId == null) return false;
+        Shop ownShop = shopService.selectShopByUserId(userId);
+        return ownShop != null && ownShop.getId().equals(shopId);
     }
 }
