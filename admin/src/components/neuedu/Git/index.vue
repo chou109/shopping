@@ -1,13 +1,9 @@
 <template>
-  <div>
-    <svg-icon icon-class="github" @click="goto" />
-  </div>
+  <a :href="url" target="_blank" rel="noopener noreferrer" aria-label="打开项目源码仓库">
+    <svg-icon icon-class="github" aria-hidden="true" />
+  </a>
 </template>
 
 <script setup>
-const url = ref('https://gitee.com/y_project/neuedu-Vue');
-
-function goto() {
-  window.open(url.value, '_blank', 'noopener,noreferrer')
-}
+const url = 'https://gitee.com/y_project/neuedu-Vue';
 </script>

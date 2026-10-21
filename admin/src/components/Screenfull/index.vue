@@ -1,6 +1,14 @@
 <template>
   <div>
-    <svg-icon :icon-class="isFullscreen ? 'exit-fullscreen' : 'fullscreen'" @click="toggle" />
+    <button
+      type="button"
+      class="screenfull-control"
+      :aria-label="isFullscreen ? '退出全屏' : '进入全屏'"
+      :aria-pressed="isFullscreen"
+      @click="toggle"
+    >
+      <svg-icon :icon-class="isFullscreen ? 'exit-fullscreen' : 'fullscreen'" aria-hidden="true" />
+    </button>
   </div>
 </template>
 
@@ -18,5 +26,19 @@ const { isFullscreen, enter, exit, toggle } = useFullscreen();
   width: 20px;
   height: 20px;
   vertical-align: 10px;
+}
+.screenfull-control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+.screenfull-control:focus-visible {
+  outline: 2px solid var(--el-color-primary);
+  outline-offset: 3px;
 }
 </style>

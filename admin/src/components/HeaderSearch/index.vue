@@ -1,8 +1,18 @@
 <template>
   <div :class="{ 'show': show }" class="header-search">
-    <svg-icon class-name="search-icon" icon-class="search" @click.stop="click" />
+    <button
+      type="button"
+      class="search-toggle"
+      aria-label="搜索管理菜单"
+      :aria-expanded="show"
+      aria-controls="header-search-select"
+      @click.stop="click"
+    >
+      <svg-icon class-name="search-icon" icon-class="search" aria-hidden="true" />
+    </button>
     <el-select
       ref="headerSearchSelectRef"
+      id="header-search-select"
       v-model="search"
       :remote-method="querySearch"
       filterable
@@ -144,9 +154,22 @@ watch(searchPool, (list) => {
   font-size: 0 !important;
 
   .search-icon {
-    cursor: pointer;
     font-size: 18px;
     vertical-align: middle;
+  }
+
+  .search-toggle {
+    padding: 0;
+    border: 0;
+    color: inherit;
+    background: transparent;
+    cursor: pointer;
+    font: inherit;
+  }
+
+  .search-toggle:focus-visible {
+    outline: 2px solid var(--el-color-primary);
+    outline-offset: 3px;
   }
 
   .header-search-select {

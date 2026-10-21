@@ -1,13 +1,9 @@
 <template>
-  <div>
-    <svg-icon icon-class="question" @click="goto" />
-  </div>
+  <a :href="url" target="_blank" rel="noopener noreferrer" aria-label="打开项目使用文档">
+    <svg-icon icon-class="question" aria-hidden="true" />
+  </a>
 </template>
 
 <script setup>
-const url = ref('http://doc.neuedu.vip/neuedu-vue');
-
-function goto() {
-  window.open(url.value, '_blank', 'noopener,noreferrer')
-}
+const url = 'http://doc.neuedu.vip/neuedu-vue';
 </script>
