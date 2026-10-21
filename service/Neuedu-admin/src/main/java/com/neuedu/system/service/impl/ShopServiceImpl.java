@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import com.neuedu.system.mapper.ShopMapper;
 import com.neuedu.system.domain.Shop;
 import com.neuedu.system.service.IShopService;
+import com.neuedu.system.service.ISysUserService;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -28,6 +29,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IShopService
 {
     private final ShopMapper shopMapper;
+
+    @Autowired
+    private ISysUserService sysUserService;
 
     /**
      * 查询店铺信息
@@ -62,6 +66,9 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
     @Override
     public int insertShop(Shop shop)
     {
+        if (shop.getUserId() == null || sysUserService.selectUserById(shop.getUserId()) == null) {
+            throw new ServiceException("店铺所有者不存在，请选择有效的系统用户");
+        }
 
         shop.setCreateTime(DateUtils.getNowDate());
         // 设置默认值
@@ -95,6 +102,18 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
     @Override
     public int updateShop(Shop shop)
     {
+        // 店铺资料接口只维护可编辑资料；所有者、营业状态、统计数据和审计字段
+        // 必须由专用流程维护，不能通过通用更新接口由请求体覆盖。
+        shop.setCreateTime(null);
+        shop.setCreateUser(null);
+        shop.setUpdateUser(null);
+        shop.setDeleteFlag(null);
+        shop.setUserId(null);
+        shop.setShopScore(null);
+        shop.setSalesCount(null);
+        shop.setProductCount(null);
+        shop.setFollowerCount(null);
+        shop.setStatus(null);
         shop.setUpdateTime(DateUtils.getNowDate());
         return shopMapper.updateShop(shop);
     }

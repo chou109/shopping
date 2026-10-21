@@ -200,6 +200,7 @@
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="主键" align="center" prop="id" width="80" />
       <el-table-column label="店铺名称" align="center" prop="shopName" min-width="150" />
+      <el-table-column label="所有者用户ID" align="center" prop="userId" width="120" />
       <el-table-column label="店铺logo" align="center" prop="shopLogo" width="100">
         <template #default="scope">
           <image-preview :src="scope.row.shopLogo" :width="50" :height="50" v-if="scope.row.shopLogo" />
@@ -287,10 +288,21 @@
         <el-form-item label="店铺名称" prop="shopName">
           <el-input v-model="form.shopName" placeholder="请输入店铺名称" />
         </el-form-item>
+
+        <el-form-item v-if="form.id == null" label="所有者用户ID" prop="userId">
+          <el-input-number v-model="form.userId" :min="1" :precision="0" :step="1" style="width: 100%" />
+        </el-form-item>
+        <el-form-item v-else label="所有者用户ID">
+          <el-input :model-value="form.userId" disabled />
+        </el-form-item>
         
         <!-- 店铺logo上传 -->
         <el-form-item label="店铺logo" prop="shopLogo">
           <image-upload v-model="form.shopLogo"/>
+        </el-form-item>
+
+        <el-form-item label="店铺横幅" prop="shopBanner">
+          <image-upload v-model="form.shopBanner"/>
         </el-form-item>
               
         <el-form-item label="店铺描述" prop="description">
@@ -302,48 +314,6 @@
         <el-form-item label="联系地址" prop="contactAddress">
           <el-input v-model="form.contactAddress" placeholder="请输入联系地址" />
         </el-form-item>
-        <el-form-item label="店铺评分" prop="shopScore">
-      <el-input-number 
-        v-model="form.shopScore" 
-        placeholder="请输入店铺评分" 
-        :min="0" 
-        :max="5" 
-        :step="0.1" 
-        :precision="1"
-        style="width: 100%"
-      />
-    </el-form-item>
-        <el-form-item label="销售数量" prop="salesCount">
-          <el-input-number 
-            v-model="form.salesCount" 
-            placeholder="请输入销售数量" 
-            :min="0" 
-            style="width: 100%"
-          />
-        </el-form-item>
-        <el-form-item label="商品数量" prop="productCount">
-          <el-input-number 
-            v-model="form.productCount" 
-            placeholder="请输入商品数量" 
-            :min="0" 
-            style="width: 100%"
-          />
-        </el-form-item>
-        <el-form-item label="粉丝数量" prop="followerCount">
-          <el-input-number 
-            v-model="form.followerCount" 
-            placeholder="请输入粉丝数量" 
-            :min="0" 
-            style="width: 100%"
-          />
-        </el-form-item>
-        <el-form-item label="店铺状态" prop="status">
-          <el-select v-model="form.status" placeholder="请选择店铺状态" style="width: 100%">
-            <el-option label="正常营业" :value="1" />
-            <el-option label="已关闭" :value="2" />
-            <el-option label="审核中" :value="3" />
-          </el-select>
-        </el-form-item>
       </el-form>
       <template #footer>
         <div class="dialog-footer">
@@ -353,77 +323,17 @@
       </template>
     </el-dialog>
     
-    <!-- 单独的logo上传对话框 -->
-    <el-dialog title="上传店铺logo" v-model="openLogoDialog" width="500px" append-to-body>
-      <el-upload
-        class="dialog-uploader"
-        drag
-        :action="uploadUrl"
-        :show-file-list="false"
-        :on-success="handleLogoSuccess"
-        :before-upload="beforeLogoUpload"
-        :headers="headers"
-        :data="uploadData"
-      >
-        <el-icon class="el-icon--upload">
-          <UploadFilled />
-        </el-icon>
-        <div class="el-upload__text">
-          将文件拖到此处，或<em>点击上传</em>
-        </div>
-        <div class="el-upload__tip">
-          建议尺寸：200×200像素，支持JPG、PNG格式，大小不超过2MB
-        </div>
-      </el-upload>
-      <template #footer>
-        <div class="dialog-footer">
-          <el-button @click="openLogoDialog = false">取 消</el-button>
-        </div>
-      </template>
-    </el-dialog>
-    
-    <!-- 单独的横幅上传对话框 -->
-    <el-dialog title="上传店铺横幅" v-model="openBannerDialog" width="600px" append-to-body>
-      <el-upload
-        class="dialog-uploader"
-        drag
-        :action="uploadUrl"
-        :show-file-list="false"
-        :on-success="handleBannerSuccess"
-        :before-upload="beforeBannerUpload"
-        :headers="headers"
-        :data="uploadData"
-      >
-        <el-icon class="el-icon--upload">
-          <UploadFilled />
-        </el-icon>
-        <div class="el-upload__text">
-          将文件拖到此处，或<em>点击上传</em>
-        </div>
-        <div class="el-upload__tip">
-          建议尺寸：1200×300像素，支持JPG、PNG格式，大小不超过5MB
-        </div>
-      </el-upload>
-      <template #footer>
-        <div class="dialog-footer">
-          <el-button @click="openBannerDialog = false">取 消</el-button>
-        </div>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
 <script setup name="Store">
 import { listStore, getStore, delStore, addStore, updateStore, updateStoreStatus } from "@/api/system/store";
-import { ArrowDown, Plus, UploadFilled } from '@element-plus/icons-vue';
-import { getToken } from "@/utils/auth";
+import { ArrowDown, Plus } from '@element-plus/icons-vue';
 
 const { proxy } = getCurrentInstance();
 
 const storeList = ref([]);
 const open = ref(false);
-const openLogoDialog = ref(false);
-const openBannerDialog = ref(false);
 const loading = ref(true);
 const showSearch = ref(true);
 const showAdvanced = ref(false); // 控制高级筛选显示
@@ -432,11 +342,6 @@ const single = ref(true);
 const multiple = ref(true);
 const total = ref(0);
 const title = ref("");
-
-// 上传相关配置
-const uploadUrl = ref(import.meta.env.VITE_APP_BASE_API + "/common/upload"); // 上传地址，根据实际项目调整
-const headers = ref({ Authorization: "Bearer " + getToken() });
-const uploadData = ref({});
 
 const data = reactive({
   form: {},
@@ -465,6 +370,9 @@ const data = reactive({
     shopName: [
       { required: true, message: "店铺名称不能为空", trigger: "blur" }
     ],
+    userId: [
+      { required: true, message: "店铺所有者用户ID不能为空", trigger: "change" }
+    ],
     shopLogo: [
       { required: true, message: "店铺logo不能为空", trigger: "change" }
     ],
@@ -475,9 +383,6 @@ const data = reactive({
     contactAddress: [
       { required: true, message: "联系地址不能为空", trigger: "blur" }
     ],
-    status: [
-      { required: true, message: "店铺状态不能为空", trigger: "change" }
-    ]
   }
 });
 
@@ -521,8 +426,6 @@ const toggleAdvanced = () => {
 // 取消按钮
 function cancel() {
   open.value = false;
-  openLogoDialog.value = false;
-  openBannerDialog.value = false;
   reset();
 }
 
@@ -542,10 +445,6 @@ function reset() {
     description: null,
     contactPhone: null,
     contactAddress: null,
-    shopScore: 0,
-    salesCount: 0,
-    productCount: 0,
-    followerCount: 0,
     status: 1
   };
   proxy.resetForm("storeRef");
@@ -608,10 +507,6 @@ function handleUpdate(row) {
     if (form.value.deleteFlag === undefined || form.value.deleteFlag === null) {
       form.value.deleteFlag = 0;
     }
-    // 确保评分为数字类型
-    if (form.value.shopScore === undefined || form.value.shopScore === null) {
-      form.value.shopScore = 0;
-    }
     open.value = true;
     title.value = "修改店铺信息";
   });
@@ -622,13 +517,20 @@ function submitForm() {
   proxy.$refs["storeRef"].validate(valid => {
     if (valid) {
       if (form.value.id != null) {
-        updateStore(form.value).then(response => {
+        const storeData = getEditableStoreData();
+        updateStore(storeData).then(response => {
           proxy.$modal.msgSuccess("修改成功");
           open.value = false;
           getList();
         });
       } else {
-        addStore(form.value).then(response => {
+        const storeData = {
+          ...getEditableStoreData(),
+          userId: form.value.userId,
+          status: 1,
+          deleteFlag: 0
+        };
+        addStore(storeData).then(response => {
           proxy.$modal.msgSuccess("新增成功");
           open.value = false;
           getList();
@@ -636,6 +538,18 @@ function submitForm() {
       }
     }
   });
+}
+
+function getEditableStoreData() {
+  return {
+    id: form.value.id,
+    shopName: form.value.shopName,
+    shopLogo: form.value.shopLogo,
+    shopBanner: form.value.shopBanner,
+    description: form.value.description,
+    contactPhone: form.value.contactPhone,
+    contactAddress: form.value.contactAddress
+  };
 }
 
 /** 删除按钮操作 */
@@ -674,53 +588,6 @@ function toggleStatus(row) {
     getList();
   }).catch(() => {});
 }
-
-// 图片上传相关方法
-const handleLogoSuccess = (response, file) => {
-  if (response.code === 200) {
-    form.value.shopLogo = response.data.url || response.data;
-    proxy.$modal.msgSuccess("上传成功");
-    openLogoDialog.value = false;
-  } else {
-    proxy.$modal.msgError(response.msg || "上传失败");
-  }
-};
-
-const handleBannerSuccess = (response, file) => {
-  if (response.code === 200) {
-    form.value.shopBanner = response.data.url || response.data;
-    proxy.$modal.msgSuccess("上传成功");
-    openBannerDialog.value = false;
-  } else {
-    proxy.$modal.msgError(response.msg || "上传失败");
-  }
-};
-
-const beforeLogoUpload = (file) => {
-  const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png' || file.type === 'image/jpg';
-  const isLt2M = file.size / 1024 / 1024 < 2;
-
-  if (!isJpgOrPng) {
-    proxy.$modal.msgError('上传图片只能是 JPG/PNG 格式!');
-  }
-  if (!isLt2M) {
-    proxy.$modal.msgError('上传图片大小不能超过 2MB!');
-  }
-  return isJpgOrPng && isLt2M;
-};
-
-const beforeBannerUpload = (file) => {
-  const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png' || file.type === 'image/jpg';
-  const isLt5M = file.size / 1024 / 1024 < 5;
-
-  if (!isJpgOrPng) {
-    proxy.$modal.msgError('上传图片只能是 JPG/PNG 格式!');
-  }
-  if (!isLt5M) {
-    proxy.$modal.msgError('上传图片大小不能超过 5MB!');
-  }
-  return isJpgOrPng && isLt5M;
-};
 
 // 组件挂载时加载数据
 onMounted(() => {
