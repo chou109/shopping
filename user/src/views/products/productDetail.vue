@@ -4,7 +4,6 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   ChatDotRound,
-  CircleCheck,
   ShoppingCart,
   ShoppingCartFull,
   User,
@@ -15,7 +14,6 @@ import {
   Location,
   OfficeBuilding,
   Phone,
-  Service,
   Timer,
   Check,
   Plus,
@@ -953,18 +951,6 @@ onMounted(() => {
                       <Timer />
                     </el-icon>
                     <span>付款后由店铺安排发货</span>
-                  </div>
-                  <div class="service-item">
-                    <el-icon>
-                      <CircleCheck />
-                    </el-icon>
-                    <span>快递：免运费</span>
-                  </div>
-                  <div class="service-item">
-                    <el-icon>
-                      <Service />
-                    </el-icon>
-                    <span>7天无理由退货</span>
                   </div>
                 </div>
 

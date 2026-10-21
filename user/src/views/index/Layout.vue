@@ -34,7 +34,7 @@
                 <path d="M8 4V2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
               </svg>
             </div>
-            <span>预约维修服务</span>
+            <span>商品由店铺发布</span>
           </div>
           
           <div class="service-item">
@@ -44,7 +44,7 @@
                 <path d="M9 22V12H15V22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </div>
-            <span>7天无理由退货</span>
+            <span>订单状态可在订单页查看</span>
           </div>
           
           <div class="service-item">
@@ -54,7 +54,7 @@
                 <path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </div>
-            <span>15天免费换货</span>
+            <span>售后按订单状态办理</span>
           </div>
           
           <div class="service-item">
@@ -66,7 +66,7 @@
                 <path d="M18.5 21C19.8807 21 21 19.8807 21 18.5C21 17.1193 19.8807 16 18.5 16C17.1193 16 16 17.1193 16 18.5C16 19.8807 17.1193 21 18.5 21Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </div>
-            <span>满150元包邮</span>
+            <span>可通过客服咨询店铺</span>
           </div>
         </div>
         
@@ -79,13 +79,13 @@
           
           <div class="link-section">
             <div class="footer-links">
-              <a href="/help" class="footer-link">帮助中心</a>
+              <router-link to="/index" class="footer-link">商城首页</router-link>
               <span class="link-divider">|</span>
-              <a href="/support" class="footer-link">服务支持</a>
+              <router-link to="/products" class="footer-link">全部商品</router-link>
               <span class="link-divider">|</span>
-              <a href="/stores" class="footer-link">线下门店</a>
+              <router-link to="/customer-service" class="footer-link">在线客服</router-link>
               <span class="link-divider">|</span>
-              <a href="/about" class="footer-link">关于ESHOP</a>
+              <router-link to="/user/orders" class="footer-link">我的订单</router-link>
             </div>
             <p class="copyright">Copyright ©2023 eshop.com All Rights Reserved.</p>
           </div>

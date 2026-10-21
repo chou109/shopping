@@ -467,12 +467,6 @@ onMounted(() => {
                     <el-icon>
                       <CircleCheck />
                     </el-icon>
-                    <span>快递：免运费</span>
-                  </div>
-                  <div class="service-item">
-                    <el-icon>
-                      <CircleCheck />
-                    </el-icon>
                     <span>特殊商品不可退货</span>
                   </div>
                 </div>
