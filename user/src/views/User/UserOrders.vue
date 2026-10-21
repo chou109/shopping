@@ -44,7 +44,13 @@
 
     <!-- 订单列表 -->
     <div class="orders-container" v-loading="loading">
-      <div v-if="orderList.length === 0" class="empty-orders">
+      <div v-if="loadError" class="empty-orders">
+        <el-empty :description="loadError">
+          <el-button type="primary" @click="loadOrders">重试</el-button>
+        </el-empty>
+      </div>
+
+      <div v-else-if="orderList.length === 0" class="empty-orders">
         <el-empty description="暂无订单">
           <el-button type="primary" @click="goShopping">去购物</el-button>
         </el-empty>
@@ -320,6 +326,7 @@ const STATUS_MAP = {
 // 响应式数据
 const activeTab = ref('all')
 const loading = ref(false)
+const loadError = ref('')
 const orderList = ref([])
 const total = ref(0)
 const pageNum = ref(1)
@@ -358,6 +365,7 @@ const reviewingOrder = ref(null)
 const loadOrders = async () => {
   const requestId = ++orderRequestId
   loading.value = true
+  loadError.value = ''
   try {
     // 由服务端按状态分页，total 用于展示完整结果集的页数。
     const statusCode = STATUS_MAP[activeTab.value]
@@ -372,12 +380,12 @@ const loadOrders = async () => {
         return
       }
     } else {
-      ElMessage.error(res.msg || '加载订单失败')
+      loadError.value = res.msg || '订单加载失败，请重试'
     }
   } catch (e) {
     if (requestId === orderRequestId) {
       console.error('加载订单失败', e)
-      ElMessage.error(e.message || '加载订单失败')
+      loadError.value = e?.message || (typeof e === 'string' ? e : '') || '订单加载失败，请重试'
     }
   } finally {
     if (requestId === orderRequestId) loading.value = false
