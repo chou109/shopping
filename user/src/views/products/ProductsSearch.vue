@@ -19,6 +19,7 @@
       <div class="inline-search-box">
         <el-input
           v-model="inlineSearchKeyword"
+          label="搜索关键词"
           placeholder="请输入关键词搜索"
           clearable
           @keyup.enter="handleInlineSearch"
@@ -150,7 +151,8 @@
 
       <!-- 分页组件 -->
       <el-pagination v-if="totalCount > pageSize" v-model:current-page="currentPage"
-        v-model:page-size="pageSize" :total="totalCount" layout="prev, pager, next, jumper"
+        v-model:page-size="pageSize" :total="totalCount" prev-text="上一页" next-text="下一页"
+        layout="prev, pager, next, jumper"
         @current-change="handlePageChange" class="search-pagination" />
     </div>
   </div>
