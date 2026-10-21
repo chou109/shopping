@@ -19,13 +19,21 @@ const props = defineProps({
 const height = ref(document.documentElement.clientHeight - 94.5 + "px;")
 const loading = ref(true)
 const url = computed(() => props.src)
+let loadingTimer
+
+const updateHeight = () => {
+  height.value = document.documentElement.clientHeight - 94.5 + 'px;'
+}
 
 onMounted(() => {
-  setTimeout(() => {
+  loadingTimer = window.setTimeout(() => {
     loading.value = false;
   }, 300);
-  window.onresize = function temp() {
-    height.value = document.documentElement.clientHeight - 94.5 + "px;";
-  };
+  window.addEventListener('resize', updateHeight)
+})
+
+onBeforeUnmount(() => {
+  window.clearTimeout(loadingTimer)
+  window.removeEventListener('resize', updateHeight)
 })
 </script>
