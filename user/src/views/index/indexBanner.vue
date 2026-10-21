@@ -16,6 +16,7 @@ const carouselHeight = ref('400px')
 const windowWidth = ref(window.innerWidth)
 const hoveredCategory = ref(null)  // 当前悬停的分类ID
 const isMouseOverMenu = ref(false)  // 鼠标是否在菜单区域内
+let hoverResetTimer = null
 
 // 根据屏幕宽度调整轮播图高度
 const updateCarouselHeight = () => {
@@ -124,13 +125,19 @@ const handleImageError = function (event) {
 // 鼠标进入菜单区域
 const handleMouseEnterMenu = () => {
   isMouseOverMenu.value = true
+  if (hoverResetTimer) {
+    window.clearTimeout(hoverResetTimer)
+    hoverResetTimer = null
+  }
 }
 
 // 鼠标离开菜单区域
 const handleMouseLeaveMenu = () => {
   isMouseOverMenu.value = false
   // 延迟清除悬停状态，避免快速切换时闪烁
-  setTimeout(() => {
+  if (hoverResetTimer) window.clearTimeout(hoverResetTimer)
+  hoverResetTimer = window.setTimeout(() => {
+    hoverResetTimer = null
     if (!isMouseOverMenu.value) {
       hoveredCategory.value = null
     }
@@ -146,6 +153,10 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('resize', updateCarouselHeight)
+  if (hoverResetTimer) {
+    window.clearTimeout(hoverResetTimer)
+    hoverResetTimer = null
+  }
 })
 </script>
 
