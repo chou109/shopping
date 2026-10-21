@@ -38,17 +38,17 @@
 
               <div class="item-content">
                 <!-- 商品图片 -->
-                <router-link class="item-image" :to="{ path: '/product/detail', query: { id: item.productId } }"
+                <router-link class="item-image" :to="productDetailLocation(item)"
                   :aria-label="`查看商品：${item.productName}`">
                   <img
-                    :src="item.productId === 9999 || item.productName?.includes('盲盒') ? BLIND_BOX_IMAGE : getProductImageUrl(item.productMainImage)"
+                    :src="isBlindBoxCartItem(item) ? BLIND_BOX_IMAGE : getProductImageUrl(item.productMainImage)"
                     :alt="item.productName" @error="handleImageError" />
                 </router-link>
 
                 <!-- 商品信息 -->
                 <div class="item-info">
                   <h3 class="product-name">
-                    <router-link class="product-name-link" :to="{ path: '/product/detail', query: { id: item.productId } }">
+                    <router-link class="product-name-link" :to="productDetailLocation(item)">
                       {{ item.productName }}
                     </router-link>
                   </h3>
@@ -168,6 +168,7 @@ import { listCart, updateCart, delCart, batchDelCart, clearCart, batchSelectCart
 import { createOrderFromCart, payOrder } from '@/api/system/orderInfo'
 import { getMyAddressList } from '@/api/system/address'
 import { addFavorite } from '@/api/system/favorite'
+import { isBlindBoxProduct } from '@/utils/product'
 import PurchaseDialog from '@/components/PurchaseDialog/index.vue'
 
 const router = useRouter()
@@ -452,7 +453,7 @@ const handleCheckout = async () => {
     ElMessage.warning('所选商品来自多个店铺，请按店铺分开选择并结算')
     return
   }
-  if (selected.some(item => item.productId === 9999 || item.productName?.includes('盲盒'))) {
+  if (selected.some(isBlindBoxCartItem)) {
     ElMessage.warning('盲盒请前往盲盒页面购买')
     return
   }
@@ -554,23 +555,15 @@ const addToFavorites = async (item) => {
   }
 }
 
-// 跳转到商品详情
-const goToProductDetail = (productId) => {
-  // 判断是否为盲盒商品（ID为9999或包含"blind"字符串）
-  const isBlindBox = productId === 9999 || (typeof productId === 'string' && (productId.includes('blind') || productId.startsWith('blind-')));
+const isBlindBoxCartItem = (item) => isBlindBoxProduct(item.product || {
+  productId: item.productId,
+  isBlindBox: item.isBlindBox
+})
 
-  if (isBlindBox) {
-    router.push({
-      path: '/product/blind-box',
-      query: { id: productId }
-    })
-  } else {
-    router.push({
-      path: '/product/detail',
-      query: { id: productId }
-    })
-  }
-}
+const productDetailLocation = (item) => ({
+  path: isBlindBoxCartItem(item) ? '/product/blind-box' : '/product/detail',
+  query: { id: item.productId }
+})
 
 // 去购物
 const goShopping = () => {

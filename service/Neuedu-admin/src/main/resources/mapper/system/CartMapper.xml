@@ -42,6 +42,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <result property="stock" column="p_stock" />
             <result property="status" column="p_status" />
             <result property="shopId" column="p_shop_id" />
+            <result property="isBlindBox" column="p_is_blind_box" />
         </association>
 
         <!-- 关联活动信息 -->
@@ -99,6 +100,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         p.stock as p_stock,
         p.status as p_status,
         p.shop_id as p_shop_id,
+        p.is_blind_box as p_is_blind_box,
         <!-- 活动信息 -->
         a.name as a_name,
         a.status as a_status,
