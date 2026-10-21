@@ -50,6 +50,9 @@ pnpm --dir user install --frozen-lockfile
 echo "安装管理端依赖（锁文件冻结）"
 pnpm --dir admin install --frozen-lockfile
 
+echo "检查 Vue 模板引用"
+node scripts/check-vue-template-bindings.mjs
+
 echo "运行用户端测试"
 pnpm --dir user test
 echo "构建用户端"

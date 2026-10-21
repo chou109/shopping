@@ -127,6 +127,7 @@ const store = useStore();
 const currentUserId = computed(() => {
   return store.state.user?.userId || localStorage.getItem('userId') || null;
 });
+const userAvatarImage = computed(() => store.state.user?.avatar || DEFAULT_AVATAR_IMAGE)
 // 响应式数据
 const chatList = ref([]);
 const inputMsg = ref('');

@@ -429,6 +429,17 @@ const uploadHeaders = computed(() => ({
   Authorization: 'Bearer ' + getToken()
 }))
 
+const formatUserType = (type) => type || '用户'
+const formatPrice = (price) => {
+  const amount = Number(price)
+  return Number.isFinite(amount) ? amount.toFixed(2) : '0.00'
+}
+const formatDate = (value) => {
+  if (!value) return '未知'
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? '未知' : date.toLocaleString('zh-CN')
+}
+
 const loadUserInfo = async () => {
   loading.value = true
   try {

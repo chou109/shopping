@@ -117,16 +117,8 @@
         <el-form-item label="第三方用户授予的权限，部分平台可能没有" prop="scope">
           <el-input v-model="form.scope" placeholder="请输入第三方用户授予的权限，部分平台可能没有" />
         </el-form-item>
-        <el-form-item label="个别平台的授权信息，部分平台可能没有" prop="tokenType">
-          <el-select v-model="form.tokenType" multiple filterable remote reserve-keyword remote-show-suffix
-            placeholder="请选择个别平台的授权信息，部分平台可能没有"
-            :remote-method="remoteMethodTokenType"
-            :loading="loadingTokenType"
-          >
-            <el-option v-for="item in optionsTokenType" :key="item.value"
-              :label="item.label" :value="item.value"
-            />
-          </el-select>
+        <el-form-item label="令牌类型" prop="tokenType">
+          <el-input v-model="form.tokenType" placeholder="请输入服务提供方返回的令牌类型" />
         </el-form-item>
         <el-form-item label="id token，部分平台可能没有" prop="idToken">
           <el-input v-model="form.idToken" placeholder="请输入id token，部分平台可能没有" />
