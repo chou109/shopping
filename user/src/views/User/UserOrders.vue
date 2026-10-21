@@ -117,7 +117,7 @@
                   <el-button type="primary" size="small" @click="handlePayOrder(order)">
                     {{ order.isBlindBox ? '继续付款' : '立即付款' }}
                   </el-button>
-                  <el-button type="danger" size="small" @click="handleDeleteOrder(order)">删除订单</el-button>
+                  <el-button type="danger" size="small" :loading="deletingOrderIds.has(order.id)" @click="handleDeleteOrder(order)">删除订单</el-button>
                 </template>
 
                 <!-- 当前服务仅支持待发货订单取消并退回余额 -->
@@ -143,12 +143,12 @@
                 <!-- 50：交易完成 → 详情/删除 -->
                 <template v-else-if="order.status === 50">
                   <el-button size="small" @click="viewOrderDetail(order)">查看详情</el-button>
-                  <el-button type="danger" size="small" @click="handleDeleteOrder(order)">删除订单</el-button>
+                  <el-button type="danger" size="small" :loading="deletingOrderIds.has(order.id)" @click="handleDeleteOrder(order)">删除订单</el-button>
                 </template>
 
                 <!-- 60：已取消 → 删除 -->
                 <template v-else-if="order.status === 60">
-                  <el-button type="danger" size="small" @click="handleDeleteOrder(order)">删除订单</el-button>
+                  <el-button type="danger" size="small" :loading="deletingOrderIds.has(order.id)" @click="handleDeleteOrder(order)">删除订单</el-button>
                 </template>
 
                 <!-- 其他状态 -->
@@ -366,6 +366,7 @@ const refunding = ref(false)
 const reviewDialogVisible = ref(false)
 const submittingReview = ref(false)
 const reviewingOrder = ref(null)
+const deletingOrderIds = ref(new Set())
 
 // 加载订单列表
 const loadOrders = async () => {
@@ -464,7 +465,7 @@ const handlePayOrder = (order) => {
 
 // 确认支付
 const confirmPay = async () => {
-  if (!currentOrder.value) return
+  if (!currentOrder.value || paying.value) return
 
   paying.value = true
   try {
@@ -493,7 +494,7 @@ const handleCancelOrder = (order) => {
 
 // 确认取消订单
 const confirmCancel = async () => {
-  if (!currentOrder.value) return
+  if (!currentOrder.value || cancelling.value) return
 
   cancelling.value = true
   try {
@@ -560,7 +561,7 @@ const handleRefund = (order) => {
 
 // 提交退款申请
 const submitRefund = async (reason) => {
-  if (!currentOrder.value) return
+  if (!currentOrder.value || refunding.value) return
   refunding.value = true
   try {
     const res = await applyRefund({ orderNo: currentOrder.value.orderNo, reason })
@@ -587,7 +588,7 @@ const handleReview = (order) => {
 
 // 提交评价
 const submitReviewHandler = async (reviewItems) => {
-  if (!reviewingOrder.value) return
+  if (!reviewingOrder.value || submittingReview.value) return
 
   submittingReview.value = true
   try {
@@ -628,6 +629,8 @@ const handleBuyAgain = (order) => {
 
 // 删除订单
 const handleDeleteOrder = async (order) => {
+  if (deletingOrderIds.value.has(order.id)) return
+  deletingOrderIds.value.add(order.id)
   try {
     await ElMessageBox.confirm('确定要删除该订单吗？删除后不可恢复！', '删除订单', { confirmButtonText: '确定删除', cancelButtonText: '取消', type: 'warning' })
 
@@ -643,6 +646,8 @@ const handleDeleteOrder = async (order) => {
     if (e !== 'cancel') {
       ElMessage.error('删除失败：' + (e.message || '未知错误'))
     }
+  } finally {
+    deletingOrderIds.value.delete(order.id)
   }
 }
 
