@@ -159,7 +159,7 @@
           type="primary" 
           @click="handleConfirmPayment"
           :disabled="!selectedPaymentType || !orderData.receiveName"
-          :loading="submitting"
+          :loading="submitting || processing"
         >
           确认支付
         </el-button>
@@ -218,8 +218,8 @@
     </div>
     <template #footer>
       <div class="confirm-footer">
-        <el-button @click="handlePayLater">稍后支付</el-button>
-        <el-button type="primary" @click="handlePayNow" :loading="paying">立即支付</el-button>
+        <el-button @click="handlePayLater" :disabled="processing">稍后支付</el-button>
+        <el-button type="primary" @click="handlePayNow" :loading="processing">立即支付</el-button>
       </div>
     </template>
   </el-dialog>
@@ -258,6 +258,11 @@ const props = defineProps({
   needCreateOrder: {
     type: Boolean,
     default: true
+  },
+  // 父页面正在创建订单或支付
+  processing: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -270,7 +275,6 @@ const confirmDialogVisible = ref(false)
 const showAddressSelector = ref(false)
 const loading = ref(false)
 const submitting = ref(false)
-const paying = ref(false)
 const selectedPaymentType = ref(null)
 const addressList = ref([])
 const selectedAddressId = ref(null)
@@ -471,47 +475,29 @@ const handleConfirmPayment = () => {
 
 // 稍后支付 - 订单状态为待付款
 const handlePayLater = async () => {
-  paying.value = true
-  try {
-    // 发送事件，创建待付款订单
-    emit('payLater', {
-      ...orderData.value,
-      products: productList.value,
-      paymentType: selectedPaymentType.value,
-      status: 10, // 待付款
-      statusDesc: '待付款'
-    })
-    
-    confirmDialogVisible.value = false
-    dialogVisible.value = false
-    // 成功状态由父页面在服务端创建订单后反馈。
-  } catch (error) {
-    ElMessage.error('操作失败，请重试')
-  } finally {
-    paying.value = false
-  }
+  if (props.processing) return
+  // emit 不会等待父页面的异步订单请求；保留主弹窗，让父页面反馈成功后关闭。
+  confirmDialogVisible.value = false
+  emit('payLater', {
+    ...orderData.value,
+    products: productList.value,
+    paymentType: selectedPaymentType.value,
+    status: 10,
+    statusDesc: '待付款'
+  })
 }
 
 // 立即支付 - 订单状态也是待付款（实际支付后会更新状态）
 const handlePayNow = async () => {
-  paying.value = true
-  try {
-    // 发送事件，创建待付款订单并进行支付
-    emit('payNow', {
-      ...orderData.value,
-      products: productList.value,
-      paymentType: selectedPaymentType.value,
-      status: 10, // 待付款
-      statusDesc: '待付款'
-    })
-    
-    confirmDialogVisible.value = false
-    dialogVisible.value = false
-  } catch (error) {
-    ElMessage.error('支付失败，请重试')
-  } finally {
-    paying.value = false
-  }
+  if (props.processing) return
+  confirmDialogVisible.value = false
+  emit('payNow', {
+    ...orderData.value,
+    products: productList.value,
+    paymentType: selectedPaymentType.value,
+    status: 10,
+    statusDesc: '待付款'
+  })
 }
 
 // 更新订单数据

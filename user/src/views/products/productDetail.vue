@@ -95,6 +95,7 @@ const activeTab = ref('detail')
 
 // 购买弹窗相关
 const purchaseDialogVisible = ref(false)
+const checkoutInFlight = ref(false)
 const purchaseProducts = ref([])
 const purchaseOrder = ref({})
 
@@ -582,6 +583,8 @@ const createPurchaseOrder = async (orderData) => {
 
 // 稍后支付
 const handlePayLater = async (orderData) => {
+  if (checkoutInFlight.value) return
+  checkoutInFlight.value = true
   try {
     await createPurchaseOrder(orderData)
     ElMessage.success('订单已创建，请尽快完成支付')
@@ -589,11 +592,15 @@ const handlePayLater = async (orderData) => {
     router.push('/user/orders')
   } catch (error) {
     ElMessage.error(error.message || '创建订单失败，请稍后重试')
+  } finally {
+    checkoutInFlight.value = false
   }
 }
 
 // 立即支付
 const handlePayNow = async (orderData) => {
+  if (checkoutInFlight.value) return
+  checkoutInFlight.value = true
   let createdOrder = null
   try {
     createdOrder = await createPurchaseOrder(orderData)
@@ -604,12 +611,20 @@ const handlePayNow = async (orderData) => {
       router.push('/user/orders')
     } else {
       ElMessage.error(payRes.msg || '支付失败，订单已保留待支付')
+      purchaseDialogVisible.value = false
       router.push('/user/orders')
     }
   } catch (error) {
     console.error('支付失败:', error)
-    ElMessage.error(error.message || (createdOrder ? '支付失败，订单已保留待支付' : '创建订单失败，请稍后重试'))
-    if (createdOrder) router.push('/user/orders')
+    if (createdOrder) {
+      ElMessage.warning('订单已创建，支付结果需确认；请前往订单页面查看订单状态')
+      purchaseDialogVisible.value = false
+      router.push('/user/orders')
+    } else {
+      ElMessage.error(error.message || '创建订单失败，请稍后重试')
+    }
+  } finally {
+    checkoutInFlight.value = false
   }
 }
 
@@ -999,7 +1014,7 @@ onMounted(() => {
 
   <!-- 购买弹窗 -->
   <PurchaseDialog v-model="purchaseDialogVisible" :products="purchaseProducts" :order="purchaseOrder"
-    :need-create-order="false" @pay-later="handlePayLater" @pay-now="handlePayNow"
+    :need-create-order="false" :processing="checkoutInFlight" @pay-later="handlePayLater" @pay-now="handlePayNow"
     @cancel="purchaseDialogVisible = false" />
 </template>
 

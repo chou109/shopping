@@ -64,6 +64,7 @@ const activeTab = ref('detail')
 
 // 购买弹窗相关
 const purchaseDialogVisible = ref(false)
+const checkoutInFlight = ref(false)
 const purchaseProducts = ref([])
 const purchaseOrder = ref({})
 
@@ -287,6 +288,8 @@ const handleBuyNow = async () => {
 
 // 稍后支付
 const handlePayLater = async (orderData) => {
+  if (checkoutInFlight.value) return
+  checkoutInFlight.value = true
   try {
     const response = await createBlindBoxOrder(orderData.addressId || purchaseOrder.value.addressId)
     if (response.code !== 200) throw new Error(response.msg || '创建盲盒订单失败')
@@ -295,11 +298,15 @@ const handlePayLater = async (orderData) => {
     router.push('/user/orders')
   } catch (error) {
     ElMessage.error(error.message || '创建订单失败，请稍后重试')
+  } finally {
+    checkoutInFlight.value = false
   }
 }
 
 // 立即支付
 const handlePayNow = async (orderData) => {
+  if (checkoutInFlight.value) return
+  checkoutInFlight.value = true
   try {
     const createResponse = await createBlindBoxOrder(orderData.addressId || purchaseOrder.value.addressId)
     if (createResponse.code !== 200) throw new Error(createResponse.msg || '创建盲盒订单失败')
@@ -332,6 +339,8 @@ const handlePayNow = async (orderData) => {
     } else {
       ElMessage.error(error.message || '创建盲盒订单失败，请稍后重试')
     }
+  } finally {
+    checkoutInFlight.value = false
   }
 }
 
@@ -508,7 +517,7 @@ onMounted(() => {
 
   <!-- 购买弹窗 -->
   <PurchaseDialog v-model="purchaseDialogVisible" :products="purchaseProducts" :order="purchaseOrder"
-    :need-create-order="false" @pay-later="handlePayLater" @pay-now="handlePayNow" />
+    :need-create-order="false" :processing="checkoutInFlight" @pay-later="handlePayLater" @pay-now="handlePayNow" />
 
   <!-- 抽奖弹窗 -->
   <el-dialog

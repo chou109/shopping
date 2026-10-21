@@ -149,7 +149,7 @@
 
   <!-- 购买弹窗 -->
   <PurchaseDialog v-model="purchaseDialogVisible" :products="purchaseProducts" :order="purchaseOrder"
-    :need-create-order="false" @pay-later="handlePayLater" @pay-now="handlePayNow"
+    :need-create-order="false" :processing="checkoutInFlight" @pay-later="handlePayLater" @pay-now="handlePayNow"
     @cancel="purchaseDialogVisible = false" />
 
 </template>
@@ -176,6 +176,7 @@ const cartItems = ref([])
 
 // 购买弹窗相关
 const purchaseDialogVisible = ref(false)
+const checkoutInFlight = ref(false)
 const purchaseProducts = ref([])
 const purchaseOrder = ref({})
 
@@ -490,6 +491,8 @@ const createCartOrder = async (addressId) => {
 }
 
 const handlePayLater = async (orderData) => {
+  if (checkoutInFlight.value) return
+  checkoutInFlight.value = true
   try {
     await createCartOrder(orderData.addressId)
     ElMessage.success('订单已创建，请尽快完成支付')
@@ -498,20 +501,34 @@ const handlePayLater = async (orderData) => {
     router.push('/user/orders')
   } catch (error) {
     ElMessage.error(error.message || '创建订单失败，请稍后重试')
+  } finally {
+    checkoutInFlight.value = false
   }
 }
 
 const handlePayNow = async (orderData) => {
+  if (checkoutInFlight.value) return
+  checkoutInFlight.value = true
+  let createdOrder = null
   try {
-    const order = await createCartOrder(orderData.addressId)
-    const response = await payOrder(order.orderNo, orderData.paymentType)
+    createdOrder = await createCartOrder(orderData.addressId)
+    const response = await payOrder(createdOrder.orderNo, orderData.paymentType)
     if (response.code !== 200) throw new Error(response.msg || '支付失败，订单已保留待支付')
     ElMessage.success('支付成功')
     purchaseDialogVisible.value = false
     await loadCartData()
     router.push('/user/orders')
   } catch (error) {
-    ElMessage.error(error.message || '支付失败，请稍后重试')
+    if (createdOrder) {
+      ElMessage.warning('订单已创建，支付结果需确认；请前往订单页面查看订单状态')
+      purchaseDialogVisible.value = false
+      await loadCartData()
+      router.push('/user/orders')
+    } else {
+      ElMessage.error(error.message || '创建订单失败，请稍后重试')
+    }
+  } finally {
+    checkoutInFlight.value = false
   }
 }
 
