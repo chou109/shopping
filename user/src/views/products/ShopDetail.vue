@@ -139,8 +139,10 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Star, Service, Search, Grid, List } from '@element-plus/icons-vue'
 import { getShopInfo, getShopProducts } from '@/api/system/shop'
+import { recordFootprint } from '@/api/system/footprint'
 import { checkFavorite, toggleFavorite } from '@/api/system/favorite'
 import { isBlindBoxProduct } from '@/utils/product'
+import { getToken } from '@/utils/auth'
 
 const route = useRoute()
 const router = useRouter()
@@ -293,6 +295,11 @@ const loadShopData = async () => {
     const shopRes = await getShopInfo(shopId)
     if (shopRes.code === 200) {
       shopInfo.value = shopRes.data || {}
+      if (getToken()) {
+        recordFootprint({ targetType: 2, targetId: shopId }).catch(error => {
+          console.warn('记录店铺浏览足迹失败:', error)
+        })
+      }
     } else {
       loadError.value = shopRes.msg || '获取店铺信息失败，请重试'
       return

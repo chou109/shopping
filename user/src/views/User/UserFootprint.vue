@@ -214,8 +214,6 @@ const totalCount = computed(() => {
 
 // 按日期分组（使用懒加载后的数据）
 const groupedFootprints = computed(() => {
-  console.log('计算 groupedFootprints，显示数据:', displayedFootprints.value)
-
   if (!displayedFootprints.value || displayedFootprints.value.length === 0) {
     return {}
   }
@@ -224,7 +222,6 @@ const groupedFootprints = computed(() => {
 
   displayedFootprints.value.forEach(item => {
     if (!item || !item.lastBrowseTime) {
-      console.warn('足迹项数据不完整:', item)
       return
     }
 
@@ -235,12 +232,11 @@ const groupedFootprints = computed(() => {
         groups[date] = []
       }
       groups[date].push(item)
-    } catch (error) {
-      console.error('处理足迹日期时出错:', error)
+    } catch {
+      // 无效日期不加入分组，保留其它可显示的记录。
     }
   })
 
-  console.log('分组结果:', groups)
   return groups
 })
 
@@ -387,7 +383,6 @@ const getTypeText = (type) => {
 // 加载足迹数据
 const loadFootprints = async () => {
   const userId = store.state.user?.userId
-  console.log('当前用户ID:', userId)
 
   if (!userId) {
     ElMessage.warning('请先登录')
