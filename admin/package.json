@@ -7,6 +7,7 @@
   "packageManager": "pnpm@12.3.4",
   "scripts": {
     "dev": "vite",
+    "test": "node --test",
     "build:prod": "vite build",
     "build:stage": "vite build --mode staging",
     "preview": "vite preview"

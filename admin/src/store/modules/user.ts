@@ -1,5 +1,6 @@
 import { login, logout, getInfo } from '@/api/login'
 import { getToken, setToken, removeToken } from '@/utils/auth'
+import { logoutWithLocalCleanup } from '@/utils/session-state.mjs'
 import defAva from '@/assets/images/profile.jpg'
 import { defineStore } from 'pinia'
 
@@ -64,15 +65,7 @@ const useUserStore = defineStore(
       },
       // 退出系统
       logOut() {
-        return logout().finally(() => {
-          this.token = ''
-          this.roles = []
-          this.permissions = []
-          this.userId = null
-          this.name = ''
-          this.avatar = ''
-          removeToken()
-        })
+        return logoutWithLocalCleanup(logout, this, removeToken)
       }
     }
   })

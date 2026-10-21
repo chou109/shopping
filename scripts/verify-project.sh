@@ -76,6 +76,8 @@ node scripts/check-vue-template-bindings.mjs
 
 echo "运行用户端测试"
 pnpm --dir user test
+echo "运行管理端测试"
+pnpm --dir admin test
 echo "构建用户端"
 pnpm --dir user build
 echo "构建管理端"
