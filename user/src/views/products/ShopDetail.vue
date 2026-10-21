@@ -416,6 +416,68 @@ watch(() => route.query.id, () => {
   }
 }
 
+@media (max-width: 768px) {
+  .shop-header {
+    .shop-banner {
+      padding: 24px 16px;
+    }
+
+    .shop-info-wrapper {
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .shop-logo {
+      width: 72px;
+      height: 72px;
+    }
+
+    .shop-meta {
+      min-width: 0;
+      flex: 1 1 calc(100% - 88px);
+
+      .shop-name {
+        margin-bottom: 10px;
+        font-size: 22px;
+        overflow-wrap: anywhere;
+      }
+
+      .shop-stats {
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-bottom: 10px;
+
+        .stat-value {
+          font-size: 20px;
+        }
+      }
+
+      .shop-desc {
+        max-width: none;
+        overflow-wrap: anywhere;
+      }
+    }
+
+    .shop-actions {
+      width: 100%;
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+
+      .el-button {
+        width: auto;
+        flex: 1 1 120px;
+        margin: 0;
+      }
+
+      .view-options {
+        margin-left: auto;
+      }
+    }
+  }
+}
+
 .shop-nav {
   background: #fff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
