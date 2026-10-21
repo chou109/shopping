@@ -91,7 +91,8 @@
       <!-- 输入区域 -->
       <div class="input-area">
         <div class="input-wrapper">
-          <el-input v-model="inputMessage" type="textarea" :rows="2" :maxlength="500" placeholder="请输入您的问题..."
+          <el-input v-model="inputMessage" type="textarea" :rows="2" :maxlength="500"
+            label="发送给人工客服的消息" placeholder="请输入您的问题..."
             @keyup.ctrl.enter="sendMessage" resize="none" class="message-input" />
           <div class="input-actions">
             <span class="char-count">{{ inputMessage.length }}/500</span>

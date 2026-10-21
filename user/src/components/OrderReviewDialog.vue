@@ -12,6 +12,7 @@
         </div>
         <div class="review-content">
           <el-input v-model="item.content" type="textarea" :rows="3"
+            :label="`评价${item.productName || '商品'}`"
             placeholder="请分享您的购物体验，帮助其他买家做出更好的选择~" maxlength="500" show-word-limit />
         </div>
         <div class="review-anonymous">

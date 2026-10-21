@@ -98,7 +98,7 @@
           <div class="user-icon-wrapper">
           <img :src="userAvatarImage" class="user-icon" alt="用户">
           </div>
-          <input v-model="inputMsg" placeholder="请输入您想咨询的问题..." @keyup.enter="sendMessage"
+          <input v-model="inputMsg" aria-label="咨询问题" placeholder="请输入您想咨询的问题..." @keyup.enter="sendMessage"
             @keyup.ctrl.enter="inputMsg += '\n'" :disabled="!isConnected" class="chat-input" ref="chatInput" />
           <div class="input-actions">
             <button type="button" @click="sendMessage" :disabled="!isConnected || !inputMsg.trim()" class="send-btn">
