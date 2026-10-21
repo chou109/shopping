@@ -89,7 +89,7 @@
         <div class="search-area">
           <div class="search-container">
             <div class="search-box">
-              <el-input v-model="searchKeyword" placeholder="搜索商品..." @keyup.enter="handleSearch" size="large"
+              <el-input v-model="searchKeyword" label="搜索商品" placeholder="搜索商品..." @keyup.enter="handleSearch" size="large"
                 class="search-input">
                 <template #append>
                   <el-button @click="handleSearch" class="search-btn" aria-label="搜索商品">
