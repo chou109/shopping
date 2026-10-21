@@ -300,6 +300,10 @@
           </el-col>
         </el-row>
 
+        <el-alert v-if="regionLoadError" :title="regionLoadError" type="error" :closable="false" show-icon>
+        </el-alert>
+        <el-button v-if="regionLoadError" link type="primary" @click="retryRegionLoad">重试加载地区</el-button>
+
         <el-form-item label="详细地址" prop="street">
           <el-input v-model="addressForm.street" type="textarea" :rows="3" placeholder="请输入详细地址（街道、门牌号等）"
             maxlength="200" show-word-limit />
@@ -376,6 +380,7 @@ const currentUserId = ref('')
 const provinceLoading = ref(false)
 const cityLoading = ref(false)
 const areaLoading = ref(false)
+const regionLoadError = ref('')
 const provinces = ref([])
 const cities = ref([])
 const areas = ref([])
@@ -764,19 +769,9 @@ class AreaDataService {
     if (this.cache.has(cacheKey)) {
       return this.cache.get(cacheKey)
     }
-    try {
-      const response = await fetch(`https://geo.datav.aliyun.com/areas_v3/bound/${provinceCode}_full.json`)
-      const data = await response.json()
-      const cities = data.features.map(feature => ({
-        code: String(feature.properties.adcode),
-        name: feature.properties.name
-      }))
-      this.cache.set(cacheKey, cities)
-      return cities
-    } catch (error) {
-      console.error('加载城市失败:', error)
-      return []
-    }
+    const cities = await this.fetchChildren(provinceCode)
+    this.cache.set(cacheKey, cities)
+    return cities
   }
 
   async getAreas(cityCode) {
@@ -784,18 +779,33 @@ class AreaDataService {
     if (this.cache.has(cacheKey)) {
       return this.cache.get(cacheKey)
     }
+    const areas = await this.fetchChildren(cityCode)
+    this.cache.set(cacheKey, areas)
+    return areas
+  }
+
+  async fetchChildren(parentCode) {
+    const controller = new AbortController()
+    const timeout = window.setTimeout(() => controller.abort(), 8000)
     try {
-      const response = await fetch(`https://geo.datav.aliyun.com/areas_v3/bound/${cityCode}_full.json`)
+      const response = await fetch(
+        `https://geo.datav.aliyun.com/areas_v3/bound/${parentCode}_full.json`,
+        { signal: controller.signal }
+      )
+      if (!response.ok) throw new Error(`HTTP ${response.status}`)
       const data = await response.json()
-      const areas = data.features.map(feature => ({
+      if (!Array.isArray(data.features) || data.features.length === 0) {
+        throw new Error('地区数据格式无效或当前区域无下级地区')
+      }
+      return data.features.map(feature => ({
         code: String(feature.properties.adcode),
         name: feature.properties.name
       }))
-      this.cache.set(cacheKey, areas)
-      return areas
     } catch (error) {
-      console.error('加载区县失败:', error)
-      return []
+      const message = error.name === 'AbortError' ? '地区数据服务响应超时' : '地区数据服务暂不可用'
+      throw new Error(message, { cause: error })
+    } finally {
+      window.clearTimeout(timeout)
     }
   }
 }
@@ -828,6 +838,7 @@ const isMunicipality = (provinceCode) => {
 
 // 省份改变时加载城市
 const handleProvinceChange = async (provinceCode) => {
+  regionLoadError.value = ''
   const requestId = ++provinceRequestId
   // 省份变化后，之前按旧省份发出的城市/区县请求不能再写入表单。
   cityRequestId++
@@ -872,6 +883,9 @@ const handleProvinceChange = async (provinceCode) => {
       console.error('加载直辖市区县数据失败:', error);
       // 尝试备用方案：使用直辖市的标准区县代码
       areas.value = await loadMunicipalityAreas(provinceCode);
+      if (areas.value.length === 0) {
+        regionLoadError.value = '地区数据服务暂不可用，请检查网络后重试。'
+      }
     } finally {
       if (requestId === provinceRequestId) areaLoading.value = false;
     }
@@ -884,7 +898,7 @@ const handleProvinceChange = async (provinceCode) => {
     } catch (error) {
       if (requestId !== provinceRequestId || addressForm.provinceCode !== provinceCode) return
       console.error('加载城市失败:', error);
-      ElMessage.error('加载城市数据失败');
+      regionLoadError.value = '城市数据加载失败，请检查网络后重试。'
     } finally {
       if (requestId === provinceRequestId) cityLoading.value = false;
     }
@@ -893,6 +907,7 @@ const handleProvinceChange = async (provinceCode) => {
 
 // 城市改变时加载区县
 const handleCityChange = async (cityCode) => {
+  regionLoadError.value = ''
   const requestId = ++cityRequestId
 
   // 确保 cityCode 是字符串而不是数组
@@ -928,11 +943,22 @@ const handleCityChange = async (cityCode) => {
   } catch (error) {
     if (requestId !== cityRequestId || addressForm.cityCode !== cityCode) return
     console.error('加载区域失败:', error);
-    ElMessage.error('加载区域数据失败');
+    regionLoadError.value = '区县数据加载失败，请检查网络后重试。'
   } finally {
     if (requestId === cityRequestId) areaLoading.value = false;
   }
 };
+
+const retryRegionLoad = async () => {
+  if (!addressForm.provinceCode) return
+  if (cityLoading.value || areaLoading.value) return
+  regionLoadError.value = ''
+  if (isEditAddress.value) {
+    await loadEditAddressData({ ...addressForm })
+  } else {
+    await handleProvinceChange(addressForm.provinceCode)
+  }
+}
 
 // 添加直辖市区县数据备用加载函数
 const loadMunicipalityAreas = async (provinceCode) => {
@@ -1262,6 +1288,7 @@ const loadEditAddressData = async (address) => {
     }
   } catch (error) {
     console.error('加载省市区数据失败:', error)
+    regionLoadError.value = '地区数据加载失败，请检查网络后重试。'
   }
 }
 
