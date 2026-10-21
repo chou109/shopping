@@ -36,7 +36,9 @@
           </template>
         </el-input>
         <div class="login-code">
-          <img :src="codeUrl" @click="getCode" class="login-code-img" />
+          <button type="button" class="login-code-button" aria-label="刷新验证码" @click="getCode">
+            <img :src="codeUrl" alt="验证码" class="login-code-img" />
+          </button>
         </div>
       </el-form-item>
       <el-checkbox v-model="loginForm.rememberMe" style="margin:0px 0px 25px 0px;">记住密码</el-checkbox>
@@ -278,5 +280,18 @@ export default {
 
 .login-code-img {
   height: 38px;
+}
+
+.login-code-button {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.login-code-button:focus-visible {
+  outline: 3px solid #409eff;
+  outline-offset: 2px;
 }
 </style>

@@ -68,7 +68,10 @@
                 @input="onCodeInput" autocomplete="off" class="custom-input" />
             </div>
             <div class="register-code">
-              <img :src="codeUrl" @click="getCode" class="register-code-img" :title="loading ? '正在加载...' : '点击刷新验证码'" />
+              <button type="button" class="register-code-button" aria-label="刷新验证码"
+                :disabled="loading" :title="loading ? '正在加载...' : '点击刷新验证码'" @click="getCode">
+                <img :src="codeUrl" alt="验证码" class="register-code-img" />
+              </button>
             </div>
           </div>
           <div v-if="errors.code" class="error-message">{{ errors.code }}</div>
@@ -464,10 +467,22 @@ onMounted(() => {
 
 .register-code-img {
   height: 100%;
-  cursor: pointer;
   border-radius: 4px;
   border: 1px solid #dcdfe6;
   transition: all 0.3s ease;
+}
+
+.register-code-button {
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.register-code-button:focus-visible {
+  outline: 3px solid #409eff;
+  outline-offset: 2px;
 }
 
 .register-code-img:hover {

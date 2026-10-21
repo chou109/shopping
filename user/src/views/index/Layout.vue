@@ -4,12 +4,14 @@
     <nav class="nav-header">
       <div class="container">
         <div class="logo">
-          <img src="@/assets/eshop.png" @click="toIndex()" alt="ESHOP" />
+          <router-link to="/" aria-label="返回商城首页">
+            <img src="@/assets/eshop.png" alt="ESHOP" />
+          </router-link>
         </div>
         <div class="header-search">
           <div class="wrapper">
             <input type="text" name="keyword" placeholder="搜索商品..." v-model="searchKeyword" @keyup.enter="handleSearch">
-            <a href="javascript:;" @click="handleSearch">搜索</a>
+            <button type="button" @click="handleSearch">搜索</button>
           </div>
         </div>
       </div>
@@ -102,10 +104,6 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 const searchKeyword = ref('')
 
-const toIndex = () => {
-  router.push('/')
-}
-
 const handleSearch = () => {
   if (searchKeyword.value.trim()) {
     router.push({
@@ -157,6 +155,11 @@ const handleSearch = () => {
   transform: scale(1.05);
 }
 
+.logo a:focus-visible {
+  outline: 3px solid #409eff;
+  outline-offset: 3px;
+}
+
 .header-search {
   flex: 0 0 400px;
 }
@@ -192,7 +195,7 @@ const handleSearch = () => {
   color: #999;
 }
 
-.header-search a {
+.header-search button {
   width: 80px;
   height: 100%;
   background: #409eff;
@@ -205,10 +208,16 @@ const handleSearch = () => {
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.3s ease;
+  border: 0;
 }
 
-.header-search a:hover {
+.header-search button:hover {
   background: #66b1ff;
+}
+
+.header-search button:focus-visible {
+  outline: 3px solid #1f2937;
+  outline-offset: -3px;
 }
 
 /* 主体内容区域 */
