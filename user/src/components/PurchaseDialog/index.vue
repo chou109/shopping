@@ -179,10 +179,13 @@
     :close-on-click-modal="true"
   >
     <div class="address-selector">
-      <div 
+      <button
+        type="button"
         v-for="addr in addressList" 
         :key="addr.id"
         :class="['address-item', { active: selectedAddressId === addr.id }]"
+        :aria-pressed="selectedAddressId === addr.id"
+        :aria-label="`选择${addr.receiveName}，${addr.receivePhone}，${addr.province}${addr.city}${addr.area}${addr.street}`"
         @click="handleSelectAddress(addr)"
       >
         <div class="address-content">
@@ -198,7 +201,7 @@
         <div class="address-check" v-if="selectedAddressId === addr.id">
           <el-icon><CircleCheckFilled /></el-icon>
         </div>
-      </div>
+      </button>
       <div v-if="addressList.length === 0" class="no-address-tip">
         暂无收货地址，请先在个人中心添加
       </div>
@@ -890,6 +893,7 @@ defineExpose({
 }
 
 .address-item {
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -899,6 +903,14 @@ defineExpose({
   margin-bottom: 12px;
   cursor: pointer;
   transition: all 0.3s;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.address-item:focus-visible {
+  outline: 3px solid #ff5000;
+  outline-offset: 2px;
 }
 
 .address-item:hover {
