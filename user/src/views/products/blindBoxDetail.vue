@@ -70,7 +70,6 @@ const product = ref({
 const currentImageIndex = ref(0)
 const quantity = ref(1)
 const addingToCart = ref(false)
-const activeTab = ref('detail')
 
 // 购买弹窗相关
 const purchaseDialogVisible = ref(false)
@@ -439,14 +438,14 @@ onMounted(() => {
             <!-- 商品详情区域 -->
             <div class="product-tabs">
               <div class="tabs-header">
-                <div :class="['tab-item', { active: activeTab === 'detail' }]" @click="activeTab = 'detail'">
+                <h2 class="tab-item active">
                   图文详情
-                </div>
+                </h2>
               </div>
 
               <div class="tabs-content">
                 <!-- 图文详情 -->
-                <div v-show="activeTab === 'detail'" class="tab-pane detail-pane">
+                <div class="tab-pane detail-pane">
                   <div class="detail-images">
                     <div v-for="(img, index) in imageUrls" :key="index" class="detail-image-item">
                       <img :src="img" :alt="`${product.name}-图${index + 1}`" />
@@ -824,6 +823,7 @@ onMounted(() => {
   user-select: none;
   flex: 1;
   text-align: center;
+  margin: 0;
 }
 
 .tab-item:hover {

@@ -788,19 +788,26 @@ onMounted(() => {
 
             <!-- 商品详情和评价区域 -->
             <div class="product-tabs">
-              <div class="tabs-header">
-                <div :class="['tab-item', { active: activeTab === 'detail' }]" @click="activeTab = 'detail'">
+              <div class="tabs-header" role="tablist" aria-label="商品详情内容">
+                <button type="button" id="product-detail-tab" role="tab"
+                  :class="['tab-item', { active: activeTab === 'detail' }]"
+                  :aria-selected="activeTab === 'detail'" :aria-controls="'product-detail-panel'"
+                  :tabindex="activeTab === 'detail' ? 0 : -1" @click="activeTab = 'detail'">
                   图文详情
-                </div>
-                <div :class="['tab-item', { active: activeTab === 'comments' }]" @click="activeTab = 'comments'">
+                </button>
+                <button type="button" id="product-comments-tab" role="tab"
+                  :class="['tab-item', { active: activeTab === 'comments' }]"
+                  :aria-selected="activeTab === 'comments'" :aria-controls="'product-comments-panel'"
+                  :tabindex="activeTab === 'comments' ? 0 : -1" @click="activeTab = 'comments'">
                   商品评价
                   <span class="comment-count" v-if="commentStats.total > 0">({{ commentStats.total }})</span>
-                </div>
+                </button>
               </div>
 
               <div class="tabs-content">
                 <!-- 图文详情 -->
-                <div v-show="activeTab === 'detail'" class="tab-pane detail-pane">
+                <div id="product-detail-panel" role="tabpanel" aria-labelledby="product-detail-tab" tabindex="0"
+                  v-show="activeTab === 'detail'" class="tab-pane detail-pane">
                   <div class="detail-images">
                     <div v-for="(img, index) in allImages" :key="index" class="detail-image-item">
                       <img :src="getProductImageUrl(img)" :alt="`${product.name}-图${index + 1}`"
@@ -810,7 +817,8 @@ onMounted(() => {
                 </div>
 
                 <!-- 商品评价 -->
-                <div v-show="activeTab === 'comments'" class="tab-pane comments-pane">
+                <div id="product-comments-panel" role="tabpanel" aria-labelledby="product-comments-tab" tabindex="0"
+                  v-show="activeTab === 'comments'" class="tab-pane comments-pane">
                   <!-- 评价概览 -->
                   <div class="comments-overview">
                     <div class="overview-score">
@@ -1364,6 +1372,14 @@ onMounted(() => {
   user-select: none;
   flex: 1;
   text-align: center;
+  border: 0;
+  background: transparent;
+  font: inherit;
+}
+
+.tab-item:focus-visible {
+  outline: 3px solid #ff5000;
+  outline-offset: -3px;
 }
 
 .tab-item:hover {
