@@ -77,8 +77,11 @@ onMounted(() => {
     
     <div v-loading="loading" class="product-list">
       <div v-if="products.length > 0" class="product-grid">
-        <div class="product-item" v-for="item in products.slice(0, 8)" :key="item.id" 
-             @click="$router.push({ path: '/product/detail', query: { id: item.id } })">
+        <div class="product-item" v-for="item in products.slice(0, 8)" :key="item.id" role="button" tabindex="0"
+             :aria-label="`查看商品：${item.name}`"
+             @click="$router.push({ path: '/product/detail', query: { id: item.id } })"
+             @keydown.enter.prevent="$router.push({ path: '/product/detail', query: { id: item.id } })"
+             @keydown.space.prevent="$router.push({ path: '/product/detail', query: { id: item.id } })">
           <div class="product-card">
             <div class="product-image">
               <img 
@@ -173,6 +176,12 @@ onMounted(() => {
 .product-item {
   cursor: pointer;
   transition: transform 0.3s ease;
+}
+
+.product-item:focus-visible {
+  outline: 3px solid #ff6034;
+  outline-offset: 3px;
+  border-radius: 8px;
 }
 
 .product-item:hover {
