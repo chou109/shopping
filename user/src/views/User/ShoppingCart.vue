@@ -131,7 +131,7 @@
                 <el-icon>
                   <Lock />
                 </el-icon>
-                <span>安全支付保障</span>
+                <span>当前仅支持账户余额支付</span>
               </div>
             </div>
           </div>
