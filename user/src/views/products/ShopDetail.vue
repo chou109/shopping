@@ -141,7 +141,7 @@ import { Star, Service, Search, Grid, List } from '@element-plus/icons-vue'
 import { getShopInfo, getShopProducts } from '@/api/system/shop'
 import { recordFootprint } from '@/api/system/footprint'
 import { checkFavorite, toggleFavorite } from '@/api/system/favorite'
-import { isBlindBoxProduct } from '@/utils/product'
+import { filterProductsByKeyword, isBlindBoxProduct } from '@/utils/product'
 import { getToken } from '@/utils/auth'
 
 const route = useRoute()
@@ -183,11 +183,7 @@ const filteredProducts = computed(() => {
 
   // 搜索筛选
   if (searchKeyword.value) {
-    const keyword = searchKeyword.value.toLowerCase()
-    result = result.filter(p =>
-      p.name?.toLowerCase().includes(keyword) ||
-      p.description?.toLowerCase().includes(keyword)
-    )
+    result = filterProductsByKeyword(result, searchKeyword.value)
   }
 
   // 排序
