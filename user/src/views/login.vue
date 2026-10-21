@@ -72,6 +72,7 @@
 import { getCodeImg, getQQLoginUrl } from "@/api/login";
 import Cookies from "js-cookie";
 import { encrypt, decrypt } from '@/utils/jsencrypt'
+import { getSafeQQLoginUrl } from '@/utils/qq-login.mjs'
 
 export default {
   name: "Login",
@@ -130,11 +131,7 @@ export default {
       this.qqLoading = true;
       try {
         const response = await getQQLoginUrl();
-        const loginUrl = new URL(response?.data, window.location.origin);
-        if (loginUrl.protocol !== 'https:' || loginUrl.hostname !== 'qq.wch666.com' || loginUrl.pathname !== '/api/qq.php') {
-          throw new Error('QQ 登录地址无效');
-        }
-        window.location.assign(loginUrl.toString());
+        window.location.assign(getSafeQQLoginUrl(response?.data, window.location.origin));
       } catch {
         this.qqLoading = false;
         this.msgError('QQ登录暂不可用，请稍后重试');
