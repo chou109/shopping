@@ -52,7 +52,8 @@
 
       <!-- QQ登录按钮 -->
       <el-form-item style="width:100%;">
-        <el-button size="medium" round style="width:100%; background: #12B7F5; border-color: #12B7F5; color: #fff;"
+        <el-button size="medium" round :loading="qqLoading" :disabled="qqLoading"
+          style="width:100%; background: #12B7F5; border-color: #12B7F5; color: #fff;"
           @click="handleQQLogin">
           <svg style="width:18px;height:18px;vertical-align:middle;margin-right:8px;" viewBox="0 0 24 24"
             fill="currentColor">
@@ -68,7 +69,7 @@
 </template>
 
 <script>
-import { getCodeImg } from "@/api/login";
+import { getCodeImg, getQQLoginUrl } from "@/api/login";
 import Cookies from "js-cookie";
 import { encrypt, decrypt } from '@/utils/jsencrypt'
 
@@ -87,6 +88,7 @@ export default {
         uuid: ""
       },
       loading: false,
+      qqLoading: false,
       redirect: undefined
     };
   },
@@ -123,10 +125,20 @@ export default {
     this.getCookie();
   },
   methods: {
-    handleQQLogin() {
-      // 跳转到QQ登录页面
-      const qqLoginUrl = 'https://qq.wch666.com/api/qq.php?token=4922a38240ef9fd21bfc5dd47bff232e&msg=user_login&display=pc';
-      window.location.href = qqLoginUrl;
+    async handleQQLogin() {
+      if (this.qqLoading) return;
+      this.qqLoading = true;
+      try {
+        const response = await getQQLoginUrl();
+        const loginUrl = new URL(response?.data, window.location.origin);
+        if (loginUrl.protocol !== 'https:' || loginUrl.hostname !== 'qq.wch666.com' || loginUrl.pathname !== '/api/qq.php') {
+          throw new Error('QQ 登录地址无效');
+        }
+        window.location.assign(loginUrl.toString());
+      } catch {
+        this.qqLoading = false;
+        this.msgError('QQ登录暂不可用，请稍后重试');
+      }
     },
     getCode() {
       return getCodeImg().then(res => {

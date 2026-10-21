@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
@@ -35,8 +36,9 @@ public class QQLoginController {
     private static final String QQ_USER_INFO_URL = "https://qq.wch666.com/api/get_user_info.php";
     private static final String QQ_TOKEN = "4922a38240ef9fd21bfc5dd47bff232e";
 
-    // 前端登录成功后的回调页面
-    private static final String FRONTEND_CALLBACK_URL = "http://localhost:18183/qq-callback";
+    // 前端登录成功后的回调页面由部署配置提供，默认值仅用于本地开发。
+    @Value("${shopping.qq.frontend-callback-url}")
+    private String frontendCallbackUrl;
 
     @Autowired
     private ISysUserService userService;
@@ -80,7 +82,7 @@ public class QQLoginController {
             
             if (qqUserInfo == null) {
                 log.error("获取QQ用户信息失败: 返回null");
-                response.sendRedirect(FRONTEND_CALLBACK_URL + "?error=获取QQ用户信息失败");
+                response.sendRedirect(frontendCallbackUrl + "?error=获取QQ用户信息失败");
                 return;
             }
 
@@ -93,7 +95,7 @@ public class QQLoginController {
             String avatar = avatarUrl.length() > 200 ? "" : avatarUrl;
 
             if (qqOpenid == null || qqOpenid.isEmpty()) {
-                response.sendRedirect(FRONTEND_CALLBACK_URL + "?error=无法获取QQ标识");
+                response.sendRedirect(frontendCallbackUrl + "?error=无法获取QQ标识");
                 return;
             }
 
@@ -139,11 +141,11 @@ public class QQLoginController {
             log.info("QQ登录成功");
 
             // 5. 重定向到前端，携带token
-            response.sendRedirect(FRONTEND_CALLBACK_URL + "?token=" + token);
+            response.sendRedirect(frontendCallbackUrl + "?token=" + token);
 
         } catch (Exception e) {
             log.error("QQ登录处理失败，异常类型={}", e.getClass().getSimpleName());
-            response.sendRedirect(FRONTEND_CALLBACK_URL + "?error=QQ登录失败，请稍后重试");
+            response.sendRedirect(frontendCallbackUrl + "?error=QQ登录失败，请稍后重试");
         }
     }
 

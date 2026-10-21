@@ -23,6 +23,11 @@ ruoyi:
   # 验证码类型
   captcha-type: math
 
+# QQ 登录成功后的前端回调地址。部署环境应设置 SHOPPING_QQ_FRONTEND_CALLBACK_URL 为实际 HTTPS 地址。
+shopping:
+  qq:
+    frontend-callback-url: ${SHOPPING_QQ_FRONTEND_CALLBACK_URL:http://localhost:18183/qq-callback}
+
 # 开发环境配置
 server:
   # 服务器的HTTP端口，默认为8080

@@ -47,3 +47,14 @@ test('honors the server captcha switch on consumer login and registration forms'
   assert.match(loginSource, /this\.captchaEnabled && !value/)
   assert.match(registerSource, /if \(!captchaEnabled\.value\)/)
 })
+
+test('loads the QQ authorization URL from the backend and rejects unexpected redirect targets', () => {
+  const apiSource = readFileSync(new URL('../src/api/login.js', import.meta.url), 'utf8')
+  const loginSource = readFileSync(filename, 'utf8')
+  assert.match(apiSource, /url: '\/qq\/login-url'/)
+  assert.match(loginSource, /getCodeImg, getQQLoginUrl/)
+  assert.doesNotMatch(loginSource, /qq\.wch666\.com\/api\/qq\.php\?token=/)
+  assert.match(loginSource, /loginUrl\.protocol !== 'https:'/)
+  assert.match(loginSource, /loginUrl\.hostname !== 'qq\.wch666\.com'/)
+  assert.match(loginSource, /this\.msgError\('QQ登录暂不可用，请稍后重试'\)/)
+})

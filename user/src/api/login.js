@@ -39,6 +39,13 @@ export function getCodeImg() {
   })
 }
 
+export function getQQLoginUrl() {
+  return request({
+    url: '/qq/login-url',
+    method: 'get'
+  })
+}
+
 export function register(data) {
   return request({
     url: '/register',
