@@ -33,13 +33,13 @@
             <div class="view-options">
               <el-button-group>
                 <el-button style="width: 20px;" :type="viewMode === 'grid' ? 'primary' : ''" size="small"
-                  @click="viewMode = 'grid'">
+                  aria-label="网格视图" :aria-pressed="viewMode === 'grid'" @click="viewMode = 'grid'">
                   <el-icon>
                     <Grid />
                   </el-icon>
                 </el-button>
                 <el-button style="width: 20px;" :type="viewMode === 'list' ? 'primary' : ''" size="small"
-                  @click="viewMode = 'list'">
+                  aria-label="列表视图" :aria-pressed="viewMode === 'list'" @click="viewMode = 'list'">
                   <el-icon>
                     <List />
                   </el-icon>
@@ -67,7 +67,7 @@
         <div class="search-box">
           <el-input v-model="searchKeyword" placeholder="搜索店内商品" clearable @keyup.enter="searchProducts">
             <template #append>
-              <el-button :icon="Search" @click="searchProducts" />
+              <el-button :icon="Search" aria-label="搜索店内商品" @click="searchProducts" />
             </template>
           </el-input>
         </div>
@@ -85,9 +85,11 @@
       <!-- 商品网格 -->
       <div v-if="viewMode === 'grid'" class="products-grid">
         <div v-for="product in filteredProducts" :key="product.id" class="product-card"
-          @click="goToProduct(product.id)">
+          role="button" tabindex="0" :aria-label="`查看商品：${product.name}`"
+          @click="goToProduct(product.id)"
+          @keydown.enter.prevent="goToProduct(product.id)" @keydown.space.prevent="goToProduct(product.id)">
           <div class="product-image">
-            <img :src="getImageUrl(product.mainImage)" :alt="product.name" />
+            <img :src="getImageUrl(product.mainImage)" :alt="product.name" @error="handleImageError" />
             <div class="product-tags">
               <span v-if="product.activityId" class="tag hot">活动</span>
             </div>
@@ -110,9 +112,11 @@
       <!-- 商品列表视图 -->
       <div v-else class="products-list">
         <div v-for="product in filteredProducts" :key="product.id" class="product-item"
-          @click="goToProduct(product.id)">
+          role="button" tabindex="0" :aria-label="`查看商品：${product.name}`"
+          @click="goToProduct(product.id)"
+          @keydown.enter.prevent="goToProduct(product.id)" @keydown.space.prevent="goToProduct(product.id)">
           <div class="item-image">
-            <img :src="getImageUrl(product.mainImage)" :alt="product.name" />
+            <img :src="getImageUrl(product.mainImage)" :alt="product.name" @error="handleImageError" />
           </div>
           <div class="item-content">
             <h3 class="item-title">{{ product.name }}</h3>
