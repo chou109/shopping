@@ -28,3 +28,20 @@ test('keeps user-info loading in the login error chain and clears a partial logi
   assert.match(source, /this\.\$store\.dispatch\('FedLogOut'\)\.finally\(/)
   assert.match(source, /验证码加载失败，请点击验证码区域重试/)
 })
+
+test('honors the server captcha switch on consumer login and registration forms', () => {
+  const loginSource = readFileSync(filename, 'utf8')
+  const registerFilename = fileURLToPath(new URL('../src/views/register.vue', import.meta.url))
+  const registerSource = readFileSync(registerFilename, 'utf8')
+  const { descriptor: loginDescriptor } = parse(loginSource, { filename })
+  const { descriptor: registerDescriptor } = parse(registerSource, { filename: registerFilename })
+  const loginTemplate = compileTemplate({ source: loginDescriptor.template.content, filename, id: 'login' })
+  const registerTemplate = compileTemplate({ source: registerDescriptor.template.content, filename: registerFilename, id: 'register' })
+
+  assert.deepEqual(loginTemplate.errors, [])
+  assert.deepEqual(registerTemplate.errors, [])
+  assert.match(loginTemplate.code, /_ctx\.captchaEnabled/)
+  assert.match(registerTemplate.code, /_ctx\.captchaEnabled/)
+  assert.match(loginSource, /this\.captchaEnabled && !value/)
+  assert.match(registerSource, /if \(!captchaEnabled\.value\)/)
+})

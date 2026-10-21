@@ -25,7 +25,7 @@
           </template>
         </el-input>
       </el-form-item>
-      <el-form-item prop="code">
+      <el-form-item v-if="captchaEnabled" prop="code">
         <el-input v-model="loginForm.code" auto-complete="off" placeholder="验证码" style="width: 63%" @keyup.enter="handleLogin">
           <template #prefix>
             <el-icon class="el-input__icon">
@@ -78,6 +78,7 @@ export default {
   data() {
     return {
       codeUrl: "",
+      captchaEnabled: true,
       cookiePassword: "",
       loginForm: {
         username: "",
@@ -86,18 +87,24 @@ export default {
         code: "",
         uuid: ""
       },
-      loginRules: {
-        username: [
-          { required: true, trigger: "blur", message: "用户名不能为空" }
-        ],
-        password: [
-          { required: true, trigger: "blur", message: "密码不能为空" }
-        ],
-        code: [{ required: true, trigger: "change", message: "验证码不能为空" }]
-      },
       loading: false,
       redirect: undefined
     };
+  },
+  computed: {
+    loginRules() {
+      return {
+        username: [{ required: true, trigger: "blur", message: "用户名不能为空" }],
+        password: [{ required: true, trigger: "blur", message: "密码不能为空" }],
+        code: [{
+          trigger: "change",
+          validator: (_rule, value, callback) => {
+            if (this.captchaEnabled && !value) callback(new Error("验证码不能为空"));
+            else callback();
+          }
+        }]
+      };
+    }
   },
   watch: {
     $route: {
@@ -124,13 +131,22 @@ export default {
     },
     getCode() {
       return getCodeImg().then(res => {
-        if (!res || !res.img || !res.uuid) {
+        this.captchaEnabled = res?.captchaEnabled === undefined ? true : Boolean(res.captchaEnabled);
+        this.codeUrl = '';
+        if (this.captchaEnabled && (!res.img || !res.uuid)) {
           throw new Error('验证码响应无效');
         }
-        this.codeUrl = "data:image/gif;base64," + res.img;
-        this.loginForm.uuid = res.uuid;
+        if (this.captchaEnabled) {
+          this.codeUrl = "data:image/gif;base64," + res.img;
+          this.loginForm.uuid = res.uuid;
+        } else {
+          this.loginForm.code = '';
+          this.loginForm.uuid = '';
+        }
       }).catch(() => {
+        this.captchaEnabled = true;
         this.codeUrl = '';
+        this.loginForm.code = '';
         this.loginForm.uuid = '';
         this.msgError('验证码加载失败，请点击验证码区域重试');
       });

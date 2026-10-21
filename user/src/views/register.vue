@@ -58,7 +58,7 @@
         </div>
 
         <!-- 验证码 -->
-        <div class="form-item">
+        <div v-if="captchaEnabled" class="form-item">
           <div class="code-container">
             <div class="input-wrapper" style="width: 65%;">
               <el-icon class="input-icon">
@@ -139,6 +139,7 @@ const errors = ref({
 const showPassword = ref(false)
 const showConfirmPassword = ref(false)
 const codeUrl = ref('')
+const captchaEnabled = ref(true)
 const loading = ref(false)
 
 // 输入处理函数
@@ -210,6 +211,10 @@ const validateConfirmPassword = () => {
 }
 
 const validateCode = () => {
+  if (!captchaEnabled.value) {
+    errors.value.code = ''
+    return true
+  }
   const value = registerForm.value.code
   if (!value || value.trim() === '') {
     errors.value.code = '请输入验证码'
@@ -226,12 +231,22 @@ async function getCode() {
   try {
     loading.value = true
     const res = await getCodeImg()
-    codeUrl.value = "data:image/gif;base64," + res.img
-    registerForm.value.uuid = res.uuid
+    captchaEnabled.value = res?.captchaEnabled === undefined ? true : Boolean(res.captchaEnabled)
+    codeUrl.value = ''
+    if (captchaEnabled.value) {
+      if (!res.img || !res.uuid) throw new Error('验证码响应无效')
+      codeUrl.value = "data:image/gif;base64," + res.img
+      registerForm.value.uuid = res.uuid
+    } else {
+      registerForm.value.uuid = ''
+    }
     registerForm.value.code = ''
     errors.value.code = ''
-  } catch (error) {
-    console.error('获取验证码失败:', error)
+  } catch {
+    captchaEnabled.value = true
+    codeUrl.value = ''
+    registerForm.value.uuid = ''
+    registerForm.value.code = ''
     ElMessage.error('获取验证码失败，请重试')
   } finally {
     loading.value = false
