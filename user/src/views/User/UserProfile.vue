@@ -621,6 +621,8 @@ class AreaDataService {
 }
 
 const areaService = new AreaDataService()
+let provinceRequestId = 0
+let cityRequestId = 0
 
 // 加载省份数据
 const loadProvinces = async () => {
@@ -646,6 +648,9 @@ const isMunicipality = (provinceCode) => {
 
 // 省份改变时加载城市
 const handleProvinceChange = async (provinceCode) => {
+  const requestId = ++provinceRequestId
+  // 省份变化后，之前按旧省份发出的城市/区县请求不能再写入表单。
+  cityRequestId++
 
   // 确保 provinceCode 是字符串而不是数组
   if (Array.isArray(provinceCode)) {
@@ -681,29 +686,34 @@ const handleProvinceChange = async (provinceCode) => {
     try {
       // 直辖市的数据通常挂在省级代码下
       areas.value = await areaService.getAreas(provinceCode);
+      if (requestId !== provinceRequestId || addressForm.provinceCode !== provinceCode) return
     } catch (error) {
+      if (requestId !== provinceRequestId || addressForm.provinceCode !== provinceCode) return
       console.error('加载直辖市区县数据失败:', error);
       // 尝试备用方案：使用直辖市的标准区县代码
       areas.value = await loadMunicipalityAreas(provinceCode);
     } finally {
-      areaLoading.value = false;
+      if (requestId === provinceRequestId) areaLoading.value = false;
     }
   } else {
     // 非直辖市，正常加载城市数据
     cityLoading.value = true;
     try {
       cities.value = await areaService.getCities(provinceCode);
+      if (requestId !== provinceRequestId || addressForm.provinceCode !== provinceCode) return
     } catch (error) {
+      if (requestId !== provinceRequestId || addressForm.provinceCode !== provinceCode) return
       console.error('加载城市失败:', error);
       ElMessage.error('加载城市数据失败');
     } finally {
-      cityLoading.value = false;
+      if (requestId === provinceRequestId) cityLoading.value = false;
     }
   }
 };
 
 // 城市改变时加载区县
 const handleCityChange = async (cityCode) => {
+  const requestId = ++cityRequestId
 
   // 确保 cityCode 是字符串而不是数组
   if (Array.isArray(cityCode)) {
@@ -734,11 +744,13 @@ const handleCityChange = async (cityCode) => {
   areaLoading.value = true;
   try {
     areas.value = await areaService.getAreas(cityCode);
+    if (requestId !== cityRequestId || addressForm.cityCode !== cityCode) return
   } catch (error) {
+    if (requestId !== cityRequestId || addressForm.cityCode !== cityCode) return
     console.error('加载区域失败:', error);
     ElMessage.error('加载区域数据失败');
   } finally {
-    areaLoading.value = false;
+    if (requestId === cityRequestId) areaLoading.value = false;
   }
 };
 
