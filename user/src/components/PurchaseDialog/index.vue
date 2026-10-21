@@ -68,7 +68,7 @@
               </div>
               <div class="summary-row">
                 <span class="label">邮费：</span>
-                <span class="value free">{{ orderData.postage > 0 ? '¥' + formatPrice(orderData.postage) : '免邮费' }}</span>
+                <span class="value">¥{{ formatPrice(orderData.postage || 0) }}</span>
               </div>
               <div class="summary-row total">
                 <span class="label">实付金额：</span>
@@ -121,10 +121,14 @@
           </div>
           
           <div class="payment-methods">
-            <div 
+            <button
+              type="button"
               v-for="method in paymentMethods" 
               :key="method.value"
               :class="['payment-method', { active: selectedPaymentType === method.value, disabled: method.disabled }]"
+              :aria-label="`${method.label}${method.disabled ? '，暂未开放' : ''}`"
+              :aria-pressed="selectedPaymentType === method.value"
+              :disabled="method.disabled"
               @click="selectPaymentMethod(method)"
             >
               <div class="method-icon">
@@ -140,7 +144,7 @@
               <div class="method-unavailable" v-if="method.disabled">
                 <el-tag type="info" size="small">暂未开放</el-tag>
               </div>
-            </div>
+            </button>
           </div>
 
           <!-- 支付提示 -->
@@ -759,6 +763,7 @@ defineExpose({
 }
 
 .payment-method {
+  width: 100%;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -768,6 +773,14 @@ defineExpose({
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.payment-method:focus-visible {
+  outline: 3px solid #ff5000;
+  outline-offset: 2px;
 }
 
 .payment-method:hover {
