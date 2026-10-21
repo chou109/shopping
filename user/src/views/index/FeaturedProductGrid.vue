@@ -5,7 +5,9 @@
       <button v-if="showMore" type="button" @click="$emit('view-more')">查看全部 <span>›</span></button>
     </div>
     <div class="product-grid">
-      <article v-for="product in products" :key="product.id" class="product-card" @click="$emit('select', product)">
+      <article v-for="product in products" :key="product.id" class="product-card" role="button" tabindex="0"
+        :aria-label="`查看商品：${product.name}`" @click="$emit('select', product)"
+        @keydown.enter.prevent="$emit('select', product)" @keydown.space.prevent="$emit('select', product)">
         <div class="product-image">
           <img :src="getProductImageUrl(product.mainImage || product.main_image)" :alt="product.name" @error="handleImageError" />
         </div>
@@ -103,6 +105,11 @@ const formatPrice = (price) => Number(price || 0).toFixed(2)
 .product-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 22px rgba(92, 59, 39, 0.12);
+}
+
+.product-card:focus-visible {
+  outline: 3px solid #ff5500;
+  outline-offset: 3px;
 }
 
 .product-image {
