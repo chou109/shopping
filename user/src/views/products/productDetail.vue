@@ -84,6 +84,7 @@ const commentStats = ref({
   scoreDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
 })
 const commentLoading = ref(false)
+const commentLoadError = ref(false)
 const commentPageParams = ref({
   pageNum: 1,
   pageSize: 10,
@@ -133,6 +134,7 @@ const loadProductData = async () => {
   shopInfoLoadError.value = false
   productComments.value = []
   commentLoading.value = false
+  commentLoadError.value = false
   commentStats.value = { total: 0, averageScore: 0, scoreDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } }
   commentPageParams.value.total = 0
   currentImageIndex.value = 0
@@ -246,6 +248,7 @@ const loadProductComments = async (productId = product.value.id, requestId = pro
   if (!productId) return
 
   commentLoading.value = true
+  commentLoadError.value = false
   try {
     const response = await getCommentTree(productId)
     if (requestId !== productRequestId) return
@@ -308,6 +311,7 @@ const loadProductComments = async (productId = product.value.id, requestId = pro
       commentStats.value = calculateCommentStatsFromData()
     } else {
       console.warn('评论API返回错误:', response.msg || '未知错误')
+      commentLoadError.value = true
       productComments.value = []
       commentPageParams.value.total = productComments.value.length
       commentStats.value = calculateCommentStatsFromData()
@@ -315,6 +319,7 @@ const loadProductComments = async (productId = product.value.id, requestId = pro
   } catch (error) {
     if (requestId !== productRequestId) return
     console.error('加载商品评价失败:', error)
+    commentLoadError.value = true
     productComments.value = []
     commentPageParams.value.total = productComments.value.length
     commentStats.value = calculateCommentStatsFromData()
@@ -877,6 +882,12 @@ watch(() => route.query.id, (newId, oldId) => {
                   <div class="comments-list">
                     <div v-if="commentLoading" class="loading-comments">
                       加载中...
+                    </div>
+                    <div v-else-if="commentLoadError" class="no-comments">
+                      <div class="empty-state">
+                        <p>评价加载失败</p>
+                        <el-button link type="primary" @click="loadProductComments(product.id)">重试</el-button>
+                      </div>
                     </div>
                     <div v-else-if="productComments.length > 0">
                       <!-- 递归渲染评论树 -->
