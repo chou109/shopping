@@ -728,37 +728,37 @@ const logout = () => {
   border-radius: 12px;
   backdrop-filter: blur(10px);
   background: rgba(255, 255, 255, 0.95);
+}
 
-  .el-dropdown-menu__item {
-    padding: 12px 20px;
-    font-size: 14px;
-    color: #333;
-    border-radius: 8px;
-    margin: 4px 8px;
-    transition: all 0.3s ease;
+:deep(.el-dropdown-menu__item) {
+  padding: 12px 20px;
+  font-size: 14px;
+  color: #333;
+  border-radius: 8px;
+  margin: 4px 8px;
+  transition: all 0.3s ease;
+}
 
-    .el-icon {
-      margin-right: 10px;
-      font-size: 16px;
-      color: #666;
-    }
-  }
+:deep(.el-dropdown-menu__item .el-icon) {
+  margin-right: 10px;
+  font-size: 16px;
+  color: #666;
+}
 
-  .el-dropdown-menu__item:hover {
-    color: #ff5500;
-    background: linear-gradient(135deg, rgba(255, 85, 0, 0.08) 0%, rgba(255, 119, 0, 0.08) 100%);
-    transform: translateX(4px);
+:deep(.el-dropdown-menu__item:hover) {
+  color: #ff5500;
+  background: linear-gradient(135deg, rgba(255, 85, 0, 0.08) 0%, rgba(255, 119, 0, 0.08) 100%);
+  transform: translateX(4px);
+}
 
-    .el-icon {
-      color: #ff5500;
-    }
-  }
+:deep(.el-dropdown-menu__item:hover .el-icon) {
+  color: #ff5500;
+}
 
-  .el-dropdown-menu__item--divided {
-    border-top: 1px solid #f0f0f0;
-    margin-top: 8px;
-    padding-top: 16px;
-  }
+:deep(.el-dropdown-menu__item--divided) {
+  border-top: 1px solid #f0f0f0;
+  margin-top: 8px;
+  padding-top: 16px;
 }
 
 /* 主体内容 - 添加顶部内边距以避开固定导航栏 */
@@ -963,10 +963,10 @@ const logout = () => {
     flex-direction: column;
     padding: 5px 3px;
     font-size: 11px;
+  }
 
-    .link-text {
-      margin-bottom: 2px;
-    }
+  .nav-link .link-text {
+    margin-bottom: 2px;
   }
 
   .count-badge {
