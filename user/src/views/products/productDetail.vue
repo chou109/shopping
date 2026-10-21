@@ -463,8 +463,18 @@ const decreaseQuantity = () => {
   }
 }
 
+const ensureLoginForPurchase = () => {
+  if (getToken()) return true
+
+  ElMessage.warning('请先登录后再购买')
+  router.push({ path: '/login', query: { redirect: route.fullPath } })
+  return false
+}
+
 // 添加到购物车
 const handleAddToCart = async () => {
+  if (!ensureLoginForPurchase()) return
+
   if (!product.value.id) {
     ElMessage.warning('商品信息不完整')
     return
@@ -513,6 +523,8 @@ const handleAddToCart = async () => {
 
 // 立即购买
 const handleBuyNow = async () => {
+  if (!ensureLoginForPurchase()) return
+
   if (!product.value.id) {
     ElMessage.warning('商品信息不完整')
     return

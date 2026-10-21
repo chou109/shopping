@@ -118,6 +118,7 @@ public class SecurityConfig {
                     .antMatchers("/system/shop/hot").permitAll()
                     .antMatchers("/system/shop/search").permitAll()
                     .antMatchers("/system/product/shop/**").permitAll()
+                    .antMatchers("/system/product/public/**").permitAll()
                     // 商品浏览页和商品详情页允许访客读取；写入及管理接口仍需登录
                     .antMatchers(HttpMethod.GET,
                             "/system/category/enabled/list",
