@@ -143,10 +143,58 @@ public class UserFootprintController extends BaseController
         return getDataTable(list);
     }
 
+    /** 查询当前登录用户自己的足迹 */
+    @Operation(summary = "查询我的足迹")
+    @GetMapping("/my")
+    public TableDataInfo listMyFootprints(@RequestParam(value = "targetType", required = false) Integer targetType)
+    {
+        Long userId = SecurityUtils.getUserId();
+        if (userId == null) return getDataTable(null);
+        startPage();
+        return getDataTable(userFootprintService.selectFootprintByUserId(userId, targetType));
+    }
+
+    @Operation(summary = "查询我的最近浏览")
+    @GetMapping("/my/recent")
+    public AjaxResult getMyRecent(@RequestParam(defaultValue = "10") Integer limit)
+    {
+        Long userId = SecurityUtils.getUserId();
+        if (userId == null) return error("用户未登录");
+        return success(userFootprintService.selectRecentFootprint(userId, limit));
+    }
+
+    @Operation(summary = "统计我的足迹数量")
+    @GetMapping("/my/count")
+    public AjaxResult countMyFootprints()
+    {
+        Long userId = SecurityUtils.getUserId();
+        if (userId == null) return error("用户未登录");
+        return success(userFootprintService.countUserFootprint(userId));
+    }
+
+    @Operation(summary = "删除我的足迹")
+    @DeleteMapping("/my/{id}")
+    public AjaxResult deleteMyFootprint(@PathVariable Long id)
+    {
+        Long userId = SecurityUtils.getUserId();
+        if (userId == null) return error("用户未登录");
+        return toAjax(userFootprintService.deleteUserFootprintByIdForUser(id, userId));
+    }
+
+    @Operation(summary = "清空我的足迹")
+    @DeleteMapping("/my/clear")
+    public AjaxResult clearMyFootprints()
+    {
+        Long userId = SecurityUtils.getUserId();
+        if (userId == null) return error("用户未登录");
+        return toAjax(userFootprintService.clearUserFootprint(userId));
+    }
+
     /**
      * 查询用户最近浏览
      */
     @Operation(summary = "查询用户最近浏览")
+    @PreAuthorize("@ss.hasPermi('system:footprint:query')")
     @GetMapping("/recent/{userId}")
     public AjaxResult getRecent(@PathVariable Long userId,
                                 @RequestParam(value = "limit", defaultValue = "10") Integer limit)
@@ -171,6 +219,7 @@ public class UserFootprintController extends BaseController
      * 统计用户足迹数量
      */
     @Operation(summary = "统计用户足迹数量")
+    @PreAuthorize("@ss.hasPermi('system:footprint:query')")
     @GetMapping("/count/{userId}")
     public AjaxResult count(@PathVariable Long userId)
     {

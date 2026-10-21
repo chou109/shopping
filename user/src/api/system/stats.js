@@ -33,9 +33,9 @@ export function getUserCartStats(userId) {
 }
 
 // 获取足迹数量
-export function getFootprintCount(userId) {
+export function getFootprintCount() {
   return request({
-    url: '/system/footprint/count/' + userId,
+    url: '/system/footprint/my/count',
     method: 'get'
   })
 }

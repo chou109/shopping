@@ -210,6 +210,13 @@ public class UserFootprintServiceImpl extends ServiceImpl<UserFootprintMapper, U
         footprint.setUpdateTime(DateUtils.getNowDate());
         return userFootprintMapper.updateUserFootprint(footprint);
     }
+
+    @Override
+    public int deleteUserFootprintByIdForUser(Long id, Long userId)
+    {
+        if (id == null || userId == null) return 0;
+        return userFootprintMapper.deleteUserFootprintByIdForUser(id, userId);
+    }
     /**
      * 清空用户的足迹
      *

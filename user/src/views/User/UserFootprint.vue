@@ -384,7 +384,7 @@ const loadFootprints = async (reset = true) => {
   const requestedPageNum = pageNum.value
   try {
     const targetType = activeFilter.value === 'shop' ? 2 : activeFilter.value === 'product' ? 1 : undefined
-    const response = await listFootprintByUser(userId, {
+    const response = await listFootprintByUser({
       pageNum: requestedPageNum,
       pageSize,
       targetType
@@ -450,7 +450,7 @@ const handleClearAll = async () => {
       return
     }
 
-    const response = await clearFootprint(userId)
+    const response = await clearFootprint()
     if (response.code === 200) {
       ElMessage.success('清空成功')
       footprints.value = []

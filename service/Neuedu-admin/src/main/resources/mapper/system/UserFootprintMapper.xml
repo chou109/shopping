@@ -142,6 +142,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         delete from user_footprint where id = #{id}
     </delete>
 
+    <update id="deleteUserFootprintByIdForUser">
+        update user_footprint set delete_flag = 1, update_time = now()
+        where id = #{id} and user_id = #{userId} and delete_flag = 0
+    </update>
+
     <delete id="deleteUserFootprintByIds" parameterType="String">
         delete from user_footprint where id in 
         <foreach item="id" collection="array" open="(" separator="," close=")">

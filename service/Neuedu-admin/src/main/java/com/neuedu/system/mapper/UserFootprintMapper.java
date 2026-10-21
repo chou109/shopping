@@ -117,6 +117,8 @@ public interface UserFootprintMapper extends BaseMapper<UserFootprint>
      */
     public int clearUserFootprint(@Param("userId") Long userId);
 
+    public int deleteUserFootprintByIdForUser(@Param("id") Long id, @Param("userId") Long userId);
+
     /**
      * 统计用户足迹数量
      *

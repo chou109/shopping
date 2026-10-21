@@ -60,6 +60,8 @@ public interface IUserFootprintService extends IService<UserFootprint>
      */
     public int deleteUserFootprintById(Long id);
 
+    public int deleteUserFootprintByIdForUser(Long id, Long userId);
+
 
     // ============ 新增的业务方法 ============
 
