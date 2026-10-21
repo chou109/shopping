@@ -23,15 +23,15 @@
 
             <div class="stats-section">
               <router-link class="stat-item" to="/user/orders" aria-label="查看我的订单">
-                <div class="stat-value">{{ userStats.orderCount || 0 }}</div>
+                <div class="stat-value">{{ userStats.orderCount ?? '—' }}</div>
                 <div class="stat-label">订单</div>
               </router-link>
               <router-link class="stat-item" to="/user/favoriteProduct" aria-label="查看收藏商品">
-                <div class="stat-value">{{ userStats.favoriteCount || 0 }}</div>
+                <div class="stat-value">{{ userStats.favoriteCount ?? '—' }}</div>
                 <div class="stat-label">收藏</div>
               </router-link>
               <router-link class="stat-item" to="/user/footprint" aria-label="查看浏览足迹">
-                <div class="stat-value">{{ userStats.footprintCount || 0 }}</div>
+                <div class="stat-value">{{ userStats.footprintCount ?? '—' }}</div>
                 <div class="stat-label">足迹</div>
               </router-link>
             </div>
@@ -353,7 +353,6 @@ import { getUserProfile, updateUserProfile, updateUserPwd } from '@/api/system/u
 import { getToken } from '@/utils/auth'
 import { DEFAULT_AVATAR_IMAGE, getProductImageUrl } from '@/utils/image'
 import { getFavoriteStats } from '@/api/system/favorite'
-import { getCartCount } from '@/api/system/cart'
 import { getFootprintCount, getOrderCount } from '@/api/system/stats'
 import { AreaDataService } from '@/utils/areaService.mjs'
 // 导入地址管理相关的API
@@ -387,10 +386,9 @@ const areas = ref([])
 // 用户信息
 const userInfo = ref({})
 const userStats = ref({
-  orderCount: 0,
-  favoriteCount: 0,
-  footprintCount: 0,
-  cartCount: 0
+  orderCount: null,
+  favoriteCount: null,
+  footprintCount: null
 })
 
 // 头像URL计算属性
@@ -475,20 +473,23 @@ const loadUserInfo = async () => {
 }
 
 const loadProfileStats = async () => {
-  const requests = [getOrderCount(), getFavoriteStats(), getFootprintCount(), getCartCount()]
+  userStats.value = { orderCount: null, favoriteCount: null, footprintCount: null }
+  const requests = [getOrderCount(), getFavoriteStats(), getFootprintCount()]
   const results = await Promise.allSettled(requests)
   const countFrom = (result) => {
-    if (result.status !== 'fulfilled') return 0
+    if (result.status !== 'fulfilled') return null
     const value = result.value?.data
-    if (typeof value === 'number') return value
-    if (typeof value === 'string') return Number(value) || 0
-    return Number(value?.count ?? value?.total ?? value?.totalCount ?? 0) || 0
+    const count = typeof value === 'number' || typeof value === 'string'
+      ? value
+      : value?.count ?? value?.total ?? value?.totalCount
+    if (count === null || count === undefined || count === '') return null
+    const parsedCount = Number(count)
+    return Number.isFinite(parsedCount) && parsedCount >= 0 ? parsedCount : null
   }
   userStats.value = {
     orderCount: countFrom(results[0]),
     favoriteCount: countFrom(results[1]),
-    footprintCount: countFrom(results[2]),
-    cartCount: countFrom(results[3])
+    footprintCount: countFrom(results[2])
   }
 }
 
