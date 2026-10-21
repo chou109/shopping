@@ -2,17 +2,17 @@
   <!-- 右侧固定侧边栏 -->
   <div class="fixed-sidebar" :class="{ 'sidebar-hidden': isHidden }">
     <!-- 回到首页 -->
-    <div v-if="showHomeButton" class="sidebar-item" @click="goToHome" :title="currentRoute === '/' ? '当前已在首页' : '回到首页'">
+    <button v-if="showHomeButton" type="button" class="sidebar-item" @click="goToHome" :title="currentRoute === '/' ? '当前已在首页' : '回到首页'">
       <div class="item-icon">
         <el-icon>
           <House />
         </el-icon>
       </div>
       <div class="item-text">首页</div>
-    </div>
+    </button>
 
     <!-- 购物车 -->
-    <div v-if="showCartButton" class="sidebar-item" @click="goToCart"
+    <button v-if="showCartButton" type="button" class="sidebar-item" @click="goToCart"
       :title="currentRoute.includes('/user/cart') ? '当前已在购物车' : '购物车'">
       <div class="item-icon">
         <el-icon>
@@ -20,10 +20,10 @@
         </el-icon>
       </div>
       <div class="item-text">购物车</div>
-    </div>
+    </button>
 
     <!-- 消息 -->
-    <div v-if="showMessageButton" class="sidebar-item" @click="goToMessage"
+    <button v-if="showMessageButton" type="button" class="sidebar-item" @click="goToMessage"
       :title="currentRoute.includes('/user/message') ? '当前已在消息页' : '查看消息'">
       <div class="item-icon">
         <el-icon>
@@ -32,10 +32,10 @@
         <span v-if="messageCount > 0" class="item-badge">{{ formatCount(messageCount) }}</span>
       </div>
       <div class="item-text">消息</div>
-    </div>
+    </button>
 
     <!-- 客服/AI助手 -->
-    <div v-if="showServiceButton" class="sidebar-item" @click="goToChat"
+    <button v-if="showServiceButton" type="button" class="sidebar-item" @click="goToChat"
       :title="currentRoute.includes('/chat') ? '当前已在AI助手页' : 'AI助手'">
       <div class="item-icon">
         <el-icon>
@@ -43,10 +43,10 @@
         </el-icon>
       </div>
       <div class="item-text">AI助手</div>
-    </div>
+    </button>
 
     <!-- 人工客服 -->
-    <div v-if="showHumanServiceButton" class="sidebar-item human-service" @click="goToCustomerService"
+    <button v-if="showHumanServiceButton" type="button" class="sidebar-item human-service" @click="goToCustomerService"
       :title="currentRoute.includes('/customer-service') ? '当前已在人工客服页' : '人工客服'">
       <div class="item-icon">
         <el-icon>
@@ -54,17 +54,17 @@
         </el-icon>
       </div>
       <div class="item-text">客服</div>
-    </div>
+    </button>
 
     <!-- 回到顶部 -->
-    <div v-if="showTopButton" class="sidebar-item" @click="scrollToTop" title="回到顶部">
+    <button v-if="showTopButton" type="button" class="sidebar-item" @click="scrollToTop" title="回到顶部">
       <div class="item-icon">
         <el-icon>
           <Top />
         </el-icon>
       </div>
       <div class="item-text">顶部</div>
-    </div>
+    </button>
   </div>
 </template>
 
@@ -257,6 +257,15 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   border: 1px solid #f0f0f0;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  text-align: center;
+}
+
+.sidebar-item:focus-visible {
+  outline: 3px solid #ff5500;
+  outline-offset: 3px;
 }
 
 .sidebar-item:hover {

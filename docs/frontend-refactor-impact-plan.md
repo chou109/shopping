@@ -142,6 +142,8 @@
 
 - 定时器与生命周期审查发现管理端 iframe 组件曾覆盖 `window.onresize` 且未清理加载延时，现改为独立 resize 监听并在卸载时同时清理监听/定时器；用户端 `iFrame`、`RightPanel`、`CountDown` 三个组件经全仓引用和全局注册检查确认不可达，已删除；字号切换中的字符串 `setTimeout` 改为函数回调；用户端 5 项测试及两端 production build 均通过。
 
+- 全站固定快捷栏原先用可点击 `div` 实现，键盘用户无法聚焦或操作；现改为原生按钮，保留原样式并补充清晰的 `:focus-visible` 焦点环。用户端 5 项测试和 production build 通过。
+
 ### 仍需处理与建议
 
 | 影响 | 事项 | 建议 |
