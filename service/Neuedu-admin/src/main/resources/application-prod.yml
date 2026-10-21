@@ -1,6 +1,6 @@
 ruoyi:
     # 文件路径 示例（ Windows配置D:/ruoyi/uploadPath，Linux配置 /home/ruoyi/uploadPath）
-    profile: D:/ruoyi/uploadPath
+    profile: ${RUOYI_UPLOAD_PATH}
 
 # 日志配置
 logging:
@@ -18,11 +18,11 @@ spring:
     # redis 配置
     redis:
         # 地址
-        host: localhost
+        host: ${SHOPPING_REDIS_HOST:localhost}
         # 端口，默认为6379
         port: 6379
         # 密码
-        password:
+        password: ${SHOPPING_REDIS_PASSWORD:}
         # 连接超时时间
         timeout: 10000
         database: 1
@@ -42,9 +42,9 @@ spring:
         druid:
             # 主库数据源
             master:
-                url: jdbc:mysql://localhost:3306/sports?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
-                username: root
-                password: 123456
+                url: ${SHOPPING_DB_URL}
+                username: ${SHOPPING_DB_USERNAME}
+                password: ${SHOPPING_DB_PASSWORD}
             # 从库数据源
             slave:
                 # 从数据源开关/默认关闭
@@ -74,13 +74,13 @@ spring:
             webStatFilter: 
                 enabled: true
             statViewServlet:
-                enabled: true
-                # 设置白名单，不填则允许所有访问
-                allow:
+                # 默认关闭监控台；确有运维需要时再显式启用并限制来源。
+                enabled: ${SHOPPING_DRUID_CONSOLE_ENABLED:false}
+                allow: ${SHOPPING_DRUID_ALLOW:127.0.0.1}
                 url-pattern: /druid/*
                 # 控制台管理用户名和密码
-                login-username: ruoyi
-                login-password: 123456
+                login-username: ${SHOPPING_DRUID_USERNAME}
+                login-password: ${SHOPPING_DRUID_PASSWORD}
             filter:
                 stat:
                     enabled: true

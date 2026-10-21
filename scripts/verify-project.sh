@@ -46,6 +46,24 @@ if rg --files service/Neuedu-admin/src/main/java | rg -q '(^|/)TestController\.j
   exit 1
 fi
 
+echo "检查生产配置不含仓库默认凭据"
+PROD_CONFIG="service/Neuedu-admin/src/main/resources/application-prod.yml"
+if rg -n 'username:\s*root|password:\s*123456|login-username:\s*ruoyi|login-password:\s*123456|profile:\s*D:/ruoyi/uploadPath' "$PROD_CONFIG"; then
+  echo "生产配置仍含固定账号、密码或本机上传目录" >&2
+  exit 1
+fi
+for required_setting in \
+  'url: ${SHOPPING_DB_URL}' \
+  'username: ${SHOPPING_DB_USERNAME}' \
+  'password: ${SHOPPING_DB_PASSWORD}' \
+  'profile: ${RUOYI_UPLOAD_PATH}' \
+  'enabled: ${SHOPPING_DRUID_CONSOLE_ENABLED:false}'; do
+  if ! rg -Fq "$required_setting" "$PROD_CONFIG"; then
+    echo "生产配置缺少安全设置：$required_setting" >&2
+    exit 1
+  fi
+done
+
 echo "安装用户端依赖（锁文件冻结）"
 pnpm --dir user install --frozen-lockfile
 echo "安装管理端依赖（锁文件冻结）"
