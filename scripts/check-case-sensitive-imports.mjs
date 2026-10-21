@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const sourceRoots = ['user/src', 'admin/src']
-const extensions = ['.vue', '.js', '.jsx', '.ts', '.tsx', '.json', '.scss', '.css']
+const extensions = ['.vue', '.js', '.mjs', '.jsx', '.ts', '.tsx', '.json', '.scss', '.css']
 const failures = []
 const importPattern = /(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s*)['"](@\/[^'"]+)['"]/g
 
@@ -13,7 +13,7 @@ function collectSourceFiles(directory) {
   for (const entry of readdirSync(directory, { withFileTypes: true })) {
     const filename = path.join(directory, entry.name)
     if (entry.isDirectory()) files.push(...collectSourceFiles(filename))
-    else if (entry.isFile() && /\.(vue|js|jsx|ts|tsx)$/.test(entry.name)) files.push(filename)
+    else if (entry.isFile() && /\.(vue|js|mjs|jsx|ts|tsx)$/.test(entry.name)) files.push(filename)
   }
   return files
 }
