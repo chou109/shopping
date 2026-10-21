@@ -21,7 +21,7 @@ const content = ref("");
 
 /** 创建按钮操作 */
 function handleCreateTable() {
-  if (this.content === "") {
+  if (!content.value.trim()) {
     modal.msgError("请输入建表语句");
     return;
   }
