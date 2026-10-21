@@ -110,52 +110,20 @@
                 共 <span class="count">{{ getTotalQuantity(order) }}</span> 件商品，
                 实付：<span class="total-price">¥{{ formatPrice(order.payment) }}</span>
               </div>
-              <div class="order-actions">
-                <!-- 10：待付款 → 取消/付款/删除 -->
-                <template v-if="order.status === 10">
-                  <el-button size="small" @click="handleCancelOrder(order)">取消订单</el-button>
-                  <el-button type="primary" size="small" @click="handlePayOrder(order)">
-                    {{ order.isBlindBox ? '继续付款' : '立即付款' }}
-                  </el-button>
-                  <el-button type="danger" size="small" :loading="deletingOrderIds.has(order.id)" @click="handleDeleteOrder(order)">删除订单</el-button>
-                </template>
-
-                <!-- 当前服务仅支持待发货订单取消并退回余额 -->
-                <template v-else-if="order.status === 20">
-                  <span v-if="isBlindBoxOrder(order)" class="no-refund-tip">盲盒订单不支持退款</span>
-                  <el-button v-else type="warning" size="small" @click="handleRefund(order)">取消并退款</el-button>
-                </template>
-
-                <!-- 30：待收货 → 收货/物流 -->
-                <template v-else-if="order.status === 30">
-                  <el-button type="primary" size="small"
-                    :loading="receiptSubmitting && receiptActionOrderNo === order.orderNo"
-                    :disabled="receiptActionOrderNo !== null && receiptActionOrderNo !== order.orderNo"
-                    @click="handleConfirmReceipt(order)">确认收货</el-button>
-                  <el-button size="small" @click="viewLogistics(order)">查看物流</el-button>
-                </template>
-
-                <!-- 40：待评价 → 评价 -->
-                <template v-else-if="order.status === 40">
-                  <el-button type="primary" size="small" @click="handleReview(order)">去评价</el-button>
-                </template>
-
-                <!-- 50：交易完成 → 详情/删除 -->
-                <template v-else-if="order.status === 50">
-                  <el-button size="small" @click="viewOrderDetail(order)">查看详情</el-button>
-                  <el-button type="danger" size="small" :loading="deletingOrderIds.has(order.id)" @click="handleDeleteOrder(order)">删除订单</el-button>
-                </template>
-
-                <!-- 60：已取消 → 删除 -->
-                <template v-else-if="order.status === 60">
-                  <el-button type="danger" size="small" :loading="deletingOrderIds.has(order.id)" @click="handleDeleteOrder(order)">删除订单</el-button>
-                </template>
-
-                <!-- 其他状态 -->
-                <template v-else>
-                  <el-button size="small" @click="viewOrderDetail(order)">查看详情</el-button>
-                </template>
-              </div>
+              <OrderActions
+                :order="order"
+                :receipt-action-order-no="receiptActionOrderNo"
+                :receipt-submitting="receiptSubmitting"
+                :deleting-order-ids="deletingOrderIds"
+                @cancel="handleCancelOrder"
+                @pay="handlePayOrder"
+                @refund="handleRefund"
+                @confirm-receipt="handleConfirmReceipt"
+                @logistics="viewLogistics"
+                @review="handleReview"
+                @detail="viewOrderDetail"
+                @delete="handleDeleteOrder"
+              />
             </div>
           </div>
         </div>
@@ -303,6 +271,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import OrderRefundDialog from '@/components/OrderRefundDialog.vue'
 import OrderReviewDialog from '@/components/OrderReviewDialog.vue'
+import OrderActions from '@/components/OrderActions.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Location } from '@element-plus/icons-vue'
 import { getMyOrders, payOrder, cancelOrder, confirmReceipt, delInfo, applyRefund } from '@/api/system/orderInfo'
@@ -896,20 +865,6 @@ onMounted(() => {
   color: #ff5000;
   font-size: 18px;
   font-weight: 700;
-}
-
-.order-actions {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-
-.no-refund-tip {
-  color: #909399;
-  font-size: 12px;
-  padding: 5px 10px;
-  background: #f4f4f5;
-  border-radius: 4px;
 }
 
 .pagination-container {
