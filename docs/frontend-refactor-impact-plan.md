@@ -300,4 +300,5 @@
 - 最近推送的 `42b6c35`（客服会话键盘访问、快捷回复及自动标记已读）由 GitHub Actions `39671455398` 全项目验证通过。本次导航可访问性修复后再次运行 `JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home bash scripts/verify-project.sh`：用户端 22 项测试、两端 production build、后端 65 项测试全部通过；Vue 编译器仍有少量历史 `defineProps`/`defineEmits` 导入提示，构建不受影响。将用于搜索菜单和全屏的图标改为带名称、展开/状态信息的原生按钮，源码和文档图标改为具名安全外链。真实登录和下单流程仍需有效角色账号；本机接口复测未执行数据库写操作。
 - 地址管理权限修复：消费者个人中心此前调用需管理员权限的 `/system/address/user/{userId}`，普通用户无法加载自己的地址；现改用后端提供的 `/system/address/my` 当前用户接口，并移除无用 API 导入。地址列表只在用户资料成功加载后请求一次。需在真实登录会话下复测地址列表、编辑、设默认与下单选址。
 - 个人中心概览不再把订单、收藏或足迹统计接口失败伪装成 0；加载中/失败显示“—”，并移除未展示的购物车计数请求。
+- 遗留清理：全仓引用与 Vite 组件解析配置确认 `user/src/components/Platform/HomeCard.vue` 没有导入/自动注册，且其唯一 `/bid/list` 跳转也没有路由；已删除该孤立旧招投标组件。商城其余遗留页面仍按动态菜单使用情况保留。
 - 按项目 skill 的图片排查步骤复核 SQL 唯一图片引用共 818 个，当前上传目录存在 815 个；缺少 `377dcc35-e36f-45f5-997b-d2be74a0e0d2_source.jpg`、`blind_box_mystery.jpg`、`blind_box_open.jpg`。在 Git 对象历史和用户目录（排除缓存、依赖和系统 Library）未找到这三份文件，未修改数据库或用其他图片替代。
