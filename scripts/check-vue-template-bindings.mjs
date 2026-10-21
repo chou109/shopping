@@ -49,6 +49,21 @@ function collectAnchorIssues(node, filename) {
   return issues
 }
 
+function collectButtonIssues(node, filename) {
+  const issues = []
+  if (node.type === 1 && node.tag === 'button') {
+    const hasType = node.props.some(property =>
+      (property.type === 6 && property.name === 'type') ||
+      (property.type === 7 && property.name === 'bind' && property.arg?.content === 'type')
+    )
+    if (!hasType) {
+      issues.push(`${path.relative(root, filename)}:${node.loc.start.line}: 原生 <button> 缺少 type 属性，请明确指定 button、submit 或 reset`)
+    }
+  }
+  for (const child of node.children || []) issues.push(...collectButtonIssues(child, filename))
+  return issues
+}
+
 function collectLegacySlotIssues(node, filename) {
   const issues = []
   if (node.type === 1 && node.props.some(property => property.type === 6 && property.name === 'slot')) {
@@ -83,6 +98,7 @@ for (const sourceRoot of sourceRoots) {
     }
     failures.push(...collectImageAltIssues(parsedTemplate.ast, filename))
     failures.push(...collectAnchorIssues(parsedTemplate.ast, filename))
+    failures.push(...collectButtonIssues(parsedTemplate.ast, filename))
     failures.push(...collectLegacySlotIssues(parsedTemplate.ast, filename))
     if (!descriptor.scriptSetup) continue
 
