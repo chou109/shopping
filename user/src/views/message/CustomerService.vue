@@ -3,12 +3,12 @@
     <!-- 顶部导航栏 -->
     <header class="cs-header">
       <div class="header-content">
-        <div class="back-btn" @click="goBack">
+        <button type="button" class="back-btn" @click="goBack">
           <el-icon>
             <ArrowLeft />
           </el-icon>
           <span>返回</span>
-        </div>
+        </button>
         <div class="header-title">
           <el-icon class="title-icon">
             <Service />
@@ -379,6 +379,8 @@ onUnmounted(() => {
   align-items: center;
   gap: 5px;
   cursor: pointer;
+  border: 0;
+  background: transparent;
   padding: 5px 10px;
   border-radius: 4px;
   transition: background 0.3s;
@@ -407,6 +409,11 @@ onUnmounted(() => {
 .action-icon {
   font-size: 20px;
   cursor: pointer;
+}
+
+.back-btn:focus-visible {
+  outline: 3px solid currentColor;
+  outline-offset: 3px;
 }
 
 /* 聊天容器 */
