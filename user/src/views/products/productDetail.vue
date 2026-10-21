@@ -29,13 +29,14 @@ import {
   getCommentTree
 } from '@/api/system/productComment'
 import { DEFAULT_AVATAR_IMAGE, DEFAULT_PRODUCT_IMAGE, DEFAULT_SHOP_IMAGE, getProductImageUrl, handleImageError } from '@/utils/image'
-import { listFootprintByUser, deleteFootprint, recordFootprint } from '@/api/system/footprint'
+import { recordFootprint } from '@/api/system/footprint'
 
 import { createDirectOrder, payOrder } from '@/api/system/orderInfo'
 import { getMyAddressList } from '@/api/system/address'
 import { toggleFavorite, checkFavorite } from '@/api/system/favorite'
 import { getToken } from '@/utils/auth'
 import PurchaseDialog from '@/components/PurchaseDialog/index.vue'
+import { formatProductPrice, normalizeProductStock } from '@/utils/productDetail.mjs'
 
 const route = useRoute()
 const router = useRouter()
@@ -97,6 +98,7 @@ const quantity = ref(1)
 const addingToCart = ref(false)
 const isFavorite = ref(false)
 const activeTab = ref('detail')
+const availableStock = computed(() => normalizeProductStock(product.value.stock))
 
 // 购买弹窗相关
 const purchaseDialogVisible = ref(false)
@@ -432,8 +434,7 @@ const allImages = computed(() => {
 
 // 格式化价格
 const formatPrice = (price) => {
-  if (!price) return '0.00'
-  return parseFloat(price).toFixed(2)
+  return formatProductPrice(price)
 }
 
 // 放大镜功能
@@ -467,14 +468,18 @@ const changeMainImage = (index) => {
 
 // 数量变化处理
 const handleQuantityChange = (value) => {
-  if (value > (product.value.stock || 999)) {
+  const requestedQuantity = Number(value)
+  if (!Number.isInteger(requestedQuantity) || requestedQuantity < 1) {
+    ElMessage.warning('购买数量至少为 1 件')
+    quantity.value = 1
+  } else if (requestedQuantity > availableStock.value) {
     ElMessage.warning('库存不足')
-    quantity.value = product.value.stock || 1
+    quantity.value = availableStock.value || 1
   }
 }
 
 const increaseQuantity = () => {
-  if (quantity.value < (product.value.stock || 999)) {
+  if (quantity.value < availableStock.value) {
     quantity.value++
   }
 }
@@ -509,7 +514,7 @@ const handleAddToCart = async () => {
   // }
 
   // 验证库存
-  if (quantity.value > (product.value.stock || 0)) {
+  if (quantity.value > availableStock.value) {
     ElMessage.warning('库存不足')
     return
   }
@@ -559,7 +564,7 @@ const handleBuyNow = async () => {
   // }
 
   // 验证库存
-  if (quantity.value > (product.value.stock || 0)) {
+  if (quantity.value > availableStock.value) {
     ElMessage.warning('库存不足')
     return
   }
@@ -1042,10 +1047,11 @@ watch(() => route.query.id, (newId, oldId) => {
                         <Minus />
                       </el-icon>
                     </button>
-                    <input v-model.number="quantity" type="number" min="1" :max="product.stock || 999"
-                      class="quantity-input" aria-labelledby="product-quantity-label" @change="handleQuantityChange" />
+                    <input v-model.number="quantity" type="number" min="1" :max="Math.max(availableStock, 1)"
+                      class="quantity-input" aria-labelledby="product-quantity-label" :disabled="availableStock === 0"
+                      @change="handleQuantityChange" />
                     <button type="button" class="quantity-btn plus" aria-label="增加购买数量" @click="increaseQuantity"
-                      :disabled="quantity >= (product.stock || 999)">
+                      :disabled="availableStock === 0 || quantity >= availableStock">
                       <el-icon>
                         <Plus />
                       </el-icon>
@@ -1057,14 +1063,15 @@ watch(() => route.query.id, (newId, oldId) => {
                 <!-- 操作按钮 -->
                 <div class="action-buttons">
                   <button type="button" class="btn add-cart" :class="{ loading: addingToCart }" @click="handleAddToCart"
-                    :disabled="product.stock === 0">
+                    :disabled="availableStock === 0 || addingToCart">
                     <el-icon>
                       <ShoppingCartFull />
                     </el-icon>
                     <span v-if="!addingToCart">加入购物车</span>
                     <span v-else>添加中...</span>
                   </button>
-                  <button type="button" class="btn buy-now" @click="handleBuyNow" :disabled="product.stock === 0">
+                  <button type="button" class="btn buy-now" @click="handleBuyNow"
+                    :disabled="availableStock === 0 || checkoutInFlight">
                     立即购买
                   </button>
                   <button type="button" class="btn favorite" :aria-label="isFavorite ? '取消收藏商品' : '收藏商品'"
