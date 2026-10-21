@@ -1,11 +1,11 @@
 import request from '@/utils/request'
 
 // 查询我的订单列表
-export function getMyOrders(status) {
+export function getMyOrders(status, pageNum = 1, pageSize = 10) {
   return request({
     url: '/system/orderInfo',
     method: 'get',
-    params: { status }
+    params: { status, pageNum, pageSize }
   })
 }
 

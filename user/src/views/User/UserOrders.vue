@@ -65,8 +65,9 @@
 
           <!-- 订单商品列表 -->
           <div class="order-products">
-            <div v-for="(detail, index) in order.orderDetails" :key="index" class="product-item"
-              @click="goProductDetail(detail.productId)">
+            <router-link v-for="(detail, index) in order.orderDetails" :key="index" class="product-item"
+              :to="{ path: '/product/detail', query: { id: detail.productId } }"
+              :aria-label="`查看商品：${detail.productName || '商品详情'}`">
               <div class="product-image">
                 <img :src="getProductImageUrl(detail.productMainImage)" :alt="detail.productName"
                   @error="handleImageError" />
@@ -86,7 +87,7 @@
               <div class="product-subtotal">
                 ¥{{ formatPrice(detail.totalPrice) }}
               </div>
-            </div>
+            </router-link>
           </div>
 
           <!-- 订单底部 -->
@@ -252,7 +253,7 @@
           <div class="section-title">商品信息</div>
           <div class="detail-products">
             <div v-for="(item, index) in detailOrder.orderDetails" :key="index" class="detail-product-item">
-              <img :src="getProductImageUrl(item.productMainImage)" class="product-img" />
+              <img :src="getProductImageUrl(item.productMainImage)" :alt="item.productName || '商品图片'" class="product-img" />
               <div class="product-info">
                 <div class="product-name">{{ item.productName }}</div>
                 <div class="product-spec" v-if="item.specifications">{{ item.specifications }}</div>
@@ -350,22 +351,16 @@ const reviewingOrder = ref(null)
 const loadOrders = async () => {
   loading.value = true
   try {
-    // 获取所有订单，前端根据 statusDesc 筛选
-    const res = await getMyOrders()
+    // 由服务端按状态分页，total 用于展示完整结果集的页数。
+    const statusCode = STATUS_MAP[activeTab.value]
+    const res = await getMyOrders(statusCode, pageNum.value, pageSize.value)
     if (res.code === 200) {
-      let allOrders = res.rows || []
-
-      // 按创建时间倒序排列
-      allOrders = allOrders.sort((a, b) => {
-        return new Date(b.createTime) - new Date(a.createTime)
-      })
-
-      // 根据当前标签筛选
-      const statusCode = STATUS_MAP[activeTab.value]
-      if (statusCode !== null) {
-        orderList.value = allOrders.filter(order => order.status === statusCode)
-      } else {
-        orderList.value = allOrders
+      orderList.value = res.rows || []
+      total.value = Number(res.total) || 0
+      if (orderList.value.length === 0 && total.value > 0 && pageNum.value > 1) {
+        pageNum.value -= 1
+        await loadOrders()
+        return
       }
       // Post-process orders to handle Blind Box display
       orderList.value.forEach(order => {
@@ -477,7 +472,6 @@ const loadOrders = async () => {
           }
         }
       })
-      total.value = orderList.value.length
     }
   } catch (e) {
     console.error('加载订单失败', e)
@@ -490,16 +484,15 @@ const loadOrders = async () => {
 // 加载订单数量统计（只统计待付款、待发货、待收货）
 const loadOrderCounts = async () => {
   try {
-    const res = await getMyOrders()
-    if (res.code === 200) {
-      const allOrders = res.rows || []
-
-      // 根据 status 统计各状态数量
-      orderCounts.value = {
-        waitPay: allOrders.filter(o => o.status === 10).length,
-        waitShip: allOrders.filter(o => o.status === 20).length,
-        waitReceive: allOrders.filter(o => o.status === 30).length
-      }
+    const [waitPay, waitShip, waitReceive] = await Promise.all([
+      getMyOrders(10, 1, 1),
+      getMyOrders(20, 1, 1),
+      getMyOrders(30, 1, 1)
+    ])
+    orderCounts.value = {
+      waitPay: waitPay.code === 200 ? Number(waitPay.total) || 0 : 0,
+      waitShip: waitShip.code === 200 ? Number(waitShip.total) || 0 : 0,
+      waitReceive: waitReceive.code === 200 ? Number(waitReceive.total) || 0 : 0
     }
   } catch (e) {
     console.error('加载订单数量失败', e)
@@ -515,6 +508,7 @@ const handleTabChange = (tab) => {
 // 分页处理
 const handleSizeChange = (val) => {
   pageSize.value = val
+  pageNum.value = 1
   loadOrders()
 }
 
@@ -620,14 +614,6 @@ const hasBlindBoxResult = (order) => {
 // 去购物
 const goShopping = () => {
   router.push('/index')
-}
-
-// 跳转商品详情
-const goProductDetail = (productId) => {
-  router.push({
-    path: '/product/detail',
-    query: { id: productId }
-  })
 }
 
 // 查看订单详情
@@ -961,10 +947,17 @@ onMounted(() => {
   margin-bottom: 8px;
   cursor: pointer;
   transition: background 0.3s;
+  color: inherit;
+  text-decoration: none;
 }
 
 .product-item:hover {
   background: #f9f9f9;
+}
+
+.product-item:focus-visible {
+  outline: 2px solid #409eff;
+  outline-offset: 2px;
 }
 
 .product-item:last-child {
