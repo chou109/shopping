@@ -12,6 +12,8 @@ import org.springframework.stereotype.Service;
 import com.neuedu.system.mapper.CartMapper;
 import com.neuedu.system.domain.Cart;
 import com.neuedu.system.service.ICartService;
+import com.neuedu.system.service.IProductService;
+import com.neuedu.system.domain.Product;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -25,6 +27,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements ICartService
 {
     private final CartMapper cartMapper;
+
+    @Autowired
+    private IProductService productService;
 
     /**
      * 查询购物车
@@ -110,30 +115,28 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements IC
         if (cart.getProductId() == null) {
             throw new RuntimeException("商品ID不能为空");
         }
+        Product product = requirePurchasableProduct(cart.getProductId());
+        Integer quantity = cart.getQuantity() == null ? 1 : cart.getQuantity();
+        validateQuantity(quantity, product);
+        applyProductSnapshot(cart, product, quantity);
 
         // 3. 检查购物车是否已存在相同商品
         Cart existingCart = cartMapper.selectCartByUserIdAndProductId(cart.getUserId(), cart.getProductId());
         if (existingCart != null) {
             // 如果已存在，则更新数量
-            existingCart.setQuantity(existingCart.getQuantity() + (cart.getQuantity() != null ? cart.getQuantity() : 1));
+            int updatedQuantity = (existingCart.getQuantity() == null ? 0 : existingCart.getQuantity()) + quantity;
+            validateQuantity(updatedQuantity, product);
+            existingCart.setQuantity(updatedQuantity);
+            applyProductSnapshot(existingCart, product, updatedQuantity);
             existingCart.setUpdateTime(DateUtils.getNowDate());
             // 重新计算总价
-            if (existingCart.getProductUnitPrice() != null && existingCart.getQuantity() != null) {
-                existingCart.setProductTotalPrice(
-                        existingCart.getProductUnitPrice().multiply(new BigDecimal(existingCart.getQuantity()))
-                );
-            }
             return cartMapper.updateCart(existingCart);
         }
         // 4. 新增购物车
         cart.setCreateTime(DateUtils.getNowDate());
 
         // 5. 计算总价
-        if (cart.getProductUnitPrice() != null && cart.getQuantity() != null) {
-            cart.setProductTotalPrice(
-                    cart.getProductUnitPrice().multiply(new BigDecimal(cart.getQuantity()))
-            );
-        }
+        applyProductSnapshot(cart, product, quantity);
 
         // 6. 设置默认值
         if (cart.getSelected() == null) {
@@ -142,10 +145,6 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements IC
         if (cart.getDeleteFlag() == null) {
             cart.setDeleteFlag(0); // 默认未删除
         }
-        if (cart.getQuantity() == null || cart.getQuantity() <= 0) {
-            cart.setQuantity(1); // 默认数量为1
-        }
-
         return cartMapper.insertCart(cart);
     }
 
@@ -163,25 +162,50 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements IC
         if (existingCart == null) {
             throw new RuntimeException("购物车不存在");
         }
+        if (cart.getUpdateUser() != null && !cart.getUpdateUser().equals(existingCart.getUserId())) {
+            throw new RuntimeException("无权修改此购物车");
+        }
+
+        Product product = requirePurchasableProduct(existingCart.getProductId());
+        Integer quantity = cart.getQuantity() != null ? cart.getQuantity() : existingCart.getQuantity();
+        validateQuantity(quantity, product);
+        applyProductSnapshot(cart, product, quantity);
 
         cart.setUpdateTime(DateUtils.getNowDate());
 
-        // 如果修改了数量或单价，重新计算总价
-        if ((cart.getQuantity() != null || cart.getProductUnitPrice() != null)
-                && (cart.getQuantity() != null || existingCart.getQuantity() != null)
-                && (cart.getProductUnitPrice() != null || existingCart.getProductUnitPrice() != null)) {
-
-            BigDecimal unitPrice = cart.getProductUnitPrice() != null ?
-                    cart.getProductUnitPrice() : existingCart.getProductUnitPrice();
-            Integer quantity = cart.getQuantity() != null ?
-                    cart.getQuantity() : existingCart.getQuantity();
-
-            if (unitPrice != null && quantity != null) {
-                cart.setProductTotalPrice(unitPrice.multiply(new BigDecimal(quantity)));
-            }
-        }
-
         return cartMapper.updateCart(cart);
+    }
+
+    private Product requirePurchasableProduct(Long productId) {
+        Product product = productService.selectProductById(productId);
+        if (product == null || !Integer.valueOf(1).equals(product.getStatus())) {
+            throw new RuntimeException("商品不存在或已下架");
+        }
+        if (Integer.valueOf(1).equals(product.getIsBlindBox()) || Long.valueOf(9999L).equals(product.getId())) {
+            throw new RuntimeException("盲盒商品请通过盲盒页面购买");
+        }
+        if (product.getPrice() == null || product.getPrice().signum() < 0) {
+            throw new RuntimeException("商品价格无效");
+        }
+        return product;
+    }
+
+    private void validateQuantity(Integer quantity, Product product) {
+        if (quantity == null || quantity < 1) {
+            throw new RuntimeException("商品数量必须大于0");
+        }
+        if (product.getStock() == null || quantity > product.getStock()) {
+            throw new RuntimeException("商品库存不足");
+        }
+    }
+
+    private void applyProductSnapshot(Cart cart, Product product, Integer quantity) {
+        cart.setProductName(product.getName());
+        cart.setProductSubtitle(product.getSubTitle());
+        cart.setProductMainImage(product.getMainImage());
+        cart.setProductUnitPrice(product.getPrice());
+        cart.setQuantity(quantity);
+        cart.setProductTotalPrice(product.getPrice().multiply(new BigDecimal(quantity)));
     }
     /**
      * 批量删除购物车

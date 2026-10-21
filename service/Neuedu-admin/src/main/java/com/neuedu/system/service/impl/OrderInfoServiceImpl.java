@@ -180,10 +180,20 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
             if (product.getStatus() != 1) {
                 throw new RuntimeException("商品已下架: " + cartItem.getProductName());
             }
-            if (product.getStock() < cartItem.getQuantity()) {
+            if (cartItem.getQuantity() == null || cartItem.getQuantity() < 1) {
+                throw new RuntimeException("商品数量必须大于0");
+            }
+            if (product.getStock() == null || product.getStock() < cartItem.getQuantity()) {
                 throw new RuntimeException("商品库存不足: " + cartItem.getProductName());
             }
-            // 验证价格（这里可以添加价格验证逻辑）
+            if (product.getPrice() == null) {
+                throw new RuntimeException("商品价格无效: " + product.getName());
+            }
+            cartItem.setProductName(product.getName());
+            cartItem.setProductSubtitle(product.getSubTitle());
+            cartItem.setProductMainImage(product.getMainImage());
+            cartItem.setProductUnitPrice(product.getPrice());
+            cartItem.setProductTotalPrice(product.getPrice().multiply(new BigDecimal(cartItem.getQuantity())));
             totalAmount = totalAmount.add(cartItem.getProductTotalPrice());
         }
 
@@ -320,7 +330,10 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
         if (product.getStatus() != 1) {
             throw new RuntimeException("商品已下架");
         }
-        if (product.getStock() < quantity) {
+        if (quantity == null || quantity < 1) {
+            throw new RuntimeException("购买数量必须大于0");
+        }
+        if (product.getStock() == null || product.getStock() < quantity) {
             throw new RuntimeException("商品库存不足");
         }
 
@@ -430,10 +443,16 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
         if (product == null) {
             throw new RuntimeException("商品不存在");
         }
+        if (Integer.valueOf(1).equals(product.getIsBlindBox()) || Long.valueOf(9999L).equals(product.getId())) {
+            throw new RuntimeException("不能抽取盲盒商品作为盲盒奖品");
+        }
         if (product.getStatus() != 1) {
             throw new RuntimeException("商品已下架");
         }
-        if (product.getStock() < quantity) {
+        if (quantity == null || quantity < 1) {
+            throw new RuntimeException("购买数量必须大于0");
+        }
+        if (product.getStock() == null || product.getStock() < quantity) {
             throw new RuntimeException("商品库存不足");
         }
 
