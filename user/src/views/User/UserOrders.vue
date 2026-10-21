@@ -158,7 +158,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import OrderRefundDialog from '@/components/OrderRefundDialog.vue'
 import OrderReviewDialog from '@/components/OrderReviewDialog.vue'
@@ -171,6 +171,7 @@ import { getMyOrders, payOrder, cancelOrder, confirmReceipt, delInfo, applyRefun
 import { submitReview, completeOrder } from '@/api/comment'
 import { getProductImageUrl, handleImageError } from '@/utils/image'
 import { isBlindBoxOrder } from '@/utils/order.mjs'
+import { useOrderList } from '@/composables/useOrderList.mjs'
 import {
   formatOrderPrice as formatPrice,
   formatOrderTime as formatTime,
@@ -180,33 +181,21 @@ import {
 
 const router = useRouter()
 
-// 状态码映射
-const STATUS_MAP = {
-  all: null,
-  waitPay: 10,      // 待付款
-  waitShip: 20,     // 待发货
-  waitReceive: 30,  // 待收货
-  waitReview: 40,   // 待评价
-  completed: 50,    // 交易完成
-  cancelled: 60     // 已取消
-}
-
-// 响应式数据
-const activeTab = ref('all')
-const loading = ref(false)
-const loadError = ref('')
-const orderList = ref([])
-const total = ref(0)
-const pageNum = ref(1)
-const pageSize = ref(10)
-let orderRequestId = 0
-
-// 订单数量统计（只统计待付款、待发货、待收货）
-const orderCounts = ref({
-  waitPay: 0,
-  waitShip: 0,
-  waitReceive: 0
-})
+const {
+  activeTab,
+  loading,
+  loadError,
+  orderList,
+  total,
+  pageNum,
+  pageSize,
+  orderCounts,
+  loadOrders,
+  loadOrderCounts,
+  handleTabChange,
+  handleSizeChange,
+  handleCurrentChange
+} = useOrderList(getMyOrders)
 
 // 支付相关
 const payDialogVisible = ref(false)
@@ -229,73 +218,6 @@ const reviewDialogVisible = ref(false)
 const submittingReview = ref(false)
 const reviewingOrder = ref(null)
 const deletingOrderIds = ref(new Set())
-
-// 加载订单列表
-const loadOrders = async () => {
-  const requestId = ++orderRequestId
-  loading.value = true
-  loadError.value = ''
-  try {
-    // 由服务端按状态分页，total 用于展示完整结果集的页数。
-    const statusCode = STATUS_MAP[activeTab.value]
-    const res = await getMyOrders(statusCode, pageNum.value, pageSize.value)
-    if (requestId !== orderRequestId) return
-    if (res.code === 200) {
-      orderList.value = res.rows || []
-      total.value = Number(res.total) || 0
-      if (orderList.value.length === 0 && total.value > 0 && pageNum.value > 1) {
-        pageNum.value -= 1
-        await loadOrders()
-        return
-      }
-    } else {
-      loadError.value = res.msg || '订单加载失败，请重试'
-    }
-  } catch (e) {
-    if (requestId === orderRequestId) {
-      console.error('加载订单失败', e)
-      loadError.value = e?.message || (typeof e === 'string' ? e : '') || '订单加载失败，请重试'
-    }
-  } finally {
-    if (requestId === orderRequestId) loading.value = false
-  }
-}
-
-// 加载订单数量统计（只统计待付款、待发货、待收货）
-const loadOrderCounts = async () => {
-  try {
-    const [waitPay, waitShip, waitReceive] = await Promise.all([
-      getMyOrders(10, 1, 1),
-      getMyOrders(20, 1, 1),
-      getMyOrders(30, 1, 1)
-    ])
-    orderCounts.value = {
-      waitPay: waitPay.code === 200 ? Number(waitPay.total) || 0 : 0,
-      waitShip: waitShip.code === 200 ? Number(waitShip.total) || 0 : 0,
-      waitReceive: waitReceive.code === 200 ? Number(waitReceive.total) || 0 : 0
-    }
-  } catch (e) {
-    console.error('加载订单数量失败', e)
-  }
-}
-
-// 标签页切换
-const handleTabChange = (tab) => {
-  pageNum.value = 1
-  loadOrders()
-}
-
-// 分页处理
-const handleSizeChange = (val) => {
-  pageSize.value = val
-  pageNum.value = 1
-  loadOrders()
-}
-
-const handleCurrentChange = (val) => {
-  pageNum.value = val
-  loadOrders()
-}
 
 // 去购物
 const goShopping = () => {
