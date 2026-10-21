@@ -44,26 +44,35 @@ export default {
 			this.context.stroke();
 		},
 
-		handleMouseLeave(e) {
+		handlePointerLeave(e) {
 			this.drawFlag = false
 		},
-		handleMouseDown(e) {
-			this.drawFlag = true
-			const {offsetX, offsetY} = e
-			this.lastX = offsetX
-			this.lastY = offsetY
-		},
-		handleMouseMove(e) {
-			if (this.drawFlag) {
-				const {offsetX, offsetY} = e
-				this.dragLine(offsetX, offsetY)
-				this.lastX = offsetX
-				this.lastY = offsetY
+		getCanvasPoint(e) {
+			const rect = this.$refs.canvas.getBoundingClientRect()
+			return {
+				x: (e.clientX - rect.left) * (this.width / rect.width),
+				y: (e.clientY - rect.top) * (this.height / rect.height)
 			}
 		},
-		handleMouseUp(e) {
+		handlePointerDown(e) {
+			this.drawFlag = true
+			const point = this.getCanvasPoint(e)
+			this.lastX = point.x
+			this.lastY = point.y
+			e.currentTarget.setPointerCapture(e.pointerId)
+		},
+		handlePointerMove(e) {
 			if (this.drawFlag) {
-				this.dragLine(e.offsetX, e.offsetY)
+				const point = this.getCanvasPoint(e)
+				this.dragLine(point.x, point.y)
+				this.lastX = point.x
+				this.lastY = point.y
+			}
+		},
+		handlePointerUp(e) {
+			if (this.drawFlag) {
+				const point = this.getCanvasPoint(e)
+				this.dragLine(point.x, point.y)
 				this.drawFlag = false
 			}
 		},
@@ -81,13 +90,37 @@ export default {
 
 <template>
 	<div :style="{height: height + 'px', width: width + 'px'}">
-		<canvas ref="canvas" :height="height" :width="width" style="border: 1px solid"
-				@mousedown="handleMouseDown"
-				@mousemove="handleMouseMove"
-				@mouseup="handleMouseUp"
-				@mouseleave="handleMouseLeave"></canvas>
-		<span @click="handleClear" style="padding-right: 2em">重签</span>
-		<span @click="handleConfirm">确定</span>
+		<canvas ref="canvas" :height="height" :width="width" class="signature-canvas"
+				aria-label="签名区域，请使用鼠标、触控或触控笔签名"
+				@pointerdown="handlePointerDown"
+				@pointermove="handlePointerMove"
+				@pointerup="handlePointerUp"
+				@pointercancel="handlePointerLeave"
+				@pointerleave="handlePointerLeave"></canvas>
+		<button type="button" class="signature-action" @click="handleClear">重签</button>
+		<button type="button" class="signature-action" @click="handleConfirm">确定</button>
 	</div>
 </template>
+
+<style scoped>
+.signature-canvas {
+	border: 1px solid;
+	touch-action: none;
+}
+
+.signature-action {
+	margin-right: 2em;
+	padding: 4px 8px;
+	border: 0;
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	cursor: pointer;
+}
+
+.signature-action:focus-visible {
+	outline: 2px solid #409EFF;
+	outline-offset: 2px;
+}
+</style>
 
