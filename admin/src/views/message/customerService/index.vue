@@ -19,8 +19,10 @@
       </div>
 
       <div class="session-list" v-loading="loadingSession">
-        <div v-for="session in sessionList" :key="session.sessionId"
+        <button v-for="session in sessionList" :key="session.sessionId" type="button"
           :class="['session-item', { active: currentSession?.sessionId === session.sessionId }]"
+          :aria-pressed="currentSession?.sessionId === session.sessionId"
+          :aria-label="`打开与${session.userName || '用户'}的会话，未读${session.unreadCount || 0}条`"
           @click="selectSession(session)">
           <div class="session-avatar">
             <el-avatar :size="45" :src="session.userAvatar">
@@ -37,7 +39,7 @@
             </div>
             <div class="last-message">{{ session.lastMessage || '暂无消息' }}</div>
           </div>
-        </div>
+        </button>
 
         <div class="empty-session" v-if="sessionList.length === 0 && !loadingSession">
           <el-empty description="暂无会话" :image-size="100" />
@@ -433,10 +435,16 @@ onUnmounted(() => {
 }
 
 .session-item {
+  width: 100%;
   display: flex;
   padding: 15px;
   cursor: pointer;
+  border: 0;
   border-bottom: 1px solid #f0f0f0;
+  background: white;
+  color: inherit;
+  font: inherit;
+  text-align: left;
   transition: background 0.2s;
 
   &:hover {
@@ -447,6 +455,11 @@ onUnmounted(() => {
     background: #fff5f0;
     border-left: 3px solid #ff5500;
   }
+}
+
+.session-item:focus-visible {
+  outline: 2px solid #ff5500;
+  outline-offset: -2px;
 }
 
 .session-avatar {
