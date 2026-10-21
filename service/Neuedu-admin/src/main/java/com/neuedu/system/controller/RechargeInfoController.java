@@ -9,7 +9,9 @@ import org.springframework.web.bind.annotation.*;
 import com.neuedu.common.annotation.Log;
 import com.neuedu.common.core.controller.BaseController;
 import com.neuedu.common.core.domain.AjaxResult;
+import com.neuedu.common.utils.SecurityUtils;
 import com.neuedu.common.enums.BusinessType;
+import com.neuedu.system.constants.RechargeConstants;
 import com.neuedu.system.domain.RechargeInfo;
 import com.neuedu.system.service.IRechargeInfoService;
 import com.neuedu.common.utils.poi.ExcelUtil;
@@ -96,9 +98,16 @@ public class RechargeInfoController extends BaseController
      * 创建充值订单（前台接口）
      */
     @Operation(summary = "创建充值订单")
+    @PreAuthorize("isAuthenticated()")
     @PostMapping("/create")
     public AjaxResult createRechargeOrder(@RequestBody RechargeInfo rechargeInfo)
     {
+        if (rechargeInfo.getBalance() == null || rechargeInfo.getBalance().compareTo(new java.math.BigDecimal("1")) < 0
+                || rechargeInfo.getBalance().compareTo(new java.math.BigDecimal("30000")) > 0) {
+            return error("充值金额必须在1-30000元之间");
+        }
+        rechargeInfo.setUserId(SecurityUtils.getUserId());
+        rechargeInfo.setStatus(RechargeConstants.RechargeStatus.WAIT_PAY);
         Long rechargeId = rechargeInfoService.createRechargeOrder(rechargeInfo);
         if (rechargeId != null) {
             return success(rechargeInfoService.selectRechargeInfoById(rechargeId));
@@ -116,11 +125,7 @@ public class RechargeInfoController extends BaseController
             @RequestParam String paymentNo,
             @RequestParam(defaultValue = "1") Integer paymentType)
     {
-        boolean result = rechargeInfoService.handlePaymentSuccess(orderNo, paymentNo, paymentType);
-        if (result) {
-            return success("支付成功处理完成");
-        }
-        return error("支付成功处理失败");
+        return error("充值支付渠道尚未接入，不能确认充值到账");
     }
 
     /**
@@ -132,11 +137,7 @@ public class RechargeInfoController extends BaseController
             @RequestParam String orderNo,
             @RequestParam String paymentNo)
     {
-        boolean result = rechargeInfoService.handlePaymentFailed(orderNo, paymentNo);
-        if (result) {
-            return success("支付失败处理完成");
-        }
-        return error("支付失败处理失败");
+        return error("充值支付渠道尚未接入");
     }
 
     /**

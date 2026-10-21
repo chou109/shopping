@@ -118,6 +118,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { getProductImageUrl, handleImageError } from '@/utils/image'
 import { listFootprintByUser, deleteFootprint, clearFootprint } from '@/api/system/footprint'
 import { addCart } from '@/api/system/cart'
+import { addFavorite, checkFavorite } from '@/api/system/favorite'
 
 const router = useRouter()
 const store = useStore()
@@ -318,9 +319,20 @@ const handleAddToCart = async (item) => {
 }
 
 // 关注店铺
-const handleFollowShop = (item) => {
+const handleFollowShop = async (item) => {
   if (item.targetType !== 2) return
-  ElMessage.info('关注店铺功能开发中')
+  try {
+    const status = await checkFavorite(2, item.targetId)
+    if (status.code === 200 && (status.data === true || status.data?.isFavorite)) {
+      ElMessage.info('已经关注过该店铺')
+      return
+    }
+    const response = await addFavorite(2, item.targetId)
+    if (response.code !== 200) throw new Error(response.msg || '关注失败')
+    ElMessage.success('已关注店铺')
+  } catch (error) {
+    ElMessage.error(error.message || '关注店铺失败')
+  }
 }
 
 // 其他辅助函数保持不变
