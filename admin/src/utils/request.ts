@@ -34,7 +34,7 @@ service.interceptors.request.use((config: AxiosRequestConfig<RequestConfig>) => 
 
   // 添加客户端标识
   const port = window.location.port || '80';
-  const clientType = port === '18183' ? 'user' : 'admin';
+  const clientType = 'admin';
 
   // 添加到请求头（安全写法）
   config.headers['X-Client-Type'] = clientType;

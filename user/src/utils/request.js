@@ -28,7 +28,7 @@ service.interceptors.request.use(config => {
   const isRepeatSubmit = (config.headers || {}).repeatSubmit === false
 
   const port = window.location.port || '80';
-  const clientType = port === '18183' ? 'user' : 'admin';
+  const clientType = 'user';
 
   // 添加到请求头（修改这里）
   config.headers = {
@@ -104,12 +104,6 @@ service.interceptors.response.use(res => {
     }
     return Promise.reject('无效的会话，或者会话已过期，请重新登录。')
   } else if (code === 500) {
-    // 对于盲盒购买，即使返回500错误也继续执行
-    // 因为盲盒本身不是真实商品，后续会通过抽奖确定实际商品
-    if (res.config.data && JSON.parse(res.config.data).isBlindBox) {
-      console.warn('盲盒购买忽略500错误，继续执行抽奖流程')
-      return res.data
-    }
     ElMessage({ message: msg, type: 'error' })
     return Promise.reject(new Error(msg))
   } else if (code === 601) {
@@ -163,15 +157,6 @@ export function download(url, params, filename, config) {
 }
 
 export default service
-
-// 在线省市区数据API（备用方案）
-export function getOnlineRegionData() {
-  // 使用第三方API获取省市区数据
-  return service({
-    url: 'https://cn.apihz.cn/api/other/xzqh.php',
-    method: 'get'
-  })
-}
 
 export const getWebSocketUrl = () => {
   if (process.env.NODE_ENV === 'development') {
