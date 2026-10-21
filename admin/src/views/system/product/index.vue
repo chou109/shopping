@@ -171,19 +171,23 @@
         <template #default="scope">
           <el-tooltip content="修改" placement="top">
             <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)"
+              :aria-label="`修改商品：${scope.row.name || '未知商品'}`"
               v-hasPermi="['system:product:edit']" />
           </el-tooltip>
           <el-tooltip content="删除" placement="top">
             <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)"
+              :aria-label="`删除商品：${scope.row.name || '未知商品'}`"
               v-hasPermi="['system:product:remove']" />
           </el-tooltip>
           <el-tooltip :content="scope.row.status === 1 ? '下架' : '上架'" placement="top">
             <el-button link :type="scope.row.status === 1 ? 'warning' : 'success'"
               :icon="scope.row.status === 1 ? 'Top' : 'Bottom'" @click="toggleStatus(scope.row)"
+              :aria-label="`${scope.row.status === 1 ? '下架' : '上架'}商品：${scope.row.name || '未知商品'}`"
               v-hasPermi="['system:product:edit']" />
           </el-tooltip>
           <el-tooltip :content="scope.row.hotFlag === 1 ? '取消热门' : '设为热门'" placement="top">
             <el-button link :type="scope.row.hotFlag === 1 ? 'danger' : 'info'" @click="toggleHot(scope.row)"
+              :aria-label="`${scope.row.hotFlag === 1 ? '取消热门' : '设为热门'}：${scope.row.name || '未知商品'}`"
               v-hasPermi="['system:product:edit']">
               <template #icon>
                 <el-icon v-if="scope.row.hotFlag === 1">

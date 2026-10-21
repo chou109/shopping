@@ -258,10 +258,12 @@
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180">
         <template #default="scope">
           <el-tooltip content="修改" placement="top">
-            <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:store:edit']" />
+            <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)"
+              :aria-label="`修改店铺：${scope.row.shopName || '未知店铺'}`" v-hasPermi="['system:store:edit']" />
           </el-tooltip>
           <el-tooltip content="删除" placement="top">
-            <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:store:remove']" />
+            <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)"
+              :aria-label="`删除店铺：${scope.row.shopName || '未知店铺'}`" v-hasPermi="['system:store:remove']" />
           </el-tooltip>
           <el-tooltip :content="scope.row.status === 1 ? '关闭店铺' : scope.row.status === 2 ? '开启店铺' : '审核中'" placement="top">
             <el-button 
@@ -269,6 +271,7 @@
               :type="scope.row.status === 1 ? 'warning' : scope.row.status === 2 ? 'success' : 'info'" 
               :icon="scope.row.status === 1 ? 'Switch' : 'Check'"
               @click="toggleStatus(scope.row)" 
+              :aria-label="`${scope.row.status === 1 ? '关闭' : scope.row.status === 2 ? '开启' : '审核中'}店铺：${scope.row.shopName || '未知店铺'}`"
               v-hasPermi="['system:store:edit']"
               :disabled="scope.row.status === 3"
             />
