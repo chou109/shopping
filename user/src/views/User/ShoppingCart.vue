@@ -10,7 +10,7 @@
     </div>
 
     <!-- 购物车内容 -->
-    <div class="cart-content" v-loading="loading">
+    <div class="cart-content" v-loading="loading || checkoutPreparing">
       <div v-if="cartItems.length > 0" class="cart-container">
         <!-- 左侧商品列表 -->
         <div class="cart-list-section">
@@ -130,7 +130,9 @@
             </div>
 
             <div class="checkout-actions">
-              <el-button type="danger" size="large" class="checkout-btn" :disabled="selectedCount === 0 || hasMultipleSelectedShops"
+              <el-button type="danger" size="large" class="checkout-btn"
+                :disabled="selectedCount === 0 || hasMultipleSelectedShops || checkoutPreparing || checkoutInFlight"
+                :loading="checkoutPreparing"
                 @click="handleCheckout">
                 去结算 ({{ selectedCount }}件)
               </el-button>
@@ -191,6 +193,7 @@ const cartItems = ref([])
 
 // 购买弹窗相关
 const purchaseDialogVisible = ref(false)
+const checkoutPreparing = ref(false)
 const checkoutInFlight = ref(false)
 const purchaseProducts = ref([])
 const purchaseOrder = ref({})
@@ -480,6 +483,7 @@ const handleClearCart = async () => {
 
 // 去结算
 const handleCheckout = async () => {
+  if (checkoutPreparing.value || checkoutInFlight.value) return
   const selected = selectedItems.value
   if (selected.length === 0) {
     ElMessage.warning('请先选择要结算的商品')
@@ -499,6 +503,7 @@ const handleCheckout = async () => {
     return
   }
 
+  checkoutPreparing.value = true
   try {
     const addressRes = await getMyAddressList()
     const addressData = addressRes.data || addressRes.rows || []
@@ -528,6 +533,8 @@ const handleCheckout = async () => {
     purchaseDialogVisible.value = true
   } catch (error) {
     ElMessage.error(error.message || '结算失败，请稍后重试')
+  } finally {
+    checkoutPreparing.value = false
   }
 }
 
