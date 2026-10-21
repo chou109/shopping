@@ -26,8 +26,6 @@ import { getBaseUrl } from '@/utils/env'
 
 // 分页组件
 import Pagination from '@/components/Pagination'
-// 自定义表格工具组件
-import RightToolbar from '@/components/RightToolbar'
 // 文件上传组件
 import FileUpload from "@/components/FileUpload"
 // 图片预览组件
@@ -68,7 +66,6 @@ app.component('DictTag', DictTag)
 app.component('Pagination', Pagination)
 app.component('FileUpload', FileUpload)
 app.component('ImagePreview', ImagePreview)
-app.component('RightToolbar', RightToolbar)
 
 app.use(permission)
 
