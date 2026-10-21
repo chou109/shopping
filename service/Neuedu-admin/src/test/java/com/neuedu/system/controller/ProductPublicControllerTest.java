@@ -85,6 +85,13 @@ public class ProductPublicControllerTest {
         assertEquals(Long.valueOf(-1L), query.getShopId());
     }
 
+    @Test
+    public void searchPageRejectsInvalidPaginationWithoutQueryingServices() {
+        AjaxResult result = controllerFor(null).publicSearchPage("小米", null, "all", 0, 12);
+
+        assertEquals(400, result.get("code"));
+    }
+
     private ProductController controllerFor(Product product) {
         return controllerFor(product, null);
     }

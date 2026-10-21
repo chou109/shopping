@@ -44,8 +44,8 @@
       <!-- 统计信息 -->
       <div class="filter-stats">
         <span class="stat-item">共 {{ totalCount }} 条结果</span>
-        <span class="stat-item" v-if="activeFilter === 'product'">商品: {{ filteredProducts.length }} 个</span>
-        <span class="stat-item" v-if="activeFilter === 'shop'">店铺: {{ filteredShops.length }} 个</span>
+        <span class="stat-item" v-if="activeFilter === 'product'">商品: {{ serverPagedResults ? serverProductTotal : filteredProducts.length }} 个</span>
+        <span class="stat-item" v-if="activeFilter === 'shop'">店铺: {{ serverPagedResults ? serverShopTotal : filteredShops.length }} 个</span>
       </div>
     </div>
 
@@ -56,7 +56,7 @@
       <div v-if="activeFilter === 'all' || activeFilter === 'product'" class="product-section">
         <div v-if="filteredProducts.length > 0" class="product-list">
           <div class="search-stats">
-            <span>找到 {{ filteredProducts.length }} 个相关商品</span>
+            <span>找到 {{ serverPagedResults ? serverProductTotal : filteredProducts.length }} 个相关商品</span>
           </div>
 
           <div class="product-grid">
@@ -94,7 +94,7 @@
       <div v-if="activeFilter === 'all' || activeFilter === 'shop'" class="shop-section">
         <div v-if="filteredShops.length > 0" class="shop-list">
           <div class="search-stats">
-            <span>找到 {{ filteredShops.length }} 个相关店铺</span>
+            <span>找到 {{ serverPagedResults ? serverShopTotal : filteredShops.length }} 个相关店铺</span>
           </div>
 
           <div class="shop-grid">
@@ -165,7 +165,7 @@ import api from "@/utils/request.js"
 import { getFrontCategoryTree } from '@/api/system/category'
 import { getProductImageUrl, handleImageError } from '@/utils/image'
 import { isBlindBoxProduct } from '@/utils/product'
-import { searchShop, listHotShop } from '@/api/system/shop'
+import { listHotShop } from '@/api/system/shop'
 
 const route = useRoute()
 const router = useRouter()
@@ -177,6 +177,10 @@ const shops = ref([]) // 新增店铺数据
 const loading = ref(false)
 const searchError = ref('')
 const total = ref(0)
+const serverPagedResults = ref(false)
+const serverProductTotal = ref(0)
+const serverShopTotal = ref(0)
+const serverTotalCount = ref(0)
 const currentPage = ref(1)
 const pageSize = ref(12)
 const activeFilter = ref('all') // 筛选类型：all, product, shop
@@ -233,6 +237,7 @@ const filteredShops = computed(() => {
 
 const visibleProducts = computed(() => {
   if (activeFilter.value === 'shop') return []
+  if (serverPagedResults.value) return filteredProducts.value
   const start = (currentPage.value - 1) * pageSize.value
   if (activeFilter.value === 'product') {
     return filteredProducts.value.slice(start, start + pageSize.value)
@@ -246,6 +251,7 @@ const visibleProducts = computed(() => {
 
 const visibleShops = computed(() => {
   if (activeFilter.value === 'product') return []
+  if (serverPagedResults.value) return filteredShops.value
   const start = (currentPage.value - 1) * pageSize.value
   if (activeFilter.value === 'shop') {
     return filteredShops.value.slice(start, start + pageSize.value)
@@ -259,6 +265,7 @@ const visibleShops = computed(() => {
 
 // 总记录数
 const totalCount = computed(() => {
+  if (serverPagedResults.value) return serverTotalCount.value
   if (activeFilter.value === 'product') {
     return filteredProducts.value.length
   } else if (activeFilter.value === 'shop') {
@@ -298,12 +305,13 @@ const emptyDescription = computed(() => {
 const handleFilterChange = (filterType) => {
   activeFilter.value = filterType
   currentPage.value = 1
+  if (serverPagedResults.value) loadSearchResults()
 }
 
 // 处理分页变化
 const handlePageChange = (page) => {
   currentPage.value = page
-  // 这里可以根据需要实现分页加载
+  if (serverPagedResults.value) loadSearchResults()
 }
 
 // 重置搜索
@@ -314,6 +322,7 @@ const resetSearch = () => {
   inlineSearchKeyword.value = ''
   activeFilter.value = 'all'
   currentPage.value = 1
+  serverPagedResults.value = false
   if (Object.keys(route.query).length > 0) {
     router.replace({ path: route.path, query: {} })
   } else {
@@ -342,85 +351,58 @@ const loadSearchResults = () => {
   const requestVersion = ++searchRequestVersion
   loading.value = true
   searchError.value = ''
-
   if (categoryId.value) {
     loadCategoryName()
   } else {
     categoryName.value = ''
   }
-
-  // 清空之前的数据
   products.value = []
   shops.value = []
+  serverProductTotal.value = 0
+  serverShopTotal.value = 0
+  serverTotalCount.value = 0
 
-  if (categoryId.value) {
-    // 按分类搜索商品
+  if (categoryId.value || keyword.value) {
+    serverPagedResults.value = true
     api({
-      url: `/system/product/category/${categoryId.value}`,
-        method: 'get',
-        headers: { isToken: false }
+      url: '/system/product/public/search-page',
+      method: 'get',
+      params: {
+        keyword: keyword.value || undefined,
+        categoryId: categoryId.value || undefined,
+        type: activeFilter.value,
+        pageNum: currentPage.value,
+        pageSize: pageSize.value
+      },
+      headers: { isToken: false }
     })
       .then((res) => {
         if (requestVersion !== searchRequestVersion) return
-
-        if (res.code === 200) {
-          products.value = (res.data || []).filter(product => !isBlindBoxProduct(product))
-          total.value = products.value.length
-        } else {
+        if (res.code !== 200) {
           products.value = []
-          total.value = 0
-          searchError.value = res.msg || '分类商品加载失败，请重试'
-        }
-      })
-      .catch((error) => {
-        if (requestVersion !== searchRequestVersion) return
-        products.value = []
-        total.value = 0
-        searchError.value = error.message || '分类商品加载失败，请检查网络后重试'
-      })
-      .finally(() => {
-        if (requestVersion === searchRequestVersion) loading.value = false
-      })
-  }
-  else if (keyword.value) {
-    // 同时搜索商品和店铺
-    Promise.all([
-      // 搜索商品
-      api({
-        url: '/system/product/search',
-        method: 'get',
-        params: { keyword: keyword.value },
-        headers: { isToken: false }
-      }),
-      // 搜索店铺
-      searchShop(keyword.value)
-    ])
-      .then(([productRes, shopRes]) => {
-        if (requestVersion !== searchRequestVersion) return
-
-        // 处理商品搜索结果
-        if (productRes.code === 200) {
-          products.value = (productRes.data || []).filter(product => !isBlindBoxProduct(product))
-        } else {
-          products.value = []
-          searchError.value = productRes.msg || '商品搜索失败'
-        }
-
-        // 处理店铺搜索结果
-        if (shopRes.code === 200) {
-          shops.value = shopRes.data || []
-        } else {
           shops.value = []
-          searchError.value = searchError.value || shopRes.msg || '店铺搜索失败'
+          serverProductTotal.value = 0
+          serverShopTotal.value = 0
+          serverTotalCount.value = 0
+          searchError.value = res.msg || '搜索结果加载失败，请重试'
+          return
         }
-
-        total.value = products.value.length + shops.value.length
+        const data = res.data || {}
+        products.value = data.products || []
+        shops.value = data.shops || []
+        serverProductTotal.value = Number(data.productTotal || 0)
+        serverShopTotal.value = Number(data.shopTotal || 0)
+        serverTotalCount.value = Number(data.total || 0)
+        total.value = serverTotalCount.value
       })
       .catch((error) => {
         if (requestVersion !== searchRequestVersion) return
         console.error('搜索失败:', error)
         products.value = []
         shops.value = []
+        serverProductTotal.value = 0
+        serverShopTotal.value = 0
+        serverTotalCount.value = 0
         total.value = 0
         searchError.value = error.message || '搜索失败，请检查网络后重试'
       })
@@ -428,6 +410,10 @@ const loadSearchResults = () => {
         if (requestVersion === searchRequestVersion) loading.value = false
       })
   } else {
+    serverPagedResults.value = false
+    serverProductTotal.value = 0
+    serverShopTotal.value = 0
+    serverTotalCount.value = 0
     // 没有搜索条件，加载热门内容
     Promise.all([
       // 加载热门商品

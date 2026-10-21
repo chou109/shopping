@@ -103,6 +103,12 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         return productMapper.searchProductByName(keyword);
     }
 
+    @Override
+    public List<Product> selectPublicSearchPage(String keyword, Long categoryId)
+    {
+        return productMapper.selectPublicSearchPage(keyword, categoryId);
+    }
+
 
     /**
      * 新增商品

@@ -179,6 +179,24 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         order by p.create_time desc
     </select>
 
+    <!-- 消费者搜索页使用的分页商品查询，避免将全量结果加载到前端 -->
+    <select id="selectPublicSearchPage" resultMap="ProductResult">
+        <include refid="selectProductVo"/>
+        where p.delete_flag = 0 and p.status = 1
+        and coalesce(p.is_blind_box, 0) != 1 and p.id != 9999
+        and (p.shop_id is null or exists (
+            select 1 from shop s where s.id = p.shop_id and s.status = 1 and s.delete_flag = 0
+        ))
+        <if test="categoryId != null">
+            and p.category_id = #{categoryId}
+        </if>
+        <if test="keyword != null and keyword != ''">
+            and (p.name like concat('%', #{keyword}, '%')
+                or p.sub_title like concat('%', #{keyword}, '%'))
+        </if>
+        order by p.create_time desc
+    </select>
+
     <insert id="insertProduct" parameterType="Product" useGeneratedKeys="true" keyProperty="id">
         insert into product
         <trim prefix="(" suffix=")" suffixOverrides=",">

@@ -75,6 +75,9 @@ public interface IProductService extends IService<Product>
      */
     public List<Product> searchProductByName(String keyword);
 
+    /** 消费者搜索页分页查询 */
+    public List<Product> selectPublicSearchPage(String keyword, Long categoryId);
+
 
 
     /**

@@ -1,6 +1,9 @@
 package com.neuedu.system.controller;
 
 import java.util.List;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.neuedu.common.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +21,8 @@ import com.neuedu.system.service.IProductService;
 import com.neuedu.system.service.IShopService;
 import com.neuedu.common.utils.poi.ExcelUtil;
 import com.neuedu.common.core.page.TableDataInfo;
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
 
@@ -113,6 +118,72 @@ public class ProductController extends BaseController
     {
         List<Product> list = productService.searchProductByName(keyword);
         return success(list);
+    }
+
+    /** 消费者搜索页分页查询商品和店铺 */
+    @Operation(summary = "分页查询消费者搜索结果")
+    @GetMapping("/public/search-page")
+    public AjaxResult publicSearchPage(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(defaultValue = "all") String type,
+            @RequestParam(defaultValue = "1") Integer pageNum,
+            @RequestParam(defaultValue = "12") Integer pageSize)
+    {
+        if (pageNum == null || pageNum < 1 || pageNum > 100000
+                || pageSize == null || pageSize < 1 || pageSize > 48
+                || !"all".equals(type) && !"product".equals(type) && !"shop".equals(type)) {
+            return AjaxResult.error(400, "分页参数无效");
+        }
+
+        String normalizedKeyword = keyword == null ? null : keyword.trim();
+        if (normalizedKeyword != null && normalizedKeyword.isEmpty()) normalizedKeyword = null;
+        List<Product> products = new ArrayList<>();
+        List<Shop> shops = new ArrayList<>();
+        long productTotal = 0;
+        long shopTotal = 0;
+        long offset = (long) (pageNum - 1) * pageSize;
+        boolean canSearchShops = categoryId == null && normalizedKeyword != null;
+
+        if ("product".equals(type) || "all".equals(type)) {
+            PageHelper.startPage(1, 1);
+            List<Product> countResult = productService.selectPublicSearchPage(normalizedKeyword, categoryId);
+            productTotal = new PageInfo<>(countResult).getTotal();
+
+            long productOffset = offset;
+            int productLimit = pageSize;
+            if ("all".equals(type)) {
+                productLimit = (int) Math.max(0, Math.min(pageSize, productTotal - productOffset));
+            }
+            if (productLimit > 0) {
+                PageHelper.offsetPage((int) productOffset, productLimit);
+                products = productService.selectPublicSearchPage(normalizedKeyword, categoryId);
+            }
+        }
+
+        if (canSearchShops && ("shop".equals(type) || "all".equals(type))) {
+            PageHelper.startPage(1, 1);
+            List<Shop> countResult = shopService.searchShops(normalizedKeyword, 1);
+            shopTotal = new PageInfo<>(countResult).getTotal();
+
+            long shopOffset = "all".equals(type) ? Math.max(0, offset - productTotal) : offset;
+            int shopLimit = "all".equals(type)
+                    ? (int) Math.max(0, Math.min(pageSize - products.size(), productTotal + shopTotal - offset))
+                    : pageSize;
+            if (shopLimit > 0) {
+                PageHelper.offsetPage((int) shopOffset, shopLimit);
+                shops = shopService.searchShops(normalizedKeyword, 1);
+            }
+        }
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("products", products);
+        data.put("shops", shops);
+        data.put("productTotal", productTotal);
+        data.put("shopTotal", shopTotal);
+        data.put("total", "product".equals(type) ? productTotal
+                : "shop".equals(type) ? shopTotal : productTotal + shopTotal);
+        return success(data);
     }
 
     /**

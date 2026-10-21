@@ -67,6 +67,10 @@ public interface ProductMapper extends BaseMapper<Product>
      */
     public List<Product> searchProductByName(@Param("keyword") String keyword);
 
+    /** 消费者搜索页分页查询（排除盲盒商品） */
+    public List<Product> selectPublicSearchPage(@Param("keyword") String keyword,
+            @Param("categoryId") Long categoryId);
+
 
 
     /**
