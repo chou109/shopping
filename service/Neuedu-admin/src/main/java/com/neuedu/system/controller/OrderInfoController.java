@@ -24,6 +24,7 @@ import com.neuedu.system.domain.Product;
 import com.neuedu.system.service.IOrderInfoService;
 import com.neuedu.system.service.IOrderDetailService;
 import com.neuedu.system.service.IProductService;
+import com.neuedu.system.service.BlindBoxPrizePolicy;
 import com.neuedu.system.constants.OrderStatusConstants;
 import com.neuedu.common.utils.poi.ExcelUtil;
 import com.neuedu.common.core.page.TableDataInfo;
@@ -44,7 +45,6 @@ public class OrderInfoController extends BaseController {
     private static final BigDecimal BLIND_BOX_PRICE = new BigDecimal("500");
     private static final Long BLIND_BOX_PRODUCT_ID = 9999L;
     private static final SecureRandom RANDOM = new SecureRandom();
-    private static final List<Long> OTHER_SHOPS = java.util.Arrays.asList(6L, 7L, 8L, 9L, 12L, 13L, 14L);
     private static final ConcurrentMap<Long, Object> BLIND_BOX_LOCKS = new ConcurrentHashMap<>();
 
     private final IOrderInfoService orderInfoService;
@@ -142,7 +142,7 @@ public class OrderInfoController extends BaseController {
 
     private Product selectBlindBoxPrize() {
         int roll = RANDOM.nextInt(100);
-        Long preferredShop = roll < 85 ? 10L : roll < 99 ? 11L : OTHER_SHOPS.get(RANDOM.nextInt(OTHER_SHOPS.size()));
+        Long preferredShop = BlindBoxPrizePolicy.preferredShop(roll, RANDOM.nextInt(7));
         List<Long> shopChoices = new ArrayList<>();
         shopChoices.add(preferredShop);
         if (!shopChoices.contains(10L)) shopChoices.add(10L);
