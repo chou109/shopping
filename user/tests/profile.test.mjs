@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { formatFullAddress, getAddressLabelName } from '../src/utils/profile.mjs'
+import { formatFullAddress, getAddressLabelName, isMunicipality } from '../src/utils/profile.mjs'
 
 test('formats municipality addresses without repeating province and city', () => {
   assert.equal(formatFullAddress({ province: '北京市', city: '北京市', area: '朝阳区', street: '建国路' }), '北京市朝阳区建国路')
@@ -16,4 +16,10 @@ test('resolves address labels for numeric and string codes', () => {
   assert.equal(getAddressLabelName(2), '公司')
   assert.equal(getAddressLabelName('3'), '学校')
   assert.equal(getAddressLabelName(99), '其他')
+})
+
+test('recognizes municipality codes whether they are numeric or strings', () => {
+  assert.equal(isMunicipality('110000'), true)
+  assert.equal(isMunicipality(500000), true)
+  assert.equal(isMunicipality('330000'), false)
 })

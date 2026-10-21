@@ -5,6 +5,10 @@ export const addressLabelOptions = [
   { value: 4, label: '其他' }
 ]
 
+const municipalityCodes = new Set(['110000', '120000', '310000', '500000'])
+
+export const isMunicipality = provinceCode => municipalityCodes.has(String(provinceCode || ''))
+
 export const getAddressLabelName = label =>
   addressLabelOptions.find(option => option.value === Number(label))?.label || '其他'
 
