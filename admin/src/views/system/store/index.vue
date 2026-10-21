@@ -196,7 +196,10 @@
     </el-row>
 
     <!-- 数据表格 -->
-    <el-table ref="storeTableRef" v-loading="loading" :data="storeList" @selection-change="handleSelectionChange">
+    <el-alert v-if="listError" :title="listError" type="error" :closable="false" show-icon>
+      <template #default><el-button link type="primary" @click="getList">重试</el-button></template>
+    </el-alert>
+    <el-table v-else ref="storeTableRef" v-loading="loading" :data="storeList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="主键" align="center" prop="id" width="80" />
       <el-table-column label="店铺名称" align="center" prop="shopName" min-width="150" />
@@ -336,6 +339,7 @@ const storeList = ref([]);
 const storeTableRef = ref(null);
 const open = ref(false);
 const loading = ref(true);
+const listError = ref("");
 const showSearch = ref(true);
 const showAdvanced = ref(false); // 控制高级筛选显示
 const ids = ref([]);
@@ -394,6 +398,7 @@ const { queryParams, form, rules } = toRefs(data);
 function getList() {
   const requestId = ++storeListRequestId;
   loading.value = true;
+  listError.value = "";
   storeTableRef.value?.clearSelection();
   
   // 构建查询参数
@@ -417,9 +422,9 @@ function getList() {
     if (requestId !== storeListRequestId) return;
     storeList.value = response.rows || [];
     total.value = Number(response.total) || 0;
-  }).catch(error => {
+  }).catch(() => {
     if (requestId === storeListRequestId) {
-      proxy.$modal.msgError(error?.message || "查询店铺失败");
+      listError.value = "店铺加载失败，请重试";
     }
   }).finally(() => {
     if (requestId === storeListRequestId) loading.value = false;

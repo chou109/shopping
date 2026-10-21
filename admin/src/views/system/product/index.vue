@@ -100,7 +100,10 @@
 
     <!-- 数据表格卡片 -->
     <el-card class="table-card" shadow="hover">
-    <el-table ref="productTableRef" v-loading="loading" :data="productList" @selection-change="handleSelectionChange"
+    <el-alert v-if="listError" :title="listError" type="error" :closable="false" show-icon>
+      <template #default><el-button link type="primary" @click="getList">重试</el-button></template>
+    </el-alert>
+    <el-table v-else ref="productTableRef" v-loading="loading" :data="productList" @selection-change="handleSelectionChange"
       :header-cell-style="{ background: '#f5f7fa', color: '#606266', fontWeight: '600' }"
       :row-style="{ height: '60px' }"
       stripe
@@ -352,6 +355,7 @@ const productList = ref([]);
 const productTableRef = ref(null);
 const open = ref(false);
 const loading = ref(true);
+const listError = ref("");
 const showSearch = ref(true);
 const showAdvanced = ref(false);
 const ids = ref([]);
@@ -557,6 +561,7 @@ function handleChildClick(child) {
 function getList() {
   const requestId = ++productListRequestId;
   loading.value = true;
+  listError.value = "";
   productTableRef.value?.clearSelection();
   const userStore = useUserStore();
   const params = { ...queryParams.value };
@@ -577,9 +582,9 @@ function getList() {
     if (requestId !== productListRequestId) return;
     productList.value = response.rows || [];
     total.value = Number(response.total) || 0;
-  }).catch(error => {
+  }).catch(() => {
     if (requestId === productListRequestId) {
-      proxy.$modal.msgError(error?.message || "查询商品失败");
+      listError.value = "商品加载失败，请重试";
     }
   }).finally(() => {
     if (requestId === productListRequestId) loading.value = false;

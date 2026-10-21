@@ -77,7 +77,10 @@
 
     <!-- 数据表格卡片 -->
     <el-card class="table-card" shadow="hover">
-      <el-table
+      <el-alert v-if="listError" :title="listError" type="error" :closable="false" show-icon>
+        <template #default><el-button link type="primary" @click="getList">重试</el-button></template>
+      </el-alert>
+      <el-table v-else
         ref="infoTableRef"
         v-loading="loading" 
         :data="infoList" 
@@ -309,6 +312,7 @@ const infoList = ref([]);
 const infoTableRef = ref(null);
 const open = ref(false);
 const loading = ref(true);
+const listError = ref("");
 const showSearch = ref(true);
 const ids = ref([]);
 const selectedRows = ref([]);  // 新增：保存选中的行数据
@@ -371,6 +375,7 @@ const hasShippableOrders = computed(() => {
 function getList() {
   const requestId = ++listRequestId;
   loading.value = true;
+  listError.value = "";
   infoTableRef.value?.clearSelection();
   
   const params = { ...queryParams.value };
@@ -379,9 +384,9 @@ function getList() {
     if (requestId !== listRequestId) return;
     infoList.value = response.rows || [];
     total.value = Number(response.total) || 0;
-  }).catch(error => {
+  }).catch(() => {
     if (requestId === listRequestId) {
-      proxy.$modal.msgError(error?.message || "查询订单失败");
+      listError.value = "订单加载失败，请重试";
     }
   }).finally(() => {
     if (requestId === listRequestId) loading.value = false;
