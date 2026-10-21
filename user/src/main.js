@@ -24,15 +24,6 @@ import { parseTime, resetForm, addDateRange, selectDictLabel, selectDictLabels, 
 import { getQueryData } from "@/api/query/comQuery";
 import { getBaseUrl } from '@/utils/env'
 
-// 分页组件
-import Pagination from '@/components/Pagination'
-// 文件上传组件
-import FileUpload from "@/components/FileUpload"
-// 图片预览组件
-import ImagePreview from "@/components/ImagePreview"
-// 字典标签组件
-import DictTag from '@/components/DictTag'
-
 const app = createApp(App)
 
 // 全局方法挂载
@@ -60,12 +51,6 @@ app.config.globalProperties.msgError = function (msg) {
 app.config.globalProperties.msgInfo = function (msg) {
   this.$message.info(msg);
 }
-
-// 全局组件挂载
-app.component('DictTag', DictTag)
-app.component('Pagination', Pagination)
-app.component('FileUpload', FileUpload)
-app.component('ImagePreview', ImagePreview)
 
 app.use(permission)
 
