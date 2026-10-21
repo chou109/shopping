@@ -84,8 +84,4 @@ app.use(ElementPlus, {
   size: Cookies.get('size') || 'default'
 })
 
-import VForm3 from 'vform3-builds'  //引入VForm 3库
-import 'vform3-builds/dist/designer.style.css'  //引入VForm3样式
-app.use(VForm3)
-
 app.mount('#app')
