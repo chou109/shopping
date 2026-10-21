@@ -116,16 +116,6 @@ const handleCategoryActivation = (category) => {
   }
 }
 
-// 修改：处理轮播图点击，跳转到商品详情页
-const handleBannerClick = function (banner) {
-  if (banner.link) {
-    router.push(banner.link)
-  } else if (banner.productId) {
-    // 如果link不存在但有productId，也跳转到商品详情
-    router.push(`/product/detail?id=${banner.productId}`)
-  }
-}
-
 const handleImageError = function (event) {
   console.error('图片加载失败:', event.target.src)
   event.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwMCIgaGVpZ2h0PSI0MDAiIHZpZXdCb3g9IjAgMCAxMjAwIDQwMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTIwMCIgaGVpZ2h0PSI0MDAiIGZpbGw9IiNlZWVlZWUiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjI0IiBmaWxsPSIjYWFhIj5CYW5uZXIgSW1hZ2U8L3RleHQ+PC9zdmc+'
@@ -196,20 +186,20 @@ onUnmounted(() => {
       <el-carousel :interval="5000" :height="carouselHeight" indicator-position="outside"
         :arrow="windowWidth > 768 ? 'always' : 'never'">
         <el-carousel-item v-for="banner in banners" :key="banner.id">
-          <div class="banner-item" @click="handleBannerClick(banner)">
+          <router-link :to="banner.link" class="banner-item" :aria-label="`查看商品：${banner.title}`">
             <img :src="banner.imageUrl" :alt="banner.title || 'Banner'" class="banner-image"
               @error="handleImageError" />
             <div class="banner-content">
               <h3>{{ banner.title }}</h3>
               <p>{{ banner.description }}</p>
             </div>
-          </div>
+          </router-link>
         </el-carousel-item>
       </el-carousel>
     </div>
 
     <!-- 右侧跳转模块 -->
-    <div class="jump-module" @click="router.push('/product/blind-box')" style="cursor: pointer;">
+    <router-link to="/product/blind-box" class="jump-module" aria-label="浏览随机商品盲盒">
       <div class="jump-content">
         <div class="jump-text">
           <div class="jump-text-large">随机商品盲盒<br>好货低价易购</div>
@@ -219,7 +209,7 @@ onUnmounted(() => {
           <img :src="BlindBox" alt="促销图片">
         </div>
       </div>
-    </div>
+    </router-link>
   </div>
 </template>
 
@@ -269,6 +259,8 @@ onUnmounted(() => {
   justify-content: center;
   padding: 20px;
   box-sizing: border-box;
+  color: inherit;
+  text-decoration: none;
 }
 
 .jump-content {
@@ -334,8 +326,16 @@ onUnmounted(() => {
   position: relative;
   width: 100%;
   height: 100%;
-  cursor: pointer;
+  display: block;
+  color: inherit;
+  text-decoration: none;
   overflow: hidden;
+}
+
+.banner-item:focus-visible,
+.jump-module:focus-visible {
+  outline: 3px solid #ff0036;
+  outline-offset: -4px;
 }
 
 .banner-image {

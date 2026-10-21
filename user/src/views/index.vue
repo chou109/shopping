@@ -5,10 +5,10 @@
       <div class="header-container">
         <!-- Logo区域 -->
         <div class="logo-area">
-          <div class="logo" @click="$router.push('/')">
+          <router-link to="/" class="logo" aria-label="ESHOP 首页">
             <img src="@/assets/eshop.png" alt="ESHOP">
             <span class="brand-name">ESHOP</span>
-          </div>
+          </router-link>
         </div>
 
         <!-- 功能链接区域 -->
@@ -80,9 +80,9 @@
           </div>
 
           <!-- 用户未登录时显示的登录链接 -->
-          <div v-else class="login-link" @click="$router.push('/login')">
+          <router-link v-else to="/login" class="login-link">
             <span class="login-text">请登录</span>
-          </div>
+          </router-link>
         </div>
 
         <!-- 搜索框区域 -->
@@ -92,7 +92,7 @@
               <el-input v-model="searchKeyword" placeholder="搜索商品..." @keyup.enter="handleSearch" size="large"
                 class="search-input">
                 <template #append>
-                  <el-button @click="handleSearch" class="search-btn">
+                  <el-button @click="handleSearch" class="search-btn" aria-label="搜索商品">
                     <el-icon>
                       <Search />
                     </el-icon>
@@ -330,6 +330,7 @@ const logout = () => {
   transition: all 0.3s ease;
   padding: 8px 12px;
   border-radius: 12px;
+  text-decoration: none;
 }
 
 .logo:hover {
@@ -499,6 +500,7 @@ const logout = () => {
   transition: all 0.3s ease;
   background: linear-gradient(135deg, #ff5500 0%, #ff7700 100%);
   box-shadow: 0 4px 12px rgba(255, 85, 0, 0.3);
+  text-decoration: none;
 }
 
 .login-link:hover {
