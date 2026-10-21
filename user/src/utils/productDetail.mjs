@@ -7,3 +7,9 @@ export const formatProductPrice = value => {
   const price = Number(value)
   return (Number.isFinite(price) ? price : 0).toFixed(2)
 }
+
+export const buildDirectOrderPayload = (purchase, addressId) => ({
+  productId: purchase.productId,
+  quantity: purchase.quantity,
+  addressId
+})

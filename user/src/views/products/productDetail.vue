@@ -36,7 +36,7 @@ import { getMyAddressList } from '@/api/system/address'
 import { toggleFavorite, checkFavorite } from '@/api/system/favorite'
 import { getToken } from '@/utils/auth'
 import PurchaseDialog from '@/components/PurchaseDialog/index.vue'
-import { formatProductPrice, normalizeProductStock } from '@/utils/productDetail.mjs'
+import { buildDirectOrderPayload, formatProductPrice, normalizeProductStock } from '@/utils/productDetail.mjs'
 
 const route = useRoute()
 const router = useRouter()
@@ -592,6 +592,8 @@ const handleBuyNow = async () => {
       quantity: quantity.value
     }]
     purchaseOrder.value = {
+      productId: product.value.id,
+      quantity: quantity.value,
       addressId: defaultAddr.id,
       receiveName: defaultAddr.receiveName,
       receivePhone: defaultAddr.receivePhone,
@@ -609,11 +611,7 @@ const handleBuyNow = async () => {
 }
 
 const createPurchaseOrder = async (orderData) => {
-  const orderRes = await createDirectOrder({
-    productId: product.value.id,
-    quantity: quantity.value,
-    addressId: orderData.addressId
-  })
+  const orderRes = await createDirectOrder(buildDirectOrderPayload(purchaseOrder.value, orderData.addressId))
   if (orderRes.code !== 200 || !orderRes.data) {
     throw new Error(orderRes.msg || '创建订单失败')
   }
