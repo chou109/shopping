@@ -1,19 +1,30 @@
 <template>
-  <div id="app">
-    <router-view />
-    <!-- 右侧固定侧边栏 -->
-    <FixedSidebar />
-  </div>
+  <el-config-provider :locale="locale" :size="size">
+    <div id="app">
+      <router-view />
+      <!-- 右侧固定侧边栏 -->
+      <FixedSidebar />
+    </div>
+  </el-config-provider>
 </template>
 
 <script>
 import { defineComponent } from 'vue'
+import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import FixedSidebar from '@/views/index/FixedSidebar.vue'
 
 export default defineComponent({
   name: 'App',
   components: {
     FixedSidebar
+  },
+  data() {
+    return { locale: zhCn }
+  },
+  computed: {
+    size() {
+      return this.$store.getters.size || 'default'
+    }
   }
 })
 </script>
