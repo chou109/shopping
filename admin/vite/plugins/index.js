@@ -14,7 +14,7 @@ export default function createVitePlugins(viteEnv, isBuild = false) {
 		resolvers: [ElementPlusResolver({ importStyle: 'css' })]
 	}))
 	vitePlugins.push(createSetupExtend())
-    vitePlugins.push(createSvgIcon(isBuild))
+    vitePlugins.push(createSvgIcon())
 	isBuild && vitePlugins.push(...createCompression(viteEnv))
     return vitePlugins
 }
