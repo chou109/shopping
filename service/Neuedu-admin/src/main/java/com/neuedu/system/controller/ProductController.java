@@ -49,15 +49,7 @@ public class ProductController extends BaseController
         // 获取当前登录用户ID
         Long currentUserId = getUserId();
 
-        // 如果不是超级管理员(ID=1)，且前端没有传shopId，则根据用户的店铺ID查询
-        // 前端已经传了shopId，直接使用即可，不再覆盖
-        if (currentUserId != null && currentUserId != 1L && product.getShopId() == null) {
-            // 根据用户ID查询其店铺
-            Shop myShop = shopService.selectShopByUserId(currentUserId);
-            if (myShop != null) {
-                product.setShopId(myShop.getId());
-            }
-        }
+        scopeProductQueryToCurrentShop(product, currentUserId);
         
         List<Product> list = productService.selectProductList(product);
         
@@ -73,6 +65,7 @@ public class ProductController extends BaseController
     @PostMapping("/export")
     public void export(HttpServletResponse response, Product product)
     {
+        scopeProductQueryToCurrentShop(product, SecurityUtils.getUserId());
         List<Product> list = productService.selectProductList(product);
         ExcelUtil<Product> util = new ExcelUtil<Product>(Product.class);
         util.exportExcel(response, list, "商品数据");
@@ -152,7 +145,11 @@ public class ProductController extends BaseController
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {
-        return success(productService.selectProductById(id));
+        Product product = productService.selectProductById(id);
+        if (!canManageProduct(product, SecurityUtils.getUserId())) {
+            return error("无权查看此商品");
+        }
+        return success(product);
     }
 
     /**
@@ -190,6 +187,12 @@ public class ProductController extends BaseController
         if (currentUserId == null) {
             return AjaxResult.error("用户未登录");
         }
+
+        if (!SecurityUtils.isAdmin(currentUserId)) {
+            Shop myShop = shopService.selectShopByUserId(currentUserId);
+            if (myShop == null) return error("当前账号没有可管理的店铺");
+            product.setShopId(myShop.getId());
+        }
         
         // 设置创建者ID为当前登录用户ID
         product.setCreateUser(currentUserId);
@@ -206,6 +209,15 @@ public class ProductController extends BaseController
     @PutMapping
     public AjaxResult edit(@RequestBody Product product)
     {
+        Long currentUserId = SecurityUtils.getUserId();
+        if (!SecurityUtils.isAdmin(currentUserId)) {
+            Product existing = productService.selectProductById(product.getId());
+            if (!canManageProduct(existing, currentUserId)) return error("无权修改此商品");
+            Shop myShop = shopService.selectShopByUserId(currentUserId);
+            product.setShopId(myShop.getId());
+            product.setCreateUser(existing.getCreateUser());
+        }
+        product.setUpdateUser(currentUserId);
         return toAjax(productService.updateProduct(product));
     }
 
@@ -218,6 +230,15 @@ public class ProductController extends BaseController
 	@DeleteMapping("/{ids}")
     public AjaxResult remove(@PathVariable( name = "ids" ) Long[] ids) 
     {
+        Long currentUserId = SecurityUtils.getUserId();
+        if (!SecurityUtils.isAdmin(currentUserId)) {
+            if (ids == null) return error("商品ID不能为空");
+            for (Long id : ids) {
+                if (!canManageProduct(productService.selectProductById(id), currentUserId)) {
+                    return error("选择中包含其他店铺商品，无法删除");
+                }
+            }
+        }
         return toAjax(productService.deleteProductByIds(ids));
     }
 
@@ -230,6 +251,9 @@ public class ProductController extends BaseController
     @PutMapping("/{productId}/hot")
     public AjaxResult setHot(@PathVariable Long productId, @RequestParam Integer hotFlag)
     {
+        if (!canManageProduct(productService.selectProductById(productId), SecurityUtils.getUserId())) {
+            return error("无权修改此商品");
+        }
         return toAjax(productService.updateProductHotFlag(productId, hotFlag));
     }
 
@@ -242,6 +266,9 @@ public class ProductController extends BaseController
     @PutMapping("/{productId}/stock")
     public AjaxResult updateStock(@PathVariable Long productId, @RequestParam Long quantity)
     {
+        if (!canManageProduct(productService.selectProductById(productId), SecurityUtils.getUserId())) {
+            return error("无权修改此商品库存");
+        }
         return toAjax(productService.updateProductStock(productId, quantity));
     }
 
@@ -254,6 +281,9 @@ public class ProductController extends BaseController
     @PutMapping("/{productId}/status")
     public AjaxResult updateStatus(@PathVariable Long productId, @RequestParam Integer status)
     {
+        if (!canManageProduct(productService.selectProductById(productId), SecurityUtils.getUserId())) {
+            return error("无权修改此商品");
+        }
         Product product = new Product();
         product.setId(productId);
         product.setStatus(status);
@@ -281,5 +311,20 @@ public class ProductController extends BaseController
         product.setStatus(1);
         List<Product> list = productService.selectPublicProductListRandom(product);
         return getDataTable(list);
+    }
+
+    void scopeProductQueryToCurrentShop(Product product, Long userId)
+    {
+        if (SecurityUtils.isAdmin(userId)) return;
+        Shop shop = userId == null ? null : shopService.selectShopByUserId(userId);
+        product.setShopId(shop == null ? -1L : shop.getId());
+    }
+
+    private boolean canManageProduct(Product product, Long userId)
+    {
+        if (SecurityUtils.isAdmin(userId)) return true;
+        if (product == null || product.getShopId() == null || userId == null) return false;
+        Shop shop = shopService.selectShopByUserId(userId);
+        return shop != null && shop.getId().equals(product.getShopId());
     }
 }

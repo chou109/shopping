@@ -62,6 +62,29 @@ public class ProductPublicControllerTest {
         assertNotEquals(200, result.get("code"));
     }
 
+    @Test
+    public void merchantProductQueryAlwaysUsesTheirOwnShop() {
+        Shop ownShop = new Shop();
+        ownShop.setId(12L);
+        Product query = new Product();
+        query.setShopId(99L);
+        ProductController controller = controllerFor(null, ownShop);
+
+        controller.scopeProductQueryToCurrentShop(query, 71L);
+
+        assertEquals(Long.valueOf(12L), query.getShopId());
+    }
+
+    @Test
+    public void merchantWithoutShopCannotQueryAllProducts() {
+        Product query = new Product();
+        ProductController controller = controllerFor(null, null);
+
+        controller.scopeProductQueryToCurrentShop(query, 71L);
+
+        assertEquals(Long.valueOf(-1L), query.getShopId());
+    }
+
     private ProductController controllerFor(Product product) {
         return controllerFor(product, null);
     }
@@ -70,7 +93,7 @@ public class ProductPublicControllerTest {
         IProductService products = proxy(IProductService.class, (methodName, args) ->
             "selectProductById".equals(methodName) ? product : null);
         IShopService shops = proxy(IShopService.class, (methodName, args) ->
-            "selectShopById".equals(methodName) ? shop : null);
+            "selectShopById".equals(methodName) || "selectShopByUserId".equals(methodName) ? shop : null);
         return new ProductController(products, shops);
     }
 
