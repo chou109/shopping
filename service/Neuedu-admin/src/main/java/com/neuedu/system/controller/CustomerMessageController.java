@@ -6,6 +6,7 @@ import java.util.Map;
 import com.neuedu.common.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import javax.servlet.http.HttpServletResponse;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import com.neuedu.common.annotation.Log;
@@ -14,6 +15,8 @@ import com.neuedu.common.core.domain.AjaxResult;
 import com.neuedu.common.enums.BusinessType;
 import com.neuedu.system.domain.CustomerMessage;
 import com.neuedu.system.service.ICustomerMessageService;
+import com.neuedu.system.service.IShopService;
+import org.springframework.security.access.AccessDeniedException;
 import com.neuedu.common.core.page.TableDataInfo;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
@@ -31,11 +34,13 @@ import io.swagger.v3.oas.annotations.Operation;
 public class CustomerMessageController extends BaseController
 {
     private final ICustomerMessageService customerMessageService;
+    private final IShopService shopService;
 
     /**
      * 查询客服消息列表（管理端）
      */
     @Operation(summary = "查询客服消息列表")
+    @PreAuthorize("@ss.hasPermi('system:customerMessage:list')")
     @GetMapping("/list")
     public TableDataInfo list(CustomerMessage customerMessage)
     {
@@ -48,6 +53,7 @@ public class CustomerMessageController extends BaseController
      * 获取客服消息详细信息
      */
     @Operation(summary = "获取客服消息详细信息")
+    @PreAuthorize("@ss.hasPermi('system:customerMessage:query')")
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {
@@ -58,6 +64,7 @@ public class CustomerMessageController extends BaseController
      * 删除客服消息
      */
     @Operation(summary = "删除客服消息")
+    @PreAuthorize("@ss.hasPermi('system:customerMessage:remove')")
     @Log(title = "客服消息", businessType = BusinessType.DELETE)
     @DeleteMapping("/{ids}")
     public AjaxResult remove(@PathVariable Long[] ids)
@@ -154,6 +161,8 @@ public class CustomerMessageController extends BaseController
     @PostMapping("/admin/reply")
     public AjaxResult adminReplyMessage(@RequestBody Map<String, Object> params)
     {
+        Long userId = getUserId();
+        Long adminId = requireAdminOrShopOwner();
         String sessionId = (String) params.get("sessionId");
         String content = (String) params.get("content");
         Integer messageType = params.get("messageType") != null ? 
@@ -165,12 +174,14 @@ public class CustomerMessageController extends BaseController
         if (content == null || content.trim().isEmpty()) {
             return error("消息内容不能为空");
         }
-        
-        Long adminId = getUserId();
+        if (!customerMessageService.isAdminSessionOwned(sessionId, adminId)) {
+            return AjaxResult.error(403, "无权回复此客服会话");
+        }
+
         String adminName = getUsername();
         
         CustomerMessage message = customerMessageService.sendMessageToUser(
-            sessionId, adminId, adminName, content.trim(), messageType);
+            sessionId, userId, adminName, content.trim(), messageType);
         return success(message);
     }
 
@@ -181,7 +192,7 @@ public class CustomerMessageController extends BaseController
     @GetMapping("/admin/sessions")
     public AjaxResult getAdminSessions()
     {
-        Long adminId = getUserId();
+        Long adminId = requireAdminOrShopOwner();
         List<Map<String, Object>> sessions = customerMessageService.getAdminSessionList(adminId);
         return success(sessions);
     }
@@ -193,7 +204,11 @@ public class CustomerMessageController extends BaseController
     @GetMapping("/admin/session/{sessionId}")
     public AjaxResult getSessionMessages(@PathVariable String sessionId)
     {
-        List<CustomerMessage> messages = customerMessageService.getSessionMessages(sessionId);
+        Long adminId = requireAdminOrShopOwner();
+        if (!customerMessageService.isAdminSessionOwned(sessionId, adminId)) {
+            return AjaxResult.error(403, "无权访问此客服会话");
+        }
+        List<CustomerMessage> messages = customerMessageService.getAdminSessionMessages(sessionId, adminId);
         return success(messages);
     }
 
@@ -204,7 +219,8 @@ public class CustomerMessageController extends BaseController
     @GetMapping("/admin/unread/count")
     public AjaxResult getAdminUnreadCount()
     {
-        Long count = customerMessageService.countUnreadByAdmin();
+        Long adminId = requireAdminOrShopOwner();
+        Long count = customerMessageService.countUnreadByAdmin(adminId);
         return success(count);
     }
 
@@ -215,7 +231,20 @@ public class CustomerMessageController extends BaseController
     @PutMapping("/admin/read/{sessionId}")
     public AjaxResult adminMarkAsRead(@PathVariable String sessionId)
     {
-        int result = customerMessageService.markAsRead(sessionId, CustomerMessage.SENDER_TYPE_ADMIN);
+        Long adminId = requireAdminOrShopOwner();
+        if (!customerMessageService.isAdminSessionOwned(sessionId, adminId)) {
+            return AjaxResult.error(403, "无权操作此客服会话");
+        }
+        int result = customerMessageService.markAdminSessionAsRead(sessionId, adminId);
         return success(result);
+    }
+
+    private Long requireAdminOrShopOwner() {
+        Long userId = getUserId();
+        if (SecurityUtils.isAdmin(userId)) return null;
+        if (shopService.selectShopByUserId(userId) == null) {
+            throw new AccessDeniedException("仅管理员或店铺负责人可以处理客服会话");
+        }
+        return userId;
     }
 }

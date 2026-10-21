@@ -62,6 +62,27 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         order by create_time asc
     </select>
 
+    <select id="selectAdminSessionMessages" resultMap="CustomerMessageResult">
+        <include refid="selectCustomerMessageVo"/>
+        where session_id = #{sessionId} and status = #{status}
+          and exists (
+              select 1 from customer_message scope
+              where scope.session_id = #{sessionId}
+                and scope.receiver_type = 2
+                and scope.receiver_id = #{adminId}
+                and scope.status = 1
+          )
+        order by create_time asc
+    </select>
+
+    <select id="existsAdminSessionForReceiver" resultType="boolean">
+        select exists (
+            select 1 from customer_message
+            where session_id = #{sessionId} and receiver_type = 2
+              and receiver_id = #{adminId} and status = 1
+        )
+    </select>
+
     <!-- 查询用户的会话列表（去重） -->
     <select id="selectUserSessionList" resultType="java.util.HashMap">
         SELECT 
@@ -99,7 +120,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         FROM customer_message cm
         WHERE status = 1
         <if test="adminId != null">
-            AND (receiver_id = #{adminId} OR session_id LIKE CONCAT('%_TO_', #{adminId}))
+            AND receiver_type = 2
+            AND receiver_id = #{adminId}
         </if>
         GROUP BY session_id
         ORDER BY lastMessageTime DESC
@@ -120,6 +142,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         WHERE receiver_type = 2 
           AND is_read = 0 
           AND status = 1
+        <if test="adminId != null">
+            AND receiver_id = #{adminId}
+        </if>
     </select>
 
     <!-- 统计会话未读消息数量 -->
@@ -208,6 +233,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         WHERE session_id = #{sessionId} 
           AND receiver_type = #{receiverType}
           AND is_read = 0
+        <if test="receiverType != null and receiverType == 2 and adminId != null">
+          AND EXISTS (
+              SELECT 1 FROM customer_message scope
+              WHERE scope.session_id = #{sessionId}
+                AND scope.receiver_type = 2
+                AND scope.receiver_id = #{adminId}
+                AND scope.status = 1
+          )
+        </if>
     </update>
 
     <!-- 标记单条消息为已读 -->

@@ -195,6 +195,17 @@ public class CustomerMessageServiceImpl extends ServiceImpl<CustomerMessageMappe
         return customerMessageMapper.selectMessagesBySessionId(sessionId, CustomerMessage.STATUS_NORMAL);
     }
 
+    @Override
+    public List<CustomerMessage> getAdminSessionMessages(String sessionId, Long adminId) {
+        if (adminId == null) return getSessionMessages(sessionId);
+        return customerMessageMapper.selectAdminSessionMessages(sessionId, CustomerMessage.STATUS_NORMAL, adminId);
+    }
+
+    @Override
+    public boolean isAdminSessionOwned(String sessionId, Long adminId) {
+        return adminId == null || customerMessageMapper.existsAdminSessionForReceiver(sessionId, adminId);
+    }
+
     /**
      * 获取用户的会话列表
      */
@@ -231,8 +242,8 @@ public class CustomerMessageServiceImpl extends ServiceImpl<CustomerMessageMappe
      * 统计商家未读消息数量
      */
     @Override
-    public Long countUnreadByAdmin() {
-        return customerMessageMapper.countUnreadByAdmin();
+    public Long countUnreadByAdmin(Long adminId) {
+        return customerMessageMapper.countUnreadByAdmin(adminId);
     }
 
     /**
@@ -240,7 +251,13 @@ public class CustomerMessageServiceImpl extends ServiceImpl<CustomerMessageMappe
      */
     @Override
     public int markAsRead(String sessionId, Integer receiverType) {
-        return customerMessageMapper.markAsRead(sessionId, receiverType);
+        return customerMessageMapper.markAsRead(sessionId, receiverType, null);
+    }
+
+    @Override
+    public int markAdminSessionAsRead(String sessionId, Long adminId) {
+        if (adminId != null && !isAdminSessionOwned(sessionId, adminId)) return 0;
+        return customerMessageMapper.markAsRead(sessionId, CustomerMessage.SENDER_TYPE_ADMIN, adminId);
     }
 
     /**

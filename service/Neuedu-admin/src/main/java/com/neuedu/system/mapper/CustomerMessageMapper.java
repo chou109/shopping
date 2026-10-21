@@ -71,6 +71,12 @@ public interface CustomerMessageMapper extends BaseMapper<CustomerMessage>
     List<CustomerMessage> selectMessagesBySessionId(@Param("sessionId") String sessionId,
                                                      @Param("status") Integer status);
 
+    List<CustomerMessage> selectAdminSessionMessages(@Param("sessionId") String sessionId,
+            @Param("status") Integer status, @Param("adminId") Long adminId);
+
+    boolean existsAdminSessionForReceiver(@Param("sessionId") String sessionId,
+            @Param("adminId") Long adminId);
+
     /**
      * 查询用户的会话列表（去重）
      */
@@ -89,7 +95,7 @@ public interface CustomerMessageMapper extends BaseMapper<CustomerMessage>
     /**
      * 统计商家未读消息数量
      */
-    Long countUnreadByAdmin();
+    Long countUnreadByAdmin(@Param("adminId") Long adminId);
 
     /**
      * 统计会话未读消息数量
@@ -101,7 +107,8 @@ public interface CustomerMessageMapper extends BaseMapper<CustomerMessage>
      * 标记消息为已读
      */
     int markAsRead(@Param("sessionId") String sessionId,
-                   @Param("receiverType") Integer receiverType);
+                   @Param("receiverType") Integer receiverType,
+                   @Param("adminId") Long adminId);
 
     /**
      * 标记单条消息为已读

@@ -128,6 +128,12 @@ public interface ICustomerMessageService extends IService<CustomerMessage>
      */
     List<CustomerMessage> getSessionMessages(String sessionId);
 
+    /** 获取商家可访问的客服会话消息 */
+    List<CustomerMessage> getAdminSessionMessages(String sessionId, Long adminId);
+
+    /** 检查客服会话是否属于指定商家 */
+    boolean isAdminSessionOwned(String sessionId, Long adminId);
+
     /**
      * 获取用户的会话列表
      * 
@@ -164,7 +170,7 @@ public interface ICustomerMessageService extends IService<CustomerMessage>
      * 
      * @return 未读数量
      */
-    Long countUnreadByAdmin();
+    Long countUnreadByAdmin(Long adminId);
 
     /**
      * 标记会话消息为已读
@@ -174,6 +180,9 @@ public interface ICustomerMessageService extends IService<CustomerMessage>
      * @return 影响行数
      */
     int markAsRead(String sessionId, Integer receiverType);
+
+    /** 商家按会话归属标记为已读；adminId 为 null 时仅允许系统管理员调用 */
+    int markAdminSessionAsRead(String sessionId, Long adminId);
 
     /**
      * 生成会话ID
