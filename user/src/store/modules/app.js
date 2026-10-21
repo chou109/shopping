@@ -1,4 +1,5 @@
 import Cookies from 'js-cookie'
+import { normalizeElementSize } from '@/utils/element-size.mjs'
 
 const state = {
   sidebar: {
@@ -6,7 +7,7 @@ const state = {
     withoutAnimation: false
   },
   device: 'desktop',
-  size: Cookies.get('size') || 'medium'
+  size: normalizeElementSize(Cookies.get('size'))
 }
 
 const mutations = {
@@ -28,8 +29,9 @@ const mutations = {
     state.device = device
   },
   SET_SIZE: (state, size) => {
-    state.size = size
-    Cookies.set('size', size)
+    const normalizedSize = normalizeElementSize(size)
+    state.size = normalizedSize
+    Cookies.set('size', normalizedSize)
   }
 }
 

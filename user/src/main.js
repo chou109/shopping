@@ -1,7 +1,5 @@
 import { createApp } from 'vue'
 
-import Cookies from 'js-cookie'
-
 import { ElLoading, ElLoadingDirective, ElMessage, ElMessageBox, ElNotification } from 'element-plus'
 
 import '@/assets/styles/index.scss' // global css
@@ -82,7 +80,7 @@ app.component('svg-icon', SvgIcon)
 // directive(app)
 
 // 按需加载 Element Plus 组件，保留全局提示 API 和尺寸切换兼容。
-app.config.globalProperties.$ELEMENT = { size: Cookies.get('size') || 'default' }
+app.config.globalProperties.$ELEMENT = { size: store.getters.size }
 app.config.globalProperties.$message = ElMessage
 app.config.globalProperties.$notify = ElNotification
 app.config.globalProperties.$loading = ElLoading.service
