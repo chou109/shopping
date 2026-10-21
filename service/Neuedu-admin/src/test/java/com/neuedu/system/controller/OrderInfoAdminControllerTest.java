@@ -1,14 +1,18 @@
 package com.neuedu.system.controller;
 
 import com.neuedu.system.domain.OrderInfo;
+import com.neuedu.system.domain.OrderDetail;
+import com.neuedu.system.domain.Product;
 import com.neuedu.system.domain.Shop;
 import com.neuedu.system.service.IOrderInfoService;
+import com.neuedu.system.service.IProductService;
 import com.neuedu.system.service.IShopService;
 import org.junit.Test;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
+import java.util.Collections;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
@@ -49,7 +53,31 @@ public class OrderInfoAdminControllerTest {
         assertEquals(0, shopLookups.get());
     }
 
+    @Test
+    public void merchantCanViewOnlyOrdersWhoseItemsBelongToTheirShop() throws Exception {
+        Shop ownedShop = new Shop();
+        ownedShop.setId(12L);
+        OrderInfo order = orderWithProduct(44L);
+
+        assertTrue(controllerFor(ownedShop, new AtomicInteger(), 12L).canViewOrder(order, 71L));
+        assertFalse(controllerFor(ownedShop, new AtomicInteger(), 99L).canViewOrder(order, 71L));
+        assertFalse(controllerFor(ownedShop, new AtomicInteger(), null).canViewOrder(order, 71L));
+        assertTrue(controllerFor(null, new AtomicInteger(), null).canViewOrder(order, 1L));
+    }
+
+    private OrderInfo orderWithProduct(Long productId) {
+        OrderDetail detail = new OrderDetail();
+        detail.setProductId(productId);
+        OrderInfo order = new OrderInfo();
+        order.setOrderDetails(Collections.singletonList(detail));
+        return order;
+    }
+
     private OrderInfoAdminController controllerFor(Shop shop, AtomicInteger shopLookups) throws Exception {
+        return controllerFor(shop, shopLookups, null);
+    }
+
+    private OrderInfoAdminController controllerFor(Shop shop, AtomicInteger shopLookups, Long productShopId) throws Exception {
         IOrderInfoService orderService = proxy(IOrderInfoService.class, (method, args) -> null);
         IShopService shopService = proxy(IShopService.class, (method, args) -> {
             if ("selectShopByUserId".equals(method)) {
@@ -62,6 +90,17 @@ public class OrderInfoAdminControllerTest {
         Field field = OrderInfoAdminController.class.getDeclaredField("shopService");
         field.setAccessible(true);
         field.set(controller, shopService);
+        IProductService productService = proxy(IProductService.class, (method, args) -> {
+            if ("selectProductById".equals(method) && productShopId != null) {
+                Product product = new Product();
+                product.setShopId(productShopId);
+                return product;
+            }
+            return null;
+        });
+        Field productField = OrderInfoAdminController.class.getDeclaredField("productService");
+        productField.setAccessible(true);
+        productField.set(controller, productService);
         return controller;
     }
 

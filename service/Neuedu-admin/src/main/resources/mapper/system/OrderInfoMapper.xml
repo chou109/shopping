@@ -131,6 +131,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                   and od.delete_flag = 0
                   and p.shop_id = #{shopId}
             )
+            and not exists (
+                select 1
+                from order_detail od
+                left join product p on p.product_id = od.product_id and p.delete_flag = 0
+                where od.order_no = oi.order_no
+                  and od.delete_flag = 0
+                  and (p.product_id is null or p.shop_id &lt;&gt; #{shopId})
+            )
         </if>
     </sql>
 

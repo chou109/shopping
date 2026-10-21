@@ -552,6 +552,28 @@ class OrderInfoAdminController extends BaseController
         return true;
     }
 
+    boolean canViewOrder(OrderInfo orderInfo, Long currentUserId)
+    {
+        if (currentUserId != null && currentUserId == 1L) {
+            return true;
+        }
+        if (currentUserId == null || orderInfo == null || orderInfo.getOrderDetails() == null
+                || orderInfo.getOrderDetails().isEmpty()) {
+            return false;
+        }
+        com.neuedu.system.domain.Shop myShop = shopService.selectShopByUserId(currentUserId);
+        if (myShop == null || myShop.getId() == null) {
+            return false;
+        }
+        for (OrderDetail detail : orderInfo.getOrderDetails()) {
+            Product product = productService.selectProductById(detail.getProductId());
+            if (product == null || !myShop.getId().equals(product.getShopId())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     /**
      * 根据订单号获取订单详细信息（管理员端）
      */
@@ -560,7 +582,11 @@ class OrderInfoAdminController extends BaseController
     @GetMapping(value = "/by-order-no/{orderNo}")
     public AjaxResult getInfoByOrderNo(@PathVariable String orderNo)
     {
-        return success(orderInfoService.selectOrderInfoByOrderNo(orderNo));
+        OrderInfo orderInfo = orderInfoService.selectOrderInfoByOrderNo(orderNo);
+        if (!canViewOrder(orderInfo, SecurityUtils.getUserId())) {
+            return error("无权查看此订单");
+        }
+        return success(orderInfo);
     }
 
     /**
@@ -654,7 +680,11 @@ class OrderInfoAdminController extends BaseController
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {
-        return success(orderInfoService.selectOrderInfoById(id));
+        OrderInfo orderInfo = orderInfoService.selectOrderInfoById(id);
+        if (!canViewOrder(orderInfo, SecurityUtils.getUserId())) {
+            return error("无权查看此订单");
+        }
+        return success(orderInfo);
     }
 
     /**
