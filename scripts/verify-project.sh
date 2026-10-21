@@ -37,6 +37,14 @@ fi
 
 echo "验证工具链：Node $NODE_VERSION / pnpm $PNPM_VERSION / Java $JAVA_VERSION"
 
+echo "检查公开测试接口未重新开放"
+if [[ -e service/Neuedu-admin/src/main/java/com/neuedu/web/controller/tool/TestController.java ]] || \
+  grep -Fq '.antMatchers("/test/**").permitAll()' \
+    service/Neuedu-admin/src/main/java/com/neuedu/web/core/config/SecurityConfig.java; then
+  echo "发现公开测试接口或匿名白名单，请检查安全配置" >&2
+  exit 1
+fi
+
 echo "安装用户端依赖（锁文件冻结）"
 pnpm --dir user install --frozen-lockfile
 echo "安装管理端依赖（锁文件冻结）"
