@@ -15,7 +15,7 @@
 | 高 | 访问控制来源不一致 | `user/src/router/index.js` 在路由 meta 中声明 `requiresAuth`，但 `user/src/permission.js` 以独立白名单决定是否登录；例如人工客服路由声明需要登录、白名单却允许匿名进入。应以明确的访客/登录用户路由矩阵统一实现并回归。 |
 | 中 | 前端测试覆盖为空 | 仓库当前没有前端测试文件，后端 `src/test` 文件数也为 0。页面能打开或打包通过不能证明下单、退款、权限等业务正确。 |
 | 中 | 两个前端的构建基线不一致 | 管理端 `pnpm build:prod` 成功，但输出包含约 1 MB 和 3.1 MB 的 JS chunk，以及约 487 KB 的 CSS。用户端构建被本机 pnpm 的 minimum-release-age 策略拦截：锁文件中的 `electron-to-chromium@1.5.463` 于检查当天发布；直接调用已缓存的 Vite 也因缺少根 `node_modules/vite` 链接而无法加载配置。这些都还不能证明源码编译失败，不应为通过构建直接放宽策略或重写锁文件。 |
-| 中 | 后端构建被 Java 工具链阻塞 | `mvn -pl Neuedu-admin -am test` 在当前 JDK 27 编译失败，报旧 Lombok 生成的 getter/setter 不可见；项目 POM 仍配置 Java 8 与 Lombok 1.18.14。需先选定受支持的 JDK/Lombok 组合，避免把工具链错误误当业务代码错误。 |
+| 中 | 后端构建依赖受支持的 Java 工具链 | `mvn -pl Neuedu-admin -am test` 在当前 JDK 27 编译失败，报旧 Lombok 生成的 getter/setter 不可见；改用本机 JDK 17 后同一 reactor 构建通过。项目 POM 配置 Java 8 字节码目标与 Lombok 1.18.14。建议将 JDK 17 记录为当前验证工具链，并补充测试；JDK 27 不应作为当前构建基线。 |
 | 待确认 | 存在商城之外的遗留页面/API | `user/src/views/enterprise/`、`user/src/api/bid/`、`user/src/api/saleReport/`，以及管理端 `athletes`、`competition`、`ticketsAndAudience` 等目录与 README 的网购商城定位不一致。它们有部分组件引用，且管理端菜单可能来自数据库；在核对菜单/使用情况和产品范围前不删除。 |
 | 低 | 有重复或疑似废弃的订单 API | `user/src/api/order/order.js` 请求 `/bid/order/front/list`，当前商城订单页实际调用 `user/src/api/system/orderInfo.js`。先做全局引用和后端路由核验，再决定移除或迁移。 |
 
@@ -84,5 +84,5 @@
 
 ## 本轮审查的验证边界
 
-- 已确认：三个本地 HTTP 服务返回 200；管理端 production build 成功；用户端构建受 minimum-release-age 检查拦截且当前依赖链接不完整；后端测试编译在当前 JDK 27/Lombok 组合失败；仓库中没有测试源文件。
+- 已确认：三个本地 HTTP 服务返回 200；管理端 production build 成功；用户端构建受 minimum-release-age 检查拦截且当前依赖链接不完整；后端在 JDK 17 下构建通过、JDK 27 下失败，但仓库中没有测试源文件。
 - 未确认：真实用户和管理员登录后的完整浏览器流程、支付/QQ/AI/物流等第三方联调、数据库菜单中遗留页面的使用情况，以及受支持 JDK 下的后端构建结果。
