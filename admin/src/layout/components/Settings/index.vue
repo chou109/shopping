@@ -162,12 +162,12 @@ function saveSetting() {
     "theme": storeSettings.value.theme
   };
   localStorage.setItem("layout-setting", JSON.stringify(layoutSetting));
-  setTimeout(proxy.$modal.closeLoading(), 1000)
+  window.setTimeout(() => proxy.$modal.closeLoading(), 1000)
 }
 function resetSetting() {
   proxy.$modal.loading("正在清除设置缓存并刷新，请稍候...");
   localStorage.removeItem("layout-setting")
-  setTimeout("window.location.reload()", 1000)
+  window.setTimeout(() => window.location.reload(), 1000)
 }
 function openSetting() {
   showSettings.value = true;
