@@ -156,6 +156,16 @@ const exampleQuestions = ref([
 
 // WebSocket实例
 let ws = null;
+let reconnectTimer = null;
+let isUnmounted = false;
+
+const scheduleReconnect = (delay) => {
+  if (isUnmounted || reconnectTimer) return;
+  reconnectTimer = window.setTimeout(() => {
+    reconnectTimer = null;
+    initWebSocket();
+  }, delay);
+};
 
 // 关闭欢迎消息
 const closeWelcomeMessage = () => {
@@ -275,7 +285,7 @@ const initWebSocket = () => {
       addSystemMessage('连接已断开，正在尝试重新连接...');
       forceScrollToBottom();
 
-      setTimeout(initWebSocket, 3000);
+      scheduleReconnect(3000);
     };
 
     ws.onerror = (error) => {
@@ -336,7 +346,7 @@ const initWebSocket = () => {
     addSystemMessage('连接失败: ' + error.message);
     forceScrollToBottom();
 
-    setTimeout(initWebSocket, 5000);
+    scheduleReconnect(5000);
   }
 };
 
@@ -433,7 +443,15 @@ const scrollToBottomManually = () => {
 };
 
 // 生命周期钩子
+const handleGlobalKeydown = (event) => {
+  if (event.ctrlKey && event.key === 'ArrowDown') {
+    event.preventDefault();
+    scrollToBottomManually();
+  }
+};
+
 onMounted(() => {
+  isUnmounted = false;
   initWebSocket();
 
   nextTick(() => {
@@ -446,24 +464,26 @@ onMounted(() => {
     chatHistory.value.addEventListener('scroll', checkUserScroll);
   }
 
-  document.addEventListener('keydown', (e) => {
-    if (e.ctrlKey && e.key === 'ArrowDown') {
-      e.preventDefault();
-      scrollToBottomManually();
-    }
-  });
+  document.addEventListener('keydown', handleGlobalKeydown);
 });
 
 onUnmounted(() => {
+  isUnmounted = true;
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+  }
   if (ws) {
+    ws.onclose = null;
     ws.close();
+    ws = null;
   }
 
   if (chatHistory.value) {
     chatHistory.value.removeEventListener('scroll', checkUserScroll);
   }
 
-  document.removeEventListener('keydown', () => { });
+  document.removeEventListener('keydown', handleGlobalKeydown);
 });
 </script>
 
