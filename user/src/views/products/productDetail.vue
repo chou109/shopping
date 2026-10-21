@@ -28,7 +28,7 @@ import {
   getProductCommentsFront,
   getCommentTree
 } from '@/api/system/productComment'
-import { getProductImageUrl, handleImageError } from '@/utils/image'
+import { DEFAULT_AVATAR_IMAGE, DEFAULT_PRODUCT_IMAGE, DEFAULT_SHOP_IMAGE, getProductImageUrl, handleImageError } from '@/utils/image'
 import { listFootprintByUser, deleteFootprint, recordFootprint } from '@/api/system/footprint'
 
 import { createDirectOrder, payOrder } from '@/api/system/orderInfo'
@@ -263,8 +263,8 @@ const loadProductComments = async () => {
           userId: comment.userId || 0,
           parentId: comment.parentId || comment.pid || 0,
           nickName: comment.nickName || comment.userName || comment.username || '',
-          userAvatar: comment.userAvatar || comment.avatar || '/src/assets/images/default-avatar.png',
-          avatar: comment.userAvatar || comment.avatar || '/src/assets/images/default-avatar.png',
+          userAvatar: comment.userAvatar || comment.avatar || DEFAULT_AVATAR_IMAGE,
+          avatar: comment.userAvatar || comment.avatar || DEFAULT_AVATAR_IMAGE,
           content: comment.content || '',
           score: comment.score || 0,
           images: comment.images || comment.imgs || [],
@@ -401,7 +401,7 @@ const allImages = computed(() => {
   }
 
   if (images.length === 0) {
-    images.push('/src/assets/images/default-product.png')
+    images.push(DEFAULT_PRODUCT_IMAGE)
   }
 
   return images
@@ -731,7 +731,7 @@ onMounted(() => {
               <div class="shop-card">
                 <div class="shop-header">
                   <div class="shop-logo">
-                    <img :src="getProductImageUrl(shopInfo.shopLogo) || '/src/assets/images/default-shop.png'"
+                    <img :src="getProductImageUrl(shopInfo.shopLogo) || DEFAULT_SHOP_IMAGE"
                       :alt="shopInfo.shopName" @error="handleImageError" />
                   </div>
                   <div class="shop-info">

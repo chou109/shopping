@@ -348,7 +348,7 @@ import { Camera, Plus, Refresh, List, ShoppingCart } from '@element-plus/icons-v
 import { getCurrentUser, updateUser, updateUserPwd, updateAvatar, getUserStats } from '@/api/system/customer'
 import { getUsers, getUser, updateCurrentUserPassword } from '@/api/system/user'
 import { getToken } from '@/utils/auth'
-import { getProductImageUrl } from '@/utils/image'
+import { DEFAULT_AVATAR_IMAGE, getProductImageUrl } from '@/utils/image'
 import { getFavoriteStats } from '@/api/system/favorite'
 import { getCartCount } from '@/api/system/cart'
 import { getFootprintCount, getOrderCount } from '@/api/system/stats'
@@ -388,7 +388,7 @@ const avatarUrl = computed(() => {
   if (userInfo.value.avatar) {
     return getProductImageUrl(userInfo.value.avatar)
   }
-  return '/src/assets/images/default-avatar.png'
+  return DEFAULT_AVATAR_IMAGE
 })
 
 // 表单引用

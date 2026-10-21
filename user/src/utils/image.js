@@ -1,3 +1,13 @@
+import defaultProductImage from '@/assets/images/default-product.png'
+import defaultAvatarImage from '@/assets/images/default-avatar.png'
+import defaultShopImage from '@/assets/images/default-shop.png'
+import blindBoxImage from '@/assets/images/BlindBox.png'
+
+export const DEFAULT_PRODUCT_IMAGE = defaultProductImage
+export const DEFAULT_AVATAR_IMAGE = defaultAvatarImage
+export const DEFAULT_SHOP_IMAGE = defaultShopImage
+export const BLIND_BOX_IMAGE = blindBoxImage
+
 export function getProductImageUrl(imagePath) {
   // 处理Vite图片模块对象
   if (typeof imagePath === 'object' && imagePath.default) {
@@ -24,12 +34,12 @@ export function getProductImageUrl(imagePath) {
       imagePath = String(imagePath);
     } catch (e) {
       console.error('无法将图片路径转换为字符串:', imagePath);
-      return '/src/assets/images/default-product.png';
+      return DEFAULT_PRODUCT_IMAGE;
     }
   }
 
   if (!imagePath || imagePath === '') {
-    return '/src/assets/images/default-product.png';
+    return DEFAULT_PRODUCT_IMAGE;
   }
 
   // 完整URL直接返回
@@ -66,7 +76,7 @@ export function getProductImageUrl(imagePath) {
 }
 
 // 图片加载错误处理
-export function handleImageError(event, defaultImage = '/src/assets/images/default-product.png') {
+export function handleImageError(event, defaultImage = DEFAULT_PRODUCT_IMAGE) {
   event.target.src = defaultImage;
   event.target.onerror = null;
 }

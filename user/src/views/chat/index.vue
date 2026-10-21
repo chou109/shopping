@@ -5,7 +5,7 @@
       <div class="back-btn" @click="goBack">←</div>
       <div class="service-info">
         <div class="service-avatar">
-          <img src="https://cdn-icons-png.flaticon.com/512/4712/4712039.png" alt="AI客服头像" class="ai-avatar">
+          <img :src="aiAvatarImage" alt="AI客服头像" class="ai-avatar">
         </div>
         <div class="service-name-status">
           <div class="service-name">智能客服小蜜</div>
@@ -47,7 +47,7 @@
           :ref="el => { if (el && index === chatList.length - 1) lastMessageRef = el }">
           <template v-if="msg.type === 'ai'">
             <div class="avatar-wrapper ai-avatar-wrapper">
-              <img src="https://cdn-icons-png.flaticon.com/512/4712/4712039.png" class="avatar ai-avatar" alt="AI客服">
+              <img :src="aiAvatarImage" class="avatar ai-avatar" alt="AI客服">
               <div class="avatar-badge ai-badge">AI</div>
             </div>
           </template>
@@ -57,7 +57,7 @@
           </div>
           <template v-if="msg.type === 'user'">
             <div class="avatar-wrapper user-avatar-wrapper">
-              <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" class="avatar user-avatar" alt="用户">
+              <img :src="userAvatarImage" class="avatar user-avatar" alt="用户">
               <div class="avatar-badge user-badge">你</div>
             </div>
           </template>
@@ -66,7 +66,7 @@
         <!-- AI正在输入指示器 -->
         <div v-if="isAiTyping" class="ai-msg typing-indicator">
           <div class="avatar-wrapper ai-avatar-wrapper">
-            <img src="https://cdn-icons-png.flaticon.com/512/4712/4712039.png" class="avatar ai-avatar" alt="AI客服">
+            <img :src="aiAvatarImage" class="avatar ai-avatar" alt="AI客服">
             <div class="avatar-badge ai-badge">AI</div>
           </div>
           <div class="typing-bubble">
@@ -96,7 +96,7 @@
       <div class="input-area">
         <div class="input-wrapper">
           <div class="user-icon-wrapper">
-            <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" class="user-icon" alt="用户">
+          <img :src="userAvatarImage" class="user-icon" alt="用户">
           </div>
           <input v-model="inputMsg" placeholder="请输入您想咨询的问题..." @keyup.enter="sendMessage"
             @keyup.ctrl.enter="inputMsg += '\n'" :disabled="!isConnected" class="chat-input" ref="chatInput" />
@@ -113,6 +113,8 @@
 </template>
 
 <script setup>
+import aiAvatarImage from '@/assets/logo/logo.png'
+import { DEFAULT_AVATAR_IMAGE } from '@/utils/image'
 import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue';
 import { useStore } from 'vuex';
 import { getWebSocketUrl } from '@/utils/request';

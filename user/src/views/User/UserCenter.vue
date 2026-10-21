@@ -77,7 +77,7 @@ import {
   User, List, ShoppingCart, Clock, Shop, Star, ChatDotRound, HomeFilled, Top, Message
 } from '@element-plus/icons-vue'
 import { getUsers } from '@/api/system/user'
-import { getProductImageUrl } from '@/utils/image'
+import { DEFAULT_AVATAR_IMAGE, getProductImageUrl } from '@/utils/image'
 
 // 导入各个功能组件
 import UserProfile from '@/views/user/UserProfile.vue'
@@ -114,7 +114,7 @@ const avatarUrl = computed(() => {
   if (userInfo.value.avatar) {
     return getProductImageUrl(userInfo.value.avatar)
   }
-  return '/src/assets/images/default-avatar.png'
+  return DEFAULT_AVATAR_IMAGE
 })
 
 const loadUserInfo = async () => {

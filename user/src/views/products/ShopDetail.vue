@@ -133,7 +133,7 @@
 </template>
 
 <script setup>
-import { getProductImageUrl, handleImageError } from '@/utils/image'
+import { DEFAULT_PRODUCT_IMAGE, getProductImageUrl, handleImageError } from '@/utils/image'
 import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
@@ -160,7 +160,7 @@ const isFollowed = ref(false)
 
 // 获取图片URL
 const getImageUrl = (path) => {
-  if (!path) return 'https://via.placeholder.com/200x200?text=No+Image'
+  if (!path) return DEFAULT_PRODUCT_IMAGE
   if (path.startsWith('http')) return path
   return import.meta.env.VITE_APP_BASE_API + path
 }

@@ -85,6 +85,7 @@
 </template>
 
 <script setup>
+import { DEFAULT_PRODUCT_IMAGE } from '@/utils/image'
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getMyComments, deleteComment } from '@/api/comment'
@@ -129,7 +130,7 @@ const parseImages = (images) => {
 
 // 获取图片URL
 const getImageUrl = (url) => {
-  if (!url) return '/src/assets/images/default-product.png'
+  if (!url) return DEFAULT_PRODUCT_IMAGE
   if (url.startsWith('http')) return url
   return import.meta.env.VITE_APP_BASE_API + url
 }

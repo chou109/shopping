@@ -40,7 +40,7 @@
                 <!-- 商品图片 -->
                 <div class="item-image" @click="goToProductDetail(item.productId)">
                   <img
-                    :src="item.productId === 9999 || item.productName?.includes('盲盒') ? '/src/assets/images/BlindBox.png' : getProductImageUrl(item.productMainImage)"
+                    :src="item.productId === 9999 || item.productName?.includes('盲盒') ? BLIND_BOX_IMAGE : getProductImageUrl(item.productMainImage)"
                     :alt="item.productName" @error="handleImageError" />
                 </div>
 
@@ -160,7 +160,7 @@ import { useRouter } from 'vue-router'
 import { useStore } from 'vuex'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Lock } from '@element-plus/icons-vue'
-import { getProductImageUrl, handleImageError } from '@/utils/image'
+import { BLIND_BOX_IMAGE, getProductImageUrl, handleImageError } from '@/utils/image'
 import { listCart, updateCart, delCart, clearCart, batchSelectCart } from '@/api/system/cart'
 import { createOrderFromCart, payOrder } from '@/api/system/orderInfo'
 import { getMyAddressList } from '@/api/system/address'

@@ -108,6 +108,7 @@
 </template>
 
 <script setup>
+import { DEFAULT_AVATAR_IMAGE } from '@/utils/image'
 import { ref, onMounted, onUnmounted, nextTick, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useStore } from 'vuex'
@@ -153,7 +154,7 @@ const userAvatar = computed(() => {
   if (avatar) {
     return getProductImageUrl(avatar)
   }
-  return 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'
+  return DEFAULT_AVATAR_IMAGE
 })
 
 // 返回上一页
