@@ -49,6 +49,12 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         return productMapper.selectProductList(product);
     }
 
+    @Override
+    public List<Product> selectPublicProductList(Product product)
+    {
+        return productMapper.selectPublicProductList(product);
+    }
+
     /**
      * 查询热门商品列表
      *
@@ -216,6 +222,15 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     {
         List<Product> list = productMapper.selectProductList(product);
         // 使用 Collections.shuffle 进行随机排序
+        Collections.shuffle(list);
+        return list;
+    }
+
+    /** 查询消费者端可见商品并随机排序 */
+    @Override
+    public List<Product> selectPublicProductListRandom(Product product)
+    {
+        List<Product> list = productMapper.selectPublicProductList(product);
         Collections.shuffle(list);
         return list;
     }

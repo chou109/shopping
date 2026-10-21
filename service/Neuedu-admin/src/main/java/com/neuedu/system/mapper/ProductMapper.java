@@ -31,6 +31,9 @@ public interface ProductMapper extends BaseMapper<Product>
      */
     public List<Product> selectProductList(Product product);
 
+    /** 查询消费者端可见商品（排除停业或已删除店铺） */
+    public List<Product> selectPublicProductList(Product product);
+
     /**
      * 查询热门商品列表
      *

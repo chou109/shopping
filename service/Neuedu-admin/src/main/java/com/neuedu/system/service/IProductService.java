@@ -28,6 +28,12 @@ public interface IProductService extends IService<Product>
      */
     public List<Product> selectProductList(Product product);
 
+    /** 查询消费者端可见商品（排除停业或已删除店铺） */
+    public List<Product> selectPublicProductList(Product product);
+
+    /** 查询消费者端可见商品并随机排序 */
+    public List<Product> selectPublicProductListRandom(Product product);
+
     /**
      * 新增商品
      * 

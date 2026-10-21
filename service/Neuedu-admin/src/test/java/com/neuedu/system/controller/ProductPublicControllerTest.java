@@ -2,6 +2,7 @@ package com.neuedu.system.controller;
 
 import com.neuedu.common.core.domain.AjaxResult;
 import com.neuedu.system.domain.Product;
+import com.neuedu.system.domain.Shop;
 import com.neuedu.system.service.IProductService;
 import com.neuedu.system.service.IShopService;
 import org.junit.Test;
@@ -35,10 +36,41 @@ public class ProductPublicControllerTest {
         assertNotEquals(200, result.get("code"));
     }
 
+    @Test
+    public void publicDetailsRejectProductsFromClosedShops() {
+        Product product = new Product();
+        product.setStatus(1);
+        product.setShopId(12L);
+        Shop closedShop = new Shop();
+        closedShop.setId(12L);
+        closedShop.setStatus(2);
+        ProductController controller = controllerFor(product, closedShop);
+
+        AjaxResult result = controller.getPublicInfo(8L);
+
+        assertNotEquals(200, result.get("code"));
+    }
+
+    @Test
+    public void shopProductListRejectsClosedShops() {
+        Shop closedShop = new Shop();
+        closedShop.setId(12L);
+        closedShop.setStatus(2);
+
+        AjaxResult result = controllerFor(null, closedShop).byShop(12L);
+
+        assertNotEquals(200, result.get("code"));
+    }
+
     private ProductController controllerFor(Product product) {
+        return controllerFor(product, null);
+    }
+
+    private ProductController controllerFor(Product product, Shop shop) {
         IProductService products = proxy(IProductService.class, (methodName, args) ->
             "selectProductById".equals(methodName) ? product : null);
-        IShopService shops = proxy(IShopService.class, (methodName, args) -> null);
+        IShopService shops = proxy(IShopService.class, (methodName, args) ->
+            "selectShopById".equals(methodName) ? shop : null);
         return new ProductController(products, shops);
     }
 

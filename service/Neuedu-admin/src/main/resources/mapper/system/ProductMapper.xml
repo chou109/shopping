@@ -121,6 +121,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         order by p.create_time desc
     </select>
 
+    <select id="selectPublicProductList" parameterType="Product" resultMap="ProductResult">
+        <include refid="selectProductVo"/>
+        <include refid="baseWhereClause"/>
+        and (p.shop_id is null or exists (
+            select 1 from shop s
+            where s.id = p.shop_id and s.status = 1 and s.delete_flag = 0
+        ))
+        order by p.create_time desc
+    </select>
+
     <select id="selectProductById" parameterType="Long" resultMap="ProductResult">
         <include refid="selectProductVo"/>
         where p.id = #{id} and p.delete_flag = 0
@@ -130,6 +140,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectHotProductList" parameterType="Integer" resultMap="ProductResult">
         <include refid="selectProductVo"/>
         where p.delete_flag = 0 and p.hot_flag = 1 and p.status = 1
+        and (p.shop_id is null or exists (
+            select 1 from shop s where s.id = p.shop_id and s.status = 1 and s.delete_flag = 0
+        ))
         order by p.update_time desc
         <if test="limit != null">limit #{limit}</if>
     </select>
@@ -139,6 +152,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectProductByCategoryId" parameterType="Long" resultMap="ProductResult">
         <include refid="selectProductVo"/>
         where p.delete_flag = 0 and p.status = 1 and p.category_id = #{categoryId}
+        and (p.shop_id is null or exists (
+            select 1 from shop s where s.id = p.shop_id and s.status = 1 and s.delete_flag = 0
+        ))
         order by p.create_time desc
     </select>
 
@@ -146,6 +162,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectProductByActivityId" parameterType="Long" resultMap="ProductResult">
         <include refid="selectProductVo"/>
         where p.delete_flag = 0 and p.status = 1 and p.activity_id = #{activityId}
+        and (p.shop_id is null or exists (
+            select 1 from shop s where s.id = p.shop_id and s.status = 1 and s.delete_flag = 0
+        ))
         order by p.create_time desc
     </select>
 
@@ -153,6 +172,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="searchProductByName" parameterType="String" resultMap="ProductResult">
         <include refid="selectProductVo"/>
         where p.delete_flag = 0 and p.status = 1
+        and (p.shop_id is null or exists (
+            select 1 from shop s where s.id = p.shop_id and s.status = 1 and s.delete_flag = 0
+        ))
         and (p.name like concat('%', #{keyword}, '%') or p.sub_title like concat('%', #{keyword}, '%'))
         order by p.create_time desc
     </select>

@@ -135,10 +135,11 @@ public class ProductController extends BaseController
     @GetMapping("/shop/{shopId}")
     public AjaxResult byShop(@PathVariable Long shopId)
     {
-        // 先验证店铺是否存在
+        // 仅公开营业店铺的商品
         Shop shop = shopService.selectShopById(shopId);
-        if (shop == null) {
-            return error("店铺不存在");
+        if (shop == null || !Integer.valueOf(1).equals(shop.getStatus())
+            || Integer.valueOf(1).equals(shop.getDeleteFlag())) {
+            return error("店铺不存在或已停止营业");
         }
         // 通过 shop_id 查询商品
         Product query = new Product();
@@ -170,6 +171,13 @@ public class ProductController extends BaseController
         Product product = productService.selectProductById(id);
         if (product == null || !Integer.valueOf(1).equals(product.getStatus())) {
             return error("商品不存在或已下架");
+        }
+        if (product.getShopId() != null) {
+            Shop shop = shopService.selectShopById(product.getShopId());
+            if (shop == null || !Integer.valueOf(1).equals(shop.getStatus())
+                || Integer.valueOf(1).equals(shop.getDeleteFlag())) {
+                return error("商品所属店铺未营业");
+            }
         }
         return success(product);
     }
@@ -277,7 +285,7 @@ public class ProductController extends BaseController
     {
         startPage();
         product.setStatus(1);
-        List<Product> list = productService.selectProductListRandom(product);
+        List<Product> list = productService.selectPublicProductListRandom(product);
         return getDataTable(list);
     }
 }
