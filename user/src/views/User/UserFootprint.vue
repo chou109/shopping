@@ -3,7 +3,7 @@
     <!-- 页面标题和操作 -->
     <div class="page-header">
       <div class="page-actions">
-        <el-button type="danger" plain :disabled="!footprints || footprints.length === 0" @click="handleClearAll">
+        <el-button type="danger" plain :disabled="!footprints || footprints.length === 0 || clearingFootprints" :loading="clearingFootprints" @click="handleClearAll">
           清空全部足迹
         </el-button>
       </div>
@@ -70,14 +70,17 @@
 
                 <!-- 操作区域 -->
                 <div class="item-actions">
-                  <el-button type="danger" text size="small" @click="handleDelete(item.id)">
+                  <el-button type="danger" text size="small" :loading="deletingFootprintIds.has(item.id)"
+                    :disabled="deletingFootprintIds.has(item.id)" @click="handleDelete(item.id)">
                     删除
                   </el-button>
                   <el-button v-if="item.targetType === 1" type="primary" text size="small"
+                    :loading="cartActionIds.has(item.id)" :disabled="cartActionIds.has(item.id)"
                     @click="handleAddToCart(item)">
                     加入购物车
                   </el-button>
                   <el-button v-if="item.targetType === 2" type="success" text size="small"
+                    :loading="followActionIds.has(item.id)" :disabled="followActionIds.has(item.id)"
                     @click="handleFollowShop(item)">
                     关注店铺
                   </el-button>
@@ -126,6 +129,10 @@ const router = useRouter()
 const store = useStore()
 const loading = ref(false)
 const footprints = ref([])
+const deletingFootprintIds = ref(new Set())
+const cartActionIds = ref(new Set())
+const followActionIds = ref(new Set())
+const clearingFootprints = ref(false)
 const activeFilter = ref('all') // 当前激活的筛选类型：all, shop, product
 
 // 懒加载相关
@@ -272,7 +279,8 @@ const handleEmptyAction = () => {
 
 // 加入购物车
 const handleAddToCart = async (item) => {
-  if (item.targetType !== 1) return
+  if (item.targetType !== 1 || cartActionIds.value.has(item.id)) return
+  cartActionIds.value.add(item.id)
 
   try {
     const cartData = {
@@ -293,12 +301,15 @@ const handleAddToCart = async (item) => {
   } catch (error) {
     console.error('加入购物车失败:', error)
     ElMessage.error('加入购物车失败')
+  } finally {
+    cartActionIds.value.delete(item.id)
   }
 }
 
 // 关注店铺
 const handleFollowShop = async (item) => {
-  if (item.targetType !== 2) return
+  if (item.targetType !== 2 || followActionIds.value.has(item.id)) return
+  followActionIds.value.add(item.id)
   try {
     const status = await checkFavorite(2, item.targetId)
     if (status.code === 200 && (status.data === true || status.data?.isFavorite)) {
@@ -310,6 +321,8 @@ const handleFollowShop = async (item) => {
     ElMessage.success('已关注店铺')
   } catch (error) {
     ElMessage.error(error.message || '关注店铺失败')
+  } finally {
+    followActionIds.value.delete(item.id)
   }
 }
 
@@ -412,6 +425,8 @@ const loadFootprints = async (reset = true) => {
 
 // 删除单个足迹
 const handleDelete = async (footprintId) => {
+  if (deletingFootprintIds.value.has(footprintId)) return
+  deletingFootprintIds.value.add(footprintId)
   try {
     await ElMessageBox.confirm('确定要删除这条足迹吗？', '提示', {
       confirmButtonText: '确定',
@@ -423,7 +438,7 @@ const handleDelete = async (footprintId) => {
     if (response.code === 200) {
       ElMessage.success('删除成功')
       // 重新加载数据
-      loadFootprints()
+      await loadFootprints()
     } else {
       ElMessage.error(response.msg || '删除失败')
     }
@@ -432,11 +447,15 @@ const handleDelete = async (footprintId) => {
       console.error('删除足迹失败:', error)
       ElMessage.error('删除失败')
     }
+  } finally {
+    deletingFootprintIds.value.delete(footprintId)
   }
 }
 
 // 清空全部足迹
 const handleClearAll = async () => {
+  if (clearingFootprints.value) return
+  clearingFootprints.value = true
   try {
     await ElMessageBox.confirm('确定要清空所有足迹吗？此操作不可恢复', '警告', {
       confirmButtonText: '确定',
@@ -463,6 +482,8 @@ const handleClearAll = async () => {
       console.error('清空足迹失败:', error)
       ElMessage.error('清空失败')
     }
+  } finally {
+    clearingFootprints.value = false
   }
 }
 
