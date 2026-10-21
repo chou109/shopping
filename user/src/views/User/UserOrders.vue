@@ -122,7 +122,10 @@
 
                 <!-- 30：待收货 → 收货/物流 -->
                 <template v-else-if="order.status === 30">
-                  <el-button type="primary" size="small" @click="handleConfirmReceipt(order)">确认收货</el-button>
+                  <el-button type="primary" size="small"
+                    :loading="receiptSubmitting && receiptActionOrderNo === order.orderNo"
+                    :disabled="receiptActionOrderNo !== null && receiptActionOrderNo !== order.orderNo"
+                    @click="handleConfirmReceipt(order)">确认收货</el-button>
                   <el-button size="small" @click="viewLogistics(order)">查看物流</el-button>
                 </template>
 
@@ -321,6 +324,7 @@ const orderList = ref([])
 const total = ref(0)
 const pageNum = ref(1)
 const pageSize = ref(10)
+let orderRequestId = 0
 
 // 订单数量统计（只统计待付款、待发货、待收货）
 const orderCounts = ref({
@@ -338,6 +342,8 @@ const paying = ref(false)
 const cancelDialogVisible = ref(false)
 const cancelReason = ref('')
 const cancelling = ref(false)
+const receiptActionOrderNo = ref(null)
+const receiptSubmitting = ref(false)
 
 // 退款相关
 const refundDialogVisible = ref(false)
@@ -350,11 +356,13 @@ const reviewingOrder = ref(null)
 
 // 加载订单列表
 const loadOrders = async () => {
+  const requestId = ++orderRequestId
   loading.value = true
   try {
     // 由服务端按状态分页，total 用于展示完整结果集的页数。
     const statusCode = STATUS_MAP[activeTab.value]
     const res = await getMyOrders(statusCode, pageNum.value, pageSize.value)
+    if (requestId !== orderRequestId) return
     if (res.code === 200) {
       orderList.value = res.rows || []
       total.value = Number(res.total) || 0
@@ -363,12 +371,16 @@ const loadOrders = async () => {
         await loadOrders()
         return
       }
+    } else {
+      ElMessage.error(res.msg || '加载订单失败')
     }
   } catch (e) {
-    console.error('加载订单失败', e)
-    ElMessage.error('加载订单失败')
+    if (requestId === orderRequestId) {
+      console.error('加载订单失败', e)
+      ElMessage.error(e.message || '加载订单失败')
+    }
   } finally {
-    loading.value = false
+    if (requestId === orderRequestId) loading.value = false
   }
 }
 
@@ -524,6 +536,8 @@ const confirmCancel = async () => {
 
 // 确认收货
 const handleConfirmReceipt = async (order) => {
+  if (receiptActionOrderNo.value !== null) return
+  receiptActionOrderNo.value = order.orderNo
   try {
     await ElMessageBox.confirm('确认已收到商品？', '确认收货', {
       confirmButtonText: '确认',
@@ -531,6 +545,7 @@ const handleConfirmReceipt = async (order) => {
       type: 'info'
     })
 
+    receiptSubmitting.value = true
     const res = await confirmReceipt(order.orderNo)
     if (res.code === 200) {
       ElMessage.success('已确认收货')
@@ -540,9 +555,12 @@ const handleConfirmReceipt = async (order) => {
       ElMessage.error(res.msg || '操作失败')
     }
   } catch (e) {
-    if (e !== 'cancel') {
-      ElMessage.error('操作失败')
+    if (e !== 'cancel' && e !== 'close') {
+      ElMessage.error(e.message ? `操作失败：${e.message}` : '操作失败')
     }
+  } finally {
+    receiptSubmitting.value = false
+    receiptActionOrderNo.value = null
   }
 }
 
