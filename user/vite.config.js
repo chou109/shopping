@@ -80,6 +80,11 @@ export default defineConfig(({ mode, command }) => {
     },
     
     css: {
+      preprocessorOptions: {
+        scss: {
+          api: 'legacy'
+        }
+      },
       postcss: {
         plugins: [
           {
