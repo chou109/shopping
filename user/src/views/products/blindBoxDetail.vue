@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, nextTick } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   CircleCheck,
@@ -13,6 +13,7 @@ import {
 import { addCart } from '@/api/system/cart'
 import { createBlindBoxOrder, payOrder, checkBlindBoxPurchase } from '@/api/system/orderInfo'
 import { getMyAddressList } from '@/api/system/address'
+import { getToken } from '@/utils/auth'
 import PurchaseDialog from '@/components/PurchaseDialog/index.vue'
 
 // 导入盲盒图片
@@ -29,7 +30,16 @@ import BlindBoxImage10 from '@/assets/BlindBox/BlindBox (10).png'
 import BlindBoxImage11 from '@/assets/BlindBox/BlindBox (11).png'
 import BlindBoxImage12 from '@/assets/BlindBox/BlindBox (12).png'
 
+const route = useRoute()
 const router = useRouter()
+
+const ensureLoginForAction = () => {
+  if (getToken()) return true
+
+  ElMessage.warning('请先登录后再购买')
+  router.push({ path: '/login', query: { redirect: route.fullPath } })
+  return false
+}
 
 // 直接创建图片URL数组
 const imageUrls = [
@@ -172,6 +182,8 @@ const decreaseQuantity = () => {
 
 // 添加到购物车
 const handleAddToCart = async () => {
+  if (!ensureLoginForAction()) return
+
   if (!product.value.id) {
     ElMessage.warning('商品信息不完整')
     return
@@ -215,6 +227,8 @@ const handleAddToCart = async () => {
 
 // 立即购买
 const handleBuyNow = async () => {
+  if (!ensureLoginForAction()) return
+
   if (!product.value.id) {
     ElMessage.warning('商品信息不完整')
     return
