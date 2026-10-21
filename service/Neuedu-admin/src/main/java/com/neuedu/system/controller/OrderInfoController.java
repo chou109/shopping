@@ -5,8 +5,6 @@ import java.util.List;
 import java.util.Map;
 import java.security.SecureRandom;
 import java.util.ArrayList;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import com.neuedu.common.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +24,7 @@ import com.neuedu.system.service.IOrderInfoService;
 import com.neuedu.system.service.IOrderDetailService;
 import com.neuedu.system.service.IProductService;
 import com.neuedu.system.service.IShopService;
+import com.neuedu.system.service.BlindBoxLockRegistry;
 import com.neuedu.system.service.BlindBoxPrizePolicy;
 import com.neuedu.system.constants.OrderStatusConstants;
 import com.neuedu.common.utils.poi.ExcelUtil;
@@ -47,7 +46,7 @@ public class OrderInfoController extends BaseController {
     private static final BigDecimal BLIND_BOX_PRICE = new BigDecimal("500");
     private static final Long BLIND_BOX_PRODUCT_ID = 9999L;
     private static final SecureRandom RANDOM = new SecureRandom();
-    private static final ConcurrentMap<Long, Object> BLIND_BOX_LOCKS = new ConcurrentHashMap<>();
+    private static final BlindBoxLockRegistry BLIND_BOX_LOCKS = new BlindBoxLockRegistry(512);
 
     private final IOrderInfoService orderInfoService;
 
@@ -120,7 +119,7 @@ public class OrderInfoController extends BaseController {
         if (userId == null) {
             return error("用户未登录");
         }
-        Object userLock = BLIND_BOX_LOCKS.computeIfAbsent(userId, ignored -> new Object());
+        Object userLock = BLIND_BOX_LOCKS.lockFor(userId);
         synchronized (userLock) {
             try {
                 if (hasPurchasedBlindBox(userId)) {
