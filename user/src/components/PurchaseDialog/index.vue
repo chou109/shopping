@@ -3,8 +3,10 @@
     v-model="dialogVisible"
     title="确认购买"
     width="900px"
+    :show-close="!processing"
     :close-on-click-modal="false"
     :close-on-press-escape="false"
+    :before-close="handleDialogClose"
     @closed="handleDialogClosed"
   >
     <div class="purchase-container" v-loading="loading">
@@ -72,7 +74,7 @@
               </div>
               <div class="summary-row total">
                 <span class="label">实付金额：</span>
-                <span class="value total-price">¥{{ formatPrice(orderData.payment || totalPayment) }}</span>
+                <span class="value total-price">¥{{ formatPrice(orderData.payment ?? totalPayment) }}</span>
               </div>
             </div>
 
@@ -84,7 +86,12 @@
                   更换地址
                 </el-button>
               </div>
-              <div class="address-info" v-if="orderData.receiveName">
+              <el-alert v-if="addressLoadError" :title="addressLoadError" type="error" :closable="false" show-icon>
+                <template #default>
+                  <el-button link type="primary" :loading="loading" @click="loadAddressList">重试加载地址</el-button>
+                </template>
+              </el-alert>
+              <div class="address-info" v-else-if="orderData.receiveName">
                 <div class="info-row">
                   <span class="label">收货人：</span>
                   <span class="value">{{ orderData.receiveName }}</span>
@@ -105,7 +112,7 @@
                   :closable="false"
                   show-icon
                 />
-                <el-button type="primary" size="small" @click="showAddressSelector = true" style="margin-top: 10px;">
+                <el-button type="primary" size="small" :disabled="loading || processing" @click="showAddressSelector = true" style="margin-top: 10px;">
                   选择地址
                 </el-button>
               </div>
@@ -128,7 +135,7 @@
               :class="['payment-method', { active: selectedPaymentType === method.value, disabled: method.disabled }]"
               :aria-label="`${method.label}${method.disabled ? '，暂未开放' : ''}`"
               :aria-pressed="selectedPaymentType === method.value"
-              :disabled="method.disabled"
+              :disabled="method.disabled || processing"
               @click="selectPaymentMethod(method)"
             >
               <div class="method-icon">
@@ -158,12 +165,12 @@
 
     <template #footer>
       <div class="dialog-footer">
-        <el-button @click="handleCancel">取消</el-button>
+        <el-button @click="handleCancel" :disabled="processing">取消</el-button>
         <el-button 
           type="primary" 
           @click="handleConfirmPayment"
-          :disabled="!selectedPaymentType || !orderData.receiveName"
-          :loading="submitting || processing"
+          :disabled="loading || Boolean(addressLoadError) || processing || !selectedPaymentType || !orderData.receiveName || !orderData.addressId"
+          :loading="processing"
         >
           确认支付
         </el-button>
@@ -186,6 +193,7 @@
         :class="['address-item', { active: selectedAddressId === addr.id }]"
         :aria-pressed="selectedAddressId === addr.id"
         :aria-label="`选择${addr.receiveName}，${addr.receivePhone}，${addr.province}${addr.city}${addr.area}${addr.street}`"
+        :disabled="processing"
         @click="handleSelectAddress(addr)"
       >
         <div class="address-content">
@@ -202,7 +210,7 @@
           <el-icon><CircleCheckFilled /></el-icon>
         </div>
       </button>
-      <div v-if="addressList.length === 0" class="no-address-tip">
+      <div v-if="!loading && !addressLoadError && addressList.length === 0" class="no-address-tip">
         暂无收货地址，请先在个人中心添加
       </div>
     </div>
@@ -218,7 +226,7 @@
     <div class="confirm-content">
       <el-icon class="confirm-icon"><QuestionFilled /></el-icon>
       <div class="confirm-text">
-        <p>订单金额：<strong>¥{{ formatPrice(orderData.payment || totalPayment) }}</strong></p>
+        <p>订单金额：<strong>¥{{ formatPrice(orderData.payment ?? totalPayment) }}</strong></p>
         <p>支付方式：<strong>{{ getPaymentLabel(selectedPaymentType) }}</strong></p>
         <p class="confirm-question">是否立即支付？</p>
       </div>
@@ -233,7 +241,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { 
   Document, 
@@ -244,6 +252,7 @@ import {
 } from '@element-plus/icons-vue'
 import { getProductImageUrl, handleImageError } from '@/utils/image'
 import { getMyAddressList } from '@/api/system/address'
+import { formatProductPrice } from '@/utils/productDetail.mjs'
 
 // Props
 const props = defineProps({
@@ -261,11 +270,6 @@ const props = defineProps({
     type: Object,
     default: () => ({})
   },
-  // 是否需要创建订单
-  needCreateOrder: {
-    type: Boolean,
-    default: true
-  },
   // 父页面正在创建订单或支付
   processing: {
     type: Boolean,
@@ -274,23 +278,23 @@ const props = defineProps({
 })
 
 // Emits
-const emit = defineEmits(['update:modelValue', 'confirm', 'cancel', 'payNow', 'payLater', 'createOrder'])
+const emit = defineEmits(['update:modelValue', 'cancel', 'payNow', 'payLater'])
 
 // 响应式数据
 const dialogVisible = ref(false)
 const confirmDialogVisible = ref(false)
 const showAddressSelector = ref(false)
 const loading = ref(false)
-const submitting = ref(false)
 const selectedPaymentType = ref(null)
 const addressList = ref([])
 const selectedAddressId = ref(null)
+const addressLoadError = ref('')
 
 // 订单数据
 const orderData = ref({
   id: null,
   orderNo: '',
-  payment: 0,
+  payment: null,
   paymentType: null,
   paymentTypeDesc: '',
   postage: 0,
@@ -385,19 +389,34 @@ watch(() => props.order, (val) => {
 // 方法
 const initData = async () => {
   selectedPaymentType.value = null
+  confirmDialogVisible.value = false
   productList.value = [...props.products]
-  if (props.order && Object.keys(props.order).length > 0) {
-    orderData.value = { ...orderData.value, ...props.order }
-    selectedAddressId.value = props.order.addressId
+  orderData.value = {
+    id: null,
+    orderNo: '',
+    payment: null,
+    paymentType: null,
+    paymentTypeDesc: '',
+    postage: 0,
+    status: 10,
+    statusDesc: '待付款',
+    receiveName: '',
+    receivePhone: '',
+    province: '',
+    city: '',
+    area: '',
+    street: '',
+    postalCode: '',
+    createTime: null,
+    userId: null,
+    ...props.order
   }
+  selectedAddressId.value = props.order?.addressId || null
   // 加载地址列表
   await loadAddressList()
 }
 
-const formatPrice = (price) => {
-  if (!price) return '0.00'
-  return parseFloat(price).toFixed(2)
-}
+const formatPrice = formatProductPrice
 
 const formatTime = (time) => {
   if (!time) return ''
@@ -423,18 +442,36 @@ const selectPaymentMethod = (method) => {
 
 // 加载用户地址列表
 const loadAddressList = async () => {
+  loading.value = true
+  addressLoadError.value = ''
   try {
     const res = await getMyAddressList()
     if (res.code === 200) {
-      addressList.value = res.data || []
+      addressList.value = Array.isArray(res.data) ? res.data : Array.isArray(res.rows) ? res.rows : []
+      const selectedAddress = addressList.value.find(address => String(address.id) === String(selectedAddressId.value))
+        || addressList.value.find(address => address.defaultFlag === 1 || address.isDefault === 1)
+        || addressList.value[0]
+      if (selectedAddress) handleSelectAddress(selectedAddress, false)
+      else {
+        selectedAddressId.value = null
+        orderData.value.addressId = null
+        orderData.value.receiveName = ''
+      }
+    } else {
+      addressList.value = []
+      addressLoadError.value = res.msg || '收货地址加载失败，请重试'
     }
   } catch (e) {
     console.error('加载地址列表失败', e)
+    addressList.value = []
+    addressLoadError.value = '收货地址加载失败，请检查网络后重试'
+  } finally {
+    loading.value = false
   }
 }
 
 // 选择地址
-const handleSelectAddress = (addr) => {
+const handleSelectAddress = (addr, notify = true) => {
   selectedAddressId.value = addr.id
   // 更新订单数据中的地址信息
   orderData.value.addressId = addr.id
@@ -446,21 +483,30 @@ const handleSelectAddress = (addr) => {
   orderData.value.street = addr.street
   orderData.value.postalCode = addr.postalCode
   showAddressSelector.value = false
-  ElMessage.success('地址已更换')
+  if (notify) ElMessage.success('地址已更换')
 }
 
 const handleCancel = () => {
+  if (props.processing) return
   dialogVisible.value = false
+  confirmDialogVisible.value = false
   emit('cancel')
+}
+
+const handleDialogClose = (done) => {
+  if (props.processing) return
+  handleCancel()
+  done()
 }
 
 const handleDialogClosed = () => {
   selectedPaymentType.value = null
   loading.value = false
-  submitting.value = false
+  addressLoadError.value = ''
 }
 
 const handleConfirmPayment = () => {
+  if (props.processing || loading.value || addressLoadError.value) return
   if (!selectedPaymentType.value) {
     ElMessage.warning('请选择支付方式')
     return

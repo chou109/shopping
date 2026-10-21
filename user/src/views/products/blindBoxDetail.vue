@@ -454,7 +454,7 @@ onMounted(() => {
 
   <!-- 购买弹窗 -->
   <PurchaseDialog v-model="purchaseDialogVisible" :products="purchaseProducts" :order="purchaseOrder"
-    :need-create-order="false" :processing="checkoutInFlight" @pay-later="handlePayLater" @pay-now="handlePayNow" />
+    :processing="checkoutInFlight" @pay-later="handlePayLater" @pay-now="handlePayNow" />
 
   <!-- 抽奖弹窗 -->
   <el-dialog
