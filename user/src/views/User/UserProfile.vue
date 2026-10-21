@@ -344,7 +344,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed, watch, nextTick } from 'vue'
+import { ref, reactive, onMounted, onBeforeUnmount, computed, watch, nextTick } from 'vue'
 import { useStore } from 'vuex'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -424,6 +424,15 @@ const passwordForm = reactive({
 const avatarPreviewUrl = ref('')
 const uploadFile = ref(null)
 const avatarUploadRef = ref()
+let avatarObjectUrl = ''
+
+const clearAvatarPreview = () => {
+  if (avatarObjectUrl) {
+    URL.revokeObjectURL(avatarObjectUrl)
+    avatarObjectUrl = ''
+  }
+  avatarPreviewUrl.value = ''
+}
 
 // 上传配置
 const uploadAction = computed(() => `${import.meta.env.VITE_APP_BASE_API}/system/user/profile/avatar`)
@@ -551,14 +560,14 @@ const handlePasswordSubmit = async () => {
 }
 
 const openAvatarDialog = () => {
-  avatarPreviewUrl.value = ''
+  clearAvatarPreview()
   uploadFile.value = null
   avatarDialogVisible.value = true
 }
 
 const handleAvatarClose = (done) => {
   if (avatarLoading.value) return
-  avatarPreviewUrl.value = ''
+  clearAvatarPreview()
   uploadFile.value = null
   done()
 }
@@ -570,7 +579,9 @@ const beforeAvatarUpload = (file) => {
   if (!isSmallEnough) ElMessage.error('头像大小不能超过 2MB')
   if (isImage && isSmallEnough) {
     uploadFile.value = file
-    avatarPreviewUrl.value = URL.createObjectURL(file)
+    clearAvatarPreview()
+    avatarObjectUrl = URL.createObjectURL(file)
+    avatarPreviewUrl.value = avatarObjectUrl
   }
   return isImage && isSmallEnough
 }
@@ -584,7 +595,7 @@ const handleAvatarSuccess = (response) => {
   userInfo.value = { ...userInfo.value, avatar: response.imgUrl }
   store.commit('SET_AVATAR', getProductImageUrl(response.imgUrl))
   avatarDialogVisible.value = false
-  avatarPreviewUrl.value = ''
+  clearAvatarPreview()
   uploadFile.value = null
   ElMessage.success('头像已更新')
 }
@@ -1325,6 +1336,8 @@ const handleAddressDialogClose = () => {
 onMounted(() => {
   loadUserInfo()
 })
+
+onBeforeUnmount(clearAvatarPreview)
 </script>
 
 <style scoped>
