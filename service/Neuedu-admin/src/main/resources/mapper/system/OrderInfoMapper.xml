@@ -357,6 +357,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="endTime != null and endTime != ''">
             and create_time &lt;= #{endTime}
         </if>
+        <if test="userId != null">
+            and user_id = #{userId}
+        </if>
         group by date(create_time)
         order by date(create_time) desc
     </select>

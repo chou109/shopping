@@ -411,7 +411,7 @@ public class OrderInfoController extends BaseController {
             return error("用户未登录");
         }
 
-        Map<String, Object> statistics = orderInfoService.getOrderStatistics(null, null);
+        Map<String, Object> statistics = orderInfoService.getUserOrderStatistics(userId);
         return success(statistics);
     }
 

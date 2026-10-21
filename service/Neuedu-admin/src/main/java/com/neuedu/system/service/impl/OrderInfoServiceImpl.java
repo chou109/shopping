@@ -907,9 +907,20 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
         }
 
         // 补充其他统计信息
-        List<Map<String, Object>> dailyStats = orderInfoMapper.selectDailyOrderStatistics(startTime, endTime);
+        List<Map<String, Object>> dailyStats = orderInfoMapper.selectDailyOrderStatistics(startTime, endTime, null);
         statistics.put("dailyStatistics", dailyStats);
 
+        return statistics;
+    }
+
+    @Override
+    public Map<String, Object> getUserOrderStatistics(Long userId)
+    {
+        Map<String, Object> statistics = orderInfoMapper.selectOrderStatistics(null, null, userId);
+        if (statistics == null) {
+            statistics = new HashMap<>();
+        }
+        statistics.put("dailyStatistics", orderInfoMapper.selectDailyOrderStatistics(null, null, userId));
         return statistics;
     }
 

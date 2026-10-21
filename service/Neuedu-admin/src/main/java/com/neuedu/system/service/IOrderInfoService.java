@@ -157,6 +157,9 @@ public interface IOrderInfoService extends IService<OrderInfo>
      */
     public Map<String, Object> getOrderStatistics(String startTime, String endTime);
 
+    /** 获取指定用户自己的订单统计 */
+    public Map<String, Object> getUserOrderStatistics(Long userId);
+
     /**
      * 自动取消超时订单
      *

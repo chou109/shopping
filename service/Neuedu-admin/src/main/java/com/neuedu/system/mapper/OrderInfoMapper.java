@@ -158,5 +158,6 @@ public interface OrderInfoMapper extends BaseMapper<OrderInfo>
      * @return 每日统计列表
      */
     public List<Map<String, Object>> selectDailyOrderStatistics(@Param("startTime") String startTime,
-                                                                @Param("endTime") String endTime);
+                                                                @Param("endTime") String endTime,
+                                                                @Param("userId") Long userId);
 }
