@@ -14,27 +14,30 @@
       </div>
 
       <div v-else class="product-grid">
-        <div v-for="item in favoriteList" :key="item.favoriteId" class="product-card"
-          @click="goProductDetail(item.targetId)">
-          <div class="product-image">
-            <img :src="getProductImageUrl(item.productMainImage)" :alt="item.productName" @error="handleImageError" />
-            <div class="favorite-btn" @click.stop="handleRemoveFavorite(item)">
+        <article v-for="item in favoriteList" :key="item.favoriteId" class="product-card">
+          <button type="button" class="product-card-open" :aria-label="`查看商品：${item.productName}`"
+            @click="goProductDetail(item.targetId)">
+            <div class="product-image">
+              <img :src="getProductImageUrl(item.productMainImage)" :alt="item.productName" @error="handleImageError" />
+            </div>
+            <div class="product-info">
+              <div class="product-name">{{ item.productName }}</div>
+              <div class="product-subtitle" v-if="item.productSubtitle">{{ item.productSubtitle }}</div>
+              <div class="product-price">
+                <span class="price">¥{{ formatPrice(item.productPrice) }}</span>
+              </div>
+              <div class="favorite-time">
+                收藏于 {{ formatTime(item.createTime) }}
+              </div>
+            </div>
+          </button>
+          <button type="button" class="favorite-btn" :aria-label="`取消收藏：${item.productName}`"
+            @click="handleRemoveFavorite(item)">
               <el-icon>
                 <Star />
               </el-icon>
-            </div>
-          </div>
-          <div class="product-info">
-            <div class="product-name">{{ item.productName }}</div>
-            <div class="product-subtitle" v-if="item.productSubtitle">{{ item.productSubtitle }}</div>
-            <div class="product-price">
-              <span class="price">¥{{ formatPrice(item.productPrice) }}</span>
-            </div>
-            <div class="favorite-time">
-              收藏于 {{ formatTime(item.createTime) }}
-            </div>
-          </div>
-        </div>
+          </button>
+        </article>
       </div>
     </div>
   </div>
@@ -178,12 +181,32 @@ onMounted(() => {
 }
 
 .product-card {
+  position: relative;
   background: white;
   border-radius: 8px;
   overflow: hidden;
   cursor: pointer;
   transition: all 0.3s;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.product-card-open {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.product-card-open:focus-visible,
+.favorite-btn:focus-visible {
+  outline: 3px solid #ee0a24;
+  outline-offset: 3px;
+  z-index: 1;
 }
 
 .product-card:hover {
@@ -220,6 +243,8 @@ onMounted(() => {
   justify-content: center;
   cursor: pointer;
   transition: all 0.3s;
+  border: 0;
+  padding: 0;
 }
 
 .favorite-btn .el-icon {
