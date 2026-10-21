@@ -63,7 +63,13 @@ const loginForm = ref({
 const loginRules = {
   username: [{ required: true, trigger: "blur", message: "请输入您的账号" }],
   password: [{ required: true, trigger: "blur", message: "请输入您的密码" }],
-  code: [{ required: true, trigger: "change", message: "请输入验证码" }]
+  code: [{
+    trigger: "change",
+    validator: (_rule, value, callback) => {
+      if (captchaEnabled.value && !value) callback(new Error("请输入验证码"));
+      else callback();
+    }
+  }]
 };
 
 const codeUrl = ref("");
@@ -104,12 +110,23 @@ function handleLogin() {
 }
 
 function getCode() {
-  getCodeImg().then(res => {
-    captchaEnabled.value = res.captchaEnabled === undefined ? true : res.captchaEnabled;
+  return getCodeImg().then(res => {
+    captchaEnabled.value = res?.captchaEnabled === undefined ? true : Boolean(res.captchaEnabled);
+    codeUrl.value = "";
     if (captchaEnabled.value) {
+      if (!res.img || !res.uuid) throw new Error("验证码响应无效");
       codeUrl.value = "data:image/gif;base64," + res.img;
       loginForm.value.uuid = res.uuid;
+    } else {
+      loginForm.value.code = "";
+      loginForm.value.uuid = "";
     }
+  }).catch(() => {
+    captchaEnabled.value = true;
+    codeUrl.value = "";
+    loginForm.value.code = "";
+    loginForm.value.uuid = "";
+    proxy.$modal.msgError("验证码加载失败，请点击验证码区域重试");
   });
 }
 

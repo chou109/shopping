@@ -87,7 +87,13 @@ const registerRules = {
     { required: true, trigger: "blur", message: "请再次输入您的密码" },
     { required: true, validator: equalToPassword, trigger: "blur" }
   ],
-  code: [{ required: true, trigger: "change", message: "请输入验证码" }]
+  code: [{
+    trigger: "change",
+    validator: (_rule, value, callback) => {
+      if (captchaEnabled.value && !value) callback(new Error("请输入验证码"));
+      else callback();
+    }
+  }]
 };
 
 const codeUrl = ref("");
@@ -107,7 +113,7 @@ function handleRegister() {
         }).catch(() => { });
       }).catch(() => {
         loading.value = false;
-        if (captchaEnabled) {
+        if (captchaEnabled.value) {
           getCode();
         }
       });
@@ -116,12 +122,23 @@ function handleRegister() {
 }
 
 function getCode() {
-  getCodeImg().then(res => {
-    captchaEnabled.value = res.captchaEnabled === undefined ? true : res.captchaEnabled;
+  return getCodeImg().then(res => {
+    captchaEnabled.value = res?.captchaEnabled === undefined ? true : Boolean(res.captchaEnabled);
+    codeUrl.value = "";
     if (captchaEnabled.value) {
+      if (!res.img || !res.uuid) throw new Error("验证码响应无效");
       codeUrl.value = "data:image/gif;base64," + res.img;
       registerForm.value.uuid = res.uuid;
+    } else {
+      registerForm.value.code = "";
+      registerForm.value.uuid = "";
     }
+  }).catch(() => {
+    captchaEnabled.value = true;
+    codeUrl.value = "";
+    registerForm.value.code = "";
+    registerForm.value.uuid = "";
+    proxy.$modal.msgError("验证码加载失败，请点击验证码区域重试");
   });
 }
 
