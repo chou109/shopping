@@ -281,10 +281,8 @@ async function handleRegister() {
     })
 
     if (res.code === 200) {
-      ElMessage.success('注册成功！正在跳转到登录页...')
-      setTimeout(() => {
-        router.push('/login')
-      }, 1500)
+      ElMessage.success('注册成功，正在跳转到登录页')
+      router.replace('/login')
     } else {
       ElMessage.error(res.msg || '注册失败')
       getCode()
