@@ -18,7 +18,6 @@ import plugins from './plugins' // plugins
 // svg图标
 import 'virtual:svg-icons-register'
 import SvgIcon from '@/components/SvgIcon'
-import elementIcons from '@/components/SvgIcon/svgicon'
 
 import './permission' // permission control
 import { getDicts } from "@/api/system/dict/data";
@@ -78,7 +77,6 @@ app.use(permission)
 app.use(router)
 app.use(store)
 app.use(plugins)
-app.use(elementIcons)
 app.component('svg-icon', SvgIcon)
 
 // directive(app)
