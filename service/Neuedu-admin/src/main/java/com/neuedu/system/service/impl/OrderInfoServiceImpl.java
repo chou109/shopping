@@ -653,10 +653,9 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
             throw new RuntimeException("订单不存在");
         }
 
-        // 验证订单状态（只有待付款和待发货的订单可以取消）
-        if (!OrderStatusConstants.WAIT_PAY.equals(orderInfo.getStatus())
-                && !OrderStatusConstants.WAIT_SHIP.equals(orderInfo.getStatus())) {
-            throw new RuntimeException("订单状态不正确，无法取消");
+        // 普通取消只针对未付款订单；已付款订单必须走带退款保护的退款流程。
+        if (!OrderStatusConstants.WAIT_PAY.equals(orderInfo.getStatus())) {
+            throw new RuntimeException("仅待付款订单可直接取消，已付款订单请使用退款功能");
         }
 
         int result = orderInfoMapper.cancelOrder(orderNo, cancelReason);
@@ -666,16 +665,6 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
             List<OrderDetail> orderDetails = orderDetailService.selectOrderDetailByOrderNo(orderNo);
             for (OrderDetail detail : orderDetails) {
                 productService.updateProductStock(detail.getProductId(), detail.getQuantity());
-            }
-
-            // 如果是待发货订单，需要退款
-            if (OrderStatusConstants.WAIT_SHIP.equals(orderInfo.getStatus())) {
-                // 退款到原支付方式
-                if (orderInfo.getPaymentType().equals(OrderStatusConstants.PAYMENT_BALANCE)) {
-                    // 通过统一的原子余额增量更新，避免退款覆盖并发扣款。
-                    sysUserService.updateUserBalance(orderInfo.getUserId(), orderInfo.getPayment());
-                }
-                // 其他支付方式的退款逻辑...
             }
 
             // 记录状态变更
