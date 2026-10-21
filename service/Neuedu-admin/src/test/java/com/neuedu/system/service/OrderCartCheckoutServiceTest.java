@@ -3,6 +3,7 @@ package com.neuedu.system.service;
 import com.neuedu.common.core.domain.entity.SysUser;
 import com.neuedu.system.domain.Cart;
 import com.neuedu.system.domain.Product;
+import com.neuedu.system.domain.Shop;
 import com.neuedu.system.domain.UserAddress;
 import com.neuedu.system.mapper.OrderInfoMapper;
 import com.neuedu.system.service.impl.OrderInfoServiceImpl;
@@ -51,6 +52,22 @@ public class OrderCartCheckoutServiceTest {
         assertEquals(Long.valueOf(7L), order.getUserId());
     }
 
+    @Test
+    public void rejectsCheckoutWhenTheStoreIsClosed() throws Exception {
+        CheckoutFixture fixture = new CheckoutFixture(false, false);
+
+        try {
+            fixture.service.createOrderFromCart(7L, 9L);
+            fail("Expected a closed shop to be rejected");
+        } catch (RuntimeException error) {
+            assertEquals("商品所属店铺未营业", error.getMessage());
+        }
+
+        assertEquals(0, fixture.orderInserts);
+        assertEquals(0, fixture.stockUpdates);
+        assertEquals(0, fixture.cartClears);
+    }
+
     private static class CheckoutFixture {
         private final OrderInfoServiceImpl service = new OrderInfoServiceImpl();
         private final Map<Long, Product> products = new HashMap<>();
@@ -64,6 +81,10 @@ public class OrderCartCheckoutServiceTest {
         }
 
         private CheckoutFixture(boolean mixedStores) throws Exception {
+            this(mixedStores, true);
+        }
+
+        private CheckoutFixture(boolean mixedStores, boolean shopActive) throws Exception {
             products.put(101L, product(101L, 1L));
             products.put(202L, product(202L, mixedStores ? 2L : 1L));
 
@@ -96,6 +117,10 @@ public class OrderCartCheckoutServiceTest {
                 if ("updateProductStock".equals(method)) stockUpdates++;
                 return 1;
             }));
+            Shop shop = new Shop();
+            shop.setStatus(shopActive ? 1 : 2);
+            inject("shopService", proxy(IShopService.class, (method, args) ->
+                "selectShopById".equals(method) ? shop : null));
             inject("orderInfoMapper", proxy(OrderInfoMapper.class, (method, args) -> {
                 if ("insertOrderInfo".equals(method)) orderInserts++;
                 return 1;

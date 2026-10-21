@@ -42,6 +42,9 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
     private IProductService productService;
 
     @Autowired
+    private IShopService shopService;
+
+    @Autowired
     private IUserAddressService userAddressService;
 
     @Autowired
@@ -178,6 +181,7 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
             if (product.getStatus() != 1) {
                 throw new RuntimeException("商品已下架: " + cartItem.getProductName());
             }
+            validateShopCanSell(product);
             if (cartItem.getQuantity() == null || cartItem.getQuantity() < 1) {
                 throw new RuntimeException("商品数量必须大于0");
             }
@@ -332,6 +336,7 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
         if (product.getStatus() != 1) {
             throw new RuntimeException("商品已下架");
         }
+        validateShopCanSell(product);
         if (quantity == null || quantity < 1) {
             throw new RuntimeException("购买数量必须大于0");
         }
@@ -451,6 +456,7 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
         if (product.getStatus() != 1) {
             throw new RuntimeException("商品已下架");
         }
+        validateShopCanSell(product);
         if (quantity == null || quantity < 1) {
             throw new RuntimeException("购买数量必须大于0");
         }
@@ -1000,6 +1006,16 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
      * 根据状态码获取状态描述
      * 支持前端简化状态码(0,1,2,3,4,5)和后端标准状态码(10,20,30,40,50,60)
      */
+    private void validateShopCanSell(Product product) {
+        if (product.getShopId() == null) {
+            return;
+        }
+        Shop shop = shopService.selectShopById(product.getShopId());
+        if (shop == null || !Integer.valueOf(1).equals(shop.getStatus())) {
+            throw new RuntimeException("商品所属店铺未营业");
+        }
+    }
+
     private String getStatusDescByStatus(Integer status) {
         if (status == null) return null;
         
