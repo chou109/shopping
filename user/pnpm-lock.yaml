@@ -121,18 +121,12 @@ importers:
       axios:
         specifier: 0.27.2
         version: 0.27.2(debug@4.3.5(supports-color@7.2.0))
-      echarts:
-        specifier: 5.4.0
-        version: 5.4.0
       element-plus:
         specifier: 2.2.27
         version: 2.2.27(vue@3.2.45)
       file-saver:
         specifier: 2.0.5
         version: 2.0.5
-      fuse.js:
-        specifier: 6.6.2
-        version: 6.6.2
       js-cookie:
         specifier: 3.0.1
         version: 3.0.1
@@ -142,15 +136,9 @@ importers:
       nprogress:
         specifier: 0.2.0
         version: 0.2.0
-      qrcodejs2-fix:
-        specifier: ^0.0.1
-        version: 0.0.1
       vue:
         specifier: 3.2.45
         version: 3.2.45
-      vue-cropper:
-        specifier: 1.0.3
-        version: 1.0.3
       vue-router:
         specifier: 4.1.4
         version: 4.1.4(vue@3.2.45)
@@ -816,9 +804,6 @@ packages:
   domutils@2.8.0:
     resolution: {integrity: sha512-w96Cjofp72M5IIhpjgobBimYEfoPjx1Vx0BSX9P30WBdZW2WIKU0T1Bd0kz2eNZ9ikjKgHbEyKx8BB6H1L3h3A==}
 
-  echarts@5.4.0:
-    resolution: {integrity: sha512-uPsO9VRUIKAdFOoH3B0aNg7NRVdN7aM39/OjovjO9MwmWsAkfGyeXJhK+dbRi51iDrQWliXV60/XwLA7kg3z0w==}
-
   electron-to-chromium@1.5.461:
     resolution: {integrity: sha512-3WZFARz1By+/rYcqQ0OLj4UcEdhd6tz2LEcDtKBUq7ey77EeJ1OtetY/5hjSUxw7dC5r5mA7FfkhRbqO9vnTCg==}
 
@@ -1088,10 +1073,6 @@ packages:
 
   functions-have-names@1.2.3:
     resolution: {integrity: sha512-xckBUXyTIqT97tq2x2AMb+g163b5JFysYk0x4qxNFwbfQkmNZoiRHb6sPzI9/QV33WeuvVYBUIiD4NzNIyqaRQ==}
-
-  fuse.js@6.6.2:
-    resolution: {integrity: sha512-cJaJkxCCxC8qIIcPBF9yGxY0W/tVZS3uEISDxhYIdtk8OL93pe+6Zj7LjCqVV4dzbqcriOZ+kQ/NE4RXZHsIGA==}
-    engines: {node: '>=10'}
 
   gensync@1.0.0-beta.2:
     resolution: {integrity: sha512-3hN7NaskYvMDLQY55gnW3NQ+mesEAepTqlg+VEbj7zzqEMBVNhzcGYYeqFo/TlYz6eQiFcp1HcsCZO+nGgS8zg==}
@@ -1609,9 +1590,6 @@ packages:
     resolution: {integrity: sha512-spBB5sgC4cv2YcW03f/IAUN1pgDJWNWD8FzkyY4mArLUMJW+KlQhlmUdKAHQuPfb00Jl5xIfImeOsf6YL8QK7Q==}
     engines: {node: '>=0.10.0'}
 
-  qrcodejs2-fix@0.0.1:
-    resolution: {integrity: sha512-1R6jB87k1PUwjX65hh24FftDjrghPvryYfsajV3chCp//dQb8QUeL446DVLj2SIeotP8ro9rSYri0wOp7O+7Hg==}
-
   query-string@4.3.4:
     resolution: {integrity: sha512-O2XLNDBIg1DnTOa+2XrIwSiXEV8h2KImXUnjhhn2+UsvZ+Es2uyd5CCRTNQlDGbzUQOW3aYCBx9rVA6dzsiY7Q==}
     engines: {node: '>=0.10.0'}
@@ -1834,9 +1812,6 @@ packages:
     resolution: {integrity: sha512-7bBrcF+/LQzSgFmT0X5YclVqQxtv7TDJ1f8Wj7ibBu/U6BMLeOpUxuZjV7rMc44UtKxlnMFigdhFAIszSX1DMg==}
     engines: {node: '>= 0.4'}
 
-  tslib@2.3.0:
-    resolution: {integrity: sha512-N82ooyxVNm6h1riLCoyS9e3fuJ3AMG2zIZs2Gd1ATcSFjSA23Q0fzjjZeh0jbJvWVDZ0cJT8yaNNaaXHzueNjg==}
-
   typed-array-buffer@1.0.2:
     resolution: {integrity: sha512-gEymJYKZtKXzzBzM4jqa9w6Q1Jjm7x2d+sh19AdsD4wqnMPDYyvwpsIc2Q/835kHuo3BEQ7CjelGhfTsoBb2MQ==}
     engines: {node: '>= 0.4'}
@@ -1978,9 +1953,6 @@ packages:
       terser:
         optional: true
 
-  vue-cropper@1.0.3:
-    resolution: {integrity: sha512-yDrZkE4H5vOiMA9WQHE+6rmXrZ1S9TMZasEPAZPKg/2I/nySHL4ECD1lNxt7+ofTPKT+9+2sQkCwagPqEqiqJg==}
-
   vue-demi@0.14.8:
     resolution: {integrity: sha512-Uuqnk9YE9SsWeReYqK2alDI5YzciATE0r2SkA6iMAtuXvNTMNACJLJEXNXaEy94ECuBe4Sk6RzRU80kjdbIo1Q==}
     engines: {node: '>=12'}
@@ -2024,9 +1996,6 @@ packages:
 
   yallist@3.1.1:
     resolution: {integrity: sha512-a4UGQaWPH59mOXUYnAG2ewncQS4i4F43Tv3JoAM+s2VDAmS9NsK8GpDMLrCHPksFT7h3K6TOoUNn2pb7RoXx4g==}
-
-  zrender@5.4.0:
-    resolution: {integrity: sha512-rOS09Z2HSVGFs2dn/TuYk5BlCaZcVe8UDLLjj1ySYF828LATKKdxuakSZMvrDz54yiKPDYVfjdKqcX8Jky3BIA==}
 
 snapshots:
 
@@ -2788,11 +2757,6 @@ snapshots:
       domelementtype: 2.3.0
       domhandler: 4.3.1
 
-  echarts@5.4.0:
-    dependencies:
-      tslib: 2.3.0
-      zrender: 5.4.0
-
   electron-to-chromium@1.5.461: {}
 
   element-plus@2.2.27(vue@3.2.45):
@@ -3090,8 +3054,6 @@ snapshots:
       functions-have-names: 1.2.3
 
   functions-have-names@1.2.3: {}
-
-  fuse.js@6.6.2: {}
 
   gensync@1.0.0-beta.2: {}
 
@@ -3601,8 +3563,6 @@ snapshots:
       posthtml-parser: 0.2.1
       posthtml-render: 1.4.0
 
-  qrcodejs2-fix@0.0.1: {}
-
   query-string@4.3.4:
     dependencies:
       object-assign: 4.1.1
@@ -3870,8 +3830,6 @@ snapshots:
       typedarray.prototype.slice: 1.0.3
       which-typed-array: 1.1.15
 
-  tslib@2.3.0: {}
-
   typed-array-buffer@1.0.2:
     dependencies:
       call-bind: 1.0.7
@@ -4063,8 +4021,6 @@ snapshots:
       fsevents: 2.3.3
       sass: 1.56.1
 
-  vue-cropper@1.0.3: {}
-
   vue-demi@0.14.8(vue@3.2.45):
     dependencies:
       vue: 3.2.45
@@ -4110,7 +4066,3 @@ snapshots:
       has-tostringtag: 1.0.2
 
   yallist@3.1.1: {}
-
-  zrender@5.4.0:
-    dependencies:
-      tslib: 2.3.0
