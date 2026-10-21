@@ -108,6 +108,14 @@ const handleSubCategoryClick = (subCategoryId) => {
   })
 }
 
+const handleCategoryActivation = (category) => {
+  if (category.children?.length) {
+    hoveredCategory.value = category.id
+  } else {
+    handleSubCategoryClick(category.id)
+  }
+}
+
 // 修改：处理轮播图点击，跳转到商品详情页
 const handleBannerClick = function (banner) {
   if (banner.link) {
@@ -158,7 +166,10 @@ onUnmounted(() => {
       @mouseleave="handleMouseLeaveMenu">
       <ul class="menu">
         <li v-for="item in categories" :key="item.id" :class="{ 'active': hoveredCategory === item.id }"
-          @mouseenter="hoveredCategory = item.id">
+          role="button" tabindex="0" :aria-expanded="hoveredCategory === item.id"
+          :aria-label="`分类：${item.name}`" @mouseenter="hoveredCategory = item.id" @focus="hoveredCategory = item.id"
+          @click="handleCategoryActivation(item)" @keydown.enter.prevent="handleCategoryActivation(item)"
+          @keydown.space.prevent="handleCategoryActivation(item)">
           <div class="category-main">{{ item.name }}</div>
         </li>
       </ul>
@@ -167,7 +178,9 @@ onUnmounted(() => {
       <div class="layer" v-if="hoveredCategory && categories.find(c => c.id === hoveredCategory)">
         <ul>
           <li v-for="child in categories.find(c => c.id === hoveredCategory)?.children" :key="child.id"
-            @click="handleSubCategoryClick(child.id)">
+            role="button" tabindex="0" :aria-label="`查看分类：${child.name}`"
+            @click="handleSubCategoryClick(child.id)" @keydown.enter.prevent="handleSubCategoryClick(child.id)"
+            @keydown.space.prevent="handleSubCategoryClick(child.id)">
             <div class="sub-category-item">
               <p class="name ellipsis-2">
                 {{ child.name }}
@@ -406,6 +419,12 @@ onUnmounted(() => {
   font-weight: 500;
 }
 
+.menu li:focus-visible,
+.layer li:focus-visible {
+  outline: 3px solid var(--primary-color);
+  outline-offset: -3px;
+}
+
 /* 淘宝样式箭头 */
 .menu li:hover::after,
 .menu li.active::after {
@@ -632,8 +651,25 @@ onUnmounted(() => {
   }
 
   .layer {
-    display: none;
-    /* 移动端隐藏子分类层 */
+    display: block;
+    position: static;
+    width: 100%;
+    height: auto;
+    padding: 8px 12px;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .layer ul {
+    gap: 4px;
+  }
+
+  .layer li {
+    width: 50%;
+    height: auto;
+    line-height: 1.4;
+    padding: 8px;
   }
 
   .banner-wrapper {
@@ -668,11 +704,6 @@ onUnmounted(() => {
     margin: 0 auto 20px auto;
     padding: 0;
     border-radius: 0;
-  }
-
-  .home-category {
-    display: none;
-    /* 超小屏隐藏分类导航 */
   }
 
   .banner-wrapper {
