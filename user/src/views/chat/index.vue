@@ -2,7 +2,7 @@
   <div class="chat-page">
     <!-- 顶部导航 -->
     <div class="chat-header">
-      <div class="back-btn" @click="goBack">←</div>
+      <button type="button" class="back-btn" aria-label="返回上一页" @click="goBack">←</button>
       <div class="service-info">
         <div class="service-avatar">
           <img :src="aiAvatarImage" alt="AI客服头像" class="ai-avatar">
@@ -16,8 +16,8 @@
         </div>
       </div>
       <div class="header-actions">
-        <span class="action-btn" @click="toggleQuickReplies">💡</span>
-        <span class="action-btn" @click="clearChat">🗑️</span>
+        <button type="button" class="action-btn" aria-label="切换快捷回复" :aria-pressed="showQuickReplies" @click="toggleQuickReplies">💡</button>
+        <button type="button" class="action-btn" aria-label="清空聊天记录" @click="clearChat">🗑️</button>
       </div>
     </div>
 
@@ -25,7 +25,7 @@
     <div class="chat-container" ref="chatContainer">
       <!-- 欢迎消息（添加了关闭按钮） -->
       <div class="welcome-message" v-if="showWelcomeMessage">
-        <div class="welcome-close-btn" @click="closeWelcomeMessage">×</div>
+        <button type="button" class="welcome-close-btn" aria-label="关闭欢迎提示" @click="closeWelcomeMessage">×</button>
         <div class="welcome-content">
           <div class="welcome-icon">🤖</div>
           <div class="welcome-title">👋 您好！</div>
@@ -504,6 +504,9 @@ onUnmounted(() => {
 }
 
 .back-btn {
+  padding: 0;
+  border: 0;
+  background: transparent;
   font-size: 24px;
   color: #666;
   margin-right: 12px;
@@ -513,6 +516,13 @@ onUnmounted(() => {
 
 .back-btn:hover {
   color: #1890ff;
+}
+
+.back-btn:focus-visible,
+.action-btn:focus-visible,
+.welcome-close-btn:focus-visible {
+  outline: 2px solid #1890ff;
+  outline-offset: 2px;
 }
 
 .service-info {
@@ -576,6 +586,10 @@ onUnmounted(() => {
 }
 
 .action-btn {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
   cursor: pointer;
   transition: all 0.3s;
   padding: 4px;
@@ -646,6 +660,9 @@ onUnmounted(() => {
   justify-content: center;
   font-size: 18px;
   cursor: pointer;
+  border: 0;
+  padding: 0;
+  font-family: inherit;
   transition: all 0.3s;
   z-index: 10;
 }
