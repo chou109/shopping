@@ -51,6 +51,14 @@
                   <el-input v-model="queryParams.productId" placeholder="请输入商品ID" clearable style="width: 100%" />
                 </el-form-item>
               </el-col>
+              <el-col :span="6">
+                <el-form-item label="商品类型" prop="isBlindBox">
+                  <el-select v-model="queryParams.isBlindBox" placeholder="全部类型" clearable style="width: 100%">
+                    <el-option label="普通商品" :value="0" />
+                    <el-option label="盲盒专属" :value="1" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
               <el-col :span="10">
                 <el-form-item label="品类" prop="categoryId">
                   <el-select v-model="queryParams.categoryId" placeholder="点击选择品类" clearable filterable style="width: 150px">
@@ -72,6 +80,9 @@
         </el-tag>
         <el-tag v-if="queryParams.hotFlag !== null" :type="queryParams.hotFlag === 1 ? 'danger' : 'info'" closable @close="clearFilter('hotFlag')" effect="dark" size="large">
           {{ queryParams.hotFlag === 1 ? '热门' : '非热门' }}
+        </el-tag>
+        <el-tag v-if="queryParams.isBlindBox !== null" type="warning" closable @close="clearFilter('isBlindBox')" effect="dark" size="large">
+          {{ queryParams.isBlindBox === 1 ? '盲盒专属' : '普通商品' }}
         </el-tag>
       </div>
     </el-card>
@@ -131,6 +142,13 @@
         <template #default="scope">
           <el-tag :type="scope.row.status === 1 ? 'success' : 'danger'" size="small">
             {{ scope.row.status === 1 ? '上架' : '下架' }}
+          </el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="商品类型" align="center" prop="isBlindBox" width="110">
+        <template #default="scope">
+          <el-tag :type="scope.row.isBlindBox === 1 ? 'warning' : 'info'" size="small">
+            {{ scope.row.isBlindBox === 1 ? '盲盒专属' : '普通商品' }}
           </el-tag>
         </template>
       </el-table-column>
@@ -270,6 +288,14 @@
               </el-select>
             </el-form-item>
           </el-col>
+          <el-col :span="12">
+            <el-form-item label="商品类型" prop="isBlindBox">
+              <el-select v-model="form.isBlindBox" placeholder="请选择商品类型" style="width: 100%">
+                <el-option label="普通商品" :value="0" />
+                <el-option label="盲盒专属" :value="1" />
+              </el-select>
+            </el-form-item>
+          </el-col>
         </el-row>
 
         <el-row :gutter="20">
@@ -362,6 +388,7 @@ const data = reactive({
     name: null,
     status: null,
     hotFlag: null,
+    isBlindBox: null,
     productId: null,
     categoryId: null,
   },
@@ -386,7 +413,7 @@ const productRef = ref(null);
 
 // 计算属性：是否有激活的筛选条件
 const hasActiveFilters = computed(() => {
-  return queryParams.value.status !== null || queryParams.value.hotFlag !== null;
+  return queryParams.value.status !== null || queryParams.value.hotFlag !== null || queryParams.value.isBlindBox !== null;
 });
 
 /** 清除指定筛选 */
@@ -599,7 +626,8 @@ function reset() {
     status: 1,
     price: null,
     stock: null,
-    hotFlag: 0
+    hotFlag: 0,
+    isBlindBox: 0
   };
   proxy.resetForm("productRef");
 }
@@ -620,6 +648,7 @@ function resetQuery() {
     name: null,
     status: null,
     hotFlag: null,
+    isBlindBox: null,
     productId: null,
     categoryId: null,
   };
