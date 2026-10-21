@@ -284,45 +284,7 @@
       </template>
     </el-dialog>
 
-    <!-- 评价弹窗 -->
-    <el-dialog v-model="reviewDialogVisible" title="订单评价" width="650px" :close-on-click-modal="false">
-      <div class="review-dialog-content">
-        <div v-for="(item, index) in reviewItems" :key="index" class="review-item">
-          <!-- 商品信息 -->
-          <div class="review-product">
-            <img :src="getProductImageUrl(item.productMainImage)" class="product-img" @error="handleImageError" />
-            <div class="product-name">{{ item.productName }}</div>
-          </div>
-
-          <!-- 评分 -->
-          <div class="review-score">
-            <span class="label">商品评分：</span>
-            <el-rate v-model="item.score" :texts="['很差', '较差', '一般', '较好', '非常好']" show-text />
-          </div>
-
-          <!-- 评价内容 -->
-          <div class="review-content">
-            <el-input
-              v-model="item.content"
-              type="textarea"
-              :rows="3"
-              placeholder="请分享您的购物体验，帮助其他买家做出更好的选择~"
-              maxlength="500"
-              show-word-limit
-            />
-          </div>
-
-          <!-- 匿名评价 -->
-          <div class="review-anonymous">
-            <el-checkbox v-model="item.isAnonymous">匿名评价</el-checkbox>
-          </div>
-        </div>
-      </div>
-      <template #footer>
-        <el-button @click="reviewDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submittingReview" @click="submitReviewHandler">提交评价</el-button>
-      </template>
-    </el-dialog>
+    <OrderReviewDialog v-model="reviewDialogVisible" :order="reviewingOrder" :loading="submittingReview" @submit="submitReviewHandler" />
   </div>
 </template>
 
@@ -330,6 +292,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import OrderRefundDialog from '@/components/OrderRefundDialog.vue'
+import OrderReviewDialog from '@/components/OrderReviewDialog.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Location, Star, StarFilled } from '@element-plus/icons-vue'
 import { getMyOrders, payOrder, cancelOrder, confirmReceipt, delInfo, applyRefund } from '@/api/system/orderInfo'
@@ -380,7 +343,6 @@ const refunding = ref(false)
 
 // 评价相关
 const reviewDialogVisible = ref(false)
-const reviewItems = ref([])
 const submittingReview = ref(false)
 const reviewingOrder = ref(null)
 
@@ -823,40 +785,17 @@ const submitRefund = async (reason) => {
 // 去评价
 const handleReview = (order) => {
   reviewingOrder.value = order
-  // 初始化评价数据
-  reviewItems.value = (order.orderDetails || []).map(item => ({
-    productId: item.productId,
-    productName: item.productName,
-    productMainImage: item.productMainImage,
-    score: 5,
-    content: '',
-    isAnonymous: false
-  }))
   reviewDialogVisible.value = true
 }
 
-// 获取评分文字
-const getScoreText = (score) => {
-  const texts = ['请评分', '非常差', '差', '一般', '好', '非常好']
-  return texts[score] || ''
-}
-
 // 提交评价
-const submitReviewHandler = async () => {
+const submitReviewHandler = async (reviewItems) => {
   if (!reviewingOrder.value) return
-
-  // 验证
-  for (const item of reviewItems.value) {
-    if (!item.score) {
-      ElMessage.warning('请为所有商品评分')
-      return
-    }
-  }
 
   submittingReview.value = true
   try {
     // 批量提交评价
-    for (const item of reviewItems.value) {
+    for (const item of reviewItems) {
       await submitReview({
         productId: item.productId,
         orderId: reviewingOrder.value.id,
@@ -1435,65 +1374,4 @@ onMounted(() => {
   font-weight: 700;
 }
 
-/* 评价弹窗样式 */
-.review-dialog-content {
-  max-height: 500px;
-  overflow-y: auto;
-}
-
-.review-item {
-  padding: 20px;
-  background: #fafafa;
-  border-radius: 8px;
-  margin-bottom: 16px;
-}
-
-.review-item:last-child {
-  margin-bottom: 0;
-}
-
-.review-product {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #eee;
-  margin-bottom: 16px;
-}
-
-.review-product .product-img {
-  width: 60px;
-  height: 60px;
-  border-radius: 6px;
-  object-fit: cover;
-  border: 1px solid #eee;
-}
-
-.review-product .product-name {
-  flex: 1;
-  font-size: 14px;
-  color: #333;
-  font-weight: 500;
-}
-
-.review-score {
-  display: flex;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.review-score .label {
-  font-size: 14px;
-  color: #666;
-  margin-right: 12px;
-}
-
-.review-content {
-  margin-bottom: 12px;
-}
-
-.review-anonymous {
-  display: flex;
-  justify-content: flex-end;
-}
 </style>
