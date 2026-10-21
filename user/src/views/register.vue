@@ -17,7 +17,7 @@
             <el-icon class="input-icon">
               <User />
             </el-icon>
-            <input ref="usernameInput" v-model="registerForm.username" type="text" placeholder="请输入用户名（2-20位字符）"
+            <input ref="usernameInput" v-model="registerForm.username" type="text" aria-label="用户名" placeholder="请输入用户名（2-20位字符）"
               :disabled="loading" @input="onUsernameInput" autocomplete="username" class="custom-input" />
           </div>
           <div v-if="errors.username" class="error-message">{{ errors.username }}</div>
@@ -30,12 +30,13 @@
               <Lock />
             </el-icon>
             <input ref="passwordInput" v-model="registerForm.password" :type="showPassword ? 'text' : 'password'"
+              aria-label="密码"
               placeholder="请输入密码（5-20位字符）" :disabled="loading" @input="onPasswordInput" autocomplete="new-password"
               class="custom-input" />
-            <el-icon class="password-toggle" @click="showPassword = !showPassword">
-              <Lock v-if="showPassword" />
-              <Lock v-else />
-            </el-icon>
+            <button type="button" class="password-toggle" :aria-label="showPassword ? '隐藏密码' : '显示密码'"
+              :aria-pressed="showPassword" @click="showPassword = !showPassword">
+              <el-icon><Hide v-if="showPassword" /><View v-else /></el-icon>
+            </button>
           </div>
           <div v-if="errors.password" class="error-message">{{ errors.password }}</div>
         </div>
@@ -47,12 +48,13 @@
               <Lock />
             </el-icon>
             <input ref="confirmPasswordInput" v-model="registerForm.confirmPassword"
-              :type="showConfirmPassword ? 'text' : 'password'" placeholder="请再次输入密码" :disabled="loading"
+              :type="showConfirmPassword ? 'text' : 'password'" aria-label="确认密码"
+              placeholder="请再次输入密码" :disabled="loading"
               @input="onConfirmPasswordInput" autocomplete="new-password" class="custom-input" />
-            <el-icon class="password-toggle" @click="showConfirmPassword = !showConfirmPassword">
-              <Lock v-if="showConfirmPassword" />
-              <Lock v-else />
-            </el-icon>
+            <button type="button" class="password-toggle" :aria-label="showConfirmPassword ? '隐藏确认密码' : '显示确认密码'"
+              :aria-pressed="showConfirmPassword" @click="showConfirmPassword = !showConfirmPassword">
+              <el-icon><Hide v-if="showConfirmPassword" /><View v-else /></el-icon>
+            </button>
           </div>
           <div v-if="errors.confirmPassword" class="error-message">{{ errors.confirmPassword }}</div>
         </div>
@@ -64,7 +66,7 @@
               <el-icon class="input-icon">
                 <Key />
               </el-icon>
-              <input ref="codeInput" v-model="registerForm.code" type="text" placeholder="请输入验证码" :disabled="loading"
+              <input ref="codeInput" v-model="registerForm.code" type="text" aria-label="验证码" placeholder="请输入验证码" :disabled="loading"
                 @input="onCodeInput" autocomplete="off" class="custom-input" />
             </div>
             <div class="register-code">
@@ -114,7 +116,7 @@
 import { ref, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { User, Lock, Key } from '@element-plus/icons-vue'
+import { User, Lock, Key, View, Hide } from '@element-plus/icons-vue'
 import { getCodeImg, register } from '@/api/login'
 
 const router = useRouter()
@@ -457,8 +459,17 @@ onMounted(() => {
 }
 
 .password-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   position: absolute;
   right: 15px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
   cursor: pointer;
   color: #c0c4cc;
   transition: color 0.3s ease;
@@ -466,6 +477,12 @@ onMounted(() => {
 
 .password-toggle:hover {
   color: #409EFF;
+}
+
+.password-toggle:focus-visible {
+  border-radius: 4px;
+  outline: 2px solid #409EFF;
+  outline-offset: 2px;
 }
 
 .code-container {

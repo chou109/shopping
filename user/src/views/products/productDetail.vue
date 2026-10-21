@@ -789,10 +789,12 @@ watch(() => route.query.id, (newId, oldId) => {
 
               <!-- 缩略图列表 -->
               <div class="thumbnail-list">
-                <div v-for="(img, index) in allImages" :key="index"
-                  :class="['thumbnail-item', { active: currentImageIndex === index }]" @click="changeMainImage(index)">
+                <button v-for="(img, index) in allImages" :key="index" type="button"
+                  :class="['thumbnail-item', { active: currentImageIndex === index }]"
+                  :aria-label="`查看${product.name}第 ${index + 1} 张图片`"
+                  :aria-pressed="currentImageIndex === index" @click="changeMainImage(index)">
                   <img :src="getProductImageUrl(img)" :alt="`${product.name}-${index + 1}`" @error="handleImageError" />
-                </div>
+                </button>
               </div>
 
               <!-- 店铺信息卡片 -->
@@ -1033,16 +1035,16 @@ watch(() => route.query.id, (newId, oldId) => {
 
                 <!-- 数量选择 -->
                 <div class="quantity-section">
-                  <div class="quantity-label">数量</div>
+                  <div id="product-quantity-label" class="quantity-label">数量</div>
                   <div class="quantity-control">
-                    <button type="button" class="quantity-btn minus" @click="decreaseQuantity" :disabled="quantity <= 1">
+                    <button type="button" class="quantity-btn minus" aria-label="减少购买数量" @click="decreaseQuantity" :disabled="quantity <= 1">
                       <el-icon>
                         <Minus />
                       </el-icon>
                     </button>
                     <input v-model.number="quantity" type="number" min="1" :max="product.stock || 999"
-                      class="quantity-input" @change="handleQuantityChange" />
-                    <button type="button" class="quantity-btn plus" @click="increaseQuantity"
+                      class="quantity-input" aria-labelledby="product-quantity-label" @change="handleQuantityChange" />
+                    <button type="button" class="quantity-btn plus" aria-label="增加购买数量" @click="increaseQuantity"
                       :disabled="quantity >= (product.stock || 999)">
                       <el-icon>
                         <Plus />
@@ -1065,7 +1067,8 @@ watch(() => route.query.id, (newId, oldId) => {
                   <button type="button" class="btn buy-now" @click="handleBuyNow" :disabled="product.stock === 0">
                     立即购买
                   </button>
-                  <button type="button" class="btn favorite" @click="handleToggleFavorite">
+                  <button type="button" class="btn favorite" :aria-label="isFavorite ? '取消收藏商品' : '收藏商品'"
+                    :aria-pressed="isFavorite" @click="handleToggleFavorite">
                     <el-icon :class="{ 'favorited': isFavorite }">
                       <StarFilled v-if="isFavorite" />
                       <Star v-else />
@@ -1284,8 +1287,10 @@ watch(() => route.query.id, (newId, oldId) => {
 }
 
 .thumbnail-item {
+  display: block;
   width: 80px;
   height: 80px;
+  padding: 0;
   border: 2px solid transparent;
   border-radius: 4px;
   overflow: hidden;
@@ -1298,6 +1303,11 @@ watch(() => route.query.id, (newId, oldId) => {
 .thumbnail-item:hover,
 .thumbnail-item.active {
   border-color: #ff5000;
+}
+
+.thumbnail-item:focus-visible {
+  outline: 3px solid #1d4ed8;
+  outline-offset: 2px;
 }
 
 .thumbnail-item img {
