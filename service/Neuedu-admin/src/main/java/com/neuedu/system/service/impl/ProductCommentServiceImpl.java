@@ -133,12 +133,12 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
             throw new ServiceException("商品不存在");
         }
 
-        // 检查是否已评论过（根据业务需求，可以一个订单评论一次）
+        // 同一订单商品重复提交按幂等成功处理，支持客户端在部分成功或网络超时后恢复。
         if (comment.getOrderId() != null) {
             ProductComment existing = productCommentMapper.selectUserCommentOnProduct(
                     userId, comment.getProductId(), comment.getOrderId());
             if (existing != null) {
-                throw new ServiceException("您已经评论过该商品");
+                return true;
             }
         }
 
