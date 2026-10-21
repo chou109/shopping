@@ -312,7 +312,10 @@ const handleFollowShop = async (item) => {
   followActionIds.value.add(item.id)
   try {
     const status = await checkFavorite(2, item.targetId)
-    if (status.code === 200 && (status.data === true || status.data?.isFavorite)) {
+    if (status.code !== 200) {
+      throw new Error(status.msg || '暂时无法确认店铺关注状态，请稍后重试')
+    }
+    if (status.data === true || status.data?.isFavorite) {
       ElMessage.info('已经关注过该店铺')
       return
     }
