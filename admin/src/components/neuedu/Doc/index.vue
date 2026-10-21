@@ -8,6 +8,6 @@
 const url = ref('http://doc.neuedu.vip/neuedu-vue');
 
 function goto() {
-  window.open(url.value)
+  window.open(url.value, '_blank', 'noopener,noreferrer')
 }
 </script>

@@ -118,7 +118,7 @@ function handleSelect(key, keyPath) {
   const route = routers.value.find(item => item.path === key);
   if (isHttp(key)) {
     // http(s):// 路径新窗口打开
-    window.open(key, "_blank");
+    window.open(key, "_blank", "noopener,noreferrer");
   } else if (!route || !route.children) {
     // 没有子路由路径内部打开
     const routeMenu = childrenMenus.value.find(item => item.path === key);

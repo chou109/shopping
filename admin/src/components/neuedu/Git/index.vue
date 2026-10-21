@@ -8,6 +8,6 @@
 const url = ref('https://gitee.com/y_project/neuedu-Vue');
 
 function goto() {
-  window.open(url.value)
+  window.open(url.value, '_blank', 'noopener,noreferrer')
 }
 </script>
