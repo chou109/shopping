@@ -7,7 +7,6 @@ const queryParams = ref({
     pageSize: 10,
 })
 const handleChange = (val) => {
-    console.log(val)
 }
 const tables = ref([])
 const columns = reactive({})

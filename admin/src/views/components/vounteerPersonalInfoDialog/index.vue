@@ -124,9 +124,7 @@ import { toRaw } from 'vue';
 const handleSelect = (row) => {
       if (row) {
         const rawRow = toRaw(row);
-        console.log(rawRow);
         selectedList.value = [rawRow]; 
-        console.log(selectedList.value);
         // 将原始对象放入数组
         emit('onSelected', selectedList.value); // 发射 onSelected 事件
       }

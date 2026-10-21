@@ -109,7 +109,6 @@ const returnTree = computed(() => {
   return jsonToTree(testData.value.returnData)
 })
 function testClick() {
-  console.log(testData.value.data);
   const requestObject = {
     url: '/online/api' + porp.path,
     method: porp.method,

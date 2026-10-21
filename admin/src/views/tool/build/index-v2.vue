@@ -40,8 +40,6 @@ function drop(e: DragEvent) {
   // 拖拽结束
   const element = e.target as HTMLDivElement // 在那个元素上面松开拖拽
   // console.log("drop", element);
-  console.log(dragStore.startDrag);
-  console.log(dragStore.getDragingElement);
   
   
   element.appendChild(dragStore.getDragingElement())

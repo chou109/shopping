@@ -147,7 +147,6 @@ export default {
         recipient: 'Server',
         senderAvatar: this.avatar
       })
-      console.log("onopen", msg)
       this.socket.send(msg)
 
       this.messageList.push({
@@ -242,7 +241,6 @@ export default {
         this.socket.close()
       }
       this.isRobot = !this.isRobot
-      console.log(this.isRobot)
     },
 
     // 将我的消息显示

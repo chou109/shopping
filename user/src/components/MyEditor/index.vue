@@ -77,7 +77,6 @@ export default {
             handlers:{
               'image':(value)=>{
                 if(value){
-                  console.log('==自定义图片===',value)
                   document.querySelector('.uploadBtn' + this.qidx).click()
                 }else{
                   this.Quill.format('image',false)
@@ -109,7 +108,6 @@ export default {
   watch: {
     value: {
       handler(val) {
-        console.log(val,this.currentValue,666)
         if (val !== this.currentValue) {
           this.currentValue = val === null ? "" : val;
           if (this.Quill) {
@@ -153,10 +151,8 @@ export default {
       let url = response.fileName;
       // 获取富文本组件实例
         let quill = this.Quill;
-        console.log(quill)
         // 如果上传成功
         if (url) {
-          console.log(quill.selection.savedRange.index)
             // 获取光标所在位置
             let length = quill.selection.savedRange.index;
             // 插入图片，res为服务器返回的图片链接地址

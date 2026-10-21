@@ -76,10 +76,7 @@ service.interceptors.request.use((config: AxiosRequestConfig<RequestConfig>) => 
     }
   }
   return config
-}, error => {
-  console.log(error)
-  Promise.reject(error)
-})
+}, error => Promise.reject(error))
 
 type ResponseType = {
   code: string | number,
@@ -126,7 +123,6 @@ service.interceptors.response.use((res: AxiosResponse<ResponseType>) => {
   }
 },
   error => {
-    console.log('err' + error)
     let { message } = error;
     if (message == "Network Error") {
       message = "后端接口连接异常";
@@ -162,7 +158,6 @@ export async function download(url: string, params: any, filename: string, confi
     }
     downloadLoadingInstance.close()
   } catch (r) {
-    console.error(r)
     ElMessage.error('下载文件出现错误，请联系管理员！')
     downloadLoadingInstance.close()
   }

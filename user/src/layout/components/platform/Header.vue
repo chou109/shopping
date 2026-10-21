@@ -85,7 +85,6 @@ export default {
   },
   watch: {
     $route(to, from) {
-      console.log(`Route changed from ${from.fullPath} to ${to.fullPath}`);
       this.pathAction(to.fullPath);
     }
   },

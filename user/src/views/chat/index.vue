@@ -253,18 +253,15 @@ const initWebSocket = () => {
   try {
     const wsUrl = getWebSocketUrl();
 
-    console.log('WebSocket连接地址:', wsUrl);
     ws = new WebSocket(wsUrl);
 
     ws.onopen = (event) => {
-      console.log('✅ WebSocket连接成功');
       isConnected.value = true;
       addSystemMessage('已连接到智能客服');
       forceScrollToBottom();
     };
 
     ws.onclose = (event) => {
-      console.log('🔌 WebSocket连接关闭');
       isConnected.value = false;
       isAiTyping.value = false;
       addSystemMessage('连接已断开，正在尝试重新连接...');

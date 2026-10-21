@@ -77,10 +77,7 @@ service.interceptors.request.use(config => {
     }
   }
   return config
-}, error => {
-  console.log(error)
-  Promise.reject(error)
-})
+}, error => Promise.reject(error))
 
 // 响应拦截器
 service.interceptors.response.use(res => {
@@ -126,7 +123,6 @@ service.interceptors.response.use(res => {
   }
 },
   error => {
-    console.log('err' + error)
     let { message } = error;
     if (message == "Network Error") {
       message = "后端接口连接异常";
@@ -161,7 +157,6 @@ export function download(url, params, filename, config) {
     }
     downloadLoadingInstance.close();
   }).catch((r) => {
-    console.error(r)
     ElMessage.error('下载文件出现错误，请联系管理员！')
     downloadLoadingInstance.close();
   })

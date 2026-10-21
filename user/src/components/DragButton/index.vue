@@ -91,7 +91,6 @@ export default {
       //如果用户没有登录的 需要跳转到登录页面
       setTimeout(() => {
         if (!this.mouseDownState) {
-          console.log(this.userId)
 
           if (this.userId !== '') {
             this.chatOpen = true

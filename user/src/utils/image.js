@@ -62,13 +62,11 @@ export function getProductImageUrl(imagePath) {
 
   // 其他情况：假设是相对路径，添加基础路径
   const finalPath = imagePath.startsWith('/') ? basePath + imagePath : basePath + '/' + imagePath;
-  console.log('处理图片路径:', finalPath);
   return finalPath;
 }
 
 // 图片加载错误处理
 export function handleImageError(event, defaultImage = '/src/assets/images/default-product.png') {
-  console.log('图片加载失败:', event.target.src);
   event.target.src = defaultImage;
   event.target.onerror = null;
 }
