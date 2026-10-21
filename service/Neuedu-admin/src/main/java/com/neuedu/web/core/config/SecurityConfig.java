@@ -113,7 +113,6 @@ public class SecurityConfig {
                     .antMatchers("/druid/**")
                     .anonymous()
                     .antMatchers("/ai/chat").permitAll()
-                    .antMatchers("/test/**").permitAll()
                     .antMatchers("/system/shop/public/**").permitAll()
                     .antMatchers("/system/shop/hot").permitAll()
                     .antMatchers("/system/shop/search").permitAll()
