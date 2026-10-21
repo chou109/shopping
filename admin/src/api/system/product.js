@@ -43,45 +43,12 @@ export function delProduct(id) {
   })
 }
 
-// 批量删除商品
-export function delProducts(ids) {
-  return request({
-    url: '/system/product/' + ids.join(','),
-    method: 'delete'
-  })
-}
-
 // 查询热门商品列表（用于首页展示）
 export function getHotProducts(limit = 10) {
   return request({
     url: '/system/product/hot',
     method: 'get',
     params: { limit }
-  })
-}
-
-// 根据分类查询商品
-export function getProductsByCategory(categoryId) {
-  return request({
-    url: `/system/product/category/${categoryId}`,
-    method: 'get'
-  })
-}
-
-// 根据活动查询商品
-export function getProductsByActivity(activityId) {
-  return request({
-    url: `/system/product/activity/${activityId}`,
-    method: 'get'
-  })
-}
-
-// 搜索商品
-export function searchProducts(keyword) {
-  return request({
-    url: '/system/product/search',
-    method: 'get',
-    params: { keyword }
   })
 }
 
@@ -100,24 +67,5 @@ export function updateProductHotFlag(productId, hotFlag) {
     url: `/system/product/${productId}/hot`,
     method: 'put',
     params: { hotFlag }
-  })
-}
-
-// 更新商品库存
-export function updateProductStock(productId, quantity) {
-  return request({
-    url: `/system/product/${productId}/stock`,
-    method: 'put',
-    params: { quantity }
-  })
-}
-
-// 导出商品
-export function exportProduct(query) {
-  return request({
-    url: '/system/product/export',
-    method: 'post',
-    data: query,
-    responseType: 'blob'
   })
 }
