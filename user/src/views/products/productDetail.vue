@@ -551,55 +551,73 @@ const handleBuyNow = async () => {
     // 选择默认地址或第一个地址
     const defaultAddr = addressData.find(a => a.isDefault === 1 || a.defaultFlag === 1) || addressData[0]
 
-    // 创建直接购买订单
-    const orderData = {
+    // 仅准备购买信息；用户确认地址并提交时再创建订单，避免取消弹窗留下空订单。
+    purchaseProducts.value = [{
       productId: product.value.id,
-      quantity: quantity.value,
-      addressId: defaultAddr.id
+      name: product.value.name,
+      mainImage: product.value.mainImage,
+      price: product.value.price,
+      quantity: quantity.value
+    }]
+    purchaseOrder.value = {
+      addressId: defaultAddr.id,
+      receiveName: defaultAddr.receiveName,
+      receivePhone: defaultAddr.receivePhone,
+      province: defaultAddr.province,
+      city: defaultAddr.city,
+      area: defaultAddr.area,
+      street: defaultAddr.street,
+      postalCode: defaultAddr.postalCode
     }
-
-    const orderRes = await createDirectOrder(orderData)
-
-    if (orderRes.code === 200 && orderRes.data) {
-      // 设置购买弹窗数据
-      purchaseProducts.value = [{
-        name: product.value.name,
-        mainImage: product.value.mainImage,
-        price: product.value.price,
-        quantity: quantity.value
-      }]
-      purchaseOrder.value = orderRes.data
-      purchaseDialogVisible.value = true
-    } else {
-      ElMessage.error(orderRes.msg || '创建订单失败')
-    }
+    purchaseDialogVisible.value = true
   } catch (error) {
     console.error('购买失败:', error)
     ElMessage.error('购买失败，请稍后重试')
   }
 }
 
+const createPurchaseOrder = async (orderData) => {
+  const orderRes = await createDirectOrder({
+    productId: product.value.id,
+    quantity: quantity.value,
+    addressId: orderData.addressId
+  })
+  if (orderRes.code !== 200 || !orderRes.data) {
+    throw new Error(orderRes.msg || '创建订单失败')
+  }
+  return orderRes.data
+}
+
 // 稍后支付
-const handlePayLater = (orderData) => {
-  ElMessage.success('订单已创建，请尽快完成支付')
-  purchaseDialogVisible.value = false
-  router.push('/user/orders')
+const handlePayLater = async (orderData) => {
+  try {
+    await createPurchaseOrder(orderData)
+    ElMessage.success('订单已创建，请尽快完成支付')
+    purchaseDialogVisible.value = false
+    router.push('/user/orders')
+  } catch (error) {
+    ElMessage.error(error.message || '创建订单失败，请稍后重试')
+  }
 }
 
 // 立即支付
 const handlePayNow = async (orderData) => {
+  let createdOrder = null
   try {
-    const payRes = await payOrder(orderData.orderNo, orderData.paymentType)
+    createdOrder = await createPurchaseOrder(orderData)
+    const payRes = await payOrder(createdOrder.orderNo, orderData.paymentType)
     if (payRes.code === 200) {
       ElMessage.success('支付成功')
       purchaseDialogVisible.value = false
       router.push('/user/orders')
     } else {
-      ElMessage.error(payRes.msg || '支付失败')
+      ElMessage.error(payRes.msg || '支付失败，订单已保留待支付')
+      router.push('/user/orders')
     }
   } catch (error) {
     console.error('支付失败:', error)
-    ElMessage.error(error.message || '支付失败，请稍后重试')
+    ElMessage.error(error.message || (createdOrder ? '支付失败，订单已保留待支付' : '创建订单失败，请稍后重试'))
+    if (createdOrder) router.push('/user/orders')
   }
 }
 
