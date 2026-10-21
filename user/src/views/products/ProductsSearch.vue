@@ -813,12 +813,6 @@ watch(() => route.query, (newQuery) => {
   line-height: 1;
 }
 
-.product-price::before {
-  content: '¥';
-  font-size: 14px;
-  margin-right: 2px;
-}
-
 .product-desc {
   display: none;
 }
