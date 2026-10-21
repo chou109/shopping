@@ -1,6 +1,7 @@
 node_modules/ 
 target/ 
 logs/ 
+service/uploadPath/
 .env 
 .idea/ 
 .vscode/ 

@@ -1,6 +1,6 @@
 ruoyi:
-    # 文件路径 示例（ Windows配置D:/ruoyi/uploadPath，Linux配置 /home/ruoyi/uploadPath）
-    profile: C:/ruoyi/uploadPath
+    # 可通过 RUOYI_UPLOAD_PATH 覆盖；默认相对 service 工作目录，适用于本地开发。
+    profile: ${RUOYI_UPLOAD_PATH:./uploadPath}
 
 # 日志配置
 logging:
