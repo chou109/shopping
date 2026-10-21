@@ -185,82 +185,7 @@
       </template>
     </el-dialog>
 
-    <!-- 订单详情弹窗 -->
-    <el-dialog v-model="detailDialogVisible" title="订单详情" width="700px">
-      <div v-if="detailOrder" class="order-detail-dialog">
-        <!-- 订单基本信息 -->
-        <div class="detail-section">
-          <div class="detail-row">
-            <span class="label">订单编号：</span>
-            <span class="value">{{ detailOrder.orderNo }}</span>
-          </div>
-          <div class="detail-row">
-            <span class="label">订单状态：</span>
-            <span class="value status" :class="getStatusClass(detailOrder.status)">{{ detailOrder.statusDesc }}</span>
-          </div>
-          <div class="detail-row">
-            <span class="label">创建时间：</span>
-            <span class="value">{{ formatTime(detailOrder.createTime) }}</span>
-          </div>
-          <div class="detail-row" v-if="detailOrder.paymentTime">
-            <span class="label">支付时间：</span>
-            <span class="value">{{ formatTime(detailOrder.paymentTime) }}</span>
-          </div>
-          <div class="detail-row" v-if="detailOrder.paymentTypeDesc">
-            <span class="label">支付方式：</span>
-            <span class="value">{{ detailOrder.paymentTypeDesc }}</span>
-          </div>
-        </div>
-
-        <!-- 收货信息 -->
-        <div class="detail-section" v-if="detailOrder.receiveName">
-          <div class="section-title">收货信息</div>
-          <div class="detail-row">
-            <span class="label">收货人：</span>
-            <span class="value">{{ detailOrder.receiveName }} {{ detailOrder.receivePhone }}</span>
-          </div>
-          <div class="detail-row">
-            <span class="label">收货地址：</span>
-            <span class="value">{{ detailOrder.province }}{{ detailOrder.city }}{{ detailOrder.area }}{{ detailOrder.street }}</span>
-          </div>
-        </div>
-
-        <!-- 商品列表 -->
-        <div class="detail-section">
-          <div class="section-title">商品信息</div>
-          <div class="detail-products">
-            <div v-for="(item, index) in detailOrder.orderDetails" :key="index" class="detail-product-item">
-              <img :src="getProductImageUrl(item.productMainImage)" :alt="item.productName || '商品图片'" class="product-img" />
-              <div class="product-info">
-                <div class="product-name">{{ item.productName }}</div>
-                <div class="product-spec" v-if="item.specifications">{{ item.specifications }}</div>
-              </div>
-              <div class="product-price">¥{{ formatPrice(item.currentUnitPrice) }} x {{ item.quantity }}</div>
-              <div class="product-total">¥{{ formatPrice(item.totalPrice) }}</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 订单金额 -->
-        <div class="detail-section total-section">
-          <div class="detail-row">
-            <span class="label">商品总价：</span>
-            <span class="value">¥{{ formatPrice(detailOrder.payment) }}</span>
-          </div>
-          <div class="detail-row">
-            <span class="label">运费：</span>
-            <span class="value">¥{{ formatPrice(detailOrder.postage || 0) }}</span>
-          </div>
-          <div class="detail-row total-row">
-            <span class="label">实付款：</span>
-            <span class="value total-price">¥{{ formatPrice(detailOrder.payment) }}</span>
-          </div>
-        </div>
-      </div>
-      <template #footer>
-        <el-button @click="detailDialogVisible = false">关闭</el-button>
-      </template>
-    </el-dialog>
+    <OrderDetailDialog v-model="detailDialogVisible" :order="detailOrder" />
 
     <OrderReviewDialog v-model="reviewDialogVisible" :order="reviewingOrder" :loading="submittingReview" @submit="submitReviewHandler" />
   </div>
@@ -272,6 +197,7 @@ import { useRouter } from 'vue-router'
 import OrderRefundDialog from '@/components/OrderRefundDialog.vue'
 import OrderReviewDialog from '@/components/OrderReviewDialog.vue'
 import OrderActions from '@/components/OrderActions.vue'
+import OrderDetailDialog from '@/components/OrderDetailDialog.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Location } from '@element-plus/icons-vue'
 import { getMyOrders, payOrder, cancelOrder, confirmReceipt, delInfo, applyRefund } from '@/api/system/orderInfo'
@@ -890,124 +816,6 @@ onMounted(() => {
 .pay-dialog-content strong {
   color: #ff5000;
   font-size: 24px;
-}
-
-/* 订单详情弹窗样式 */
-.order-detail-dialog {
-  max-height: 500px;
-  overflow-y: auto;
-}
-
-.detail-section {
-  padding: 16px 0;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.detail-section:last-child {
-  border-bottom: none;
-}
-
-.section-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 12px;
-}
-
-.detail-row {
-  display: flex;
-  margin-bottom: 8px;
-}
-
-.detail-row .label {
-  width: 90px;
-  color: #999;
-  flex-shrink: 0;
-}
-
-.detail-row .value {
-  flex: 1;
-  color: #333;
-}
-
-.detail-row .value.status {
-  font-weight: 600;
-}
-
-.detail-products {
-  background: #fafafa;
-  border-radius: 8px;
-  padding: 12px;
-}
-
-.detail-product-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 0;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.detail-product-item:last-child {
-  border-bottom: none;
-}
-
-.detail-product-item .product-img {
-  width: 60px;
-  height: 60px;
-  border-radius: 4px;
-  object-fit: cover;
-}
-
-.detail-product-item .product-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.detail-product-item .product-name {
-  font-size: 14px;
-  color: #333;
-  margin-bottom: 4px;
-}
-
-.detail-product-item .product-spec {
-  font-size: 12px;
-  color: #999;
-}
-
-.detail-product-item .product-price {
-  color: #666;
-  font-size: 14px;
-}
-
-.detail-product-item .product-total {
-  color: #ff5000;
-  font-size: 14px;
-  font-weight: 600;
-  min-width: 80px;
-  text-align: right;
-}
-
-.total-section {
-  background: #fff9f5;
-  padding: 16px;
-  border-radius: 8px;
-}
-
-.total-row {
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px dashed #f0f0f0;
-}
-
-.total-row .label {
-  font-weight: 600;
-}
-
-.total-row .total-price {
-  color: #ff5000;
-  font-size: 20px;
-  font-weight: 700;
 }
 
 </style>
