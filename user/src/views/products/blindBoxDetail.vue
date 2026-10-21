@@ -495,16 +495,16 @@ onMounted(() => {
 
                 <!-- 数量选择（盲盒限购1件） -->
                 <div class="quantity-section">
-                  <div class="quantity-label">数量</div>
+                  <div id="blind-box-quantity-label" class="quantity-label">数量</div>
                   <div class="quantity-control">
-                    <button type="button" class="quantity-btn minus" disabled>
+                    <button type="button" class="quantity-btn minus" aria-label="减少购买数量" disabled>
                       <el-icon>
                         <Minus />
                       </el-icon>
                     </button>
-                    <input v-model.number="quantity" type="number" min="1" max="1"
+                    <input v-model.number="quantity" type="number" min="1" max="1" aria-labelledby="blind-box-quantity-label"
                       class="quantity-input" readonly />
-                    <button type="button" class="quantity-btn plus" disabled>
+                    <button type="button" class="quantity-btn plus" aria-label="增加购买数量" disabled>
                       <el-icon>
                         <Plus />
                       </el-icon>
