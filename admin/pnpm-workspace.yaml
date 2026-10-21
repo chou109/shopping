@@ -2,3 +2,6 @@ allowBuilds:
   '@parcel/watcher': true
   esbuild: true
   vue-demi: true
+overrides:
+  rollup@2: 2.80.0
+  rollup@4: 4.64.12

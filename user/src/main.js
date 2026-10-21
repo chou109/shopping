@@ -12,9 +12,10 @@ import permission from './directive/permission'
 
 // 注册指令
 import plugins from './plugins' // plugins
+import svgSprite from 'virtual:svg-sprite'
 
-// svg图标
-import 'virtual:svg-icons-register'
+document.body.insertAdjacentHTML('afterbegin', svgSprite)
+
 import SvgIcon from '@/components/SvgIcon'
 
 import './permission' // permission control

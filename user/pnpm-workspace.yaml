@@ -4,3 +4,5 @@ allowBuilds:
   vue-demi: true
 overrides:
   electron-to-chromium: 1.5.461
+  rollup@2: 2.80.0
+  rollup@4: 4.64.12
