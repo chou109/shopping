@@ -19,7 +19,7 @@ import PurchaseDialog from '@/components/PurchaseDialog/index.vue'
 // 导入盲盒图片
 import BlindBoxImage1 from '@/assets/BlindBox/BlindBox.png'
 import BlindBoxImage2 from '@/assets/BlindBox/BlindBox (2).png'
-import BlindBoxImage3 from '@/assets/BlindBox/BlindBox (3).png'
+import BlindBoxImage3 from '@/assets/BlindBox/BlindBox (3).webp'
 import BlindBoxImage4 from '@/assets/BlindBox/BlindBox (4).png'
 import BlindBoxImage5 from '@/assets/BlindBox/BlindBox (5).png'
 import BlindBoxImage6 from '@/assets/BlindBox/BlindBox (6).png'
