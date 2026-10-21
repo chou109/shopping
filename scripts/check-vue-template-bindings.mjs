@@ -64,6 +64,33 @@ function collectButtonIssues(node, filename) {
   return issues
 }
 
+function collectClickableElementIssues(node, filename) {
+  const issues = []
+  const nonSemanticElements = new Set(['div', 'span', 'li', 'td', 'i'])
+  if (node.type === 1 && nonSemanticElements.has(node.tag)) {
+    const props = node.props || []
+    const hasClick = props.some(property => property.type === 7 && property.name === 'on' && property.arg?.content === 'click')
+    if (hasClick) {
+      const hasRole = props.some(property =>
+        (property.type === 6 && property.name === 'role') ||
+        (property.type === 7 && property.name === 'bind' && property.arg?.content === 'role')
+      )
+      const hasTabindex = props.some(property =>
+        (property.type === 6 && property.name === 'tabindex') ||
+        (property.type === 7 && property.name === 'bind' && property.arg?.content === 'tabindex')
+      )
+      const hasKeyboardHandler = props.some(property =>
+        property.type === 7 && property.name === 'on' && ['keydown', 'keyup', 'keypress'].includes(property.arg?.content)
+      )
+      if (!hasRole || !hasTabindex || !hasKeyboardHandler) {
+        issues.push(`${path.relative(root, filename)}:${node.loc.start.line}: 可点击的 <${node.tag}> 需提供 role、tabindex 和键盘事件；优先改用原生按钮或链接`)
+      }
+    }
+  }
+  for (const child of node.children || []) issues.push(...collectClickableElementIssues(child, filename))
+  return issues
+}
+
 function collectLegacySlotIssues(node, filename) {
   const issues = []
   if (node.type === 1 && node.props.some(property => property.type === 6 && property.name === 'slot')) {
@@ -99,6 +126,7 @@ for (const sourceRoot of sourceRoots) {
     failures.push(...collectImageAltIssues(parsedTemplate.ast, filename))
     failures.push(...collectAnchorIssues(parsedTemplate.ast, filename))
     failures.push(...collectButtonIssues(parsedTemplate.ast, filename))
+    failures.push(...collectClickableElementIssues(parsedTemplate.ast, filename))
     failures.push(...collectLegacySlotIssues(parsedTemplate.ast, filename))
     if (!descriptor.scriptSetup) continue
 
