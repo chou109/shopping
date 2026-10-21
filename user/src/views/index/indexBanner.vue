@@ -89,95 +89,18 @@ const loadCategories = async function () {
       // 只显示前6个大类
       categories.value = topLevelCategories.slice(0, 6)
 
-      // 如果没有数据，使用默认数据
-      if (categories.value.length === 0) {
-        categories.value = getDefaultCategories()
-      }
     } else {
-      // API失败时使用默认数据
       console.error('获取分类树失败:', response.msg)
-      categories.value = getDefaultCategories()
+      categories.value = []
     }
   } catch (error) {
     console.error('获取分类失败:', error)
-    // 使用默认数据
-    categories.value = getDefaultCategories()
+    categories.value = []
   }
-}
-
-// 获取默认分类数据
-const getDefaultCategories = () => {
-  return [
-    {
-      id: 1,
-      name: '手机数码',
-      children: [
-        { id: 7, name: '手机通讯' },
-        { id: 8, name: '手机配件' },
-        { id: 9, name: '摄影摄像' },
-        { id: 10, name: '数码配件' },
-        { id: 11, name: '智能设备' },
-        { id: 12, name: '时尚影音' },
-        { id: 13, name: '电子教育' },
-        { id: 14, name: '苹果配件' }
-      ]
-    },
-    {
-      id: 2,
-      name: '电脑办公',
-      children: [
-        { id: 15, name: '笔记本' },
-        { id: 16, name: '台式机' },
-        { id: 17, name: '平板电脑' },
-        { id: 18, name: '办公设备' }
-      ]
-    },
-    {
-      id: 3,
-      name: '家用电器',
-      children: [
-        { id: 19, name: '厨房电器' },
-        { id: 20, name: '生活电器' },
-        { id: 21, name: '大家电' },
-        { id: 22, name: '个护健康' }
-      ]
-    },
-    {
-      id: 4,
-      name: '服装服饰',
-      children: [
-        { id: 23, name: '女装' },
-        { id: 24, name: '男装' },
-        { id: 25, name: '童装' },
-        { id: 26, name: '内衣' }
-      ]
-    },
-    {
-      id: 5,
-      name: '美妆护肤',
-      children: [
-        { id: 27, name: '面部护肤' },
-        { id: 28, name: '彩妆' },
-        { id: 29, name: '香水' },
-        { id: 30, name: '美妆工具' }
-      ]
-    },
-    {
-      id: 6,
-      name: '黄金首饰',
-      children: [
-        { id: 31, name: '黄金' },
-        { id: 32, name: '钻石' },
-        { id: 33, name: '银饰' },
-        { id: 34, name: '玉石' }
-      ]
-    }
-  ]
 }
 
 // 处理子分类点击
 const handleSubCategoryClick = (subCategoryId) => {
-  console.log('点击子分类:', subCategoryId)
   router.push({
     path: '/products',
     query: {

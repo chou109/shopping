@@ -461,7 +461,7 @@ onMounted(() => {
                     <el-icon>
                       <Timer />
                     </el-icon>
-                    <span>现货，付款后48小时内发货</span>
+                    <span>付款后由店铺安排发货</span>
                   </div>
                   <div class="service-item">
                     <el-icon>

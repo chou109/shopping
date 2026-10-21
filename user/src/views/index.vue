@@ -137,8 +137,8 @@
               </svg>
             </div>
             <div class="service-text">
-              <h3>正品保障</h3>
-              <p>官方授权，品质保证</p>
+              <h3>商品信息</h3>
+              <p>商品信息由店铺发布</p>
             </div>
           </div>
 
@@ -151,8 +151,8 @@
               </svg>
             </div>
             <div class="service-text">
-              <h3>极速物流</h3>
-              <p>当日下单，次日送达</p>
+              <h3>订单进度</h3>
+              <p>在订单页查看发货状态</p>
             </div>
           </div>
 
@@ -165,8 +165,8 @@
               </svg>
             </div>
             <div class="service-text">
-              <h3>7天退换</h3>
-              <p>无忧购物，售后无忧</p>
+              <h3>售后服务</h3>
+              <p>可在订单页申请售后</p>
             </div>
           </div>
         </div>

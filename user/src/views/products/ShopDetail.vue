@@ -75,7 +75,12 @@
     </div>
 
     <!-- 商品列表 -->
-    <div class="products-section">
+    <div class="products-section" v-loading="loading">
+      <el-alert v-if="loadError" :title="loadError" type="error" :closable="false" show-icon>
+        <template #default>
+          <el-button link type="primary" @click="loadShopData">重试</el-button>
+        </template>
+      </el-alert>
 
       <!-- 商品网格 -->
       <div v-if="viewMode === 'grid'" class="products-grid">
@@ -89,15 +94,13 @@
           </div>
           <div class="product-info">
             <h3 class="product-title">{{ product.name }}</h3>
-            <p class="product-desc">{{ product.description }}</p>
+            <p class="product-desc">{{ product.subTitle || '暂无商品简介' }}</p>
             <div class="product-bottom">
               <div class="price-section">
                 <span class="current-price">¥{{ formatPrice(product.price) }}</span>
-                <span v-if="product.originalPrice > product.price" class="original-price">¥{{
-                  formatPrice(product.originalPrice) }}</span>
               </div>
               <div class="sales-info">
-                <span>月销 {{ product.salesCount || 0 }}</span>
+                <span v-if="product.salesCount !== undefined && product.salesCount !== null">月销 {{ product.salesCount }}</span>
               </div>
             </div>
           </div>
@@ -113,10 +116,10 @@
           </div>
           <div class="item-content">
             <h3 class="item-title">{{ product.name }}</h3>
-            <p class="item-desc">{{ product.description }}</p>
+            <p class="item-desc">{{ product.subTitle || '暂无商品简介' }}</p>
             <div class="item-meta">
               <span class="item-price">¥{{ formatPrice(product.price) }}</span>
-              <span class="item-sales">月销 {{ product.salesCount || 0 }}</span>
+              <span v-if="product.salesCount !== undefined && product.salesCount !== null" class="item-sales">月销 {{ product.salesCount }}</span>
               <span class="item-stock">库存 {{ product.stock }}</span>
             </div>
           </div>
@@ -124,7 +127,7 @@
       </div>
 
       <!-- 空状态 -->
-      <el-empty v-if="filteredProducts.length === 0" description="暂无商品" />
+      <el-empty v-if="!loading && !loadError && filteredProducts.length === 0" description="暂无商品" />
     </div>
   </div>
 </template>
@@ -145,6 +148,7 @@ const router = useRouter()
 const shopInfo = ref({})
 const products = ref([])
 const loading = ref(false)
+const loadError = ref('')
 const activeTab = ref('all')
 const searchKeyword = ref('')
 const sortBy = ref('default')
@@ -276,10 +280,10 @@ const handleTabClick = (tab) => {
 // 加载店铺数据
 const loadShopData = async () => {
   const shopId = route.query.id
-  console.log('店铺ID:', shopId)
+  loadError.value = ''
   
   if (!shopId) {
-    ElMessage.error('店铺ID不存在')
+    loadError.value = '店铺 ID 不存在，无法加载店铺信息'
     return
   }
 
@@ -287,27 +291,23 @@ const loadShopData = async () => {
   try {
     // 获取店铺信息
     const shopRes = await getShopInfo(shopId)
-    console.log('店铺信息API响应:', shopRes)
     if (shopRes.code === 200) {
       shopInfo.value = shopRes.data || {}
-      console.log('店铺信息:', shopInfo.value)
     } else {
-      console.error('获取店铺信息失败:', shopRes.msg)
-      ElMessage.error(shopRes.msg || '获取店铺信息失败')
+      loadError.value = shopRes.msg || '获取店铺信息失败，请重试'
+      return
     }
 
     // 获取店铺商品
     const productRes = await getShopProducts(shopId)
-    console.log('店铺商品API响应:', productRes)
     if (productRes.code === 200) {
       products.value = (productRes.data || []).filter(product => !isBlindBoxProduct(product))
-      console.log('商品列表:', products.value)
     } else {
-      console.error('获取店铺商品失败:', productRes.msg)
+      loadError.value = productRes.msg || '获取店铺商品失败，请重试'
     }
   } catch (error) {
     console.error('加载店铺数据失败:', error)
-    ElMessage.error('加载店铺数据失败')
+    loadError.value = error.message || '加载店铺数据失败，请检查网络后重试'
   } finally {
     loading.value = false
   }
