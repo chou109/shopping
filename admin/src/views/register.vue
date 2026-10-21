@@ -3,12 +3,12 @@
     <el-form ref="registerRef" :model="registerForm" :rules="registerRules" class="register-form">
       <h3 class="title">网购商城管理系统</h3>
       <el-form-item prop="username">
-        <el-input v-model="registerForm.username" type="text" size="large" auto-complete="off" placeholder="账号">
+        <el-input v-model="registerForm.username" type="text" size="large" auto-complete="off" label="账号" placeholder="账号">
           <template #prefix><svg-icon icon-class="user" class="el-input__icon input-icon" /></template>
         </el-input>
       </el-form-item>
       <el-form-item prop="password">
-        <el-input v-model="registerForm.password" type="password" size="large" auto-complete="off" placeholder="密码"
+        <el-input v-model="registerForm.password" type="password" size="large" auto-complete="off" label="密码" placeholder="密码"
           @keyup.enter="handleRegister">
 
           <template #prefix><svg-icon icon-class="password" class="el-input__icon input-icon" /></template>
@@ -16,13 +16,13 @@
       </el-form-item>
       <el-form-item prop="confirmPassword">
         <el-input v-model="registerForm.confirmPassword" type="password" size="large" auto-complete="off"
-          placeholder="确认密码" @keyup.enter="handleRegister">
+          label="确认密码" placeholder="确认密码" @keyup.enter="handleRegister">
 
           <template #prefix><svg-icon icon-class="password" class="el-input__icon input-icon" /></template>
         </el-input>
       </el-form-item>
       <el-form-item prop="code" v-if="captchaEnabled">
-        <el-input size="large" v-model="registerForm.code" auto-complete="off" placeholder="验证码" style="width: 63%"
+        <el-input size="large" v-model="registerForm.code" auto-complete="off" label="验证码" placeholder="验证码" style="width: 63%"
           @keyup.enter="handleRegister">
 
           <template #prefix><svg-icon icon-class="validCode" class="el-input__icon input-icon" /></template>

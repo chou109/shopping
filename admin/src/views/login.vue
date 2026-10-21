@@ -3,18 +3,18 @@
     <el-form ref="loginRef" :model="loginForm" :rules="loginRules" class="login-form">
       <h3 class="title">网购商城管理系统</h3>
       <el-form-item prop="username">
-        <el-input v-model="loginForm.username" type="text" size="large" auto-complete="off" placeholder="账号">
+        <el-input v-model="loginForm.username" type="text" size="large" auto-complete="off" label="账号" placeholder="账号">
           <template #prefix><svg-icon icon-class="user" class="el-input__icon input-icon" /></template>
         </el-input>
       </el-form-item>
       <el-form-item prop="password">
-        <el-input v-model="loginForm.password" type="password" size="large" auto-complete="off" placeholder="密码"
+        <el-input v-model="loginForm.password" type="password" size="large" auto-complete="off" label="密码" placeholder="密码"
           @keyup.enter="handleLogin">
           <template #prefix><svg-icon icon-class="password" class="el-input__icon input-icon" /></template>
         </el-input>
       </el-form-item>
       <el-form-item prop="code" v-if="captchaEnabled">
-        <el-input v-model="loginForm.code" size="large" auto-complete="off" placeholder="验证码" style="width: 63%"
+        <el-input v-model="loginForm.code" size="large" auto-complete="off" label="验证码" placeholder="验证码" style="width: 63%"
           @keyup.enter="handleLogin">
           <template #prefix><svg-icon icon-class="validCode" class="el-input__icon input-icon" /></template>
         </el-input>
