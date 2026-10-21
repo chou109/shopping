@@ -19,11 +19,11 @@ export function getShopProducts(shopId) {
 }
 
 // 搜索店铺
-export function searchShop(keyword, status) {
+export function searchShop(keyword) {
   return request({
     url: '/system/shop/search',
     method: 'get',
-    params: { keyword, status },
+    params: { keyword },
     headers: { isToken: false }
   })
 }

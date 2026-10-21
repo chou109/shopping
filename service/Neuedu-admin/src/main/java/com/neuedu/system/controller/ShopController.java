@@ -196,9 +196,9 @@ public class ShopController extends BaseController
      */
     @Operation(summary = "搜索店铺")
     @GetMapping("/search")
-    public AjaxResult search(@RequestParam(required = false) String keyword,
-                             @RequestParam(required = false) Integer status) {
-        return success(shopService.searchShops(keyword, status));
+    public AjaxResult search(@RequestParam(required = false) String keyword) {
+        // 公开搜索只展示营业中的店铺，状态不能由匿名客户端指定。
+        return success(shopService.searchShops(keyword, 1));
     }
 
     /**
