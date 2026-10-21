@@ -304,7 +304,7 @@ import { useRouter } from 'vue-router'
 import OrderRefundDialog from '@/components/OrderRefundDialog.vue'
 import OrderReviewDialog from '@/components/OrderReviewDialog.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Location, Star, StarFilled } from '@element-plus/icons-vue'
+import { Location } from '@element-plus/icons-vue'
 import { getMyOrders, payOrder, cancelOrder, confirmReceipt, delInfo, applyRefund } from '@/api/system/orderInfo'
 import { submitReview, completeOrder } from '@/api/comment'
 import { getProductImageUrl, handleImageError } from '@/utils/image'
@@ -613,17 +613,6 @@ const submitReviewHandler = async (reviewItems) => {
     ElMessage.error('评价失败：' + (e.message || '未知错误'))
   } finally {
     submittingReview.value = false
-  }
-}
-
-// 再次购买
-const handleBuyAgain = (order) => {
-  if (order.orderDetails && order.orderDetails.length > 0) {
-    const productId = order.orderDetails[0].productId
-    router.push({
-      path: '/product/detail',
-      query: { id: productId }
-    })
   }
 }
 
@@ -946,123 +935,6 @@ onMounted(() => {
 .pay-dialog-content strong {
   color: #ff5000;
   font-size: 24px;
-}
-
-/* 抽奖弹窗样式 */
-.lottery-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
-  min-height: 300px;
-  flex-direction: column;
-}
-
-.lottery-drawing {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-.blind-box-image {
-  width: 200px;
-  height: 200px;
-  object-fit: contain;
-  transition: transform 3s ease-out;
-  margin-bottom: 20px;
-}
-
-.drawing-text {
-  font-size: 18px;
-  color: #333;
-  font-weight: 500;
-  margin-top: 20px;
-}
-
-.lottery-spinning {
-  transform: rotate(1800deg);
-}
-
-.lottery-option {
-  position: absolute;
-  width: 50%;
-  height: 50%;
-  text-align: center;
-  font-weight: bold;
-  color: #333;
-  transform-origin: 100% 100%;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  padding-left: 20px;
-}
-
-.lottery-option:nth-child(1) {
-  transform: rotate(20deg) translateY(-50%);
-}
-
-.lottery-option:nth-child(2) {
-  transform: rotate(60deg) translateY(-50%);
-}
-
-.lottery-option:nth-child(3) {
-  transform: rotate(100deg) translateY(-50%);
-}
-
-.lottery-option:nth-child(4) {
-  transform: rotate(140deg) translateY(-50%);
-}
-
-.lottery-option:nth-child(5) {
-  transform: rotate(180deg) translateY(-50%);
-}
-
-.lottery-option:nth-child(6) {
-  transform: rotate(220deg) translateY(-50%);
-}
-
-.lottery-option:nth-child(7) {
-  transform: rotate(260deg) translateY(-50%);
-}
-
-.lottery-option:nth-child(8) {
-  transform: rotate(300deg) translateY(-50%);
-}
-
-.lottery-option:nth-child(9) {
-  transform: rotate(340deg) translateY(-50%);
-}
-
-.lottery-indicator {
-  position: absolute;
-  top: -10px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 30px;
-  color: #ff5000;
-  font-weight: bold;
-}
-
-.lottery-result {
-  text-align: center;
-  padding: 40px;
-}
-
-.result-title {
-  font-size: 24px;
-  color: #333;
-  margin-bottom: 20px;
-}
-
-.result-prize {
-  font-size: 32px;
-  color: #ff5000;
-  font-weight: bold;
-  background: #fff7f5;
-  padding: 20px;
-  border-radius: 8px;
-  border: 2px solid #ff5000;
 }
 
 /* 订单详情弹窗样式 */
