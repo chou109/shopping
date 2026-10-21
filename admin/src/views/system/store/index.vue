@@ -196,7 +196,7 @@
     </el-row>
 
     <!-- 数据表格 -->
-    <el-table v-loading="loading" :data="storeList" @selection-change="handleSelectionChange">
+    <el-table ref="storeTableRef" v-loading="loading" :data="storeList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="主键" align="center" prop="id" width="80" />
       <el-table-column label="店铺名称" align="center" prop="shopName" min-width="150" />
@@ -333,6 +333,7 @@ import { ArrowDown, Plus } from '@element-plus/icons-vue';
 const { proxy } = getCurrentInstance();
 
 const storeList = ref([]);
+const storeTableRef = ref(null);
 const open = ref(false);
 const loading = ref(true);
 const showSearch = ref(true);
@@ -342,6 +343,7 @@ const single = ref(true);
 const multiple = ref(true);
 const total = ref(0);
 const title = ref("");
+let storeListRequestId = 0;
 
 const data = reactive({
   form: {},
@@ -390,7 +392,9 @@ const { queryParams, form, rules } = toRefs(data);
 
 /** 查询店铺信息列表 */
 function getList() {
+  const requestId = ++storeListRequestId;
   loading.value = true;
+  storeTableRef.value?.clearSelection();
   
   // 构建查询参数
   const params = { ...queryParams.value };
@@ -409,12 +413,16 @@ function getList() {
     }
   });
   
-  listStore(params).then(response => {
-    storeList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  }).catch(() => {
-    loading.value = false;
+  return listStore(params).then(response => {
+    if (requestId !== storeListRequestId) return;
+    storeList.value = response.rows || [];
+    total.value = Number(response.total) || 0;
+  }).catch(error => {
+    if (requestId === storeListRequestId) {
+      proxy.$modal.msgError(error?.message || "查询店铺失败");
+    }
+  }).finally(() => {
+    if (requestId === storeListRequestId) loading.value = false;
   });
 }
 

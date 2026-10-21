@@ -100,7 +100,7 @@
 
     <!-- 数据表格卡片 -->
     <el-card class="table-card" shadow="hover">
-    <el-table v-loading="loading" :data="productList" @selection-change="handleSelectionChange"
+    <el-table ref="productTableRef" v-loading="loading" :data="productList" @selection-change="handleSelectionChange"
       :header-cell-style="{ background: '#f5f7fa', color: '#606266', fontWeight: '600' }"
       :row-style="{ height: '60px' }"
       stripe
@@ -349,6 +349,7 @@ const filteredCategoryOptions = ref([...LOCAL_CATEGORY_OPTIONS]);
 const categoryLoading = ref(false);
 
 const productList = ref([]);
+const productTableRef = ref(null);
 const open = ref(false);
 const loading = ref(true);
 const showSearch = ref(true);
@@ -363,6 +364,7 @@ const activeParentId = ref(null);
 const activeChildren = ref([]);
 const categoryTreeOptions = ref([]);
 const myShopId = ref(null);  // 当前用户的店铺ID
+let productListRequestId = 0;
 
 const data = reactive({
   form: {},
@@ -553,7 +555,9 @@ function handleChildClick(child) {
 
 /** 查询商品列表 */
 function getList() {
+  const requestId = ++productListRequestId;
   loading.value = true;
+  productTableRef.value?.clearSelection();
   const userStore = useUserStore();
   const params = { ...queryParams.value };
   
@@ -569,12 +573,16 @@ function getList() {
     }
   });
 
-  listProduct(params).then(response => {
-    productList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  }).catch(() => {
-    loading.value = false;
+  return listProduct(params).then(response => {
+    if (requestId !== productListRequestId) return;
+    productList.value = response.rows || [];
+    total.value = Number(response.total) || 0;
+  }).catch(error => {
+    if (requestId === productListRequestId) {
+      proxy.$modal.msgError(error?.message || "查询商品失败");
+    }
+  }).finally(() => {
+    if (requestId === productListRequestId) loading.value = false;
   });
 }
 
