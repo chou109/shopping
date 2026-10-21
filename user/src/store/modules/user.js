@@ -3,6 +3,17 @@ import { getToken, setToken, removeToken } from '@/utils/auth'
 import { getBaseUrl } from '@/utils/env'
 import defAva from '@/assets/images/profile.jpg'
 
+function clearUserState(commit) {
+  commit('SET_TOKEN', '')
+  commit('SET_NAME', '')
+  commit('SET_AVATAR', '')
+  commit('SET_USERID', '')
+  commit('SET_REALNAME', '')
+  commit('SET_ROLES', [])
+  commit('SET_PERMISSIONS', [])
+  removeToken()
+}
+
 const user = {
   state: {
     token: getToken(),
@@ -85,10 +96,7 @@ const user = {
     LogOut({ commit, state }) {
       return new Promise((resolve, reject) => {
         logout(state.token).then(() => {
-          commit('SET_TOKEN', '')
-          commit('SET_ROLES', [])
-          commit('SET_PERMISSIONS', [])
-          removeToken()
+          clearUserState(commit)
           resolve()
         }).catch(error => {
           reject(error)
@@ -99,8 +107,7 @@ const user = {
     // 前端 登出
     FedLogOut({ commit }) {
       return new Promise(resolve => {
-        commit('SET_TOKEN', '')
-        removeToken()
+        clearUserState(commit)
         resolve()
       })
     }
