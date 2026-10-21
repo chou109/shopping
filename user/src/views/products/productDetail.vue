@@ -463,17 +463,17 @@ const decreaseQuantity = () => {
   }
 }
 
-const ensureLoginForPurchase = () => {
+const ensureLoginForAction = (message = '请先登录后再操作') => {
   if (getToken()) return true
 
-  ElMessage.warning('请先登录后再购买')
+  ElMessage.warning(message)
   router.push({ path: '/login', query: { redirect: route.fullPath } })
   return false
 }
 
 // 添加到购物车
 const handleAddToCart = async () => {
-  if (!ensureLoginForPurchase()) return
+  if (!ensureLoginForAction('请先登录后再购买')) return
 
   if (!product.value.id) {
     ElMessage.warning('商品信息不完整')
@@ -523,7 +523,7 @@ const handleAddToCart = async () => {
 
 // 立即购买
 const handleBuyNow = async () => {
-  if (!ensureLoginForPurchase()) return
+  if (!ensureLoginForAction('请先登录后再购买')) return
 
   if (!product.value.id) {
     ElMessage.warning('商品信息不完整')
@@ -654,6 +654,8 @@ const checkProductFavorite = async (productId) => {
 
 // 收藏商品
 const handleToggleFavorite = async () => {
+  if (!ensureLoginForAction('请先登录后再收藏')) return
+
   try {
     const productId = route.query.id
     const res = await toggleFavorite(1, productId) // 1表示商品
