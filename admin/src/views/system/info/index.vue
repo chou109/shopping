@@ -67,7 +67,7 @@
     <div class="toolbar-wrapper">
       <div class="action-buttons">
         <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:info:remove']">删除</el-button>
-        <el-button type="primary" plain :disabled="!hasShippableOrders" @click="handleBatchShip" v-hasPermi="['system:info:edit']">
+        <el-button type="primary" plain :disabled="!hasShippableOrders" @click="handleBatchShip" v-hasPermi="['system:info:edit', 'system:order:edit']">
           <el-icon><Van /></el-icon>一键发货
         </el-button>
         <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['system:info:export']">导出</el-button>
@@ -147,7 +147,7 @@
                 size="small"
                 round
                 @click="handleShipOrder(scope.row)" 
-                v-hasPermi="['system:info:edit']"
+                v-hasPermi="['system:info:edit', 'system:order:edit']"
               ><el-icon><Van /></el-icon>发货</el-button>
             </div>
           </template>

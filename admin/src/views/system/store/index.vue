@@ -414,7 +414,7 @@
 </template>
 
 <script setup name="Store">
-import { listStore, getStore, delStore, addStore, updateStore } from "@/api/system/store";
+import { listStore, getStore, delStore, addStore, updateStore, updateStoreStatus } from "@/api/system/store";
 import { ArrowDown, Plus, UploadFilled } from '@element-plus/icons-vue';
 import { getToken } from "@/utils/auth";
 
@@ -668,8 +668,7 @@ function toggleStatus(row) {
   const statusText = newStatus === 1 ? '开启' : '关闭';
   
   proxy.$modal.confirm(`确认要${statusText}店铺"${row.shopName}"吗？`).then(() => {
-    const shopData = { ...row, status: newStatus };
-    return updateStore(shopData);
+    return updateStoreStatus(row.id, newStatus);
   }).then(response => {
     proxy.$modal.msgSuccess(`${statusText}成功`);
     getList();

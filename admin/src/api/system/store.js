@@ -35,6 +35,15 @@ export function updateStore(data) {
   })
 }
 
+// 更新店铺状态
+export function updateStoreStatus(shopId, status) {
+  return request({
+    url: '/system/shop/status',
+    method: 'put',
+    data: { shopId, status }
+  })
+}
+
 // 删除店铺信息
 export function delStore(id) {
   return request({
