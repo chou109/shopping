@@ -6,7 +6,7 @@
     </div>
 
     <div class="chat-content">
-      <div class="chat-wrapper" :key="item.content + Math.random() + new Date().getTime()" v-for="item in messageList">
+      <div class="chat-wrapper" :key="`${item.messageTime}-${item.identity}-${index}`" v-for="(item, index) in messageList">
         <!--     不是验证消息       -->
         <div v-if="item.event !== 'AUTHENTICATION'">
           <!--    客服      -->
@@ -48,7 +48,7 @@
         </template>
 
         <div style="display: grid; grid-template-columns: repeat(5, 1fr); width: 250px;">
-          <div v-for="(icon, index) in icons" style="height: 1.5em">
+          <div v-for="(icon, index) in icons" :key="icon" style="height: 1.5em">
             <i ref="icons" :class="icon" @click="addIcon(index)"></i>
           </div>
         </div>
