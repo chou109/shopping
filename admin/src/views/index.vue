@@ -178,7 +178,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import * as echarts from 'echarts'
+import echarts from '@/utils/echarts'
 import {
   ShoppingCart, List, Shop, User, Top, Bottom,
   Plus, Edit, Setting, Picture, TrendCharts,
