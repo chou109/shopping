@@ -17,7 +17,7 @@
 | 中 | 两个前端的构建基线不一致 | 初检时管理端 `pnpm build:prod` 成功，但输出包含约 1 MB 和 3.1 MB 的 JS chunk，以及约 487 KB 的 CSS。用户端当时被 minimum-release-age 策略拦截，原因是 `electron-to-chromium@1.5.463` 当天发布。执行阶段将其覆盖到已超过等待期的 `1.5.461`，在 `pnpm-workspace.yaml` 只允许 `esbuild` 和 `vue-demi` 的安装脚本；两项前端现均可 production build。用户端压缩产物仍有约 917 KB 的 Element Plus JS chunk（gzip 约 286 KB），后续可做按需组件/依赖优化。 |
 | 中 | 后端构建依赖受支持的 Java 工具链 | `mvn -pl Neuedu-admin -am test` 在当前 JDK 27 编译失败，报旧 Lombok 生成的 getter/setter 不可见；改用本机 JDK 17 后同一 reactor 构建通过。项目 POM 配置 Java 8 字节码目标与 Lombok 1.18.14。建议将 JDK 17 记录为当前验证工具链，并补充测试；JDK 27 不应作为当前构建基线。 |
 | 待确认 | 存在商城之外的遗留页面/API | `user/src/views/enterprise/`、`user/src/api/bid/`、`user/src/api/saleReport/`，以及管理端 `athletes`、`competition`、`ticketsAndAudience` 等目录与 README 的网购商城定位不一致。它们有部分组件引用，且管理端菜单可能来自数据库；在核对菜单/使用情况和产品范围前不删除。 |
-| 低 | 有重复或疑似废弃的订单 API | `user/src/api/order/order.js` 请求 `/bid/order/front/list`，当前商城订单页实际调用 `user/src/api/system/orderInfo.js`。先做全局引用和后端路由核验，再决定移除或迁移。 |
+| 已处理 | 无引用且路由不存在的商城订单 API | 全局确认 `user/src/api/order/order.js` 无调用，后端也没有 `/bid/order/front/list` 或 `/bid/order/orderRefund` 路由；已删除该死代码文件，其他招投标 API 保留。 |
 
 本机用户端、管理端和后端开发地址当前均返回 HTTP 200；这只验证服务在监听，不代表登录后的功能流程已通过。管理端构建成功；用户端和后端构建分别受依赖策略与 Java 工具链影响，功能审查因此不能宣称全绿。
 
