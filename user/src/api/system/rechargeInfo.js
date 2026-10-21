@@ -26,19 +26,6 @@ export function createRechargeOrder(data) {
   })
 }
 
-// 模拟支付成功回调
-export function paymentSuccess(orderNo, paymentNo, paymentType) {
-  return request({
-    url: '/system/rechargeInfo/payment/success',
-    method: 'post',
-    params: {
-      orderNo: orderNo,
-      paymentNo: paymentNo || 'PAY' + Date.now(),
-      paymentType: paymentType || 1
-    }
-  })
-}
-
 // 根据用户ID查询充值记录
 export function getRechargeByUserId(userId) {
   return request({
