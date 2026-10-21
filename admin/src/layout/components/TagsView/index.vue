@@ -15,7 +15,7 @@
         {{ tag.title }}
       </router-link>
       <button v-if="!isAffix(tag)" type="button" class="tag-close-button" :aria-label="`关闭标签：${tag.title}`" @click="closeSelectedTag(tag)">
-        <close class="el-icon-close" aria-hidden="true" />
+        <close class="tag-close-icon" aria-hidden="true" />
       </button>
       </span>
     </scroll-pane>
@@ -351,10 +351,10 @@ function handleScroll() {
 </style>
 
 <style lang="scss">
-//reset element css of el-icon-close
+// reset the close icon size and transition
 .tags-view-wrapper {
   .tag-close-button {
-    .el-icon-close {
+    .tag-close-icon {
       width: 16px;
       height: 16px;
       vertical-align: 2px;

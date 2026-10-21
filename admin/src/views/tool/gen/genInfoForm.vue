@@ -106,7 +106,7 @@
               <el-dropdown>
                 <el-button type="primary">
                   最近路径快速选择
-                  <i class="el-icon-arrow-down el-icon--right"></i>
+                  <el-icon class="el-icon--right"><ArrowDown /></el-icon>
                 </el-button>
                 <template #dropdown>
                   <el-dropdown-menu>

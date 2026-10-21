@@ -359,3 +359,4 @@
 - 管理端系统配置 API 的按键查询封装也无任何导入/调用方；一并移除该孤立入口，保留列表、详情、增删改和缓存刷新操作。完整项目验证通过：用户端 48 项测试、管理端 6 项测试、两端 production build、后端 71 项测试。
 - 将统一 Vue 检查器扩展为捕获 Vue 2 `slot` 属性和 `<script setup>` 误用已声明 `this.<binding>`；扫描进一步发现代码生成信息表单的旧式 label 插槽及已废弃且未引用的用户端 SizeSelect，已将管理端表单改为 Vue 3 label/Element Plus 图标，并删除孤立用户组件。检查器和完整项目验证通过。
 - 用户端在导航中使用的 SvgIcon 仍绑定 Vue 2 `$listeners`；该 Vue 3 组件可由根节点自动透传监听器，现移除失效绑定并让统一模板检查器拦截 `$listeners` 回归。
+- 管理端代码生成、任务调度、图标选择及附件列表仍有 Element UI 字体图标类，现改用已注册的 Element Plus 图标；标签页关闭图标改为自有样式类。另删除没有任何导入方、仍 `require('element-ui/package.json')` 并从 unpkg 加载旧样式的孤立消费者主题选择器。完整项目验证通过。

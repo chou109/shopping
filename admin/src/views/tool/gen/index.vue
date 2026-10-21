@@ -50,7 +50,7 @@
         <el-button
           type="primary"
           plain
-          icon="el-icon-plus"
+          icon="Plus"
           @click="openCreateTable"
           v-hasRole="['admin']"
         >创建</el-button>

@@ -8,7 +8,7 @@
       @clear="filterIcons"
       @input="filterIcons"
     >
-      <template #suffix><i class="el-icon-search el-input__icon" /></template>
+      <template #suffix><el-icon><Search /></el-icon></template>
     </el-input>
     <div class="icon-list">
       <button type="button" v-for="(item, index) in iconList" :key="index" :aria-label="`选择图标：${item}`" @click="selectedIcon(item)">
