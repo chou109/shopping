@@ -40,11 +40,11 @@
       </el-form-item>
       <el-checkbox v-model="loginForm.rememberMe" style="margin:0px 0px 25px 0px;">记住密码</el-checkbox>
       <el-form-item style="width:100%;">
-        <el-button :loading="loading" size="medium" type="primary" round style="width:100%;" @click="handleLogin">
+        <el-button :loading="loading" size="default" type="primary" round style="width:100%;" @click="handleLogin">
           <span v-if="!loading">登 录</span>
           <span v-else>登 录 中...</span>
         </el-button><br><br>
-        <el-button :loading="loading" size="medium" type="primary" round style="width:100%;"
+        <el-button :loading="loading" size="default" type="primary" round style="width:100%;"
           @click="this.$router.push('/register')">
           <span>注册</span>
         </el-button>
@@ -52,7 +52,7 @@
 
       <!-- QQ登录按钮 -->
       <el-form-item style="width:100%;">
-        <el-button size="medium" round :loading="qqLoading" :disabled="qqLoading"
+        <el-button size="default" round :loading="qqLoading" :disabled="qqLoading"
           style="width:100%; background: #12B7F5; border-color: #12B7F5; color: #fff;"
           @click="handleQQLogin">
           <svg style="width:18px;height:18px;vertical-align:middle;margin-right:8px;" viewBox="0 0 24 24"

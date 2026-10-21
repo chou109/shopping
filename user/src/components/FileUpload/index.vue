@@ -5,7 +5,7 @@
                :show-file-list="false" :headers="headers" class="upload-file-uploader" ref="upload"
     >
       <!-- 上传按钮 -->
-      <el-button v-no-more-click size="mini" type="primary" :loading="loading">选取文件</el-button>
+      <el-button v-no-more-click size="small" type="primary" :loading="loading">选取文件</el-button>
       <!-- 上传提示 -->
       <div class="el-upload__tip" slot="tip" v-if="showTip">
         请上传
