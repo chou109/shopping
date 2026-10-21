@@ -69,7 +69,8 @@ const Codeformatting = () => {
     let temp = null;
     function render(temp) {
         texts.value[div_id] = temp
-        temp = temp.replace(/</g, "&lt;")
+        temp = temp.replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
             .replace(/>/g, "&gt;")
             .replace(/\n/g, "<br/>")
             .replace(/\s/g, "&nbsp;")
@@ -84,14 +85,16 @@ const Codeformatting = () => {
         // 字符串未闭合退出当前循环
         if (!checkBrackets(temp)) continue;
         // 字符串与缓存内容相等退出当前循环
-        if (temp == htmls[div_id]) continue
+        if (temp === texts.value[div_id]) {
+            div_id++
+            temp = null
+            continue
+        }
         render(temp)
         temp = null
     }
 
-    if (length.value = div_id) {
-        length.value = div_id
-    }
+    length.value = div_id
 }
 watch(() => model.value, () => {
     Codeformatting()
@@ -99,34 +102,37 @@ watch(() => model.value, () => {
         texts: texts.value,
         htmls: htmls.value,
         length: length.value,
-        scrollTop: sqlInput.value.scrollTop,
-        scrollLeft: sqlInput.value.scrollLeft
+        scrollTop: sqlInput.value?.scrollTop || 0,
+        scrollLeft: sqlInput.value?.scrollLeft || 0
     })
 })
 
 const sqlInput = ref(null)
 const sqlShow = ref(null)
+let styleObserver = null
 function wheelHandler(e) {
+    if (!sqlInput.value || !sqlShow.value) return
     sqlShow.value.scrollTop = sqlInput.value.scrollTop
     sqlShow.value.scrollLeft = sqlInput.value.scrollLeft
     emit('change', {
         texts: texts.value,
         htmls: htmls.value,
         length: length.value,
-        scrollTop: sqlInput.value.scrollTop,
-        scrollLeft: sqlInput.value.scrollLeft
+        scrollTop: sqlInput.value?.scrollTop || 0,
+        scrollLeft: sqlInput.value?.scrollLeft || 0
     })
 }
 
 
 onMounted(() => {
-    const observer = new MutationObserver((mutationsList, observer) => {
+    styleObserver = new MutationObserver(() => {
+        if (!sqlInput.value) return
         height.value = getComputedStyle(sqlInput.value).getPropertyValue('height');
         width.value = getComputedStyle(sqlInput.value).getPropertyValue('width');
     });
     //开始观测
     const config = { attributes: true, childList: false, subtree: true, attributeFilter: ['style'], attributeOldValue: true };
-    observer.observe(sqlInput.value, config);
+    styleObserver.observe(sqlInput.value, config);
     Codeformatting()
     height.value = props.height
     width.value = props.width
@@ -135,9 +141,14 @@ onMounted(() => {
         texts: texts.value,
         htmls: htmls.value,
         length: length.value,
-        scrollTop: sqlInput.value.scrollTop,
-        scrollLeft: sqlInput.value.scrollLeft
+        scrollTop: sqlInput.value?.scrollTop || 0,
+        scrollLeft: sqlInput.value?.scrollLeft || 0
     })
+})
+
+onBeforeUnmount(() => {
+    styleObserver?.disconnect()
+    styleObserver = null
 })
 </script>
 <template>
