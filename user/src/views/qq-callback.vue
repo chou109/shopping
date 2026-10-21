@@ -40,9 +40,14 @@ export default {
         const token = urlParams.get('token')
         const error = urlParams.get('error')
 
+        // 授权凭证只从回调地址读取一次，立即移除查询参数，避免留在历史记录或后续请求来源中。
+        if (window.location.search) {
+          window.history.replaceState(window.history.state, document.title, window.location.pathname + window.location.hash)
+        }
+
         if (error) {
           this.loading = false
-          this.error = decodeURIComponent(error)
+          this.error = error
           return
         }
 
@@ -62,9 +67,8 @@ export default {
         this.$router.push({ path: '/index' })
 
       } catch (e) {
-        console.error('QQ登录回调处理失败:', e)
         this.loading = false
-        this.error = '登录处理失败: ' + (e.message || '未知错误')
+        this.error = '登录处理失败，请重试'
       }
     },
     goToLogin() {
