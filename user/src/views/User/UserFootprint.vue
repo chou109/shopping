@@ -40,8 +40,10 @@
               <div v-for="item in group" :key="item.id" class="footprint-item"
                 :class="{ 'shop-item': item.targetType === 2, 'product-item': item.targetType === 1 }">
                 <!-- 图片区域 -->
-                <div class="item-image" @click="handleItemClick(item)">
-                  <img :src="getProductImageUrl(item.targetImage)" alt="" @error="handleImageError">
+                <div class="item-image" role="button" tabindex="0" :aria-label="`查看足迹：${item.targetName || '商品或店铺'}`"
+                  @click="handleItemClick(item)" @keydown.enter.prevent="handleItemClick(item)"
+                  @keydown.space.prevent="handleItemClick(item)">
+                  <img :src="getProductImageUrl(item.targetImage)" :alt="item.targetName || '浏览记录图片'" @error="handleImageError">
                   <!-- 类型标签 -->
                   <div class="type-badge" :class="getTypeBadgeClass(item.targetType)">
                     {{ getTypeText(item.targetType) }}

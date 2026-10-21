@@ -3,7 +3,9 @@
     <!-- 商品列表 - 网格布局 -->
     <div class="products-container">
       <div class="products-grid">
-        <div v-for="product in products" :key="product.id" class="product-item" @click="handleProductClick(product.id)">
+        <div v-for="product in products" :key="product.id" class="product-item" role="button" tabindex="0"
+          :aria-label="`查看商品：${product.name}`" @click="handleProductClick(product.id)"
+          @keydown.enter.prevent="handleProductClick(product.id)" @keydown.space.prevent="handleProductClick(product.id)">
           <div class="product-card">
             <div class="product-image-wrapper">
               <img :src="getProductImageUrl(product.mainImage)" :alt="product.name" class="product-image"
@@ -279,6 +281,12 @@ defineExpose({
 .product-item {
   cursor: pointer;
   transition: all 0.3s ease;
+}
+
+.product-item:focus-visible {
+  outline: 3px solid #ff5500;
+  outline-offset: 3px;
+  border-radius: 12px;
 }
 
 .product-item:hover {

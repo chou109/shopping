@@ -60,8 +60,9 @@
           </div>
 
           <div class="product-grid">
-            <div class="product-item" v-for="item in visibleProducts" :key="item.id"
-              @click="handleProductClick(item.id)">
+            <div class="product-item" v-for="item in visibleProducts" :key="item.id" role="button" tabindex="0"
+              :aria-label="`查看商品：${item.name}`" @click="handleProductClick(item.id)"
+              @keydown.enter.prevent="handleProductClick(item.id)" @keydown.space.prevent="handleProductClick(item.id)">
               <div class="product-card">
                 <div class="product-image">
                   <img :src="getProductImageUrl(item.mainImage)" :alt="item.name" @error="handleImageError" />
@@ -719,6 +720,12 @@ watch(() => route.query, (newQuery) => {
 .product-item {
   cursor: pointer;
   transition: all 0.3s ease;
+}
+
+.product-item:focus-visible {
+  outline: 3px solid #ff5500;
+  outline-offset: 3px;
+  border-radius: 8px;
 }
 
 .product-item:hover {
