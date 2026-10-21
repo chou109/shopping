@@ -324,36 +324,14 @@
 </template>
 
 <script setup name="Product">
-const LOCAL_CATEGORY_MAP = Object.freeze({
-  7: '手机通讯',
-  8: '手机配件',
-  15: '电脑整机',
-  18: '家具电器',
-  23: '特色女装',
-  24: '精品男装',
-  25: '品质男鞋',
-  26: '潮流女鞋',
-  27: '功能箱包',
-  31: '黄金首饰',
-  32: '钻石彩宝',
-  39: '面部护理'
-});
-
-// 转换为数组格式，用于下拉框选项
-const LOCAL_CATEGORY_OPTIONS = Object.entries(LOCAL_CATEGORY_MAP).map(([id, name]) => ({
-  id: Number(id),
-  name: name
-}));
 import { listProduct, getProduct, delProduct, addProduct, updateProduct, updateProductStatus, updateProductHotFlag } from "@/api/system/product";
 import { listCategoryFront } from "@/api/system/category";
 import { getMyShop } from "@/api/system/dashboard";
-import { ArrowDown, ArrowRight } from '@element-plus/icons-vue';
+import { ArrowDown } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import useUserStore from '@/store/modules/user';
 
 const { proxy } = getCurrentInstance();
-const filteredCategoryOptions = ref([...LOCAL_CATEGORY_OPTIONS]);
-const categoryLoading = ref(false);
 
 const productList = ref([]);
 const productTableRef = ref(null);
@@ -368,8 +346,6 @@ const multiple = ref(true);
 const total = ref(0);
 const title = ref("");
 const categoryTree = ref([]);
-const activeParentId = ref(null);
-const activeChildren = ref([]);
 const categoryTreeOptions = ref([]);
 const myShopId = ref(null);  // 当前用户的店铺ID
 let productListRequestId = 0;
@@ -414,31 +390,6 @@ const hasActiveFilters = computed(() => {
 function clearFilter(field) {
   queryParams.value[field] = null;
   handleQuery();
-}
-
-/** 将树形数据扁平化，用于下拉框显示 */
-function flattenCategoryTree(treeData, level = 0) {
-  const result = [];
-
-  const flatten = (categories, currentLevel) => {
-    categories.forEach(category => {
-      const indent = '　'.repeat(currentLevel);
-      result.push({
-        id: category.id,
-        label: `${indent}${category.name}`,
-        name: category.name,
-        level: currentLevel,
-        original: category
-      });
-
-      if (category.children && category.children.length > 0) {
-        flatten(category.children, currentLevel + 1);
-      }
-    });
-  };
-
-  flatten(treeData, level);
-  return result;
 }
 
 /** 从后端加载分类树 */
@@ -527,12 +478,6 @@ function generateCategoryOptions() {
   categoryTreeOptions.value = result;
 }
 
-/** 处理父级菜单悬停 */
-function handleParentHover(parent) {
-  activeParentId.value = parent.id;
-  activeChildren.value = parent.children || [];
-}
-
 /** 获取分类的父级路径 */
 function getParentPath(tree, categoryId, path = []) {
   for (const node of tree) {
@@ -548,17 +493,6 @@ function getParentPath(tree, categoryId, path = []) {
     }
   }
   return null;
-}
-
-/** 处理父级菜单点击 */
-function handleParentClick(parent) {
-  activeParentId.value = parent.id;
-  activeChildren.value = parent.children || [];
-}
-
-/** 处理子级菜单点击 */
-function handleChildClick(child) {
-  queryParams.value.categoryId = child.id;
 }
 
 /** 查询商品列表 */
