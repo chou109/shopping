@@ -3,7 +3,7 @@ package com.neuedu.common.filter;
 import com.alibaba.fastjson2.filter.SimplePropertyPreFilter;
 
 /**
- * ÅÅ³ıJSONÃô¸ĞÊôĞÔ
+    * æ’é™¤ JSON å­—æ®µè¿‡æ»¤å™¨
  * 
  * @author ruoyi
  */

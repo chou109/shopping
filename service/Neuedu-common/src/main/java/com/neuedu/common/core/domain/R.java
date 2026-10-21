@@ -4,7 +4,7 @@ import java.io.Serializable;
 import com.neuedu.common.constant.HttpStatus;
 
 /**
- * ÏìÓ¦ĞÅÏ¢Ö÷Ìå
+ * å“åº”ä¿¡æ¯ç±»
  *
  * @author ruoyi
  */
@@ -12,10 +12,10 @@ public class R<T> implements Serializable
 {
     private static final long serialVersionUID = 1L;
 
-    /** ³É¹¦ */
+    /** æˆåŠŸ */
     public static final int SUCCESS = HttpStatus.SUCCESS;
 
-    /** Ê§°Ü */
+    /** å¤±è´¥ */
     public static final int FAIL = HttpStatus.ERROR;
 
     private int code;
@@ -26,12 +26,12 @@ public class R<T> implements Serializable
 
     public static <T> R<T> ok()
     {
-        return restResult(null, SUCCESS, "²Ù×÷³É¹¦");
+        return restResult(null, SUCCESS, "æ“ä½œæˆåŠŸ");
     }
 
     public static <T> R<T> ok(T data)
     {
-        return restResult(data, SUCCESS, "²Ù×÷³É¹¦");
+        return restResult(data, SUCCESS, "æ“ä½œæˆåŠŸ");
     }
 
     public static <T> R<T> ok(T data, String msg)
@@ -41,7 +41,7 @@ public class R<T> implements Serializable
 
     public static <T> R<T> fail()
     {
-        return restResult(null, FAIL, "²Ù×÷Ê§°Ü");
+        return restResult(null, FAIL, "æ“ä½œå¤±è´¥");
     }
 
     public static <T> R<T> fail(String msg)
@@ -51,7 +51,7 @@ public class R<T> implements Serializable
 
     public static <T> R<T> fail(T data)
     {
-        return restResult(data, FAIL, "²Ù×÷Ê§°Ü");
+        return restResult(data, FAIL, "æ“ä½œå¤±è´¥");
     }
 
     public static <T> R<T> fail(T data, String msg)
