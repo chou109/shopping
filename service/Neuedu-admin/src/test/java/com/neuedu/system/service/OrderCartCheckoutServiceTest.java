@@ -37,20 +37,39 @@ public class OrderCartCheckoutServiceTest {
         assertEquals(0, fixture.cartClears);
     }
 
+    @Test
+    public void createsAndFulfillsOrderForSelectedItemsFromOneStore() throws Exception {
+        CheckoutFixture fixture = new CheckoutFixture(false);
+
+        com.neuedu.system.domain.OrderInfo order = fixture.service.createOrderFromCart(7L, 9L);
+
+        assertEquals(1, fixture.orderInserts);
+        assertEquals(1, fixture.detailInserts);
+        assertEquals(1, fixture.stockUpdates);
+        assertEquals(1, fixture.cartClears);
+        assertEquals(new BigDecimal("10.00"), order.getPayment());
+        assertEquals(Long.valueOf(7L), order.getUserId());
+    }
+
     private static class CheckoutFixture {
         private final OrderInfoServiceImpl service = new OrderInfoServiceImpl();
         private final Map<Long, Product> products = new HashMap<>();
         private int orderInserts;
+        private int detailInserts;
         private int stockUpdates;
         private int cartClears;
 
         private CheckoutFixture() throws Exception {
+            this(true);
+        }
+
+        private CheckoutFixture(boolean mixedStores) throws Exception {
             products.put(101L, product(101L, 1L));
-            products.put(202L, product(202L, 2L));
+            products.put(202L, product(202L, mixedStores ? 2L : 1L));
 
             Cart first = cart(101L);
             Cart second = cart(202L);
-            List<Cart> selectedItems = Arrays.asList(first, second);
+            List<Cart> selectedItems = mixedStores ? Arrays.asList(first, second) : java.util.Collections.singletonList(first);
 
             UserAddress address = new UserAddress();
             address.setId(9L);
@@ -67,6 +86,10 @@ public class OrderCartCheckoutServiceTest {
                     return 2;
                 }
                 return null;
+            }));
+            inject("orderDetailService", proxy(IOrderDetailService.class, (method, args) -> {
+                if ("insertOrderDetail".equals(method)) detailInserts++;
+                return 1;
             }));
             inject("productService", proxy(IProductService.class, (method, args) -> {
                 if ("selectProductById".equals(method)) return products.get(args[0]);
