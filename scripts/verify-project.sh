@@ -38,10 +38,11 @@ fi
 echo "验证工具链：Node $NODE_VERSION / pnpm $PNPM_VERSION / Java $JAVA_VERSION"
 
 echo "检查公开测试接口未重新开放"
-if [[ -e service/Neuedu-admin/src/main/java/com/neuedu/web/controller/tool/TestController.java ]] || \
+if rg --files service/Neuedu-admin/src/main/java | rg -q '(^|/)TestController\.java$' || \
+  rg -n '@(Get|Post|Put|Delete)Mapping\("/test' service/Neuedu-admin/src/main/java >/dev/null || \
   grep -Fq '.antMatchers("/test/**").permitAll()' \
     service/Neuedu-admin/src/main/java/com/neuedu/web/core/config/SecurityConfig.java; then
-  echo "发现公开测试接口或匿名白名单，请检查安全配置" >&2
+  echo "发现遗留测试路由或匿名测试白名单，请检查安全配置" >&2
   exit 1
 fi
 

@@ -315,22 +315,6 @@ public class UserAddressController extends BaseController
     }
 
     /**
-     * 测试接口 - 验证Controller是否正常工作
-     */
-    @GetMapping("/test")
-    public AjaxResult test() {
-        return success("UserAddressController is working!");
-    }
-
-    /**
-     * 健康检查接口
-     */
-    @GetMapping("/health")
-    public String health() {
-        return "OK";
-    }
-
-    /**
      * 获取当前登录用户ID
      */
     public Long getUserId() {
