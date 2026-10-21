@@ -24,7 +24,6 @@
     "@element-plus/icons-vue": "2.0.10",
     "axios": "0.27.2",
     "element-plus": "2.2.27",
-    "file-saver": "2.0.5",
     "js-cookie": "3.0.1",
     "jsencrypt": "3.3.1",
     "nprogress": "0.2.0",
