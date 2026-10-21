@@ -24,13 +24,13 @@
     <div v-else class="reviews-list">
       <div v-for="review in reviews" :key="review.commentId" class="review-card">
         <!-- 商品信息 -->
-        <div class="product-info" @click="goToProduct(review.productId)">
+        <router-link class="product-info" :to="{ path: '/product/detail', query: { id: review.productId } }" :aria-label="`查看商品：${review.productName || '商品'}`">
           <img :src="getImageUrl(review.productImage)" alt="商品图片" class="product-image" />
           <div class="product-detail">
             <div class="product-name">{{ review.productName || '商品' }}</div>
             <div class="product-price">¥{{ review.productPrice || '-' }}</div>
           </div>
-        </div>
+        </router-link>
 
         <!-- 评价内容 -->
         <div class="review-content">
@@ -148,13 +148,6 @@ const getScoreText = (score) => {
   return texts[score] || ''
 }
 
-// 跳转商品详情
-const goToProduct = (productId) => {
-  if (productId) {
-    router.push(`/product/detail/${productId}`)
-  }
-}
-
 // 去购物
 const goShopping = () => {
   router.push('/index')
@@ -260,6 +253,8 @@ onMounted(() => {
 
 .product-info {
   display: flex;
+  color: inherit;
+  text-decoration: none;
   gap: 12px;
   padding-bottom: 16px;
   border-bottom: 1px solid #f0f0f0;
@@ -295,6 +290,12 @@ onMounted(() => {
 
 .product-name:hover {
   color: #409EFF;
+}
+
+.product-info:focus-visible {
+  outline: 2px solid #409EFF;
+  outline-offset: 3px;
+  border-radius: 4px;
 }
 
 .product-price {

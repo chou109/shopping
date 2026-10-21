@@ -59,7 +59,9 @@
           <el-tab-pane label="全部商品" name="all"></el-tab-pane>
           <el-tab-pane name="price">
             <template #label>
-              <span @click.stop="togglePriceSort">价格 {{ priceOrder === 'asc' ? '↑' : '↓' }}</span>
+              <button type="button" class="price-sort-button" :aria-label="`按价格排序，当前${priceOrder === 'asc' ? '升序' : '降序'}`" :aria-pressed="sortBy === 'price'" @click.stop="togglePriceSort">
+                价格 {{ priceOrder === 'asc' ? '↑' : '↓' }}
+              </button>
             </template>
           </el-tab-pane>
           <el-tab-pane label="销量排行" name="sales"></el-tab-pane>
@@ -339,6 +341,21 @@ watch(() => route.query.id, () => {
 </script>
 
 <style scoped lang="scss">
+.price-sort-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.price-sort-button:focus-visible {
+  outline: 2px solid #409EFF;
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
 .shop-detail-page {
   background: #f5f5f5;
   min-height: 100vh;

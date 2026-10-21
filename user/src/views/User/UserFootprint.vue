@@ -52,9 +52,9 @@
 
                 <!-- 信息区域 -->
                 <div class="item-info">
-                  <h3 class="item-title" @click="handleItemClick(item)">
+                  <button type="button" class="item-title" :aria-label="`查看足迹：${item.targetName || '商品或店铺'}`" @click="handleItemClick(item)">
                     {{ item.targetName }}
-                  </h3>
+                  </button>
                   <div class="item-meta">
                     <span class="item-time">{{ formatTime(item.lastBrowseTime) }}</span>
                     <span class="item-count">浏览 {{ item.browseCount }} 次</span>
@@ -667,6 +667,12 @@ onUnmounted(() => {
 }
 
 .item-title {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  font: inherit;
   margin: 0 0 8px 0;
   font-size: 16px;
   color: #333;
@@ -679,6 +685,12 @@ onUnmounted(() => {
 
 .item-title:hover {
   color: #ff5500;
+}
+
+.item-title:focus-visible {
+  outline: 2px solid #ff5500;
+  outline-offset: 3px;
+  border-radius: 2px;
 }
 
 .item-meta {
