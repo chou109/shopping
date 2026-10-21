@@ -44,11 +44,12 @@ export function toggleFavorite(targetType, targetId) {
 }
 
 // 检查是否已收藏
-export function checkFavorite(targetType, targetId) {
+export function checkFavorite(targetType, targetId, options = {}) {
   return request({
     url: '/system/favorite/check',
     method: 'get',
-    params: { targetType, targetId }
+    params: { targetType, targetId },
+    silentAuthFailure: options.silentAuthFailure === true
   })
 }
 

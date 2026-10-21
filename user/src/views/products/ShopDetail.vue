@@ -247,8 +247,12 @@ const followShop = async () => {
 const checkFollowStatus = async () => {
   const shopId = route.query.id
   if (!shopId) return
+  if (!getToken()) {
+    isFollowed.value = false
+    return
+  }
   try {
-    const res = await checkFavorite(2, shopId)
+    const res = await checkFavorite(2, shopId, { silentAuthFailure: true })
     if (res.code === 200 && res.data) {
       isFollowed.value = res.data.isFavorite || false
     }

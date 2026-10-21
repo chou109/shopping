@@ -120,7 +120,7 @@ const loadProductData = async () => {
     if (response.code === 200 && response.data) {
       product.value = response.data
       if (getToken()) {
-        recordFootprint({ targetType: 1, targetId: route.query.id })
+        recordFootprint({ targetType: 1, targetId: route.query.id }).catch(() => {})
         checkProductFavorite(productId) // 检查是否已收藏
       }
 
@@ -631,7 +631,7 @@ const handlePayNow = async (orderData) => {
 // 检查商品是否已收藏
 const checkProductFavorite = async (productId) => {
   try {
-    const res = await checkFavorite(1, productId) // 1表示商品
+    const res = await checkFavorite(1, productId, { silentAuthFailure: true }) // 登录失效时不打断公开详情页浏览
     if (res.code === 200 && res.data) {
       isFavorite.value = res.data.isFavorite || false
     }

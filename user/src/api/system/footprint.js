@@ -34,6 +34,7 @@ export function recordFootprint({ targetType, targetId }) {
   return request({
     url: '/system/footprint/record',
     method: 'post',
+    silentAuthFailure: true,
     params: {  // 改为 params
       targetType,
       targetId
