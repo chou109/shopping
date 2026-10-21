@@ -70,12 +70,12 @@
 
       <el-col :span="12">
         <el-form-item prop="genType">
-          <span slot="label">
-            生成代码方式
+          <template #label>
+            <span>生成代码方式</span>
             <el-tooltip content="默认为zip压缩包下载，也可以自定义生成路径" placement="top">
-              <i class="el-icon-question"></i>
+              <el-icon><question-filled /></el-icon>
             </el-tooltip>
-          </span>
+          </template>
           <el-radio v-model="info.genType" value="0">zip压缩包</el-radio>
           <el-radio v-model="info.genType" value="1">自定义路径</el-radio>
         </el-form-item>

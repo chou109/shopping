@@ -33,6 +33,15 @@ function collectImageAltIssues(node, filename) {
   return issues
 }
 
+function collectLegacySlotIssues(node, filename) {
+  const issues = []
+  if (node.type === 1 && node.props.some(property => property.type === 6 && property.name === 'slot')) {
+    issues.push(`${path.relative(root, filename)}:${node.loc.start.line}: 使用了 Vue 2 的 slot 属性，请改用 Vue 3 命名插槽语法`)
+  }
+  for (const child of node.children || []) issues.push(...collectLegacySlotIssues(child, filename))
+  return issues
+}
+
 for (const sourceRoot of sourceRoots) {
   for (const filename of collectVueFiles(path.join(root, sourceRoot))) {
     const source = readFileSync(filename, 'utf8')
@@ -52,10 +61,17 @@ for (const sourceRoot of sourceRoots) {
       continue
     }
     failures.push(...collectImageAltIssues(parsedTemplate.ast, filename))
+    failures.push(...collectLegacySlotIssues(parsedTemplate.ast, filename))
     if (!descriptor.scriptSetup) continue
 
     try {
       const script = compileScript(descriptor, { id: filename })
+      for (const match of descriptor.scriptSetup.content.matchAll(/\bthis\.([A-Za-z_$][\w$]*)/g)) {
+        if (Object.hasOwn(script.bindings, match[1])) {
+          const line = descriptor.scriptSetup.content.slice(0, match.index).split('\n').length
+          failures.push(`${path.relative(root, filename)}:${line}: script setup 不能通过 this.${match[1]} 访问 setup 绑定`)
+        }
+      }
       const template = compileTemplate({
         source: descriptor.template.content,
         filename,
