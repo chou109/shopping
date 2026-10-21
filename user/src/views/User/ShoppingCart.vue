@@ -38,16 +38,19 @@
 
               <div class="item-content">
                 <!-- 商品图片 -->
-                <div class="item-image" @click="goToProductDetail(item.productId)">
+                <router-link class="item-image" :to="{ path: '/product/detail', query: { id: item.productId } }"
+                  :aria-label="`查看商品：${item.productName}`">
                   <img
                     :src="item.productId === 9999 || item.productName?.includes('盲盒') ? BLIND_BOX_IMAGE : getProductImageUrl(item.productMainImage)"
                     :alt="item.productName" @error="handleImageError" />
-                </div>
+                </router-link>
 
                 <!-- 商品信息 -->
                 <div class="item-info">
-                  <h3 class="product-name" @click="goToProductDetail(item.productId)">
-                    {{ item.productName }}
+                  <h3 class="product-name">
+                    <router-link class="product-name-link" :to="{ path: '/product/detail', query: { id: item.productId } }">
+                      {{ item.productName }}
+                    </router-link>
                   </h3>
                   <p class="product-subtitle">{{ item.productSubtitle }}</p>
                   <div class="product-spec" v-if="item.specifications">
@@ -669,12 +672,19 @@ onMounted(() => {
 }
 
 .item-image {
+  display: block;
   width: 80px;
   height: 80px;
   border-radius: 4px;
   overflow: hidden;
   cursor: pointer;
   flex-shrink: 0;
+}
+
+.item-image:focus-visible,
+.product-name-link:focus-visible {
+  outline: 3px solid #ee0a24;
+  outline-offset: 3px;
 }
 
 .item-image img {
@@ -702,6 +712,15 @@ onMounted(() => {
 }
 
 .product-name:hover {
+  color: #ff5500;
+}
+
+.product-name-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.product-name-link:hover {
   color: #ff5500;
 }
 

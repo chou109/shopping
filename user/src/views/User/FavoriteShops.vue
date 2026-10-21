@@ -14,39 +14,42 @@
       </div>
 
       <div v-else class="shop-list">
-        <div v-for="item in favoriteList" :key="item.favoriteId" class="shop-card" @click="goShopDetail(item.targetId)">
-          <div class="shop-logo">
-            <img :src="getShopLogoUrl(item.shopLogo)" :alt="item.shopName" @error="handleLogoError" />
-          </div>
-          <div class="shop-info">
-            <div class="shop-name">{{ item.shopName || '未知店铺' }}</div>
-            <div class="shop-meta">
-              <span class="followers">
-                <el-icon>
-                  <User />
-                </el-icon>
-                {{ formatNumber(item.shopFollowers) }} 粉丝
-              </span>
-              <span class="rating" v-if="item.shopRating">
-                <el-icon>
-                  <Star />
-                </el-icon>
-                {{ item.shopRating }}
-              </span>
+        <article v-for="item in favoriteList" :key="item.favoriteId" class="shop-card">
+          <router-link class="shop-card-link" :to="{ path: '/shop', query: { id: item.targetId } }"
+            :aria-label="`查看店铺：${item.shopName || '未知店铺'}`">
+            <div class="shop-logo">
+              <img :src="getShopLogoUrl(item.shopLogo)" :alt="item.shopName" @error="handleLogoError" />
             </div>
-            <div class="favorite-time">
-              关注于 {{ formatTime(item.createTime) }}
+            <div class="shop-info">
+              <div class="shop-name">{{ item.shopName || '未知店铺' }}</div>
+              <div class="shop-meta">
+                <span class="followers">
+                  <el-icon>
+                    <User />
+                  </el-icon>
+                  {{ formatNumber(item.shopFollowers) }} 粉丝
+                </span>
+                <span class="rating" v-if="item.shopRating">
+                  <el-icon>
+                    <Star />
+                  </el-icon>
+                  {{ item.shopRating }}
+                </span>
+              </div>
+              <div class="favorite-time">
+                关注于 {{ formatTime(item.createTime) }}
+              </div>
             </div>
-          </div>
+          </router-link>
           <div class="shop-actions">
-            <el-button type="danger" size="small" plain @click.stop="handleRemoveFavorite(item)">
+            <el-button type="danger" size="small" plain @click="handleRemoveFavorite(item)">
               取消关注
             </el-button>
-            <el-button type="primary" size="small" @click.stop="goShopDetail(item.targetId)">
+            <el-button type="primary" size="small" @click="goShopDetail(item.targetId)">
               进入店铺
             </el-button>
           </div>
-        </div>
+        </article>
       </div>
     </div>
   </div>
@@ -209,13 +212,28 @@ onMounted(() => {
   background: white;
   padding: 16px 20px;
   border-radius: 8px;
-  cursor: pointer;
   transition: all 0.3s;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .shop-card:hover {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.shop-card-link {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+  border-radius: 4px;
+}
+
+.shop-card-link:focus-visible {
+  outline: 3px solid #ee0a24;
+  outline-offset: 4px;
 }
 
 .shop-logo {
@@ -280,5 +298,22 @@ onMounted(() => {
   display: flex;
   gap: 8px;
   flex-shrink: 0;
+}
+
+@media (max-width: 600px) {
+  .shop-card {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .shop-card-link {
+    flex: 1 1 100%;
+  }
+
+  .shop-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
 }
 </style>
