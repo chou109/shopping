@@ -345,37 +345,46 @@ const startRefresh = () => {
   refreshTimer = setInterval(async () => {
     if (refreshInFlight) return
     refreshInFlight = true
-    // 刷新会话列表
     try {
-      const response = await getSessionList()
-      if (response.code === 200) {
-        sessionList.value = response.data || []
-        totalUnreadCount.value = sessionList.value.reduce((sum, s) => sum + (s.unreadCount || 0), 0)
-      }
-    } catch (error) {
-      console.error('刷新会话失败:', error)
-    }
-
-    // 如果有选中的会话，刷新消息
-    const sessionId = currentSession.value?.sessionId
-    if (sessionId) {
+      // 刷新会话列表
       try {
-        const response = await getSessionMessages(sessionId)
-        if (response.code === 200 && currentSession.value?.sessionId === sessionId) {
-          const newMessages = response.data || []
-          const oldIds = messageList.value.map(message => message.id)
-          const newIds = newMessages.map(message => message.id)
-          if (oldIds.length !== newIds.length || oldIds.some((id, index) => id !== newIds[index])) {
-            messageList.value = newMessages
-            await nextTick()
-            scrollToBottom()
-          }
+        const response = await getSessionList()
+        if (response.code === 200) {
+          sessionList.value = response.data || []
+          totalUnreadCount.value = sessionList.value.reduce((sum, s) => sum + (s.unreadCount || 0), 0)
         }
       } catch (error) {
-        console.error('刷新消息失败:', error)
+        console.error('刷新会话失败:', error)
       }
+
+      // 如果有选中的会话，刷新消息并将当前打开的会话保持为已读。
+      const sessionId = currentSession.value?.sessionId
+      if (sessionId) {
+        try {
+          const response = await getSessionMessages(sessionId)
+          if (response.code === 200 && currentSession.value?.sessionId === sessionId) {
+            const newMessages = response.data || []
+            const oldIds = messageList.value.map(message => message.id)
+            const newIds = newMessages.map(message => message.id)
+            if (oldIds.length !== newIds.length || oldIds.some((id, index) => id !== newIds[index])) {
+              messageList.value = newMessages
+              await nextTick()
+              scrollToBottom()
+            }
+            const session = sessionList.value.find(item => item.sessionId === sessionId)
+            if (session?.unreadCount > 0) {
+              await markAsRead(sessionId)
+              session.unreadCount = 0
+              totalUnreadCount.value = sessionList.value.reduce((sum, item) => sum + (item.unreadCount || 0), 0)
+            }
+          }
+        } catch (error) {
+          console.error('刷新消息或标记已读失败:', error)
+        }
+      }
+    } finally {
+      refreshInFlight = false
     }
-    refreshInFlight = false
   }, 5000)
 }
 
