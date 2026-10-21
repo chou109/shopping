@@ -61,6 +61,15 @@ export function createDirectOrder(data) {
   })
 }
 
+// 服务端抽取奖品并创建盲盒订单，客户端只传收货地址
+export function createBlindBoxOrder(addressId) {
+  return request({
+    url: '/system/orderInfo/blind-box/create',
+    method: 'post',
+    params: { addressId }
+  })
+}
+
 // 支付订单
 export function payOrder(orderNo, paymentType) {
   return request({

@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, nextTick } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   CircleCheck,
@@ -11,10 +11,8 @@ import {
   Minus
 } from '@element-plus/icons-vue'
 import { addCart } from '@/api/system/cart'
-import { createDirectOrder, payOrder, checkBlindBoxPurchase, getUserBalance } from '@/api/system/orderInfo'
+import { createBlindBoxOrder, payOrder, checkBlindBoxPurchase } from '@/api/system/orderInfo'
 import { getMyAddressList } from '@/api/system/address'
-import { getShopProducts } from '@/api/system/shop'
-import { useBlindBox } from '@/composables/useBlindBox'
 import PurchaseDialog from '@/components/PurchaseDialog/index.vue'
 
 // 导入盲盒图片
@@ -31,7 +29,6 @@ import BlindBoxImage10 from '@/assets/BlindBox/BlindBox (10).png'
 import BlindBoxImage11 from '@/assets/BlindBox/BlindBox (11).png'
 import BlindBoxImage12 from '@/assets/BlindBox/BlindBox (12).png'
 
-const route = useRoute()
 const router = useRouter()
 
 // 直接创建图片URL数组
@@ -69,14 +66,6 @@ const activeTab = ref('detail')
 const purchaseDialogVisible = ref(false)
 const purchaseProducts = ref([])
 const purchaseOrder = ref({})
-
-// 抽奖 Hook
-const { 
-  initLotteryPool, 
-  drawPrize, 
-  isLoading: lotteryLoading,
-  isPoolReady 
-} = useBlindBox()
 
 // 抽奖弹窗相关
 const lotteryDialogVisible = ref(false)
@@ -297,152 +286,66 @@ const handleBuyNow = async () => {
 }
 
 // 稍后支付
-const handlePayLater = (orderData) => {
-  ElMessage.success('订单已创建，请尽快完成支付')
-  purchaseDialogVisible.value = false
-  router.push('/user/orders')
+const handlePayLater = async (orderData) => {
+  try {
+    const response = await createBlindBoxOrder(orderData.addressId || purchaseOrder.value.addressId)
+    if (response.code !== 200) throw new Error(response.msg || '创建盲盒订单失败')
+    ElMessage.success('奖品已抽取并生成待支付订单')
+    purchaseDialogVisible.value = false
+    router.push('/user/orders')
+  } catch (error) {
+    ElMessage.error(error.message || '创建订单失败，请稍后重试')
+  }
 }
 
 // 立即支付
 const handlePayNow = async (orderData) => {
   try {
-    // 如果是余额支付，先检查余额是否足够
-    if (orderData.paymentType === 4) {
-      const balanceRes = await getUserBalance()
-      if (balanceRes.code === 200) {
-        const userBalance = parseFloat(balanceRes.data || 0)
-        const blindBoxPrice = 500 // 盲盒价格
-        if (userBalance < blindBoxPrice) {
-          ElMessage.error(`余额不足，当前余额：¥${userBalance.toFixed(2)}，需要：¥${blindBoxPrice}`)
-          return
-        }
-      } else {
-        ElMessage.error('获取余额失败，请稍后重试')
-        return
-      }
-    }
-    
-    // 记录支付方式，用于后续真实下单
+    const createResponse = await createBlindBoxOrder(orderData.addressId || purchaseOrder.value.addressId)
+    if (createResponse.code !== 200) throw new Error(createResponse.msg || '创建盲盒订单失败')
+    const order = createResponse.data
+    const prize = order.orderDetails?.[0]
+    if (!order.orderNo || !prize) throw new Error('服务端未返回有效的抽奖结果')
+    purchaseOrder.value.orderNo = order.orderNo
     purchaseOrder.value.paymentType = orderData.paymentType
-    
-    // 模拟支付成功，因为真实支付需要调用第三方支付接口
-    // 实际项目中应该调用真实的支付API
-    ElMessage.success('支付成功')
-    purchaseDialogVisible.value = false
-    
-    // 支付成功后显示抽奖弹窗
+    lotteryResult.value = {
+      name: prize.productName?.replace('【盲盒】', '') || '中奖商品',
+      image: prize.productMainImage,
+      productId: prize.productId
+    }
     lotteryDialogVisible.value = true
+    purchaseDialogVisible.value = false
+    isDrawing.value = true
+    drawAnimationClass.value = 'lottery-spinning'
+    await new Promise(resolve => setTimeout(resolve, 1800))
+    isDrawing.value = false
+    drawAnimationClass.value = ''
+    const payResponse = await payOrder(order.orderNo, orderData.paymentType)
+    if (payResponse.code !== 200) {
+      ElMessage.warning('奖品已锁定，订单仍待支付，可在订单页面继续支付')
+      return
+    }
+    ElMessage.success(`已抽中${lotteryResult.value.name}，支付成功`)
   } catch (error) {
-    console.error('支付失败:', error)
-    ElMessage.error(error.message || '支付失败，请稍后重试')
+    if (purchaseOrder.value.orderNo) {
+      ElMessage.warning('奖品订单已生成，请到订单页面完成支付')
+    } else {
+      ElMessage.error(error.message || '创建盲盒订单失败，请稍后重试')
+    }
   }
 }
 
 // 开始抽奖
 const startLottery = async () => {
-  if (!isPoolReady.value) {
-    await initLotteryPool()
-  }
-  
-  isDrawing.value = true
-  drawAnimationClass.value = 'lottery-spinning'
-  
-  try {
-    // 并行执行：抽奖逻辑 + 最小动画时间
-    const [result] = await Promise.all([
-      drawPrize(),
-      new Promise(resolve => setTimeout(resolve, 3000))
-    ])
-    
-    // 停止动画
-    drawAnimationClass.value = ''
-    
-    if (result) {
-      lotteryResult.value = {
-        ...result,
-        shopId: result.shopId,
-        productId: result.id,
-        name: result.name || result.productName,
-        price: result.price || result.productUnitPrice,
-        image: result.mainImage || result.productMainImage || imageUrls[0]
-      }
-      
-      isDrawing.value = false
-      
-      // 抽奖完成，生成订单
-      await updateOrderAfterLottery()
-    } else {
-      isDrawing.value = false
-      ElMessage.error('抽奖异常，请重试')
-    }
-  } catch (error) {
-    console.error('抽奖过程出错:', error)
-    isDrawing.value = false
-    drawAnimationClass.value = ''
-    ElMessage.error('网络异常，请重试')
-  }
-}
-
-// 抽奖后生成真实订单
-const updateOrderAfterLottery = async () => {
-  console.log('完整抽奖数据:', lotteryResult.value)
-  
-  if (!lotteryResult.value || !lotteryResult.value.productId) {
-     ElMessage.error('抽奖数据异常，无法生成订单')
-     return
-  }
-
-  try {
-    const wonProduct = lotteryResult.value
-    const prizeName = wonProduct.name || wonProduct.productName || '未知奖品'
-    const wonProductId = wonProduct.productId || wonProduct.id
-    
-    // 使用抽中的真实商品ID创建订单
-    if (!wonProductId) {
-      console.error('抽奖结果缺少商品ID:', wonProduct)
-      ElMessage.error('抽奖结果异常，请联系客服')
-      return
-    }
-    
-    const orderData = {
-      productId: wonProductId, // 使用抽中的真实商品ID
-      quantity: quantity.value,
-      addressId: purchaseOrder.value.addressId,
-      isBlindBox: true, // 标记为盲盒订单
-      blindBoxPrice: 500 // 盲盒价格500元
-    }
-
-    console.log('提交订单数据:', orderData)
-
-    const orderRes = await createDirectOrder(orderData)
-
-    if (orderRes.code === 200) {
-      const orderNo = orderRes.data.orderNo || orderRes.data
-      if (orderNo) {
-        await payOrder(orderNo, purchaseOrder.value.paymentType || 1)
-      }
-      
-      ElMessage.success(`恭喜你抽到了：${prizeName}，订单已生成！`)
-      
-      setTimeout(() => {
-        lotteryDialogVisible.value = false
-        router.push('/user/orders')
-      }, 1500)
-    } else {
-      console.error('创建订单失败:', orderRes.msg)
-      ElMessage.error(orderRes.msg || '创建订单失败')
-    }
-  } catch (error) {
-    console.error('生成订单失败:', error)
-    ElMessage.error('生成订单失败，请稍后重试')
-  }
+  if (!purchaseOrder.value.orderNo) return
+  lotteryDialogVisible.value = false
+  router.push('/user/orders')
 }
 
 onMounted(() => {
   // 确保放大镜图片URL正确初始化
   zoomImageUrl.value = getCurrentImage()
   // 预热抽奖池
-  initLotteryPool()
 })
 </script>
 
@@ -630,7 +533,7 @@ onMounted(() => {
       <div v-else-if="lotteryResult" class="lottery-result">
         <div class="result-title">恭喜你抽到了！</div>
         <div class="result-prize">({{ lotteryResult.name }})</div>
-        <div class="result-info">您的订单已更新为抽到的商品</div>
+        <div class="result-info">奖品已锁定并写入订单</div>
       </div>
       <div v-else class="lottery-waiting">
         <img src="@/assets/images/BlindBox.png" alt="盲盒抽奖" class="blind-box-image" />
@@ -652,9 +555,9 @@ onMounted(() => {
         <el-button 
           v-if="lotteryResult"
           type="primary"
-          @click="lotteryDialogVisible = false"
+          @click="startLottery"
         >
-          确定
+          查看订单
         </el-button>
       </div>
     </template>

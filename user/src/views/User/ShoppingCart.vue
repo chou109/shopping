@@ -151,37 +151,6 @@
     :need-create-order="false" @pay-later="handlePayLater" @pay-now="handlePayNow"
     @cancel="purchaseDialogVisible = false" />
 
-  <!-- 抽奖弹窗 -->
-  <el-dialog v-model="lotteryDialogVisible" title="盲盒抽奖" width="500px" :close-on-click-modal="false"
-    :close-on-press-escape="false" :show-close="!isDrawing">
-    <div class="lottery-container">
-      <div v-if="isDrawing" class="lottery-drawing">
-        <img src="@/assets/images/BlindBox.png" alt="盲盒抽奖" class="blind-box-image" :class="drawAnimationClass" />
-        <div class="drawing-text">正在抽奖...</div>
-      </div>
-      <div v-else-if="lotteryResult" class="lottery-result">
-        <div class="result-title">恭喜你抽到了！</div>
-        <div class="result-prize">({{ lotteryResult.name }})</div>
-        <div class="result-info">您的订单已更新为抽到的商品</div>
-      </div>
-      <div v-else class="lottery-waiting">
-        <img src="@/assets/images/BlindBox.png" alt="盲盒抽奖" class="blind-box-image" />
-        <div class="waiting-text">准备抽奖</div>
-        <div class="waiting-subtext">点击开始按钮抽取您的商品</div>
-      </div>
-    </div>
-
-    <template #footer>
-      <div class="lottery-footer">
-        <el-button v-if="!isDrawing && !lotteryResult" type="primary" @click="startLottery" :loading="isDrawing">
-          开始抽奖
-        </el-button>
-        <el-button v-if="lotteryResult" type="primary" @click="lotteryDialogVisible = false">
-          确定
-        </el-button>
-      </div>
-    </template>
-  </el-dialog>
 </template>
 
 <script setup>
@@ -192,9 +161,8 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Lock } from '@element-plus/icons-vue'
 import { getProductImageUrl, handleImageError } from '@/utils/image'
 import { listCart, updateCart, delCart, clearCart, batchSelectCart } from '@/api/system/cart'
-import { createOrderFromCart, payOrder, createDirectOrder } from '@/api/system/orderInfo'
+import { createOrderFromCart, payOrder } from '@/api/system/orderInfo'
 import { getMyAddressList } from '@/api/system/address'
-import { useBlindBox } from '@/composables/useBlindBox'
 import PurchaseDialog from '@/components/PurchaseDialog/index.vue'
 
 const router = useRouter()
@@ -208,18 +176,6 @@ const cartItems = ref([])
 const purchaseDialogVisible = ref(false)
 const purchaseProducts = ref([])
 const purchaseOrder = ref({})
-
-// 抽奖相关
-const lotteryDialogVisible = ref(false)
-const lotteryResult = ref(null)
-const isDrawing = ref(false)
-const drawAnimationClass = ref('')
-
-const {
-  drawPrize,
-  isPoolReady,
-  initLotteryPool
-} = useBlindBox()
 
 // 计算属性
 const selectedItems = computed(() => {
@@ -518,121 +474,76 @@ const handleClearCart = async () => {
 
 // 去结算
 const handleCheckout = async () => {
-  if (selectedCount.value === 0) {
-    ElMessage.warning('请先选择要结算的商品')
-    return
-  }
-
-  // 检查是否有选中的商品
   const selected = selectedItems.value
-  console.log('选中的商品:', selected, '数量:', selected.length)
-
   if (selected.length === 0) {
     ElMessage.warning('请先选择要结算的商品')
     return
   }
+  if (selected.some(item => item.productId === 9999 || item.productName?.includes('盲盒'))) {
+    ElMessage.warning('盲盒请前往盲盒页面购买')
+    return
+  }
 
-  // 检查是否包含盲盒商品
-  const hasBlindBox = selected.some(item => item.productId === 9999 || item.productName?.includes('盲盒'))
-
-  // 获取用户地址列表
   try {
     const addressRes = await getMyAddressList()
     const addressData = addressRes.data || addressRes.rows || []
-    if (addressRes.code === 200 && addressData.length > 0) {
-      // 选择默认地址或第一个地址
-      const defaultAddr = addressData.find(a => a.isDefault === 1 || a.defaultFlag === 1) || addressData[0]
-      console.log('使用地址:', defaultAddr)
-
-
-      // 如果包含盲盒，执行"先付后单"流程 (Mock Order)
-      // 用户要求：盲盒流程改为先付款（此时不生成订单），再抽奖，再生成订单
-      // 我们创建一个临时订单对象用于展示
-      const mockOrder = {
-        orderNo: 'PAY_' + Date.now(),
-        totalAmount: actualTotalPrice.value,
-        payment: actualTotalPrice.value,
-        status: 0,
-        addressId: defaultAddr.id,
-        receiveName: defaultAddr.receiveName,
-        receivePhone: defaultAddr.receivePhone,
-        province: defaultAddr.province,
-        city: defaultAddr.city,
-        area: defaultAddr.area,
-        street: defaultAddr.street,
-        createTime: new Date().toISOString()
-      }
-
-      purchaseProducts.value = selected.map(item => ({
-        name: item.productName,
-        mainImage: item.productMainImage,
-        price: item.productUnitPrice,
-        quantity: item.quantity,
-        // 保留原始信息以便后续处理
-        rawItem: item
-      }))
-
-      purchaseOrder.value = mockOrder
-
-      // 直接显示支付弹窗，不创建后端订单
-      purchaseDialogVisible.value = true
-
-    } else {
+    if (addressRes.code !== 200 || addressData.length === 0) {
       ElMessage.warning('请先添加收货地址')
       router.push('/user/profile')
+      return
     }
+    const address = addressData.find(item => item.isDefault === 1 || item.defaultFlag === 1) || addressData[0]
+    purchaseProducts.value = selected.map(item => ({
+      name: item.productName,
+      mainImage: item.productMainImage,
+      price: item.productUnitPrice,
+      quantity: item.quantity
+    }))
+    purchaseOrder.value = {
+      totalAmount: actualTotalPrice.value,
+      payment: actualTotalPrice.value,
+      addressId: address.id,
+      receiveName: address.receiveName,
+      receivePhone: address.receivePhone,
+      province: address.province,
+      city: address.city,
+      area: address.area,
+      street: address.street
+    }
+    purchaseDialogVisible.value = true
   } catch (error) {
-    console.error('结算失败:', error)
     ElMessage.error(error.message || '结算失败，请稍后重试')
   }
 }
 
-// 稍后支付
-const handlePayLater = (orderData) => {
-  ElMessage.success('订单已创建，请尽快完成支付')
-  purchaseDialogVisible.value = false
-  // 刷新购物车
-  loadCartData()
-  router.push('/user/orders')
+const createCartOrder = async (addressId) => {
+  const response = await createOrderFromCart(addressId || purchaseOrder.value.addressId)
+  if (response.code !== 200) throw new Error(response.msg || '创建订单失败')
+  return response.data
 }
 
-// 立即支付
-// 立即支付
-const handlePayNow = async (orderData) => {
-  // 检查是否包含盲盒商品 (通过 purchaseProducts 判断)
-  const hasBlindBox = selectedItems.value.some(item => item.productId === 9999 || item.productName?.includes('盲盒'))
+const handlePayLater = async (orderData) => {
+  try {
+    await createCartOrder(orderData.addressId)
+    ElMessage.success('订单已创建，请尽快完成支付')
+    purchaseDialogVisible.value = false
+    await loadCartData()
+    router.push('/user/orders')
+  } catch (error) {
+    ElMessage.error(error.message || '创建订单失败，请稍后重试')
+  }
+}
 
-  if (hasBlindBox) {
-    // 保存支付方式供后续使用
-    purchaseOrder.value.paymentType = orderData.paymentType
-    // 模拟支付成功
+const handlePayNow = async (orderData) => {
+  try {
+    const order = await createCartOrder(orderData.addressId)
+    const response = await payOrder(order.orderNo, orderData.paymentType)
+    if (response.code !== 200) throw new Error(response.msg || '支付失败，订单已保留待支付')
     ElMessage.success('支付成功')
     purchaseDialogVisible.value = false
-    // 触发抽奖
-    lotteryDialogVisible.value = true
-    return
-  }
-
-  // 普通商品流程：创建订单 -> 支付
-  try {
-    // 此时还没有订单，需要先创建
-    const orderRes = await createOrderFromCart(orderData.addressId)
-    if (orderRes.code === 200) {
-      const realOrder = orderRes.data
-      const payRes = await payOrder(realOrder.orderNo, orderData.paymentType)
-      if (payRes.code === 200) {
-        ElMessage.success('支付成功')
-        purchaseDialogVisible.value = false
-        loadCartData()
-        router.push('/user/orders')
-      } else {
-        ElMessage.error(payRes.msg || '支付失败')
-      }
-    } else {
-      ElMessage.error(orderRes.msg || '创建订单失败')
-    }
+    await loadCartData()
+    router.push('/user/orders')
   } catch (error) {
-    console.error('支付失败:', error)
     ElMessage.error(error.message || '支付失败，请稍后重试')
   }
 }
@@ -668,114 +579,6 @@ const goToProductDetail = (productId) => {
 // 去购物
 const goShopping = () => {
   router.push('/products')
-}
-
-// 移除本地 drawLottery
-
-// 开始抽奖动画
-const startLottery = async () => {
-  if (!isPoolReady.value) await initLotteryPool()
-
-  isDrawing.value = true
-  drawAnimationClass.value = 'lottery-spinning'
-
-  try {
-    const [result] = await Promise.all([
-      drawPrize(),
-      new Promise(resolve => setTimeout(resolve, 3000))
-    ])
-
-    // 停止动画
-    drawAnimationClass.value = ''
-
-    if (result) {
-      lotteryResult.value = {
-        ...result,
-        shopId: result.shopId,
-        productId: result.id,
-        name: result.name || result.productName,
-        price: result.price || result.productUnitPrice
-      }
-      isDrawing.value = false
-      await updateOrderAfterLottery()
-    } else {
-      throw new Error('抽奖未返回结果')
-    }
-  } catch (e) {
-    console.error(e)
-    isDrawing.value = false
-    drawAnimationClass.value = ''
-    ElMessage.error('抽奖失败，请重试')
-  }
-}
-
-// 抽奖后更新订单
-const updateOrderAfterLottery = async () => {
-  console.log('抽奖结果:', lotteryResult.value)
-
-  try {
-    const addressId = purchaseOrder.value.addressId
-    const items = selectedItems.value
-    const wonProduct = lotteryResult.value
-    const prizeName = wonProduct.name || wonProduct.productName || '未知奖品'
-    const wonProductId = wonProduct.productId || wonProduct.id
-
-    for (const item of items) {
-      const isBlindBox = item.productId === 9999 || item.productName?.includes('盲盒')
-      let orderData = {}
-
-      if (isBlindBox) {
-        // 盲盒订单 - 使用抽中的真实商品ID创建订单
-        if (!wonProductId) {
-          console.error('抽奖结果缺少商品ID:', wonProduct)
-          ElMessage.error('抽奖结果异常，请联系客服')
-          return
-        }
-        orderData = {
-          productId: wonProductId, // 使用抽中的真实商品ID
-          quantity: item.quantity,
-          addressId: addressId,
-          isBlindBox: true, // 标记为盲盒订单
-          blindBoxPrice: 500 // 盲盒价格500元
-        }
-      } else {
-        // 普通商品
-        orderData = {
-          productId: item.productId,
-          quantity: item.quantity,
-          addressId: addressId
-        }
-      }
-
-      // 创建直接订单
-      const res = await createDirectOrder(orderData)
-      if (res.code === 200) {
-        // 支付订单
-        const orderNo = res.data.orderNo || res.data
-        if (orderNo) {
-          await payOrder(orderNo, purchaseOrder.value.paymentType || 1)
-        }
-        // 移除购物车项
-        await delCart(item.id)
-      } else {
-        console.error('创建订单失败:', res.msg)
-        ElMessage.error(res.msg || '创建订单失败')
-        return
-      }
-    }
-
-    ElMessage.success(`恭喜你抽到了：${prizeName}，订单已生成！`)
-
-    setTimeout(() => {
-      lotteryDialogVisible.value = false
-      loadCartData() // 刷新购物车
-      router.push('/user/orders')
-    }, 1500)
-
-  } catch (error) {
-    console.error('生成订单失败:', error)
-    ElMessage.error('生成订单失败，请稍后重试')
-  }
 }
 
 onMounted(() => {

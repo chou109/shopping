@@ -484,7 +484,7 @@ const handlePayLater = async () => {
     
     confirmDialogVisible.value = false
     dialogVisible.value = false
-    ElMessage.success('订单创建成功，请尽快完成支付')
+    // 成功状态由父页面在服务端创建订单后反馈。
   } catch (error) {
     ElMessage.error('操作失败，请重试')
   } finally {
