@@ -116,7 +116,7 @@
 
                 <!-- 当前服务仅支持待发货订单取消并退回余额 -->
                 <template v-else-if="order.status === 20">
-                  <span v-if="order.isBlindBox || hasBlindBoxResult(order)" class="no-refund-tip">盲盒订单不支持退款</span>
+                  <span v-if="isBlindBoxOrder(order)" class="no-refund-tip">盲盒订单不支持退款</span>
                   <el-button v-else type="warning" size="small" @click="handleRefund(order)">取消并退款</el-button>
                 </template>
 
@@ -299,6 +299,7 @@ import { Location, Star, StarFilled } from '@element-plus/icons-vue'
 import { getMyOrders, payOrder, cancelOrder, confirmReceipt, delInfo, applyRefund } from '@/api/system/orderInfo'
 import { submitReview, completeOrder } from '@/api/comment'
 import { getProductImageUrl, handleImageError } from '@/utils/image'
+import { isBlindBoxOrder } from '@/utils/order.mjs'
 
 const router = useRouter()
 
@@ -362,116 +363,6 @@ const loadOrders = async () => {
         await loadOrders()
         return
       }
-      // Post-process orders to handle Blind Box display
-      orderList.value.forEach(order => {
-        // 调试：打印订单数据结构
-
-        if (order.orderDetails && order.orderDetails.length > 0) {
-          let wonName = null
-          let wonImage = null
-
-          // 1. 检查订单详情项本身是否有盲盒标识
-          const detail = order.orderDetails[0]
-
-          // 检查订单详情是否直接包含盲盒结果信息
-          if (detail.isBlindBoxResult) {
-            // 如果订单详情本身标记了是盲盒结果，可能需要从其他地方获取真实商品信息
-            wonName = detail.actualProductName || detail.wonProductName
-            wonImage = detail.actualProductImage || detail.wonProductImage
-          }
-
-          // 2. 检查订单级别的attributes字段
-          if (!wonName && order.attributes) {
-            try {
-              const attrs = typeof order.attributes === 'string' ? JSON.parse(order.attributes) : order.attributes
-              if (attrs) {
-                wonName = attrs.wonProductName || attrs.wonName || attrs.prizeName || attrs.productName
-                wonImage = attrs.wonProductImage || attrs.wonImage || attrs.prizeImage || attrs.productImage
-              }
-            } catch (e) {
-              console.error('解析attributes失败:', e)
-            }
-          }
-
-          // 3. 检查是否有extAttributes或其他可能存储中奖信息的字段
-          if (!wonName && order.extAttributes) {
-            try {
-              const extAttrs = typeof order.extAttributes === 'string' ? JSON.parse(order.extAttributes) : order.extAttributes
-              if (extAttrs) {
-                wonName = extAttrs.wonProductName || extAttrs.wonName || extAttrs.prizeName || extAttrs.productName
-                wonImage = extAttrs.wonProductImage || extAttrs.wonImage || extAttrs.prizeImage || extAttrs.productImage
-              }
-            } catch (e) {
-              console.error('解析extAttributes失败:', e)
-            }
-          }
-
-          // 4. 检查remark字段（多种可能的格式）
-          if (!wonName && order.remark) {
-            // 处理【盲盒中奖】格式
-            if (order.remark.includes('【盲盒中奖】')) {
-              try {
-                const part1 = order.remark.split('【盲盒中奖】')[1]
-                if (part1) {
-                  // 尝试多种分隔方式
-                  let namePart = part1
-                  // 尝试按'('分割
-                  if (part1.includes('(')) {
-                    namePart = part1.split('(')[0]
-                  }
-                  // 尝试按'，'分割
-                  else if (part1.includes('，')) {
-                    namePart = part1.split('，')[0]
-                  }
-                  // 尝试按'原价'分割
-                  else if (part1.includes('原价')) {
-                    namePart = part1.split('原价')[0]
-                  }
-
-                  if (namePart && namePart.trim()) {
-                    wonName = namePart.trim()
-                  }
-                }
-              } catch (e) {
-                console.error("Error parsing blind box remark:", e)
-              }
-            }
-            // 处理其他可能的格式
-            else if (order.remark.includes('盲盒')) {
-              try {
-                // 尝试提取盲盒相关的商品名称
-                const parts = order.remark.split(' ')
-                for (let part of parts) {
-                  if (part.includes('：')) {
-                    const name = part.split('：')[1]
-                    if (name && name.trim()) {
-                      wonName = name.trim()
-                      break
-                    }
-                  }
-                }
-              } catch (e) {
-                console.error("Error parsing blind box remark (other format):", e)
-              }
-            }
-          }
-
-          // 5. 检查订单是否有盲盒标识，可能需要特殊处理
-          if ((order.isBlindBox || detail.isBlindBox) && !wonName) {
-            // 可以考虑显示一个特殊的提示，或者保留默认名称
-          }
-
-          // Apply changes
-          if (wonName) {
-            detail.productName = wonName
-            // 确保订单详情也标记为盲盒结果
-            detail.isBlindBoxResult = true
-          }
-          if (wonImage) {
-            detail.productMainImage = wonImage
-          }
-        }
-      })
     }
   } catch (e) {
     console.error('加载订单失败', e)
@@ -550,65 +441,6 @@ const getStatusClass = (status) => {
 const getTotalQuantity = (order) => {
   if (!order.orderDetails) return 0
   return order.orderDetails.reduce((sum, item) => sum + (item.quantity || 0), 0)
-}
-
-// 检查订单是否为盲盒订单（通过商品名称前缀判断）
-const isBlindBoxOrder = (order) => {
-  if (!order || !order.orderDetails) return false
-  return order.orderDetails.some(detail => 
-    detail.productName && detail.productName.startsWith('【盲盒】')
-  )
-}
-
-// 检查订单中是否包含盲盒抽奖结果商品
-const hasBlindBoxResult = (order) => {
-  if (!order) return false
-
-  // 检查订单详情是否直接标记了盲盒结果
-  if (order.orderDetails && order.orderDetails.length > 0) {
-    // 检查是否有任何订单详情项标记了isBlindBoxResult
-    if (order.orderDetails.some(detail => detail.isBlindBoxResult)) {
-      return true
-    }
-
-    // 检查订单详情的商品ID是否为盲盒ID (9999)
-    const isBlindBoxProduct = order.orderDetails.some(detail => detail.productId === 9999 || detail.productId === '9999')
-    if (isBlindBoxProduct) {
-      return true
-    }
-    
-    // 检查商品名称是否包含盲盒标记
-    const hasBlindBoxName = order.orderDetails.some(detail => 
-      detail.productName && (detail.productName.includes('【盲盒】') || detail.productName.includes('盲盒'))
-    )
-    if (hasBlindBoxName) {
-      return true
-    }
-  }
-
-  // 检查订单是否标记为盲盒
-  if (order.isBlindBox) {
-    return true
-  }
-
-  // 检查订单属性中是否包含盲盒中奖信息
-  try {
-    if (order.attributes) {
-      const attrs = typeof order.attributes === 'string' ? JSON.parse(order.attributes) : order.attributes
-      if (attrs && (attrs.isBlindBox || attrs.source === 'blind_box_lottery' || attrs.wonProductId)) {
-        return true
-      }
-    }
-  } catch (e) {
-    console.error('解析attributes失败:', e)
-  }
-
-  // 检查订单备注中是否包含盲盒中奖信息
-  if (order.remark && order.remark.includes('【盲盒中奖】')) {
-    return true
-  }
-
-  return false
 }
 
 // 去购物
@@ -721,7 +553,7 @@ const handleRefund = (order) => {
     return
   }
   // 盲盒商品禁止退款
-  if (isBlindBoxOrder(order) || order.isBlindBox || hasBlindBoxResult(order)) {
+  if (isBlindBoxOrder(order)) {
     ElMessage.warning('盲盒订单不支持退款')
     return
   }
