@@ -483,7 +483,7 @@ const loadProfileStats = async () => {
     const value = result.value?.data
     if (typeof value === 'number') return value
     if (typeof value === 'string') return Number(value) || 0
-    return Number(value?.count ?? value?.total ?? 0) || 0
+    return Number(value?.count ?? value?.total ?? value?.totalCount ?? 0) || 0
   }
   userStats.value = {
     orderCount: countFrom(results[0]),
