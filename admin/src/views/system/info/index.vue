@@ -66,7 +66,7 @@
     <!-- 操作按钮区域 -->
     <div class="toolbar-wrapper">
       <div class="action-buttons">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:info:remove']">删除</el-button>
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:info:remove']" v-hasRole="['admin']">删除</el-button>
         <el-button type="primary" plain :loading="batchShipping" :disabled="!hasShippableOrders || batchShipping || shippingOrderNo !== null" @click="handleBatchShip" v-hasPermi="['system:info:edit', 'system:order:edit']">
           <el-icon><Van /></el-icon>一键发货
         </el-button>
@@ -90,7 +90,7 @@
         stripe
         border
       >
-        <el-table-column type="selection" width="50" align="center" />
+        <el-table-column v-if="isAdmin" type="selection" width="50" align="center" />
         <el-table-column label="ID" align="center" prop="id" width="70" />
         <el-table-column label="订单编号" align="center" prop="orderNo" min-width="160" show-overflow-tooltip />
         <el-table-column label="购买人id" align="center" prop="userId" width="90" />
@@ -144,7 +144,7 @@
           <template #default="scope">
             <div class="action-column">
               <el-button link type="primary" icon="View" @click="handleUpdate(scope.row)" v-hasPermi="['system:info:query']">查看</el-button>
-              <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:info:remove']">删除</el-button>
+              <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:info:remove']" v-hasRole="['admin']">删除</el-button>
               <el-button 
                 v-if="scope.row.status === 20"
                 type="warning" 
@@ -305,8 +305,11 @@
 <script setup name="Info">
 import { listInfo, getInfo, delInfo, shipInfo } from "@/api/system/info";
 import { User, Phone, Location, Van } from '@element-plus/icons-vue';
+import useUserStore from '@/store/modules/user';
 
 const { proxy } = getCurrentInstance();
+const userStore = useUserStore();
+const isAdmin = computed(() => userStore.roles?.includes('admin'));
 
 const infoList = ref([]);
 const infoTableRef = ref(null);
