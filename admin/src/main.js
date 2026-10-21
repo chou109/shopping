@@ -1,4 +1,4 @@
-import { createApp } from 'vue'
+import { createApp, defineAsyncComponent } from 'vue'
 
 import { ElLoading, ElMessage, ElMessageBox, ElNotification } from 'element-plus'
 
@@ -40,7 +40,7 @@ import TreeSelect from '@/components/TreeSelect'
 // 字典标签组件
 import DictTag from '@/components/DictTag'
 // 富文本编辑器组件
-import Editor from "@/components/Editor";
+const Editor = defineAsyncComponent(() => import('@/components/Editor'))
 
 const app = createApp(App)
 

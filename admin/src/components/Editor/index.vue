@@ -7,7 +7,7 @@
         <div class="editor" ref="editor" :style="styles"></div>
     </div>
 </template>
-  
+
 <script setup>
 import { ref, defineProps,defineEmits } from "vue";
 import Quill from "quill";
@@ -91,6 +91,7 @@ const styles = computed(() => {
 })
 const editor = ref(null)
 const upload = ref(null)
+let imageSelection = null
 watch(() => props.modelValue, val => {
     if (val !== currentValue) {
         currentValue = val === null ? "" : val;
@@ -113,7 +114,8 @@ function init() {
         let toolbar = DataQuill.getModule("toolbar");
         toolbar.addHandler("image", (value) => {
             if (value) {
-                // upload.value.$children[0].$refs.input.click();
+                imageSelection = DataQuill.getSelection(true) || { index: DataQuill.getLength() }
+                upload.value?.$el?.querySelector('input[type="file"]')?.click()
             } else {
                 // quill.format("image", false);
             }
@@ -140,10 +142,11 @@ function init() {
 }
 // 上传前校检格式和大小
 function handleBeforeUpload(file) {
-    const type = ["image/jpeg", "image/jpg", "image/png", "image/svg"];
-    const isJPG = type.includes(file.type);
+    const allowedExtensions = ['jpg', 'jpeg', 'png', 'svg']
+    const extension = file.name.split('.').pop()?.toLowerCase()
+    const isImage = file.type.startsWith('image/') && allowedExtensions.includes(extension)
     // 检验文件格式
-    if (!isJPG) {
+    if (!isImage) {
         ElMessage.error(`图片格式错误!`);
         return false;
     }
@@ -159,25 +162,28 @@ function handleBeforeUpload(file) {
 }
 function handleUploadSuccess(res, file) {
     // 如果上传成功
-    if (res.code == 200) {
+    if (res.code === 200) {
         // 获取富文本组件实例
         let quill = DataQuill;
         // 获取光标所在位置
-        let length = quill.getSelection().index;
+        const range = imageSelection || quill.getSelection(true) || { index: quill.getLength() }
         // 插入图片  res.url为服务器返回的图片地址
-        quill.insertEmbed(length, "image", import.meta.env.VITE_APP_BASE_API + res.fileName);
+        quill.insertEmbed(range.index, "image", res.url || (import.meta.env.VITE_APP_BASE_API + res.fileName));
         // 调整光标到最后
-        quill.setSelection(length + 1);
+        quill.setSelection(range.index + 1);
+        imageSelection = null
     } else {
-        ElMessage.error("图片插入失败");
+        ElMessage.error(res.msg || "图片插入失败");
+        imageSelection = null
     }
 }
 function handleUploadError() {
     ElMessage.error("图片插入失败");
+    imageSelection = null
 }
 
 </script>
-  
+
 <style>
 .editor,
 .ql-toolbar {
@@ -273,4 +279,4 @@ function handleUploadError() {
     content: "等宽字体";
 }
 </style>
-  
+
