@@ -1,6 +1,11 @@
 package com.neuedu.system.controller;
 
 import java.util.List;
+import java.time.DateTimeException;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
 import lombok.RequiredArgsConstructor;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -82,13 +87,21 @@ public class ActivityController extends BaseController
      * 根据时间范围查询活动
      */
     @Operation(summary = "根据时间范围查询活动")
+    @PreAuthorize("@ss.hasPermi('system:activity:list')")
     @GetMapping("/timeRange")
     public AjaxResult getByTimeRange(@RequestParam String startTime,
                                      @RequestParam String endTime) {
-        // 这里需要将字符串转换为Date，根据实际需求实现
-        // List<Activity> list = activityService.selectActivityByTimeRange(startDate, endDate);
-        // return success(list);
-        return success("功能待实现");
+        try {
+            LocalDate start = parseDate(startTime);
+            LocalDate end = parseDate(endTime);
+            if (start.isAfter(end)) return AjaxResult.error(400, "开始日期不能晚于结束日期");
+            ZoneId zone = ZoneId.systemDefault();
+            Date startDate = Date.from(start.atStartOfDay(zone).toInstant());
+            Date endDate = Date.from(end.plusDays(1).atStartOfDay(zone).minusNanos(1).toInstant());
+            return success(activityService.selectActivityByTimeRange(startDate, endDate));
+        } catch (DateTimeException | NullPointerException exception) {
+            return AjaxResult.error(400, "日期格式必须为 yyyy-MM-dd");
+        }
     }
 
 
@@ -152,6 +165,7 @@ public class ActivityController extends BaseController
      * 更新活动状态
      */
     @Operation(summary = "更新活动状态")
+    @PreAuthorize("@ss.hasPermi('system:activity:edit')")
     @PostMapping("/{id}/updateStatus")
     public AjaxResult updateStatus(@PathVariable Long id) {
         return toAjax(activityService.updateActivityStatus(id));
@@ -161,6 +175,7 @@ public class ActivityController extends BaseController
      * 批量更新活动状态（定时任务调用）
      */
     @Operation(summary = "批量更新活动状态")
+    @PreAuthorize("@ss.hasPermi('system:activity:edit')")
     @PostMapping("/batchUpdateStatus")
     public AjaxResult batchUpdateStatus() {
         int updatedCount = activityService.batchUpdateActivityStatus();
@@ -171,6 +186,7 @@ public class ActivityController extends BaseController
      * 取消活动
      */
     @Operation(summary = "取消活动")
+    @PreAuthorize("@ss.hasPermi('system:activity:edit')")
     @PostMapping("/{id}/cancel")
     public AjaxResult cancelActivity(@PathVariable Long id) {
         return toAjax(activityService.cancelActivity(id));
@@ -180,12 +196,24 @@ public class ActivityController extends BaseController
      * 验证活动时间
      */
     @Operation(summary = "验证活动时间")
+    @PreAuthorize("@ss.hasAnyPermi('system:activity:add,system:activity:edit')")
     @PostMapping("/validateTime")
     public AjaxResult validateTime(@RequestParam String startTime,
                                    @RequestParam String endTime) {
-        // 这里需要将字符串转换为Date，根据实际需求实现
-        // boolean isValid = activityService.validateActivityTime(startDate, endDate);
-        // return isValid ? success("时间有效") : error("开始时间不能晚于结束时间");
-        return success("功能待实现");
+        try {
+            LocalDate start = parseDate(startTime);
+            LocalDate end = parseDate(endTime);
+            if (start.isAfter(end)) return AjaxResult.error(400, "开始时间不能晚于结束时间");
+            ZoneId zone = ZoneId.systemDefault();
+            Date startDate = Date.from(start.atStartOfDay(zone).toInstant());
+            Date endDate = Date.from(end.atStartOfDay(zone).toInstant());
+            return success(activityService.validateActivityTime(startDate, endDate));
+        } catch (DateTimeException | NullPointerException exception) {
+            return AjaxResult.error(400, "日期格式必须为 yyyy-MM-dd");
+        }
+    }
+
+    private LocalDate parseDate(String value) {
+        return LocalDate.parse(value, DateTimeFormatter.ISO_LOCAL_DATE);
     }
 }
