@@ -358,13 +358,11 @@ import { getFootprintCount, getOrderCount } from '@/api/system/stats'
 import { AreaDataService } from '@/utils/areaService.mjs'
 // 导入地址管理相关的API
 import {
-  listAddressByUserId,
-  getDefaultAddress,
+  getMyAddressList,
   addAddress,
   updateAddress,
   delAddress,
-  setDefaultAddress,
-  validateAddress
+  setDefaultAddress
 } from '@/api/system/address'
 
 const store = useStore()
@@ -944,10 +942,7 @@ const handleAreaChange = (areaCode) => {
 // 加载地址列表
 const loadAddressList = async () => {
   try {
-    const userId = currentUserId.value
-    if (!userId) return
-
-    const response = await listAddressByUserId(userId)
+    const response = await getMyAddressList()
     if (response.code === 200) {
       addressList.value = response.data || []
       // 查找默认地址
