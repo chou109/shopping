@@ -80,8 +80,7 @@ export default defineConfig(({ mode, command }) => {
       rollupOptions: {
         output: {
           manualChunks: {
-            vue: ['vue', 'vue-router'],
-            element: ['element-plus', '@element-plus/icons-vue']
+            vue: ['vue', 'vue-router']
           }
         }
       }
