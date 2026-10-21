@@ -97,14 +97,30 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
         ProductComment existing = productCommentMapper.selectProductCommentByCommentId(productComment.getCommentId());
         productComment.setUpdateTime(DateUtils.getNowDate());
         int result = productCommentMapper.updateProductComment(productComment);
-        if (result > 0 && existing != null && existing.isRootComment() && existing.isNormal()) {
-            updateProductScoreStatistics(existing.getProductId());
-        }
-        if (result > 0 && productComment.isRootComment() && productComment.isNormal()
-                && (existing == null || !existing.isNormal()
-                || !java.util.Objects.equals(existing.getScore(), productComment.getScore())
-                || !java.util.Objects.equals(existing.getProductId(), productComment.getProductId()))) {
-            updateProductScoreStatistics(productComment.getProductId());
+        if (result > 0) {
+            Set<Long> affectedProductIds = new HashSet<>();
+            if (existing != null && existing.isRootComment() && existing.isNormal()
+                    && existing.getProductId() != null) {
+                affectedProductIds.add(existing.getProductId());
+            }
+
+            boolean updatedRoot = existing == null
+                    ? productComment.isRootComment()
+                    : productComment.getParentId() == null
+                        ? existing.isRootComment()
+                        : productComment.isRootComment();
+            boolean updatedNormal = existing == null
+                    ? productComment.isNormal()
+                    : productComment.getStatus() == null
+                        ? existing.isNormal()
+                        : productComment.isNormal();
+            Long updatedProductId = productComment.getProductId() == null && existing != null
+                    ? existing.getProductId()
+                    : productComment.getProductId();
+            if (updatedRoot && updatedNormal && updatedProductId != null) {
+                affectedProductIds.add(updatedProductId);
+            }
+            affectedProductIds.forEach(this::updateProductScoreStatistics);
         }
         return result;
     }

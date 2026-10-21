@@ -9,10 +9,60 @@ import org.junit.Test;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
 public class ProductCommentShopScoreTest {
+    @Test
+    public void partialEditMovingApprovedReviewRefreshesBothShops() {
+        ProductComment existing = new ProductComment();
+        existing.setCommentId(5L);
+        existing.setProductId(48L);
+        existing.setParentId(0L);
+        existing.setStatus(1);
+
+        ProductComment update = new ProductComment();
+        update.setCommentId(5L);
+        update.setProductId(99L);
+
+        Map<Long, BigDecimal> scoresByShop = new HashMap<>();
+        ProductCommentMapper comments = proxy(ProductCommentMapper.class, (method, args) -> {
+            if ("selectProductCommentByCommentId".equals(method)) {
+                ProductComment copy = new ProductComment();
+                copy.setCommentId(existing.getCommentId());
+                copy.setProductId(existing.getProductId());
+                copy.setParentId(existing.getParentId());
+                copy.setStatus(existing.getStatus());
+                return copy;
+            }
+            if ("updateProductComment".equals(method)) return 1;
+            if ("calculateShopAverageScore".equals(method)) {
+                return ((Long) args[0]) == 70L ? 3.5d : 4.75d;
+            }
+            return defaultValue(method);
+        });
+        IProductService products = proxy(IProductService.class, (method, args) -> {
+            if (!"selectProductById".equals(method)) return defaultValue(method);
+            Product product = new Product();
+            product.setShopId(((Long) args[0]) == 48L ? 70L : 80L);
+            return product;
+        });
+        IShopService shops = proxy(IShopService.class, (method, args) -> {
+            if ("updateShopScore".equals(method)) {
+                scoresByShop.put((Long) args[0], (BigDecimal) args[1]);
+                return 1;
+            }
+            return defaultValue(method);
+        });
+
+        ProductCommentServiceImpl service = new ProductCommentServiceImpl(comments, products, shops);
+        assertEquals(1, service.updateProductComment(update));
+        assertEquals(new BigDecimal("3.50"), scoresByShop.get(70L));
+        assertEquals(new BigDecimal("4.75"), scoresByShop.get(80L));
+    }
+
     @Test
     public void approvedRootReviewRefreshesShopScoreFromAllShopReviews() {
         ProductComment comment = new ProductComment();
