@@ -4,16 +4,16 @@
       <transition-group name="breadcrumb">
         <el-breadcrumb-item v-for="(item,index) in levelList" :key="item.path">
           <template v-if="index === 0">
-            <span class="home-link" @click="handleLink(item)">
+            <button type="button" class="home-link" :aria-label="`返回${item.meta.title}`" @click="handleLink(item)">
               <el-icon class="home-icon"><HomeFilled /></el-icon>
               <span>{{ item.meta.title }}</span>
-            </span>
+            </button>
           </template>
           <template v-else-if="item.redirect==='noRedirect'||index==levelList.length-1">
             <span class="current-page">{{ item.meta.title }}</span>
           </template>
           <template v-else>
-            <a class="breadcrumb-link" @click.prevent="handleLink(item)">{{ item.meta.title }}</a>
+            <button type="button" class="breadcrumb-link" @click="handleLink(item)">{{ item.meta.title }}</button>
           </template>
         </el-breadcrumb-item>
       </transition-group>
@@ -111,6 +111,10 @@ export default {
     gap: 6px;
     color: #606266;
     cursor: pointer;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font: inherit;
     padding: 4px 10px;
     border-radius: 6px;
     transition: all 0.25s ease;
@@ -130,6 +134,10 @@ export default {
   .breadcrumb-link {
     color: #606266;
     cursor: pointer;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font: inherit;
     padding: 4px 10px;
     border-radius: 6px;
     transition: all 0.25s ease;

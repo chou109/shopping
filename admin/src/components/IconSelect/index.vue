@@ -11,10 +11,10 @@
       <template #suffix><i class="el-icon-search el-input__icon" /></template>
     </el-input>
     <div class="icon-list">
-      <div v-for="(item, index) in iconList" :key="index" @click="selectedIcon(item)">
+      <button type="button" v-for="(item, index) in iconList" :key="index" :aria-label="`选择图标：${item}`" @click="selectedIcon(item)">
         <svg-icon :icon-class="item" style="height: 30px;width: 16px;" />
         <span>{{ item }}</span>
-      </div>
+      </button>
     </div>
   </div>
 </template>
@@ -55,13 +55,24 @@ defineExpose({
   .icon-list {
     height: 200px;
     overflow-y: scroll;
-    div {
+    button {
+      display: flex;
+      align-items: center;
       height: 30px;
       line-height: 30px;
       margin-bottom: -5px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: inherit;
       cursor: pointer;
       width: 33%;
       float: left;
+      text-align: left;
+      &:focus-visible {
+        outline: 2px solid var(--el-color-primary);
+        outline-offset: -2px;
+      }
     }
     span {
       display: inline-block;
