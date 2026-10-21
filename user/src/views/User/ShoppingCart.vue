@@ -33,7 +33,8 @@
           <div class="cart-items">
             <div v-for="item in cartItems" :key="item.id" class="cart-item" :class="{ selected: item.selected }">
               <div class="item-select">
-                <el-checkbox v-model="item.selected" @change="handleItemSelect(item)" />
+                <el-checkbox v-model="item.selected" :aria-label="`选择商品：${item.productName}`"
+                  :disabled="selectionSavingIds.has(item.id)" @change="handleItemSelect(item)" />
               </div>
 
               <div class="item-content">
@@ -176,6 +177,7 @@ const router = useRouter()
 const store = useStore()
 const loading = ref(false)
 const batchDeleting = ref(false)
+const selectionSavingIds = ref(new Set())
 
 // 购物车数据
 const cartItems = ref([])
@@ -288,16 +290,22 @@ const handleSelectAll = async (selected) => {
 
 // 单个商品选择
 const handleItemSelect = async (item) => {
+  if (selectionSavingIds.value.has(item.id)) return
+  selectionSavingIds.value = new Set([...selectionSavingIds.value, item.id])
   try {
-    // 调用API更新后端状态
-    await updateCart(item.id, {
+    const response = await updateCart(item.id, {
       selected: item.selected ? 1 : 0
     })
+    if (response.code !== 200) throw new Error(response.msg || '更新失败')
   } catch (error) {
     console.error('更新商品选择状态失败:', error)
-    ElMessage.error('更新失败')
-    // 恢复原状态
-    item.selected = !item.selected
+    ElMessage.error(error.message || '更新失败，正在重新读取购物车状态')
+    // 请求失败可能发生在服务端已写入、客户端未收到响应时，以服务端状态为准。
+    await loadCartData()
+  } finally {
+    const savingIds = new Set(selectionSavingIds.value)
+    savingIds.delete(item.id)
+    selectionSavingIds.value = savingIds
   }
 }
 
