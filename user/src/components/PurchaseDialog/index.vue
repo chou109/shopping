@@ -1,8 +1,9 @@
 <template>
   <el-dialog
     v-model="dialogVisible"
+    class="purchase-main-dialog"
     title="确认购买"
-    width="900px"
+    width="min(900px, calc(100vw - 24px))"
     :show-close="!processing"
     :close-on-click-modal="false"
     :close-on-press-escape="false"
@@ -181,8 +182,9 @@
   <!-- 地址选择弹窗 -->
   <el-dialog
     v-model="showAddressSelector"
+    class="purchase-address-dialog"
     title="选择收货地址"
-    width="500px"
+    width="min(500px, calc(100vw - 24px))"
     :close-on-click-modal="true"
   >
     <div class="address-selector">
@@ -219,8 +221,9 @@
   <!-- 支付确认弹窗 -->
   <el-dialog
     v-model="confirmDialogVisible"
+    class="purchase-confirm-dialog"
     title="支付确认"
-    width="400px"
+    width="min(400px, calc(100vw - 24px))"
     :close-on-click-modal="false"
   >
     <div class="confirm-content">
@@ -567,6 +570,21 @@ defineExpose({
 <style scoped>
 .purchase-container {
   min-height: 400px;
+}
+
+:deep(.purchase-main-dialog) {
+  max-height: calc(100vh - 24px);
+  display: flex;
+  flex-direction: column;
+}
+
+:deep(.purchase-main-dialog .el-dialog__body) {
+  overflow-y: auto;
+}
+
+:deep(.purchase-address-dialog),
+:deep(.purchase-confirm-dialog) {
+  max-width: calc(100vw - 24px);
 }
 
 .purchase-content {
@@ -1017,5 +1035,57 @@ defineExpose({
 
 .method-unavailable {
   margin-left: auto;
+}
+
+@media (max-width: 768px) {
+  .purchase-container {
+    min-height: 0;
+  }
+
+  .purchase-content {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .payment-section {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .purchase-main-dialog {
+    margin: 12px auto !important;
+  }
+
+  .info-group {
+    grid-template-columns: 1fr;
+  }
+
+  .product-item {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .product-info {
+    flex-basis: calc(100% - 72px);
+  }
+
+  .product-price {
+    margin-left: 68px;
+    min-width: 0;
+    text-align: left;
+  }
+
+  .product-subtotal {
+    margin-left: auto;
+    min-width: 70px;
+  }
+
+  .dialog-footer,
+  .confirm-footer {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
 }
 </style>
