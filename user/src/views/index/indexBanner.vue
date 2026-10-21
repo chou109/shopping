@@ -129,8 +129,13 @@ const handleCategoryActivation = (category) => {
   if (category.children?.length) {
     hoveredCategory.value = category.id
   } else {
+    hoveredCategory.value = null
     handleSubCategoryClick(category.id)
   }
+}
+
+const showCategoryChildren = (category) => {
+  hoveredCategory.value = category.children?.length ? category.id : null
 }
 
 const handleImageError = function (event) {
@@ -183,8 +188,8 @@ onUnmounted(() => {
       @mouseleave="handleMouseLeaveMenu">
       <ul class="menu">
         <li v-for="item in categories" :key="item.id" :class="{ 'active': hoveredCategory === item.id }"
-          role="button" tabindex="0" :aria-expanded="hoveredCategory === item.id"
-          :aria-label="`分类：${item.name}`" @mouseenter="hoveredCategory = item.id" @focus="hoveredCategory = item.id"
+          role="button" tabindex="0" :aria-expanded="Boolean(item.children?.length && hoveredCategory === item.id)"
+          :aria-label="`分类：${item.name}`" @mouseenter="showCategoryChildren(item)" @focus="showCategoryChildren(item)"
           @click="handleCategoryActivation(item)" @keydown.enter.prevent="handleCategoryActivation(item)"
           @keydown.space.prevent="handleCategoryActivation(item)">
           <div class="category-main">{{ item.name }}</div>
@@ -192,7 +197,7 @@ onUnmounted(() => {
       </ul>
 
       <!-- 统一的子目录层 - 所有子分类都显示在这个固定位置 -->
-      <div class="layer" v-if="hoveredCategory && categories.find(c => c.id === hoveredCategory)">
+      <div class="layer" v-if="categories.find(c => c.id === hoveredCategory)?.children?.length">
         <ul>
           <li v-for="child in categories.find(c => c.id === hoveredCategory)?.children" :key="child.id"
             role="button" tabindex="0" :aria-label="`查看分类：${child.name}`"
