@@ -144,16 +144,6 @@ export function param2Obj(url) {
 }
 
 /**
- * @param {string} val
- * @returns {string}
- */
-export function html2Text(val) {
-  const div = document.createElement('div')
-  div.innerHTML = val
-  return div.textContent || div.innerText
-}
-
-/**
  * Merges two objects, giving the last one precedence
  * @param {Object} target
  * @param {(Object|Array)} source
