@@ -96,7 +96,7 @@ watch(() => props.modelValue, val => {
     if (val !== currentValue) {
         currentValue = val === null ? "" : val;
         if (DataQuill) {
-            DataQuill.pasteHTML(currentValue);
+            DataQuill.clipboard.dangerouslyPasteHTML(currentValue);
         }
     }
 }, { immediate: true })
@@ -121,7 +121,7 @@ function init() {
             }
         });
     }
-    DataQuill.pasteHTML(currentValue);
+    DataQuill.clipboard.dangerouslyPasteHTML(currentValue);
     DataQuill.on("text-change", (delta, oldDelta, source) => {
         const html = editor.value.children[0].innerHTML;
         const text = DataQuill.getText();
