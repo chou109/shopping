@@ -4,7 +4,8 @@
     <div class="user-header-card">
       <div class="header-card-content">
         <div class="user-info-section">
-          <div class="avatar-box" @click="goToProfile">
+          <div class="avatar-box" role="button" tabindex="0" aria-label="打开个人资料"
+            @click="goToProfile" @keydown.enter.prevent="goToProfile" @keydown.space.prevent="goToProfile">
             <img :src="avatarUrl" alt="头像" class="header-avatar" />
             <div class="avatar-overlay">
               <span>个人中心</span>
@@ -16,12 +17,12 @@
           </div>
         </div>
         <div class="header-actions">
-          <div class="action-btn" @click="$router.push('/')">
+          <button type="button" class="action-btn" @click="$router.push('/')">
             <el-icon>
               <HomeFilled />
             </el-icon>
             <span>返回首页</span>
-          </div>
+          </button>
         </div>
       </div>
     </div>
@@ -33,7 +34,9 @@
         <nav class="sidebar-nav">
           <ul>
             <li v-for="item in navItems" :key="item.key" :class="{ active: activeNav === item.key }"
-              @click="switchNav(item)">
+              role="button" tabindex="0" :aria-current="activeNav === item.key ? 'page' : undefined"
+              @click="switchNav(item)" @keydown.enter.prevent="switchNav(item)"
+              @keydown.space.prevent="switchNav(item)">
               <el-icon class="nav-icon">
                 <component :is="item.icon" />
               </el-icon>
@@ -57,11 +60,12 @@
 
       <!-- 回到顶部按钮 -->
       <transition name="fade">
-        <div v-show="showBackTop" class="back-to-top" @click="scrollToTop">
+        <button v-show="showBackTop" type="button" class="back-to-top" aria-label="回到顶部"
+          @click="scrollToTop">
           <el-icon>
             <Top />
           </el-icon>
-        </div>
+        </button>
       </transition>
     </div>
   </div>
@@ -345,10 +349,20 @@ watch(() => props.page, (newPage) => {
   cursor: pointer;
   font-size: 13px;
   transition: background 0.3s;
+  border: 0;
+  cursor: pointer;
 }
 
 .action-btn:hover {
   background: rgba(255, 255, 255, 0.3);
+}
+
+.action-btn:focus-visible,
+.avatar-box:focus-visible,
+.sidebar-nav li:focus-visible,
+.back-to-top:focus-visible {
+  outline: 3px solid #1f2937;
+  outline-offset: 3px;
 }
 
 /* 主体内容 */
@@ -571,6 +585,7 @@ watch(() => props.page, (newPage) => {
   box-shadow: 0 4px 12px rgba(238, 10, 36, 0.4);
   transition: all 0.3s;
   z-index: 100;
+  border: 0;
 }
 
 .back-to-top:hover {
