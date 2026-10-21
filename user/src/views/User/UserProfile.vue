@@ -9,12 +9,12 @@
             <div class="avatar-section">
               <div class="avatar-wrapper">
                 <img :src="avatarUrl" alt="头像" class="user-avatar-img" />
-                <div class="avatar-upload" @click="openAvatarDialog">
+                <button type="button" class="avatar-upload" aria-label="更换头像" @click="openAvatarDialog">
                   <el-icon>
                     <Camera />
                   </el-icon>
                   <span>更换</span>
-                </div>
+                </button>
               </div>
               <h3 class="user-name">{{ userInfo.nickName || userInfo.userName || '用户' }}</h3>
               <p class="user-role">{{ formatUserType(userInfo.type) }}</p>
@@ -22,19 +22,18 @@
             </div>
 
             <div class="stats-section">
-              <div class="stat-item" @click="$router.push('/user/orders')">
+              <router-link class="stat-item" to="/user/orders" aria-label="查看我的订单">
                 <div class="stat-value">{{ userStats.orderCount || 0 }}</div>
                 <div class="stat-label">订单</div>
-              </div>
-              <div class="stat-item">
-                <!-- @click="$router.push('/user/favorite/product')" -->
+              </router-link>
+              <router-link class="stat-item" to="/user/favoriteProduct" aria-label="查看收藏商品">
                 <div class="stat-value">{{ userStats.favoriteCount || 0 }}</div>
                 <div class="stat-label">收藏</div>
-              </div>
-              <div class="stat-item" @click="$router.push('/user/footprint')">
+              </router-link>
+              <router-link class="stat-item" to="/user/footprint" aria-label="查看浏览足迹">
                 <div class="stat-value">{{ userStats.footprintCount || 0 }}</div>
                 <div class="stat-label">足迹</div>
-              </div>
+              </router-link>
             </div>
 
             <div class="balance-section">
@@ -1267,6 +1266,14 @@ onMounted(() => {
   align-items: center;
   gap: 3px;
   white-space: nowrap;
+  border: 0;
+  font-family: inherit;
+}
+
+.avatar-upload:focus-visible,
+.stat-item:focus-visible {
+  outline: 3px solid #ee0a24;
+  outline-offset: 3px;
 }
 
 .avatar-upload:hover {
@@ -1310,6 +1317,8 @@ onMounted(() => {
   transition: all 0.3s;
   padding: 8px 12px;
   border-radius: 8px;
+  color: inherit;
+  text-decoration: none;
 }
 
 .stat-item:hover {
