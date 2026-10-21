@@ -98,7 +98,9 @@
           </div>
 
           <div class="shop-grid">
-            <div class="shop-item" v-for="shop in visibleShops" :key="shop.id" @click="handleShopClick(shop.id)">
+            <div class="shop-item" v-for="shop in visibleShops" :key="shop.id" role="button" tabindex="0"
+              :aria-label="`查看店铺：${shop.shopName}`" @click="handleShopClick(shop.id)"
+              @keydown.enter.prevent="handleShopClick(shop.id)" @keydown.space.prevent="handleShopClick(shop.id)">
               <div class="shop-card">
                 <div class="shop-image">
                   <!-- {{ item.shopLogo }} -->
@@ -848,6 +850,12 @@ watch(() => route.query, (newQuery) => {
 .shop-item {
   cursor: pointer;
   transition: transform 0.3s ease;
+}
+
+.shop-item:focus-visible {
+  outline: 3px solid #ff9900;
+  outline-offset: 3px;
+  border-radius: 8px;
 }
 
 .shop-item:hover {
