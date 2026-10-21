@@ -449,7 +449,7 @@ public class OrderInfoController extends BaseController {
         }
 
         Shop shop = shopService.selectShopByUserId(userId);
-        if (shop == null) {
+        if (shop == null || shop.getId() == null) {
             return error("当前账号没有可管理的店铺");
         }
 
@@ -472,7 +472,7 @@ public class OrderInfoController extends BaseController {
         }
 
         // 验证订单状态是否为待发货
-        if (!orderInfo.getStatus().equals(OrderStatusConstants.WAIT_SHIP)) {
+        if (!OrderStatusConstants.WAIT_SHIP.equals(orderInfo.getStatus())) {
             return error("订单状态不正确，无法发货");
         }
 
