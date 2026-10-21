@@ -160,6 +160,16 @@ const exampleQuestions = ref([
 let ws = null;
 let reconnectTimer = null;
 let isUnmounted = false;
+const pendingTimeouts = new Set();
+
+const scheduleTimeout = (callback, delay) => {
+  const timer = window.setTimeout(() => {
+    pendingTimeouts.delete(timer);
+    if (!isUnmounted) callback();
+  }, delay);
+  pendingTimeouts.add(timer);
+  return timer;
+};
 
 const scheduleReconnect = (delay) => {
   if (isUnmounted || reconnectTimer) return;
@@ -214,7 +224,7 @@ const scrollToBottom = () => {
       });
     }
 
-    setTimeout(() => {
+    scheduleTimeout(() => {
       if (chatHistory.value) {
         chatHistory.value.scrollTop = chatHistory.value.scrollHeight;
       }
@@ -258,12 +268,14 @@ const initWebSocket = () => {
     ws = new WebSocket(wsUrl);
 
     ws.onopen = (event) => {
+      if (isUnmounted) return;
       isConnected.value = true;
       addSystemMessage('已连接到智能客服');
       forceScrollToBottom();
     };
 
     ws.onclose = (event) => {
+      if (isUnmounted) return;
       isConnected.value = false;
       isAiTyping.value = false;
       addSystemMessage('连接已断开，正在尝试重新连接...');
@@ -273,6 +285,7 @@ const initWebSocket = () => {
     };
 
     ws.onerror = (error) => {
+      if (isUnmounted) return;
       console.error('❌ WebSocket错误：', error);
       isConnected.value = false;
       isAiTyping.value = false;
@@ -281,6 +294,7 @@ const initWebSocket = () => {
     };
 
     ws.onmessage = (event) => {
+      if (isUnmounted) return;
       try {
         const response = JSON.parse(event.data);
         const { type, content } = response;
@@ -306,7 +320,7 @@ const initWebSocket = () => {
           isAiTyping.value = false;
           currentAiMessage.value = '';
 
-          setTimeout(() => {
+          scheduleTimeout(() => {
             forceScrollToBottom();
           }, 100);
 
@@ -457,6 +471,8 @@ onUnmounted(() => {
     clearTimeout(reconnectTimer);
     reconnectTimer = null;
   }
+  pendingTimeouts.forEach((timer) => window.clearTimeout(timer));
+  pendingTimeouts.clear();
   if (ws) {
     ws.onclose = null;
     ws.close();
