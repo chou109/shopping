@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Map;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import com.neuedu.common.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
@@ -43,6 +45,7 @@ public class OrderInfoController extends BaseController {
     private static final Long BLIND_BOX_PRODUCT_ID = 9999L;
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final List<Long> OTHER_SHOPS = java.util.Arrays.asList(6L, 7L, 8L, 9L, 12L, 13L, 14L);
+    private static final ConcurrentMap<Long, Object> BLIND_BOX_LOCKS = new ConcurrentHashMap<>();
 
     private final IOrderInfoService orderInfoService;
 
@@ -112,19 +115,22 @@ public class OrderInfoController extends BaseController {
         if (userId == null) {
             return error("用户未登录");
         }
-        try {
-            if (hasPurchasedBlindBox(userId)) {
-                return error("每个用户只能购买一次盲盒，您已经购买过了");
+        Object userLock = BLIND_BOX_LOCKS.computeIfAbsent(userId, ignored -> new Object());
+        synchronized (userLock) {
+            try {
+                if (hasPurchasedBlindBox(userId)) {
+                    return error("每个用户只能购买一次盲盒，您已经购买过了");
+                }
+                Product prize = selectBlindBoxPrize();
+                if (prize == null) {
+                    return error("暂无可抽取的奖品，请稍后重试");
+                }
+                OrderInfo order = orderInfoService.createDirectOrderWithOptions(
+                    userId, prize.getId(), 1, addressId, BLIND_BOX_PRICE, "【盲盒】");
+                return success(order);
+            } catch (RuntimeException e) {
+                return error(e.getMessage());
             }
-            Product prize = selectBlindBoxPrize();
-            if (prize == null) {
-                return error("暂无可抽取的奖品，请稍后重试");
-            }
-            OrderInfo order = orderInfoService.createDirectOrderWithOptions(
-                userId, prize.getId(), 1, addressId, BLIND_BOX_PRICE, "【盲盒】");
-            return success(order);
-        } catch (RuntimeException e) {
-            return error(e.getMessage());
         }
     }
 
