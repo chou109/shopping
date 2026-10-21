@@ -21,9 +21,11 @@ import com.neuedu.common.enums.BusinessType;
 import com.neuedu.system.domain.OrderInfo;
 import com.neuedu.system.domain.OrderDetail;
 import com.neuedu.system.domain.Product;
+import com.neuedu.system.domain.Shop;
 import com.neuedu.system.service.IOrderInfoService;
 import com.neuedu.system.service.IOrderDetailService;
 import com.neuedu.system.service.IProductService;
+import com.neuedu.system.service.IShopService;
 import com.neuedu.system.service.BlindBoxPrizePolicy;
 import com.neuedu.system.constants.OrderStatusConstants;
 import com.neuedu.common.utils.poi.ExcelUtil;
@@ -54,6 +56,9 @@ public class OrderInfoController extends BaseController {
 
     @Autowired
     private IOrderDetailService orderDetailService;
+
+    @Autowired
+    private IShopService shopService;
 
     /**
      * 查询我的订单列表（用户端）
@@ -444,9 +449,9 @@ public class OrderInfoController extends BaseController {
             return error("用户未登录");
         }
 
-        // 验证当前用户是否为商家（user_id=2）
-        if (userId != 2L) {
-            return error("无权操作此订单");
+        Shop shop = shopService.selectShopByUserId(userId);
+        if (shop == null) {
+            return error("当前账号没有可管理的店铺");
         }
 
         OrderInfo orderInfo = orderInfoService.selectOrderInfoByOrderNo(orderNo);
@@ -454,18 +459,16 @@ public class OrderInfoController extends BaseController {
             return error("订单不存在");
         }
 
-        // 验证订单是否属于当前商家的店铺
-        // 首先获取订单对应的商品，然后检查商品的创建用户是否为当前商家
-        List<OrderDetail> orderDetails = orderInfoService.selectOrderInfoById(orderInfo.getId()).getOrderDetails();
+        // 验证订单中的每件商品都属于当前店铺。
+        List<OrderDetail> orderDetails = orderInfo.getOrderDetails();
         if (orderDetails == null || orderDetails.isEmpty()) {
             return error("订单明细不存在");
         }
         
-        // 检查订单中的商品是否属于当前商家
         for (OrderDetail detail : orderDetails) {
             Product product = productService.selectProductById(detail.getProductId());
-            if (product != null && !product.getCreateUser().equals(userId)) {
-                return error("无权操作此订单");
+            if (product == null || product.getShopId() == null || !shop.getId().equals(product.getShopId())) {
+                return error("订单包含其他店铺商品，无法由当前店铺发货");
             }
         }
 
