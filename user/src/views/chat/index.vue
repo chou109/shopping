@@ -743,9 +743,10 @@ onUnmounted(() => {
   position: absolute;
   bottom: -4px;
   right: -4px;
-  width: 20px;
+  min-width: 20px;
   height: 20px;
-  border-radius: 50%;
+  padding: 0 3px;
+  border-radius: 10px;
   color: white;
   font-size: 10px;
   font-weight: bold;
@@ -753,6 +754,7 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   border: 2px solid white;
+  white-space: nowrap;
 }
 
 .ai-badge {
