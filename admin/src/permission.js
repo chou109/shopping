@@ -36,7 +36,7 @@ router.beforeEach((to, from, next) => {
         // 判断当前用户是否已拉取完user_info信息
         useUserStore().getInfo().then(() => {
           isRelogin.show = false
-          usePermissionStore().generateRoutes().then(accessRoutes => {
+          return usePermissionStore().generateRoutes().then(accessRoutes => {
             // 根据roles权限生成可访问的路由表
             accessRoutes.forEach(route => {
               if (!isHttp(route.path)) {
@@ -45,10 +45,11 @@ router.beforeEach((to, from, next) => {
             })
             next({ ...to, replace: true }) // hack方法 确保addRoutes已完成
           })
-        }).catch(err => {
-          useUserStore().logOut().then(() => {
-            ElMessage.error(err)
-            next({ path: '/' })
+        }).catch(() => {
+          isRelogin.show = false
+          useUserStore().logOut().catch(() => {}).finally(() => {
+            ElMessage.error('登录状态或权限菜单加载失败，请重新登录')
+            next({ path: '/login', query: { redirect: to.fullPath } })
           })
         })
       } else {

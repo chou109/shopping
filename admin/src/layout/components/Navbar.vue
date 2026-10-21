@@ -48,7 +48,7 @@
 </template>
 
 <script setup>
-import { ElMessageBox } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import Breadcrumb from '@/components/Breadcrumb'
 import TopNav from '@/components/TopNav'
 import Hamburger from '@/components/Hamburger'
@@ -89,7 +89,9 @@ function logout() {
     cancelButtonText: '取消',
     type: 'warning'
   }).then(() => {
-    userStore.logOut().then(() => {
+    userStore.logOut().catch(() => {
+      ElMessage.warning('服务端未确认注销，本机登录状态已清除')
+    }).finally(() => {
       location.href = router.resolve('/index').href;
     })
   }).catch(() => { });

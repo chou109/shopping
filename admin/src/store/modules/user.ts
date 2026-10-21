@@ -64,17 +64,14 @@ const useUserStore = defineStore(
       },
       // 退出系统
       logOut() {
-        return new Promise((resolve, reject) => {
-          logout().then(() => {
-            this.token = ''
-            this.roles = []
-            this.permissions = []
-            this.userId = null;
-            removeToken()
-            resolve(null)
-          }).catch(error => {
-            reject(error)
-          })
+        return logout().finally(() => {
+          this.token = ''
+          this.roles = []
+          this.permissions = []
+          this.userId = null
+          this.name = ''
+          this.avatar = ''
+          removeToken()
         })
       }
     }
