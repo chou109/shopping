@@ -234,13 +234,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           AND receiver_type = #{receiverType}
           AND is_read = 0
         <if test="receiverType != null and receiverType == 2 and adminId != null">
-          AND EXISTS (
-              SELECT 1 FROM customer_message scope
-              WHERE scope.session_id = #{sessionId}
-                AND scope.receiver_type = 2
-                AND scope.receiver_id = #{adminId}
-                AND scope.status = 1
-          )
+          AND receiver_id = #{adminId}
         </if>
     </update>
 
