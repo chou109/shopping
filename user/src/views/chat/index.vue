@@ -254,22 +254,7 @@ const initWebSocket = () => {
     const wsUrl = getWebSocketUrl();
 
     console.log('WebSocket连接地址:', wsUrl);
-    fetch('http://localhost:9091/test/ws-status')
-      .then(response => {
-        console.log('✅ 后端服务可达');
-        return response.text();
-      })
-      .then(data => {
-        console.log('后端状态:', data);
-      })
-      .catch(error => {
-        console.error('❌ 后端服务不可达:', error);
-        addSystemMessage('后端服务未启动，请确保 Java 服务在 9091 端口运行');
-      });
-
-
     ws = new WebSocket(wsUrl);
-    // ws = new WebSocket('ws://localhost:9091/ai/chat');
 
     ws.onopen = (event) => {
       console.log('✅ WebSocket连接成功');
