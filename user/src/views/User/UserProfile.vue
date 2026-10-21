@@ -688,5 +688,5 @@ onBeforeUnmount(clearAvatarPreview)
 </script>
 
 <style scoped lang="scss">
-@import "./UserProfile.scss";
+@use "./UserProfile.scss";
 </style>

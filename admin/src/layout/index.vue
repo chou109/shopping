@@ -63,8 +63,8 @@ function setLayout() {
 </script>
 
 <style lang="scss" scoped>
-  @import "@/assets/styles/mixin.scss";
-  @import "@/assets/styles/variables.module.scss";
+  @use "@/assets/styles/mixin" as *;
+  @use "@/assets/styles/variables.module" as *;
 
 .app-wrapper {
   @include clearfix;
