@@ -116,6 +116,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           AND score IS NOT NULL
           AND status = 1
     </select>
+    <select id="calculateShopAverageScore" resultType="Double">
+        SELECT ROUND(AVG(pc.score), 2)
+        FROM product_comment pc
+        INNER JOIN product p ON p.id = pc.product_id
+        WHERE p.shop_id = #{shopId}
+          AND (pc.parent_id IS NULL OR pc.parent_id = 0)
+          AND pc.score IS NOT NULL
+          AND pc.status = 1
+    </select>
     <!-- 新增：查询商品评论列表（带分页） -->
     <select id="selectProductCommentPage" resultMap="ProductCommentResult">
         <include refid="selectProductCommentVo"/>

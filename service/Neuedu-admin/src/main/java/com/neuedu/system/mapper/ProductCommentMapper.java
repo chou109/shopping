@@ -107,6 +107,9 @@ public interface ProductCommentMapper extends BaseMapper<ProductComment>
      */
     Double calculateAverageScore(@Param("productId") Long productId);
 
+    /** 计算店铺所有正常根评价的平均分 */
+    Double calculateShopAverageScore(@Param("shopId") Long shopId);
+
     /**
      * 增加评论点赞数
      */

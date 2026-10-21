@@ -10,9 +10,13 @@ import com.neuedu.system.service.ISysUserService;
 import lombok.RequiredArgsConstructor;
 
 import java.util.ArrayList;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.neuedu.common.utils.DateUtils;
@@ -87,10 +91,22 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
      * @return 结果
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public int updateProductComment(ProductComment productComment)
     {
+        ProductComment existing = productCommentMapper.selectProductCommentByCommentId(productComment.getCommentId());
         productComment.setUpdateTime(DateUtils.getNowDate());
-        return productCommentMapper.updateProductComment(productComment);
+        int result = productCommentMapper.updateProductComment(productComment);
+        if (result > 0 && existing != null && existing.isRootComment() && existing.isNormal()) {
+            updateProductScoreStatistics(existing.getProductId());
+        }
+        if (result > 0 && productComment.isRootComment() && productComment.isNormal()
+                && (existing == null || !existing.isNormal()
+                || !java.util.Objects.equals(existing.getScore(), productComment.getScore())
+                || !java.util.Objects.equals(existing.getProductId(), productComment.getProductId()))) {
+            updateProductScoreStatistics(productComment.getProductId());
+        }
+        return result;
     }
 
     /**
@@ -100,9 +116,23 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
      * @return 结果
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public int deleteProductCommentByCommentIds(Long[] commentIds)
     {
-        return productCommentMapper.deleteProductCommentByCommentIds(commentIds);
+        Set<Long> affectedProductIds = new HashSet<>();
+        if (commentIds != null) {
+            for (Long commentId : commentIds) {
+                ProductComment comment = productCommentMapper.selectProductCommentByCommentId(commentId);
+                if (comment != null && comment.isRootComment() && comment.getProductId() != null) {
+                    affectedProductIds.add(comment.getProductId());
+                }
+            }
+        }
+        int result = productCommentMapper.deleteProductCommentByCommentIds(commentIds);
+        if (result > 0) {
+            affectedProductIds.forEach(this::updateProductScoreStatistics);
+        }
+        return result;
     }
 
     /**
@@ -112,9 +142,15 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
      * @return 结果
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public int deleteProductCommentByCommentId(Long commentId)
     {
-        return productCommentMapper.deleteProductCommentByCommentId(commentId);
+        ProductComment comment = productCommentMapper.selectProductCommentByCommentId(commentId);
+        int result = productCommentMapper.deleteProductCommentByCommentId(commentId);
+        if (result > 0 && comment != null && comment.isRootComment()) {
+            updateProductScoreStatistics(comment.getProductId());
+        }
+        return result;
     }
 
     // ============ 新增的方法实现 ============
@@ -341,8 +377,8 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
         // 更新状态
         int result = productCommentMapper.updateCommentStatus(commentId, status);
 
-        // 如果状态变为正常，更新商品评分统计
-        if (result > 0 && status == 1 && comment.isRootComment()) {
+        // 审核通过或撤销正常状态都会改变店铺评分统计集合
+        if (result > 0 && comment.isRootComment() && (status == 1 || comment.isNormal())) {
             updateProductScoreStatistics(comment.getProductId());
         }
 
@@ -393,26 +429,20 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
             return;
         }
 
-        // 计算商品平均评分
-        Double averageScore = getAverageScore(productId);
-        if (averageScore != null) {
-            // 更新商品评分（如果需要）
-            // 这里假设商品表有评分字段，如果没有可以跳过
-
-            // 计算店铺平均评分
-            Long shopId = product.getShopId();
-            if (shopId != null) {
-                updateShopAverageScore(shopId);
-            }
+        Long shopId = product.getShopId();
+        if (shopId != null) {
+            updateShopAverageScore(shopId);
         }
     }
     /**
      * 更新店铺平均评分
      */
     private void updateShopAverageScore(Long shopId) {
-        // TODO: 这里需要实现计算店铺所有商品的平均评分
-        // 可以根据业务需求，计算店铺下所有商品评分的平均值
-        // 然后调用 shopService.updateShopScore(shopId, newScore)
+        Double averageScore = productCommentMapper.calculateShopAverageScore(shopId);
+        BigDecimal score = averageScore == null
+                ? BigDecimal.ZERO
+                : BigDecimal.valueOf(averageScore).setScale(2, RoundingMode.HALF_UP);
+        shopService.updateShopScore(shopId, score);
     }
 
     @Override
