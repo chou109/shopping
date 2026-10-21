@@ -195,9 +195,10 @@
     <el-dialog title="更换头像" v-model="avatarDialogVisible" width="400px" :before-close="handleAvatarClose">
       <div class="avatar-dialog">
         <div class="avatar-preview" v-if="avatarPreviewUrl">
-
+          <img :src="avatarPreviewUrl" alt="头像预览" />
         </div>
-        <el-upload class="avatar-uploader" :action="uploadAction" :show-file-list="false"
+        <el-upload ref="avatarUploadRef" class="avatar-uploader" :action="uploadAction" name="avatarfile"
+          :auto-upload="false" :show-file-list="false"
           :before-upload="beforeAvatarUpload" :on-success="handleAvatarSuccess" :on-error="handleAvatarError"
           :headers="uploadHeaders">
           <el-icon v-if="!avatarPreviewUrl" class="avatar-uploader-icon">
@@ -344,8 +345,7 @@ import { useStore } from 'vuex'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Camera, Plus, Refresh, List, ShoppingCart } from '@element-plus/icons-vue'
-import { getCurrentUser, updateUser, updateUserPwd, updateAvatar, getUserStats } from '@/api/system/customer'
-import { getUsers, getUser, updateCurrentUserPassword } from '@/api/system/user'
+import { getUserProfile, updateUserProfile, updateUserPwd } from '@/api/system/user'
 import { getToken } from '@/utils/auth'
 import { DEFAULT_AVATAR_IMAGE, getProductImageUrl } from '@/utils/image'
 import { getFavoriteStats } from '@/api/system/favorite'
@@ -372,6 +372,13 @@ const avatarLoading = ref(false)
 const basicLoading = ref(false)
 const passwordLoading = ref(false)
 const isLoadingEditData = ref(false) // 标记是否正在加载编辑数据
+const currentUserId = ref('')
+const provinceLoading = ref(false)
+const cityLoading = ref(false)
+const areaLoading = ref(false)
+const provinces = ref([])
+const cities = ref([])
+const areas = ref([])
 
 // 用户信息
 const userInfo = ref({})
@@ -414,12 +421,174 @@ const passwordForm = reactive({
 // 头像预览
 const avatarPreviewUrl = ref('')
 const uploadFile = ref(null)
+const avatarUploadRef = ref()
 
 // 上传配置
 const uploadAction = computed(() => `${import.meta.env.VITE_APP_BASE_API}/system/user/profile/avatar`)
 const uploadHeaders = computed(() => ({
   Authorization: 'Bearer ' + getToken()
 }))
+
+const loadUserInfo = async () => {
+  loading.value = true
+  try {
+    const response = await getUserProfile()
+    const profile = response.data || response.user || {}
+    userInfo.value = profile
+    currentUserId.value = profile.userId || store.state.user.userId || ''
+    Object.assign(basicForm, {
+      userId: currentUserId.value,
+      nickName: profile.nickName || '',
+      userName: profile.userName || '',
+      email: profile.email || '',
+      phonenumber: profile.phonenumber || '',
+      sex: String(profile.sex ?? '2')
+    })
+    if (currentUserId.value) {
+      store.commit('SET_USERID', currentUserId.value)
+    }
+    await Promise.all([
+      loadProfileStats(),
+      loadAddressList()
+    ])
+  } catch (error) {
+    console.error('加载个人资料失败:', error)
+    ElMessage.error('加载个人资料失败，请稍后重试')
+  } finally {
+    loading.value = false
+  }
+}
+
+const loadProfileStats = async () => {
+  const requests = [getOrderCount(), getFavoriteStats(), getFootprintCount(), getCartCount()]
+  const results = await Promise.allSettled(requests)
+  const countFrom = (result) => {
+    if (result.status !== 'fulfilled') return 0
+    const value = result.value?.data
+    if (typeof value === 'number') return value
+    if (typeof value === 'string') return Number(value) || 0
+    return Number(value?.count ?? value?.total ?? 0) || 0
+  }
+  userStats.value = {
+    orderCount: countFrom(results[0]),
+    favoriteCount: countFrom(results[1]),
+    footprintCount: countFrom(results[2]),
+    cartCount: countFrom(results[3])
+  }
+}
+
+const handleBasicSubmit = async () => {
+  if (!basicFormRef.value || basicLoading.value) return
+  try {
+    await basicFormRef.value.validate()
+    basicLoading.value = true
+    const response = await updateUserProfile({ ...basicForm })
+    if (response.code !== 200) throw new Error(response.msg || '资料保存失败')
+    userInfo.value = { ...userInfo.value, ...basicForm }
+    store.commit('SET_REALNAME', basicForm.nickName)
+    ElMessage.success('个人资料已保存')
+  } catch (error) {
+    if (error?.message) {
+      console.error('保存个人资料失败:', error)
+      ElMessage.error(error.message || '个人资料保存失败')
+    }
+  } finally {
+    basicLoading.value = false
+  }
+}
+
+const resetBasicForm = () => {
+  Object.assign(basicForm, {
+    userId: currentUserId.value,
+    nickName: userInfo.value.nickName || '',
+    userName: userInfo.value.userName || '',
+    email: userInfo.value.email || '',
+    phonenumber: userInfo.value.phonenumber || '',
+    sex: String(userInfo.value.sex ?? '2')
+  })
+  basicFormRef.value?.clearValidate()
+}
+
+const openPasswordDialog = () => {
+  Object.assign(passwordForm, { oldPassword: '', newPassword: '', confirmPassword: '' })
+  passwordDialogVisible.value = true
+}
+
+const handlePasswordSubmit = async () => {
+  if (!passwordFormRef.value || passwordLoading.value) return
+  try {
+    await passwordFormRef.value.validate()
+    passwordLoading.value = true
+    const response = await updateUserPwd(passwordForm.oldPassword, passwordForm.newPassword)
+    if (response.code !== 200) throw new Error(response.msg || '密码修改失败')
+    passwordDialogVisible.value = false
+    Object.assign(passwordForm, { oldPassword: '', newPassword: '', confirmPassword: '' })
+    ElMessage.success('密码修改成功')
+  } catch (error) {
+    if (error?.message) {
+      console.error('修改密码失败:', error)
+      ElMessage.error(error.message || '密码修改失败')
+    }
+  } finally {
+    passwordLoading.value = false
+  }
+}
+
+const handleRecharge = () => ElMessage.info('充值功能暂未开通')
+
+const openAvatarDialog = () => {
+  avatarPreviewUrl.value = ''
+  uploadFile.value = null
+  avatarDialogVisible.value = true
+}
+
+const handleAvatarClose = (done) => {
+  if (avatarLoading.value) return
+  avatarPreviewUrl.value = ''
+  uploadFile.value = null
+  done()
+}
+
+const beforeAvatarUpload = (file) => {
+  const isImage = ['image/jpeg', 'image/png'].includes(file.type)
+  const isSmallEnough = file.size / 1024 / 1024 <= 2
+  if (!isImage) ElMessage.error('头像只支持 JPG 或 PNG 格式')
+  if (!isSmallEnough) ElMessage.error('头像大小不能超过 2MB')
+  if (isImage && isSmallEnough) {
+    uploadFile.value = file
+    avatarPreviewUrl.value = URL.createObjectURL(file)
+  }
+  return isImage && isSmallEnough
+}
+
+const handleAvatarSuccess = (response) => {
+  avatarLoading.value = false
+  if (response?.code !== 200 || !response.imgUrl) {
+    handleAvatarError(new Error(response?.msg || '头像上传失败'))
+    return
+  }
+  userInfo.value = { ...userInfo.value, avatar: response.imgUrl }
+  store.commit('SET_AVATAR', getProductImageUrl(response.imgUrl))
+  avatarDialogVisible.value = false
+  avatarPreviewUrl.value = ''
+  uploadFile.value = null
+  ElMessage.success('头像已更新')
+}
+
+const handleAvatarError = (error) => {
+  avatarLoading.value = false
+  console.error('上传头像失败:', error)
+  ElMessage.error('头像上传失败，请稍后重试')
+}
+
+const submitAvatar = async () => {
+  if (!uploadFile.value) {
+    ElMessage.warning('请先选择头像图片')
+    return
+  }
+  avatarLoading.value = true
+  avatarUploadRef.value?.submit()
+}
 
 // 表单验证规则
 const basicRules = {
