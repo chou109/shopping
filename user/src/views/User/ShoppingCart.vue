@@ -68,9 +68,9 @@
                     <el-button size="small" :disabled="item.quantity <= 1" @click="decreaseQuantity(item)">
                       -
                     </el-button>
-                    <el-input-number v-model="item.quantity" :min="1" :max="item.stock || 999" size="small"
+                    <el-input-number v-model="item.quantity" :min="1" :max="item.stock ?? 999" :disabled="item.stock === 0" size="small"
                       controls-position="right" @change="updateQuantity(item)" />
-                    <el-button size="small" :disabled="item.quantity >= (item.stock || 999)"
+                    <el-button size="small" :disabled="item.stock != null && item.quantity >= item.stock"
                       @click="increaseQuantity(item)">
                       +
                     </el-button>
@@ -105,14 +105,6 @@
               <div class="price-row">
                 <span class="label">商品总价</span>
                 <span class="value">¥{{ formatPrice(selectedTotalPrice) }}</span>
-              </div>
-              <div class="price-row">
-                <span class="label">运费</span>
-                <span class="value free">免运费</span>
-              </div>
-              <div class="price-row" v-if="discount > 0">
-                <span class="label">优惠</span>
-                <span class="value discount">-¥{{ formatPrice(discount) }}</span>
               </div>
               <div class="price-row total">
                 <span class="label">实付金额</span>
@@ -163,6 +155,7 @@ import { getProductImageUrl, handleImageError } from '@/utils/image'
 import { listCart, updateCart, delCart, clearCart, batchSelectCart } from '@/api/system/cart'
 import { createOrderFromCart, payOrder } from '@/api/system/orderInfo'
 import { getMyAddressList } from '@/api/system/address'
+import { addFavorite } from '@/api/system/favorite'
 import PurchaseDialog from '@/components/PurchaseDialog/index.vue'
 
 const router = useRouter()
@@ -205,49 +198,8 @@ const selectedTotalPrice = computed(() => {
   }, 0)
 })
 
-// 修改：所有商品都免运费
-const shippingFee = computed(() => {
-  return 0
-})
-
-const discount = computed(() => {
-  let discount = 0
-  // 简单的优惠计算逻辑
-  if (selectedTotalPrice.value >= 200) {
-    discount += 0
-  }
-  if (selectedTotalPrice.value >= 500) {
-    discount += 0
-  }
-  return discount
-})
-
 const actualTotalPrice = computed(() => {
-  return Math.max(0, selectedTotalPrice.value + shippingFee.value - discount.value)
-})
-
-const availablePromotions = computed(() => {
-  const promotions = []
-
-  if (selectedTotalPrice.value >= 200) {
-    promotions.push({
-      id: 1,
-      type: '满减',
-      description: '满200减20',
-      discount: 20
-    })
-  }
-
-  if (selectedTotalPrice.value >= 500) {
-    promotions.push({
-      id: 2,
-      type: '满减',
-      description: '满500减50',
-      discount: 50
-    })
-  }
-
-  return promotions
+  return selectedTotalPrice.value
 })
 
 // 方法
@@ -268,19 +220,8 @@ const loadCartData = async () => {
     }
 
     const response = await listCart()
-    console.log("购物车数据:", response)
     if (response.code === 200) {
       cartItems.value = response.data || []
-      // 调试购物车商品数据
-      console.log("购物车商品列表:", cartItems.value)
-      // 查看第一个商品的详细信息，特别是图片相关字段
-      if (cartItems.value.length > 0) {
-        const firstItem = cartItems.value[0]
-        console.log("第一个商品详细信息:", firstItem)
-        console.log("商品主图数据结构:", firstItem.productMainImage)
-        console.log("商品主图类型:", typeof firstItem.productMainImage)
-        console.log("处理后的图片URL:", getProductImageUrl(firstItem.productMainImage))
-      }
       // 计算小计并转换selected为布尔值
       cartItems.value.forEach(item => {
         // 后端返回的selected是数字(0/1)，需要转换为布尔值
@@ -312,11 +253,13 @@ const handleSelectAll = async (selected) => {
       item.selected = selected
     })
     // 调用API更新后端状态
-    await batchSelectCart(selected ? 1 : 0)
+    const response = await batchSelectCart(selected ? 1 : 0)
+    if (response.code !== 200) throw new Error(response.msg || '更新失败')
     // ElMessage.success('选择状态已更新')
   } catch (error) {
     console.error('更新全选状态失败:', error)
     ElMessage.error('更新失败')
+    await loadCartData()
   }
 }
 
@@ -327,8 +270,6 @@ const handleItemSelect = async (item) => {
     await updateCart(item.id, {
       selected: item.selected ? 1 : 0
     })
-    console.log('商品选择状态变化:', item.productName, item.selected)
-    ElMessage.success('选择状态已更新')
   } catch (error) {
     console.error('更新商品选择状态失败:', error)
     ElMessage.error('更新失败')
@@ -339,7 +280,8 @@ const handleItemSelect = async (item) => {
 
 // 增加数量
 const increaseQuantity = async (item) => {
-  if (item.quantity >= (item.stock || 999)) {
+  const stockLimit = item.stock ?? 999
+  if (item.quantity >= stockLimit) {
     ElMessage.warning('库存不足')
     return
   }
@@ -364,8 +306,9 @@ const updateQuantity = async (item) => {
     item.quantity = 1
   }
 
-  if (item.quantity > (item.stock || 999)) {
-    item.quantity = item.stock || 999
+  const stockLimit = item.stock ?? 999
+  if (item.quantity > stockLimit) {
+    item.quantity = stockLimit
     ElMessage.warning('库存不足')
   }
 
@@ -385,7 +328,7 @@ const updateCartItem = async (item) => {
     })
 
     if (response.code === 200) {
-      ElMessage.success('数量已更新')
+      return
     } else {
       ElMessage.error(response.msg || '更新失败')
     }
@@ -393,6 +336,7 @@ const updateCartItem = async (item) => {
     console.error('更新购物车失败:', error)
     ElMessage.error('更新失败')
   }
+  await loadCartData()
 }
 
 // 删除单个商品
@@ -483,6 +427,11 @@ const handleCheckout = async () => {
     ElMessage.warning('盲盒请前往盲盒页面购买')
     return
   }
+  if (selected.some(item => item.stock != null && item.quantity > item.stock)) {
+    ElMessage.warning('部分商品库存不足，请调整数量后再结算')
+    await loadCartData()
+    return
+  }
 
   try {
     const addressRes = await getMyAddressList()
@@ -551,6 +500,8 @@ const handlePayNow = async (orderData) => {
 // 添加到收藏
 const addToFavorites = async (item) => {
   try {
+    const response = await addFavorite(1, item.productId)
+    if (response.code !== 200) throw new Error(response.msg || '收藏失败')
     ElMessage.success('已添加到收藏')
   } catch (error) {
     console.error('添加到收藏失败:', error)

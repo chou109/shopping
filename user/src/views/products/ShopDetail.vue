@@ -131,12 +131,13 @@
 
 <script setup>
 import { getProductImageUrl, handleImageError } from '@/utils/image'
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Star, Service, Search, Grid, List } from '@element-plus/icons-vue'
 import { getShopInfo, getShopProducts } from '@/api/system/shop'
 import { checkFavorite, toggleFavorite } from '@/api/system/favorite'
+import { isBlindBoxProduct } from '@/utils/product'
 
 const route = useRoute()
 const router = useRouter()
@@ -166,7 +167,7 @@ const formatPrice = (price) => {
 
 // 格式化评分
 const formatScore = (score) => {
-  if (!score) return '5.0'
+  if (score === null || score === undefined || score === '') return '0.0'
   return Number(score).toFixed(1)
 }
 
@@ -299,7 +300,7 @@ const loadShopData = async () => {
     const productRes = await getShopProducts(shopId)
     console.log('店铺商品API响应:', productRes)
     if (productRes.code === 200) {
-      products.value = productRes.data || []
+      products.value = (productRes.data || []).filter(product => !isBlindBoxProduct(product))
       console.log('商品列表:', products.value)
     } else {
       console.error('获取店铺商品失败:', productRes.msg)
@@ -312,10 +313,12 @@ const loadShopData = async () => {
   }
 }
 
-onMounted(() => {
+watch(() => route.query.id, () => {
+  products.value = []
+  shopInfo.value = {}
   loadShopData()
   checkFollowStatus()
-})
+}, { immediate: true })
 </script>
 
 <style scoped lang="scss">

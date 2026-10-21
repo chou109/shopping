@@ -22,6 +22,7 @@ import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { listProductByCategory, listProductHot } from '@/api/system/product'
 import { getEnabledCategories } from '@/api/system/category'
+import { isBlindBoxProduct } from '@/utils/product'
 import FeaturedProductGrid from '@/views/index/FeaturedProductGrid.vue'
 
 const router = useRouter()
@@ -66,14 +67,14 @@ const loadFeaturedProducts = async () => {
   })
 
   const [hotResponse, categoryResponse] = await Promise.all([hotRequest, categoryRequest])
-  hotProducts.value = rowsFrom(hotResponse).slice(0, 8)
+  hotProducts.value = rowsFrom(hotResponse).filter(product => !isBlindBoxProduct(product)).slice(0, 8)
 
   const phoneCategory = findPhoneCategory(categoryListFrom(categoryResponse))
   const categoryId = phoneCategory?.id || phoneCategory?.categoryId
   if (categoryId) {
     try {
       const response = await listProductByCategory(categoryId)
-      phoneProducts.value = rowsFrom(response).slice(0, 8)
+      phoneProducts.value = rowsFrom(response).filter(product => !isBlindBoxProduct(product)).slice(0, 8)
     } catch (error) {
       console.warn('加载手机数码商品失败:', error)
     }

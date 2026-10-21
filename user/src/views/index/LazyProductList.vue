@@ -81,6 +81,7 @@ import {
   Goods
 } from '@element-plus/icons-vue'
 import { getProductImageUrl, handleImageError } from '@/utils/image'
+import { isBlindBoxProduct } from '@/utils/product'
 import api from "@/utils/request.js"
 
 const router = useRouter()
@@ -143,11 +144,7 @@ const loadProducts = async (reset = false) => {
       const rawCount = rawProducts.length
 
       // Filter out blind box products
-      let newProducts = rawProducts.filter(p => {
-        const isIdMatch = String(p.id) === '9999'
-        const isFlagMatch = p.isBlindBox == 1 || p.is_blind_box == 1 || p.isBlindBox === 'true'
-        return !isIdMatch && !isFlagMatch
-      })
+      const newProducts = rawProducts.filter(product => !isBlindBoxProduct(product))
 
       if (reset) {
         products.value = newProducts
