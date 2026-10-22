@@ -91,6 +91,11 @@
          </el-col>
          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
       </el-row>
+      <el-alert v-if="listError" :title="listError" type="error" :closable="false" show-icon>
+         <template #default>
+            <el-button link type="primary" :disabled="loading" @click="getList">重试</el-button>
+         </template>
+      </el-alert>
 
       <el-table ref="logininforRef" v-loading="loading" :data="logininforList" @selection-change="handleSelectionChange" :default-sort="defaultSort" @sort-change="handleSortChange">
          <el-table-column type="selection" width="55" align="center" />
@@ -131,6 +136,7 @@ const { sys_common_status } = proxy.useDict("sys_common_status");
 
 const logininforList = ref([]);
 const loading = ref(true);
+const listError = ref("");
 const showSearch = ref(true);
 const ids = ref([]);
 const single = ref(true);
@@ -139,6 +145,7 @@ const selectName = ref("");
 const total = ref(0);
 const dateRange = ref([]);
 const defaultSort = ref({ prop: "loginTime", order: "descending" });
+let logininforRequestId = 0;
 
 // 查询参数
 const queryParams = ref({
@@ -152,13 +159,24 @@ const queryParams = ref({
 });
 
 /** 查询登录日志列表 */
-function getList() {
+async function getList() {
+  const requestId = ++logininforRequestId;
   loading.value = true;
-  list(proxy.addDateRange(queryParams.value, dateRange.value)).then(response => {
+  listError.value = "";
+  try {
+    const response = await list(proxy.addDateRange(queryParams.value, dateRange.value));
+    if (requestId !== logininforRequestId) return;
+    if (!Array.isArray(response.rows)) throw new Error("登录日志数据格式异常");
     logininforList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
+    total.value = Number(response.total) || 0;
+  } catch (error) {
+    if (requestId === logininforRequestId) {
+      console.error("获取登录日志失败:", error);
+      listError.value = "登录日志加载失败，请重试";
+    }
+  } finally {
+    if (requestId === logininforRequestId) loading.value = false;
+  }
 }
 /** 搜索按钮操作 */
 function handleQuery() {
@@ -221,4 +239,7 @@ function handleExport() {
 }
 
 getList();
+onBeforeUnmount(() => {
+  logininforRequestId += 1;
+});
 </script>

@@ -96,6 +96,11 @@
          </el-col>
          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
       </el-row>
+      <el-alert v-if="listError" :title="listError" type="error" :closable="false" show-icon>
+         <template #default>
+            <el-button link type="primary" :disabled="loading" @click="getList">重试</el-button>
+         </template>
+      </el-alert>
 
       <el-table ref="operlogRef" v-loading="loading" :data="operlogList" @selection-change="handleSelectionChange" :default-sort="defaultSort" @sort-change="handleSortChange">
          <el-table-column type="selection" width="55" align="center" />
@@ -189,6 +194,7 @@ const { sys_oper_type, sys_common_status } = proxy.useDict("sys_oper_type","sys_
 const operlogList = ref([]);
 const open = ref(false);
 const loading = ref(true);
+const listError = ref("");
 const showSearch = ref(true);
 const ids = ref([]);
 const single = ref(true);
@@ -197,6 +203,7 @@ const total = ref(0);
 const title = ref("");
 const dateRange = ref([]);
 const defaultSort = ref({ prop: "operTime", order: "descending" });
+let operlogRequestId = 0;
 
 const data = reactive({
   form: {},
@@ -213,13 +220,24 @@ const data = reactive({
 const { queryParams, form } = toRefs(data);
 
 /** 查询登录日志 */
-function getList() {
+async function getList() {
+  const requestId = ++operlogRequestId;
   loading.value = true;
-  list(proxy.addDateRange(queryParams.value, dateRange.value)).then(response => {
+  listError.value = "";
+  try {
+    const response = await list(proxy.addDateRange(queryParams.value, dateRange.value));
+    if (requestId !== operlogRequestId) return;
+    if (!Array.isArray(response.rows)) throw new Error("操作日志数据格式异常");
     operlogList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
+    total.value = Number(response.total) || 0;
+  } catch (error) {
+    if (requestId === operlogRequestId) {
+      console.error("获取操作日志失败:", error);
+      listError.value = "操作日志加载失败，请重试";
+    }
+  } finally {
+    if (requestId === operlogRequestId) loading.value = false;
+  }
 }
 /** 操作日志类型字典翻译 */
 function typeFormat(row, column) {
@@ -280,4 +298,7 @@ function handleExport() {
 }
 
 getList();
+onBeforeUnmount(() => {
+  operlogRequestId += 1;
+});
 </script>
