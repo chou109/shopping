@@ -58,8 +58,14 @@
         </div>
       </div>
 
+      <div v-if="!loading && !loadError && products.length === 0 && hasMore" class="empty-container">
+        <el-empty description="当前页暂无可展示商品">
+          <el-button type="primary" @click="loadProducts">继续加载</el-button>
+        </el-empty>
+      </div>
+
       <!-- 空状态 -->
-      <div v-if="!loading && !loadError && products.length === 0" class="empty-container">
+      <div v-if="!loading && !loadError && hasMore === false && products.length === 0" class="empty-container">
         <el-empty description="暂无商品数据">
           <template #image>
             <el-icon :size="80">
@@ -85,6 +91,7 @@ import {
 import { getProductImageUrl, handleImageError } from '@/utils/image'
 import { isBlindBoxProduct } from '@/utils/product'
 import { formatProductPrice } from '@/utils/productDetail.mjs'
+import { hasNextProductPage, ProductListResponseError, readProductPage } from '@/utils/productList.mjs'
 import api from "@/utils/request.js"
 
 const router = useRouter()
@@ -144,38 +151,32 @@ const loadProducts = async (reset = false) => {
 
     if (requestId !== loadRequestId) return
 
-    if (response.code === 200) {
-      // Get raw data first
-      let rawProducts = response.rows || response.data || []
-      const rawCount = rawProducts.length
+    const { rows: rawProducts, total } = readProductPage(response)
+    const newProducts = rawProducts.filter(product => !isBlindBoxProduct(product))
 
-      // Filter out blind box products
-      const newProducts = rawProducts.filter(product => !isBlindBoxProduct(product))
-
-      if (reset) {
-        products.value = newProducts
-      } else {
-        products.value = [...products.value, ...newProducts]
-      }
-
-      // 判断是否还有更多数据
-      // CRITICAL FIX: Use rawCount to decide if we reached the end of the backend page
-      const total = response.total || 0
-      if (products.value.length >= total || rawCount < pageSize.value) {
-        hasMore.value = false
-      } else {
-        currentPage.value++
-        hasMore.value = true
-      }
+    if (reset) {
+      products.value = newProducts
     } else {
-      loadError.value = response.msg || '加载商品失败，请重试'
-      ElMessage.error(loadError.value)
+      products.value = [...products.value, ...newProducts]
+    }
+
+    if (hasNextProductPage({
+      page: currentPage.value,
+      pageSize: pageSize.value,
+      total,
+      rowCount: rawProducts.length
+    })) {
+      currentPage.value++
+      hasMore.value = true
+    } else {
       hasMore.value = false
     }
   } catch (error) {
     if (requestId !== loadRequestId) return
     console.error('加载商品失败:', error)
-    loadError.value = '加载商品失败，请检查网络后重试'
+    loadError.value = error instanceof ProductListResponseError
+      ? error.message
+      : '加载商品失败，请检查网络后重试'
     ElMessage.error(loadError.value)
     hasMore.value = false
   } finally {
