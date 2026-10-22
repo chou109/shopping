@@ -3,7 +3,7 @@
     <!-- 页面标题 -->
     <div class="page-header">
       <div class="page-actions">
-        <el-button type="danger" plain :disabled="cartItems.length === 0 || clearingCart" :loading="clearingCart" @click="handleClearCart">
+        <el-button type="danger" plain :disabled="cartItems.length === 0 || clearingCart || cartInteractionLocked" :loading="clearingCart" @click="handleClearCart">
           清空购物车
         </el-button>
       </div>
@@ -21,14 +21,14 @@
           <!-- 购物车工具栏 -->
           <div class="cart-toolbar">
             <div class="toolbar-left">
-              <el-checkbox v-model="isAllSelected" :disabled="selectionBatchSaving || selectionSavingIds.size > 0"
+              <el-checkbox v-model="isAllSelected" :disabled="selectionBatchSaving || selectionSavingIds.size > 0 || cartInteractionLocked"
                 @change="handleSelectAll" :indeterminate="isIndeterminate">
                 全选
               </el-checkbox>
               <span class="selected-count">已选 {{ selectedCount }} 件商品</span>
             </div>
             <div class="toolbar-right">
-              <el-button type="text" @click="handleBatchDelete" :disabled="selectedCount === 0" :loading="batchDeleting">
+              <el-button type="text" @click="handleBatchDelete" :disabled="selectedCount === 0 || cartInteractionLocked" :loading="batchDeleting">
                 删除选中
               </el-button>
             </div>
@@ -39,7 +39,7 @@
             <div v-for="item in cartItems" :key="item.id" class="cart-item" :class="{ selected: item.selected }">
               <div class="item-select">
                 <el-checkbox v-model="item.selected" :aria-label="`选择商品：${item.productName}`"
-                  :disabled="selectionBatchSaving || selectionSavingIds.has(item.id)"
+                  :disabled="selectionBatchSaving || selectionSavingIds.has(item.id) || cartInteractionLocked"
                   @change="handleItemSelect(item)" />
               </div>
 
@@ -76,12 +76,12 @@
 
                   <!-- 数量控制 -->
                   <div class="quantity-control">
-                    <el-button size="small" :disabled="quantitySavingIds.has(item.id) || item.quantity <= 1 || cartItemStock(item) === 0" @click="decreaseQuantity(item)">
+                    <el-button size="small" :disabled="quantitySavingIds.has(item.id) || item.quantity <= 1 || cartItemStock(item) === 0 || cartInteractionLocked" @click="decreaseQuantity(item)">
                       -
                     </el-button>
-                    <el-input-number v-model="item.quantity" :min="1" :max="cartItemStock(item) ?? 999" :disabled="quantitySavingIds.has(item.id) || cartItemStock(item) === 0" size="small"
+                    <el-input-number v-model="item.quantity" :min="1" :max="cartItemStock(item) ?? 999" :disabled="quantitySavingIds.has(item.id) || cartItemStock(item) === 0 || cartInteractionLocked" size="small"
                       controls-position="right" @change="updateQuantity(item)" />
-                    <el-button size="small" :disabled="quantitySavingIds.has(item.id) || (cartItemStock(item) != null && item.quantity >= cartItemStock(item))"
+                    <el-button size="small" :disabled="quantitySavingIds.has(item.id) || (cartItemStock(item) != null && item.quantity >= cartItemStock(item)) || cartInteractionLocked"
                       @click="increaseQuantity(item)">
                       +
                     </el-button>
@@ -94,11 +94,11 @@
                 <!-- 操作按钮 -->
                 <div class="item-actions">
                   <el-button type="danger" text size="small" :loading="deletingCartIds.has(item.id)"
-                    :disabled="deletingCartIds.has(item.id) || favoriteSavingIds.has(item.id)" @click="handleDeleteItem(item.id)">
+                    :disabled="deletingCartIds.has(item.id) || favoriteSavingIds.has(item.id) || cartInteractionLocked" @click="handleDeleteItem(item.id)">
                     删除
                   </el-button>
                   <el-button type="primary" text size="small" :loading="favoriteSavingIds.has(item.id)"
-                    :disabled="favoriteSavingIds.has(item.id) || deletingCartIds.has(item.id) || batchDeleting || clearingCart"
+                    :disabled="favoriteSavingIds.has(item.id) || deletingCartIds.has(item.id) || batchDeleting || clearingCart || cartInteractionLocked"
                     @click="moveToFavorites(item)">
                     移入收藏
                   </el-button>
@@ -137,7 +137,7 @@
 
             <div class="checkout-actions">
               <el-button type="danger" size="large" class="checkout-btn"
-                :disabled="selectedCount === 0 || hasMultipleSelectedShops || checkoutPreparing || checkoutInFlight"
+                :disabled="selectedCount === 0 || hasMultipleSelectedShops || checkoutPreparing || checkoutInFlight || cartMutationInFlight"
                 :loading="checkoutPreparing"
                 @click="handleCheckout">
                 去结算 ({{ selectedCount }}件)
@@ -208,6 +208,10 @@ const checkoutPreparing = ref(false)
 const checkoutInFlight = ref(false)
 const purchaseProducts = ref([])
 const purchaseOrder = ref({})
+const cartInteractionLocked = computed(() => checkoutPreparing.value || purchaseDialogVisible.value || checkoutInFlight.value)
+const cartMutationInFlight = computed(() => selectionBatchSaving.value || selectionSavingIds.value.size > 0
+  || quantitySavingIds.value.size > 0 || batchDeleting.value || clearingCart.value
+  || deletingCartIds.value.size > 0 || favoriteSavingIds.value.size > 0)
 
 // 计算属性
 const selectedItems = computed(() => {
@@ -292,7 +296,7 @@ const loadCartData = async () => {
 
 // 全选/取消全选
 const handleSelectAll = async (selected) => {
-  if (selectionBatchSaving.value || selectionSavingIds.value.size > 0) return
+  if (cartInteractionLocked.value || selectionBatchSaving.value || selectionSavingIds.value.size > 0) return
   selectionBatchSaving.value = true
   try {
     // 更新前端状态
@@ -314,7 +318,7 @@ const handleSelectAll = async (selected) => {
 
 // 单个商品选择
 const handleItemSelect = async (item) => {
-  if (selectionBatchSaving.value || selectionSavingIds.value.has(item.id)) return
+  if (cartInteractionLocked.value || selectionBatchSaving.value || selectionSavingIds.value.has(item.id)) return
   selectionSavingIds.value = new Set([...selectionSavingIds.value, item.id])
   try {
     const response = await updateCart(item.id, {
@@ -335,7 +339,7 @@ const handleItemSelect = async (item) => {
 
 // 增加数量
 const increaseQuantity = async (item) => {
-  if (quantitySavingIds.value.has(item.id)) return
+  if (cartInteractionLocked.value || quantitySavingIds.value.has(item.id)) return
   const stockLimit = cartItemStock(item) ?? 999
   if (item.quantity >= stockLimit) {
     ElMessage.warning('库存不足')
@@ -348,7 +352,7 @@ const increaseQuantity = async (item) => {
 
 // 减少数量
 const decreaseQuantity = async (item) => {
-  if (quantitySavingIds.value.has(item.id)) return
+  if (cartInteractionLocked.value || quantitySavingIds.value.has(item.id)) return
   if (item.quantity <= 1) {
     return
   }
@@ -359,7 +363,7 @@ const decreaseQuantity = async (item) => {
 
 // 更新数量
 const updateQuantity = async (item) => {
-  if (quantitySavingIds.value.has(item.id)) return
+  if (cartInteractionLocked.value || quantitySavingIds.value.has(item.id)) return
   if (item.quantity < 1) {
     item.quantity = 1
   }
@@ -375,7 +379,7 @@ const updateQuantity = async (item) => {
 
 // 更新购物车商品
 const updateCartItem = async (item) => {
-  if (quantitySavingIds.value.has(item.id)) return
+  if (cartInteractionLocked.value || quantitySavingIds.value.has(item.id)) return
   quantitySavingIds.value.add(item.id)
   try {
     // 重新计算小计
@@ -402,7 +406,7 @@ const updateCartItem = async (item) => {
 
 // 删除单个商品
 const handleDeleteItem = async (itemId) => {
-  if (deletingCartIds.value.has(itemId) || favoriteSavingIds.value.has(itemId)) return
+  if (cartInteractionLocked.value || deletingCartIds.value.has(itemId) || favoriteSavingIds.value.has(itemId)) return
   deletingCartIds.value.add(itemId)
   try {
     await ElMessageBox.confirm('确定要删除这个商品吗？', '提示', {
@@ -430,7 +434,7 @@ const handleDeleteItem = async (itemId) => {
 
 // 批量删除
 const handleBatchDelete = async () => {
-  if (batchDeleting.value) return
+  if (cartInteractionLocked.value || batchDeleting.value) return
   if (favoriteSavingIds.value.size > 0) {
     ElMessage.warning('请等待移入收藏操作完成后再删除')
     return
@@ -464,7 +468,7 @@ const handleBatchDelete = async () => {
 
 // 清空购物车
 const handleClearCart = async () => {
-  if (clearingCart.value) return
+  if (cartInteractionLocked.value || clearingCart.value) return
   if (favoriteSavingIds.value.size > 0) {
     ElMessage.warning('请等待移入收藏操作完成后再清空')
     return
@@ -502,6 +506,10 @@ const handleClearCart = async () => {
 // 去结算
 const handleCheckout = async () => {
   if (checkoutPreparing.value || checkoutInFlight.value) return
+  if (cartMutationInFlight.value) {
+    ElMessage.warning('请等待购物车更新完成后再结算')
+    return
+  }
   const selected = selectedItems.value
   if (selected.length === 0) {
     ElMessage.warning('请先选择要结算的商品')
@@ -606,7 +614,7 @@ const handlePayNow = async (orderData) => {
 
 // 移入收藏：收藏确认成功后再从购物车删除，避免失败时丢失商品。
 const moveToFavorites = async (item) => {
-  if (favoriteSavingIds.value.has(item.id) || deletingCartIds.value.has(item.id)
+  if (cartInteractionLocked.value || favoriteSavingIds.value.has(item.id) || deletingCartIds.value.has(item.id)
     || batchDeleting.value || clearingCart.value) return
   favoriteSavingIds.value.add(item.id)
   try {
