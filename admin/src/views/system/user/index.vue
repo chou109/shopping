@@ -64,7 +64,10 @@
                <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns"></right-toolbar>
             </el-row>
 
-            <el-table v-loading="loading" :data="userList" @selection-change="handleSelectionChange">
+            <el-alert v-if="listError" :title="listError" type="error" :closable="false" show-icon>
+               <template #default><el-button link type="primary" :disabled="loading" @click="getList">重试</el-button></template>
+            </el-alert>
+            <el-table v-else ref="userTableRef" v-loading="loading" :data="userList" @selection-change="handleSelectionChange">
                <el-table-column type="selection" width="50" align="center" />
                <el-table-column label="用户编号" align="center" key="userId" prop="userId" v-if="columns[0].visible" />
                <el-table-column label="用户名称" align="center" key="userName" prop="userName" v-if="columns[1].visible"
@@ -252,8 +255,10 @@ const { proxy } = getCurrentInstance();
 const { sys_normal_disable, sys_user_sex } = proxy.useDict("sys_normal_disable", "sys_user_sex");
 
 const userList = ref([]);
+const userTableRef = ref(null);
 const open = ref(false);
 const loading = ref(true);
+const listError = ref("");
 const showSearch = ref(true);
 const ids = ref([]);
 const single = ref(true);
@@ -266,6 +271,7 @@ const deptOptions = ref(undefined);
 const initPassword = ref(undefined);
 const postOptions = ref([]);
 const roleOptions = ref([]);
+let userListRequestId = 0;
 /*** 用户导入参数 */
 const upload = reactive({
    // 是否显示弹出层（用户导入）
@@ -334,11 +340,22 @@ function getDeptTree() {
 };
 /** 查询用户列表 */
 function getList() {
+   const requestId = ++userListRequestId;
    loading.value = true;
-   listUser(proxy.addDateRange(queryParams.value, dateRange.value)).then(res => {
-      loading.value = false;
+   listError.value = "";
+   userTableRef.value?.clearSelection();
+   return listUser(proxy.addDateRange(queryParams.value, dateRange.value)).then(res => {
+      if (requestId !== userListRequestId) return;
+      if (!Array.isArray(res.rows)) throw new Error("用户列表数据格式异常");
       userList.value = res.rows;
-      total.value = res.total;
+      total.value = Number(res.total) || 0;
+   }).catch(error => {
+      if (requestId === userListRequestId) {
+         console.error("获取用户列表失败:", error);
+         listError.value = "用户列表加载失败，请重试";
+      }
+   }).finally(() => {
+      if (requestId === userListRequestId) loading.value = false;
    });
 };
 /** 节点单击事件 */
