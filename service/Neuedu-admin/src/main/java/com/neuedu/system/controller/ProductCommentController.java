@@ -325,6 +325,7 @@ public class ProductCommentController extends BaseController
         if (comment == null) {
             return error("评论不存在");
         }
+        comment.setOrderId(null);
         maskAnonymousIdentity(comment);
 
         Map<String, Object> result = new HashMap<>();

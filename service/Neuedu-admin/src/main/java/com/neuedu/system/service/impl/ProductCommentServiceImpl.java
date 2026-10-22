@@ -365,6 +365,7 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
     private void populateLikeStatus(List<ProductComment> comments, Long userId) {
         if (comments == null || comments.isEmpty()) return;
         maskAnonymousIdentity(comments);
+        comments.forEach(comment -> comment.setOrderId(null));
         List<Long> commentIds = comments.stream().map(ProductComment::getCommentId)
             .filter(id -> id != null).collect(java.util.stream.Collectors.toList());
         Set<Long> likedIds = new HashSet<>(getLikedCommentIds(userId, commentIds));
@@ -502,6 +503,7 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
         List<ProductComment> comments = productCommentMapper.selectProductCommentPage(
                 productId, null, null, true, 1);
         maskAnonymousIdentity(comments);
+        comments.forEach(comment -> comment.setOrderId(null));
 
         if (limit != null && limit > 0 && comments.size() > limit) {
             return comments.subList(0, limit);

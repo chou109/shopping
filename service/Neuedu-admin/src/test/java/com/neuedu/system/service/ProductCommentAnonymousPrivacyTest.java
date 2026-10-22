@@ -21,7 +21,9 @@ public class ProductCommentAnonymousPrivacyTest {
     @Test
     public void publicReviewListOmitsIdentityFieldsForAnonymousAuthors() {
         ProductComment anonymous = comment(1L, true);
+        anonymous.setOrderId(9001L);
         ProductComment identified = comment(2L, false);
+        identified.setOrderId(9002L);
         ProductCommentMapper mapper = proxy(ProductCommentMapper.class, (method, args) -> {
             if ("selectProductCommentPage".equals(method)) return Arrays.asList(anonymous, identified);
             if ("selectLikedCommentIds".equals(method)) return Collections.emptyList();
@@ -34,8 +36,24 @@ public class ProductCommentAnonymousPrivacyTest {
         assertNull(result.get(0).getUserId());
         assertEquals("匿名用户", result.get(0).getNickName());
         assertNull(result.get(0).getUserAvatar());
+        assertNull(result.get(0).getOrderId());
         assertEquals(Long.valueOf(21L), result.get(1).getUserId());
         assertEquals("User21", result.get(1).getNickName());
+        assertNull(result.get(1).getOrderId());
+    }
+
+    @Test
+    public void publicPhotoReviewListOmitsOrderIdentifiersToo() {
+        ProductComment review = comment(3L, false);
+        review.setOrderId(9003L);
+        ProductCommentMapper mapper = proxy(ProductCommentMapper.class, (method, args) ->
+                "selectProductCommentPage".equals(method)
+                        ? Collections.singletonList(review) : defaultValue(method));
+        ProductCommentServiceImpl service = new ProductCommentServiceImpl(mapper, null, null);
+
+        List<ProductComment> result = service.getCommentsWithImages(7L, 6);
+
+        assertNull(result.get(0).getOrderId());
     }
 
     @Test
