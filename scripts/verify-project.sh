@@ -64,6 +64,9 @@ for required_setting in \
   fi
 done
 
+echo "检查登录页不会持久化用户密码"
+node scripts/check-login-cookie-security.mjs
+
 echo "安装用户端依赖（锁文件冻结）"
 pnpm --dir user install --frozen-lockfile
 echo "安装管理端依赖（锁文件冻结）"

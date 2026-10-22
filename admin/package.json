@@ -28,7 +28,6 @@
     "file-saver": "2.0.5",
     "fuse.js": "6.6.2",
     "js-cookie": "3.0.8",
-    "jsencrypt": "3.3.1",
     "minimatch": "9.0.9",
     "nprogress": "0.2.0",
     "pinia": "2.1.7",

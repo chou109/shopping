@@ -24,7 +24,7 @@
           </button>
         </div>
       </el-form-item>
-      <el-checkbox v-model="loginForm.rememberMe" style="margin:0px 0px 25px 0px;">记住密码</el-checkbox>
+      <el-checkbox v-model="loginForm.rememberMe" style="margin:0px 0px 25px 0px;">记住账号</el-checkbox>
       <el-form-item style="width:100%;">
         <el-button :loading="loading" size="large" type="primary" style="width:100%;" @click.prevent="handleLogin">
           <span v-if="!loading">登 录</span>
@@ -45,7 +45,6 @@
 <script setup>
 import { getCodeImg } from "@/api/login";
 import Cookies from "js-cookie";
-import { encrypt, decrypt } from "@/utils/jsencrypt";
 import useUserStore from '@/store/modules/user'
 
 const userStore = useUserStore()
@@ -84,15 +83,14 @@ function handleLogin() {
   proxy.$refs.loginRef.validate(valid => {
     if (valid) {
       loading.value = true;
-      // 勾选了需要记住密码设置在 cookie 中设置记住用户名和密码
+      // 只记住账号名，不在浏览器中保存密码。
+      Cookies.remove("password");
       if (loginForm.value.rememberMe) {
         Cookies.set("username", loginForm.value.username, { expires: 30 });
-        Cookies.set("password", encrypt(loginForm.value.password), { expires: 30 });
-        Cookies.set("rememberMe", loginForm.value.rememberMe, { expires: 30 });
+        Cookies.set("rememberMe", "true", { expires: 30 });
       } else {
         // 否则移除
         Cookies.remove("username");
-        Cookies.remove("password");
         Cookies.remove("rememberMe");
       }
       // 调用action的登录方法
@@ -132,12 +130,13 @@ function getCode() {
 
 function getCookie() {
   const username = Cookies.get("username");
-  const password = Cookies.get("password");
   const rememberMe = Cookies.get("rememberMe");
+  // 删除旧版本曾保存的可还原密码 Cookie；只保留账号名。
+  Cookies.remove("password");
   loginForm.value = {
     username: username === undefined ? loginForm.value.username : username,
-    password: password === undefined ? loginForm.value.password : decrypt(password),
-    rememberMe: rememberMe === undefined ? false : Boolean(rememberMe)
+    password: "",
+    rememberMe: rememberMe === "true"
   };
 }
 

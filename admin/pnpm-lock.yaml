@@ -137,9 +137,6 @@ importers:
       js-cookie:
         specifier: 3.0.8
         version: 3.0.8
-      jsencrypt:
-        specifier: 3.3.1
-        version: 3.3.1
       minimatch:
         specifier: 9.0.9
         version: 9.0.9
@@ -1015,9 +1012,6 @@ packages:
 
   js-tokens@10.0.0:
     resolution: {integrity: sha512-lM/UBzQmfJRo9ABXbPWemivdCW8V2G8FHaHdypQaIy523snUjog0W71ayWXTjiR+ixeMyVHN2XcpnTd/liPg/Q==}
-
-  jsencrypt@3.3.1:
-    resolution: {integrity: sha512-dVvV54GdFuJgmEKn+oBiaifDMen4p6o6j/lJh0OVMcouME8sST0bJ7bldIgKBQk4za0zyGn0/pm4vOznR25mLw==}
 
   jsonfile@6.1.0:
     resolution: {integrity: sha512-5dgndWOriYSm5cnYaJNhalLNDKOqFwyDB/rr1E9ZsGciGvKPs8R2xYGCacuf3z6K1YKDz182fd+fY3cn3pMqXQ==}
@@ -2083,8 +2077,6 @@ snapshots:
   js-cookie@3.0.8: {}
 
   js-tokens@10.0.0: {}
-
-  jsencrypt@3.3.1: {}
 
   jsonfile@6.1.0:
     dependencies:

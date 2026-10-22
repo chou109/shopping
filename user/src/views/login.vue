@@ -38,7 +38,7 @@
           </button>
         </div>
       </el-form-item>
-      <el-checkbox v-model="loginForm.rememberMe" style="margin:0px 0px 25px 0px;">记住密码</el-checkbox>
+      <el-checkbox v-model="loginForm.rememberMe" style="margin:0px 0px 25px 0px;">记住账号</el-checkbox>
       <el-form-item style="width:100%;">
         <el-button :loading="loading" size="default" type="primary" round style="width:100%;" @click="handleLogin">
           <span v-if="!loading">登 录</span>
@@ -71,7 +71,6 @@
 <script>
 import { getCodeImg, getQQLoginUrl } from "@/api/login";
 import Cookies from "js-cookie";
-import { encrypt, decrypt } from '@/utils/jsencrypt'
 import { getSafeQQLoginUrl } from '@/utils/qq-login.mjs'
 
 export default {
@@ -80,7 +79,6 @@ export default {
     return {
       codeUrl: "",
       captchaEnabled: true,
-      cookiePassword: "",
       loginForm: {
         username: "",
         password: "",
@@ -161,25 +159,25 @@ export default {
     },
     getCookie() {
       const username = Cookies.get("username");
-      const password = Cookies.get("password");
       const rememberMe = Cookies.get('rememberMe')
+      // 删除旧版本曾保存的可还原密码 Cookie；只保留账号名。
+      Cookies.remove('password')
       this.loginForm = {
         username: username === undefined ? this.loginForm.username : username,
-        password: password === undefined ? this.loginForm.password : decrypt(password),
-        rememberMe: rememberMe === undefined ? false : Boolean(rememberMe)
+        password: "",
+        rememberMe: rememberMe === 'true'
       };
     },
     handleLogin() {
       this.$refs.loginForm.validate(valid => {
         if (valid) {
           this.loading = true;
+          Cookies.remove('password')
           if (this.loginForm.rememberMe) {
             Cookies.set("username", this.loginForm.username, { expires: 30 });
-            Cookies.set("password", encrypt(this.loginForm.password), { expires: 30 });
-            Cookies.set('rememberMe', this.loginForm.rememberMe, { expires: 30 });
+            Cookies.set('rememberMe', 'true', { expires: 30 });
           } else {
             Cookies.remove("username");
-            Cookies.remove("password");
             Cookies.remove('rememberMe');
           }
           this.$store.dispatch("Login", this.loginForm)
