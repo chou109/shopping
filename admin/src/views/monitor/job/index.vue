@@ -61,7 +61,8 @@
                type="danger"
                plain
                icon="Delete"
-               :disabled="multiple"
+               :disabled="multiple || deletingJobIds.size > 0 || statusUpdatingIds.size > 0"
+               :loading="deletingJobIds.size > 0"
                @click="handleDelete"
                v-hasPermi="['monitor:job:remove']"
             >删除</el-button>
@@ -86,6 +87,11 @@
          </el-col>
          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
       </el-row>
+      <el-alert v-if="listError" :title="listError" type="error" :closable="false" show-icon>
+         <template #default>
+            <el-button link type="primary" :disabled="loading" @click="getList">重试</el-button>
+         </template>
+      </el-alert>
 
       <el-table v-loading="loading" :data="jobList" @selection-change="handleSelectionChange">
          <el-table-column type="selection" width="55" align="center" />
@@ -104,6 +110,7 @@
                   v-model="scope.row.status"
                   active-value="0"
                   inactive-value="1"
+                  :disabled="statusUpdatingIds.has(scope.row.jobId) || deletingJobIds.has(scope.row.jobId)"
                   @change="handleStatusChange(scope.row)"
                ></el-switch>
             </template>
@@ -114,7 +121,10 @@
                   <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['monitor:job:edit']"></el-button>
                </el-tooltip>
                <el-tooltip content="删除" placement="top">
-                  <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['monitor:job:remove']"></el-button>
+                  <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)"
+                     :loading="deletingJobIds.has(scope.row.jobId)"
+                     :disabled="deletingJobIds.size > 0 || statusUpdatingIds.size > 0"
+                     v-hasPermi="['monitor:job:remove']"></el-button>
                </el-tooltip>
                <el-tooltip content="执行一次" placement="top">
                   <el-button link type="primary" icon="CaretRight" @click="handleRun(scope.row)" v-hasPermi="['monitor:job:changeStatus']"></el-button>
@@ -294,11 +304,15 @@ const { sys_job_group, sys_job_status } = proxy.useDict("sys_job_group", "sys_jo
 const jobList = ref([]);
 const open = ref(false);
 const loading = ref(true);
+const listError = ref("");
 const showSearch = ref(true);
 const ids = ref([]);
 const single = ref(true);
 const multiple = ref(true);
 const total = ref(0);
+const statusUpdatingIds = ref(new Set());
+const deletingJobIds = ref(new Set());
+let jobListRequestId = 0;
 const title = ref("");
 const openView = ref(false);
 const openCron = ref(false);
@@ -323,13 +337,24 @@ const data = reactive({
 const { queryParams, form, rules } = toRefs(data);
 
 /** 查询定时任务列表 */
-function getList() {
+async function getList() {
+  const requestId = ++jobListRequestId;
   loading.value = true;
-  listJob(queryParams.value).then(response => {
+  listError.value = "";
+  try {
+    const response = await listJob(queryParams.value);
+    if (requestId !== jobListRequestId) return;
+    if (!Array.isArray(response.rows)) throw new Error("定时任务列表数据格式异常");
     jobList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
+    total.value = Number(response.total) || 0;
+  } catch (error) {
+    if (requestId === jobListRequestId) {
+      console.error("获取定时任务列表失败:", error);
+      listError.value = "定时任务列表加载失败，请重试";
+    }
+  } finally {
+    if (requestId === jobListRequestId) loading.value = false;
+  }
 }
 /** 任务组名字典翻译 */
 function jobGroupFormat(row, column) {
@@ -387,15 +412,25 @@ function handleCommand(command, row) {
   }
 }
 // 任务状态修改
-function handleStatusChange(row) {
-  let text = row.status === "0" ? "启用" : "停用";
-  proxy.$modal.confirm('确认要"' + text + '""' + row.jobName + '"任务吗?').then(function () {
-    return changeJobStatus(row.jobId, row.status);
-  }).then(() => {
+async function handleStatusChange(row) {
+  if (statusUpdatingIds.value.has(row.jobId) || deletingJobIds.value.has(row.jobId)) return;
+  const requestedStatus = row.status;
+  const originalStatus = requestedStatus === "0" ? "1" : "0";
+  const text = requestedStatus === "0" ? "启用" : "停用";
+  statusUpdatingIds.value = new Set([...statusUpdatingIds.value, row.jobId]);
+  try {
+    await proxy.$modal.confirm('确认要"' + text + '""' + row.jobName + '"任务吗?');
+    const response = await changeJobStatus(row.jobId, requestedStatus);
+    if (response.code !== 200) throw new Error(response.msg || `${text}失败`);
     proxy.$modal.msgSuccess(text + "成功");
-  }).catch(function () {
-    row.status = row.status === "0" ? "1" : "0";
-  });
+  } catch (error) {
+    row.status = originalStatus;
+    if (error !== "cancel" && error !== "close") console.error(`${text}任务失败:`, error);
+  } finally {
+    const pendingIds = new Set(statusUpdatingIds.value);
+    pendingIds.delete(row.jobId);
+    statusUpdatingIds.value = pendingIds;
+  }
 }
 /* 立即执行一次 */
 function handleRun(row) {
@@ -463,14 +498,22 @@ function submitForm() {
   });
 }
 /** 删除按钮操作 */
-function handleDelete(row) {
-  const jobIds = row.jobId || ids.value;
-  proxy.$modal.confirm('是否确认删除定时任务编号为"' + jobIds + '"的数据项?').then(function () {
-    return delJob(jobIds);
-  }).then(() => {
-    getList();
+async function handleDelete(row) {
+  if (deletingJobIds.value.size > 0) return;
+  const jobIds = row?.jobId != null ? [row.jobId] : [...ids.value];
+  if (jobIds.length === 0 || jobIds.some(jobId => statusUpdatingIds.value.has(jobId))) return;
+  deletingJobIds.value = new Set(jobIds);
+  try {
+    await proxy.$modal.confirm('是否确认删除定时任务编号为"' + jobIds.join(",") + '"的数据项?');
+    const response = await delJob(jobIds);
+    if (response.code !== 200) throw new Error(response.msg || "删除失败");
+    await getList();
     proxy.$modal.msgSuccess("删除成功");
-  }).catch(() => {});
+  } catch (error) {
+    if (error !== "cancel" && error !== "close") console.error("删除定时任务失败:", error);
+  } finally {
+    deletingJobIds.value = new Set();
+  }
 }
 /** 导出按钮操作 */
 function handleExport() {
@@ -480,4 +523,7 @@ function handleExport() {
 }
 
 getList();
+onBeforeUnmount(() => {
+  jobListRequestId += 1;
+});
 </script>

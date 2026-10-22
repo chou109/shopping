@@ -95,6 +95,11 @@
          </el-col>
          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
       </el-row>
+      <el-alert v-if="listError" :title="listError" type="error" :closable="false" show-icon>
+         <template #default>
+            <el-button link type="primary" :disabled="loading" @click="getList">重试</el-button>
+         </template>
+      </el-alert>
 
       <el-table v-loading="loading" :data="jobLogList" @selection-change="handleSelectionChange">
          <el-table-column type="selection" width="55" align="center" />
@@ -180,12 +185,14 @@ const { sys_common_status, sys_job_group } = proxy.useDict("sys_common_status", 
 const jobLogList = ref([]);
 const open = ref(false);
 const loading = ref(true);
+const listError = ref("");
 const showSearch = ref(true);
 const ids = ref([]);
 const multiple = ref(true);
 const total = ref(0);
 const dateRange = ref([]);
 const route = useRoute();
+let jobLogListRequestId = 0;
 
 const data = reactive({
   form: {},
@@ -201,13 +208,24 @@ const data = reactive({
 const { queryParams, form, rules } = toRefs(data);
 
 /** 查询调度日志列表 */
-function getList() {
+async function getList() {
+  const requestId = ++jobLogListRequestId;
   loading.value = true;
-  listJobLog(proxy.addDateRange(queryParams.value, dateRange.value)).then(response => {
+  listError.value = "";
+  try {
+    const response = await listJobLog(proxy.addDateRange(queryParams.value, dateRange.value));
+    if (requestId !== jobLogListRequestId) return;
+    if (!Array.isArray(response.rows)) throw new Error("调度日志列表数据格式异常");
     jobLogList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
+    total.value = Number(response.total) || 0;
+  } catch (error) {
+    if (requestId === jobLogListRequestId) {
+      console.error("获取调度日志列表失败:", error);
+      listError.value = "调度日志列表加载失败，请重试";
+    }
+  } finally {
+    if (requestId === jobLogListRequestId) loading.value = false;
+  }
 }
 // 返回按钮
 function handleClose() {
@@ -268,10 +286,10 @@ function handleExport() {
       queryParams.value.jobGroup = response.data.jobGroup;
       getList();
     });
-  } else {
-    getList();
-  }
+  } else getList();
 })();
 
-getList();
+onBeforeUnmount(() => {
+  jobLogListRequestId += 1;
+});
 </script>
