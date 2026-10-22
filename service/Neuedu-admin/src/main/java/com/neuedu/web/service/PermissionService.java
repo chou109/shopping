@@ -25,7 +25,6 @@ public class PermissionService
     private static final String ROLE_DELIMETER = ",";
 
     private static final String PERMISSION_DELIMETER = ",";
-    private static final boolean DEBUG_MODE = true;
     /**
      * 验证用户是否具备某权限
      * 
@@ -34,19 +33,13 @@ public class PermissionService
      */
     public boolean hasPermi(String permission)
     {
-        if (DEBUG_MODE) {
-            return true;  // 调试模式下，所有权限都通过
-        }
         if (StringUtils.isEmpty(permission))
         {
             return false;
         }
-        LoginUser loginUser = SecurityUtils.getLoginUser();
-        if (StringUtils.isNull(loginUser) || CollectionUtils.isEmpty(loginUser.getPermissions()))
-        {
-            return false;
-        }
-        return hasPermissions(loginUser.getPermissions(), permission);
+        LoginUser loginUser = getCurrentLoginUser();
+        return loginUser != null && !CollectionUtils.isEmpty(loginUser.getPermissions())
+                && hasPermissions(loginUser.getPermissions(), permission);
     }
 
     /**
@@ -72,8 +65,8 @@ public class PermissionService
         {
             return false;
         }
-        LoginUser loginUser = SecurityUtils.getLoginUser();
-        if (StringUtils.isNull(loginUser) || CollectionUtils.isEmpty(loginUser.getPermissions()))
+        LoginUser loginUser = getCurrentLoginUser();
+        if (loginUser == null || CollectionUtils.isEmpty(loginUser.getPermissions()))
         {
             return false;
         }
@@ -96,22 +89,19 @@ public class PermissionService
      */
     public boolean hasRole(String role)
     {
-        if (DEBUG_MODE) {
-            return true;  // 调试模式下，所有权限都通过
-        }
         if (StringUtils.isEmpty(role))
         {
             return false;
         }
-        LoginUser loginUser = SecurityUtils.getLoginUser();
-        if (StringUtils.isNull(loginUser) || CollectionUtils.isEmpty(loginUser.getUser().getRoles()))
+        LoginUser loginUser = getCurrentLoginUser();
+        if (loginUser == null || loginUser.getUser() == null || CollectionUtils.isEmpty(loginUser.getUser().getRoles()))
         {
             return false;
         }
         for (SysRole sysRole : loginUser.getUser().getRoles())
         {
             String roleKey = sysRole.getRoleKey();
-            if (SUPER_ADMIN.equals(roleKey) || roleKey.equals(StringUtils.trim(role)))
+            if (SUPER_ADMIN.equals(roleKey) || role.trim().equals(roleKey))
             {
                 return true;
             }
@@ -142,8 +132,8 @@ public class PermissionService
         {
             return false;
         }
-        LoginUser loginUser = SecurityUtils.getLoginUser();
-        if (StringUtils.isNull(loginUser) || CollectionUtils.isEmpty(loginUser.getUser().getRoles()))
+        LoginUser loginUser = getCurrentLoginUser();
+        if (loginUser == null || loginUser.getUser() == null || CollectionUtils.isEmpty(loginUser.getUser().getRoles()))
         {
             return false;
         }
@@ -167,5 +157,16 @@ public class PermissionService
     private boolean hasPermissions(Set<String> permissions, String permission)
     {
         return permissions.contains(ALL_PERMISSION) || permissions.contains(StringUtils.trim(permission));
+    }
+
+    private LoginUser getCurrentLoginUser()
+    {
+        org.springframework.security.core.Authentication authentication = SecurityUtils.getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()
+                || !(authentication.getPrincipal() instanceof LoginUser))
+        {
+            return null;
+        }
+        return (LoginUser) authentication.getPrincipal();
     }
 }

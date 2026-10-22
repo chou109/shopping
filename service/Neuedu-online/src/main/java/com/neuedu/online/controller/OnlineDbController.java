@@ -5,11 +5,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.neuedu.common.annotation.Anonymous;
 import com.neuedu.common.core.controller.BaseController;
 import com.neuedu.common.core.domain.BaseEntity;
 import com.neuedu.common.core.page.TableDataInfo;
 import com.neuedu.online.mapper.OnlineDbMapper;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 
 /**
@@ -20,7 +20,7 @@ import com.neuedu.online.mapper.OnlineDbMapper;
  */
 @RestController
 @RequestMapping("/online/db")
-@Anonymous
+@PreAuthorize("@ss.hasRole('admin')")
 public class OnlineDbController extends BaseController {
 
     @Autowired
