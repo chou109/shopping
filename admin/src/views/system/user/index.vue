@@ -50,7 +50,9 @@
                      v-hasPermi="['system:user:edit']">修改</el-button>
                </el-col>
                <el-col :span="1.5">
-                  <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete"
+                  <el-button type="danger" plain icon="Delete"
+                     :disabled="multiple || deletingUserIds.size > 0 || statusUpdatingIds.size > 0"
+                     :loading="deletingUserIds.size > 0" @click="handleDelete"
                      v-hasPermi="['system:user:remove']">删除</el-button>
                </el-col>
                <el-col :span="1.5">
@@ -81,7 +83,7 @@
                <el-table-column label="状态" align="center" key="status" v-if="columns[5].visible">
                   <template #default="scope">
                <el-switch v-model="scope.row.status" active-value="0" inactive-value="1"
-                  :disabled="statusUpdatingIds.has(scope.row.userId)"
+                  :disabled="statusUpdatingIds.has(scope.row.userId) || deletingUserIds.has(scope.row.userId)"
                         @change="handleStatusChange(scope.row)"></el-switch>
                   </template>
                </el-table-column>
@@ -102,11 +104,15 @@
                      </el-tooltip>
                      <el-tooltip content="删除" placement="top" v-if="scope.row.userId !== 1">
                         <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)"
+                           :loading="deletingUserIds.has(scope.row.userId)"
+                           :disabled="deletingUserIds.size > 0 || statusUpdatingIds.has(scope.row.userId)"
                            :aria-label="`删除用户：${scope.row.userName || '未知用户'}`"
                            v-hasPermi="['system:user:remove']"></el-button>
                      </el-tooltip>
                      <el-tooltip content="重置密码" placement="top" v-if="scope.row.userId !== 1">
                         <el-button link type="primary" icon="Key" @click="handleResetPwd(scope.row)"
+                           :loading="resettingUserIds.has(scope.row.userId)"
+                           :disabled="resettingUserIds.has(scope.row.userId)"
                            :aria-label="`重置密码：${scope.row.userName || '未知用户'}`"
                            v-hasPermi="['system:user:resetPwd']"></el-button>
                      </el-tooltip>
@@ -266,6 +272,8 @@ const listError = ref("");
 const formSubmitting = ref(false);
 const userDetailLoadingId = ref(null);
 const statusUpdatingIds = ref(new Set());
+const deletingUserIds = ref(new Set());
+const resettingUserIds = ref(new Set());
 const showSearch = ref(true);
 const ids = ref([]);
 const single = ref(true);
@@ -385,14 +393,22 @@ function resetQuery() {
    handleQuery();
 };
 /** 删除按钮操作 */
-function handleDelete(row) {
-   const userIds = row.userId || ids.value;
-   proxy.$modal.confirm('是否确认删除用户编号为"' + userIds + '"的数据项？').then(function () {
-      return delUser(userIds);
-   }).then(() => {
-      getList();
+async function handleDelete(row) {
+   if (deletingUserIds.value.size > 0) return;
+   const userIds = row?.userId != null ? [row.userId] : [...ids.value];
+   if (userIds.length === 0 || userIds.some(userId => statusUpdatingIds.value.has(userId))) return;
+   deletingUserIds.value = new Set(userIds);
+   try {
+      await proxy.$modal.confirm('是否确认删除用户编号为"' + userIds.join(",") + '"的数据项？');
+      const response = await delUser(userIds);
+      if (response.code !== 200) throw new Error(response.msg || "删除失败");
+      await getList();
       proxy.$modal.msgSuccess("删除成功");
-   }).catch(() => { });
+   } catch (error) {
+      if (error !== "cancel" && error !== "close") console.error("删除用户失败:", error);
+   } finally {
+      deletingUserIds.value = new Set();
+   }
 };
 /** 导出按钮操作 */
 function handleExport() {
@@ -440,23 +456,32 @@ function handleAuthRole(row) {
    router.push("/system/user-auth/role/" + userId);
 };
 /** 重置密码按钮操作 */
-function handleResetPwd(row) {
-   proxy.$prompt('请输入"' + row.userName + '"的新密码', "提示", {
-      confirmButtonText: "确定",
-      cancelButtonText: "取消",
-      closeOnClickModal: false,
-      inputPattern: /^.{5,20}$/,
-      inputErrorMessage: "用户密码长度必须介于 5 和 20 之间",
-      inputValidator: (value) => {
-         if (/<|>|"|'|\||\\/.test(value)) {
-            return "不能包含非法字符：< > \" ' \\\ |"
-         }
-      },
-   }).then(({ value }) => {
-      resetUserPwd(row.userId, value).then(response => {
-         proxy.$modal.msgSuccess("修改成功，新密码是：" + value);
+async function handleResetPwd(row) {
+   if (resettingUserIds.value.has(row.userId) || deletingUserIds.value.has(row.userId)) return;
+   resettingUserIds.value = new Set([...resettingUserIds.value, row.userId]);
+   try {
+      const { value } = await proxy.$prompt('请输入"' + row.userName + '"的新密码', "提示", {
+         confirmButtonText: "确定",
+         cancelButtonText: "取消",
+         closeOnClickModal: false,
+         inputPattern: /^.{5,20}$/,
+         inputErrorMessage: "用户密码长度必须介于 5 和 20 之间",
+         inputValidator: (value) => {
+            if (/<|>|"|'|\||\\/.test(value)) {
+               return "不能包含非法字符：< > \" ' \\\ |"
+            }
+         },
       });
-   }).catch(() => { });
+      const response = await resetUserPwd(row.userId, value);
+      if (response.code !== 200) throw new Error(response.msg || "密码重置失败");
+      proxy.$modal.msgSuccess("密码重置成功");
+   } catch (error) {
+      if (error !== "cancel" && error !== "close") console.error("重置用户密码失败:", error);
+   } finally {
+      const pendingIds = new Set(resettingUserIds.value);
+      pendingIds.delete(row.userId);
+      resettingUserIds.value = pendingIds;
+   }
 };
 /** 选择条数  */
 function handleSelectionChange(selection) {
