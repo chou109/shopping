@@ -364,10 +364,22 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
 
     private void populateLikeStatus(List<ProductComment> comments, Long userId) {
         if (comments == null || comments.isEmpty()) return;
+        maskAnonymousIdentity(comments);
         List<Long> commentIds = comments.stream().map(ProductComment::getCommentId)
             .filter(id -> id != null).collect(java.util.stream.Collectors.toList());
         Set<Long> likedIds = new HashSet<>(getLikedCommentIds(userId, commentIds));
         comments.forEach(comment -> comment.setLikedByCurrentUser(likedIds.contains(comment.getCommentId())));
+    }
+
+    private void maskAnonymousIdentity(List<ProductComment> comments) {
+        if (comments == null) return;
+        for (ProductComment comment : comments) {
+            if (comment != null && Integer.valueOf(1).equals(comment.getIsAnonymous())) {
+                comment.setUserId(null);
+                comment.setNickName("匿名用户");
+                comment.setUserAvatar(null);
+            }
+        }
     }
 
     /**
@@ -489,6 +501,7 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
     public List<ProductComment> getCommentsWithImages(Long productId, Integer limit) {
         List<ProductComment> comments = productCommentMapper.selectProductCommentPage(
                 productId, null, null, true, 1);
+        maskAnonymousIdentity(comments);
 
         if (limit != null && limit > 0 && comments.size() > limit) {
             return comments.subList(0, limit);
@@ -556,17 +569,22 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
             node.put("likeCount", comment.getLikeCount());
             node.put("likedByCurrentUser", likedIds.contains(comment.getCommentId()));
             node.put("createTime", comment.getCreateTime());
-            node.put("userId", comment.getUserId());
+            boolean anonymous = Integer.valueOf(1).equals(comment.getIsAnonymous());
+            node.put("userId", anonymous ? null : comment.getUserId());
             node.put("images", comment.getImages());
             node.put("children", new ArrayList<Map<String, Object>>()); // 初始化children
-
-            // 获取用户信息
-            SysUser user = sysUserService.selectUserById(comment.getUserId());
-            if (user != null) {
-                node.put("nickName", user.getNickName());
-                node.put("userAvatar", user.getAvatar());
-            }
             node.put("isAnonymous", comment.getIsAnonymous());
+
+            if (anonymous) {
+                node.put("nickName", "匿名用户");
+                node.put("userAvatar", null);
+            } else {
+                SysUser user = sysUserService.selectUserById(comment.getUserId());
+                if (user != null) {
+                    node.put("nickName", user.getNickName());
+                    node.put("userAvatar", user.getAvatar());
+                }
+            }
 
             nodeMap.put(comment.getCommentId(), node);
         }

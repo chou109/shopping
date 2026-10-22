@@ -325,6 +325,7 @@ public class ProductCommentController extends BaseController
         if (comment == null) {
             return error("评论不存在");
         }
+        maskAnonymousIdentity(comment);
 
         Map<String, Object> result = new HashMap<>();
         result.put("comment", comment);
@@ -402,16 +403,9 @@ public class ProductCommentController extends BaseController
             node.put("likeCount", root.getLikeCount());
             node.put("likedByCurrentUser", likedCommentIds.contains(root.getCommentId()));
             node.put("createTime", root.getCreateTime());
-            node.put("userId", root.getUserId());
             node.put("images", root.getImages());
             node.put("children", new ArrayList<Map<String, Object>>());
-
-            // 用户信息
-            SysUser user = sysUserService.selectUserById(root.getUserId());
-            if (user != null) {
-                node.put("userName", user.getNickName());
-                node.put("userAvatar", user.getAvatar());
-            }
+            addCommentIdentity(node, root);
 
             rootMap.put(root.getCommentId(), node);
             resultTree.add(node);
@@ -426,16 +420,9 @@ public class ProductCommentController extends BaseController
             node.put("likeCount", child.getLikeCount());
             node.put("likedByCurrentUser", likedCommentIds.contains(child.getCommentId()));
             node.put("createTime", child.getCreateTime());
-            node.put("userId", child.getUserId());
             node.put("images", child.getImages());
             node.put("children", new ArrayList<Map<String, Object>>()); // 子评论不再有children
-
-            // 用户信息
-            SysUser user = sysUserService.selectUserById(child.getUserId());
-            if (user != null) {
-                node.put("userName", user.getNickName());
-                node.put("userAvatar", user.getAvatar());
-            }
+            addCommentIdentity(node, child);
 
             // 找到父节点
             Map<String, Object> parent = rootMap.get(child.getParentId());
@@ -454,6 +441,31 @@ public class ProductCommentController extends BaseController
 
         return success(resultData);
     }
+
+    private void addCommentIdentity(Map<String, Object> node, ProductComment comment) {
+        boolean anonymous = Integer.valueOf(1).equals(comment.getIsAnonymous());
+        node.put("isAnonymous", comment.getIsAnonymous());
+        node.put("userId", anonymous ? null : comment.getUserId());
+        if (anonymous) {
+            node.put("userName", "匿名用户");
+            node.put("userAvatar", null);
+            return;
+        }
+        SysUser user = sysUserService.selectUserById(comment.getUserId());
+        if (user != null) {
+            node.put("userName", user.getNickName());
+            node.put("userAvatar", user.getAvatar());
+        }
+    }
+
+    private void maskAnonymousIdentity(ProductComment comment) {
+        if (comment != null && Integer.valueOf(1).equals(comment.getIsAnonymous())) {
+            comment.setUserId(null);
+            comment.setNickName("匿名用户");
+            comment.setUserAvatar(null);
+        }
+    }
+
     @Autowired
     private ISysUserService sysUserService;
 }
