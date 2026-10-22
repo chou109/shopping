@@ -1095,6 +1095,12 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
         return orderInfoMapper.deleteOrderInfoById(id);
     }
 
+    @Override
+    public int deleteMyOrderForUser(Long id, Long userId)
+    {
+        return orderInfoMapper.deleteMyOrderForUser(id, userId);
+    }
+
 
     /**
      * 生成订单号

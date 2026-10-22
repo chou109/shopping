@@ -209,4 +209,7 @@ public interface IOrderInfoService extends IService<OrderInfo>
      * @return 结果
      */
     public int deleteOrderInfoById(Long id);
+
+    /** Soft-delete a consumer order if its owner and status still match the allowed conditions. */
+    public int deleteMyOrderForUser(Long id, Long userId);
 }

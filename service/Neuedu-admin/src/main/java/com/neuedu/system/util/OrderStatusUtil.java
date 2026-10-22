@@ -155,4 +155,11 @@ public class OrderStatusUtil {
     public static boolean canRefund(Integer status) {
         return OrderStatus.WAIT_SHIP.getCode().equals(status);
     }
+
+    /** Consumer-visible delete actions are available only for unpaid or final orders. */
+    public static boolean canDelete(Integer status) {
+        return OrderStatus.WAIT_PAY.getCode().equals(status)
+                || OrderStatus.COMPLETED.getCode().equals(status)
+                || OrderStatus.CANCELLED.getCode().equals(status);
+    }
 }

@@ -139,6 +139,9 @@ public interface OrderInfoMapper extends BaseMapper<OrderInfo>
      */
     public int deleteOrderInfoById(Long id);
 
+    /** Soft-delete a consumer order only while it belongs to the user and is in a deletable state. */
+    public int deleteMyOrderForUser(@Param("id") Long id, @Param("userId") Long userId);
+
     /**
      * 批量删除订单
      * 

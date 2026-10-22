@@ -355,6 +355,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         update order_info set delete_flag = 1 where id = #{id}
     </update>
 
+    <update id="deleteMyOrderForUser">
+        update order_info
+        set delete_flag = 1, update_time = now()
+        where id = #{id}
+          and user_id = #{userId}
+          and delete_flag = 0
+          and status in (10, 50, 60)
+    </update>
+
     <update id="deleteOrderInfoByIds" parameterType="Long[]">
         update order_info set delete_flag = 1 where id in
         <foreach item="id" collection="array" open="(" separator="," close=")">

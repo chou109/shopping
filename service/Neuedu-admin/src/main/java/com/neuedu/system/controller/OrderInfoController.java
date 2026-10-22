@@ -29,6 +29,7 @@ import com.neuedu.system.service.BlindBoxLockRegistry;
 import com.neuedu.system.service.BlindBoxPrizePolicy;
 import com.neuedu.system.mapper.SysUserMapper;
 import com.neuedu.system.constants.OrderStatusConstants;
+import com.neuedu.system.util.OrderStatusUtil;
 import com.neuedu.common.utils.poi.ExcelUtil;
 import com.neuedu.common.core.page.TableDataInfo;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -494,7 +495,13 @@ public class OrderInfoController extends BaseController {
         if (!order.getUserId().equals(userId)) {
             return AjaxResult.error("无权删除此订单");
         }
-        return toAjax(orderInfoService.deleteOrderInfoById(id));
+        if (!OrderStatusUtil.canDelete(order.getStatus())) {
+            return AjaxResult.error("仅待付款、已完成或已取消的订单可以删除");
+        }
+        if (orderInfoService.deleteMyOrderForUser(id, userId) == 0) {
+            return AjaxResult.error("订单状态已变更或订单已删除，请刷新后重试");
+        }
+        return success("订单已删除");
     }
 
     /**
