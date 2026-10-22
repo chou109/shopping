@@ -1,5 +1,8 @@
 <template>
-  <div class="app-container">
+  <div class="app-container" v-loading="loading">
+    <el-alert v-if="loadError" :title="loadError" type="error" :closable="false" show-icon>
+      <template #default><el-button link type="primary" :disabled="loading" @click="getList">重试</el-button></template>
+    </el-alert>
     <el-row>
       <el-col :span="12" class="card-box">
         <el-card>
@@ -173,15 +176,31 @@
 import { getServer } from '@/api/monitor/server'
 
 const server = ref([]);
-const { proxy } = getCurrentInstance();
+const loading = ref(true);
+const loadError = ref("");
+let requestId = 0;
 
-function getList() {
-  proxy.$modal.loading("正在加载服务监控数据，请稍候！");
-  getServer().then(response => {
+async function getList() {
+  const currentRequestId = ++requestId;
+  loading.value = true;
+  loadError.value = "";
+  try {
+    const response = await getServer();
+    if (currentRequestId !== requestId) return;
+    if (!response?.data || typeof response.data !== "object") throw new Error("服务器监控数据格式异常");
     server.value = response.data;
-    proxy.$modal.closeLoading();
-  });
+  } catch (error) {
+    if (currentRequestId === requestId) {
+      console.error("获取服务器监控数据失败:", error);
+      loadError.value = "服务器监控数据加载失败，请重试";
+    }
+  } finally {
+    if (currentRequestId === requestId) loading.value = false;
+  }
 }
 
 getList();
+onBeforeUnmount(() => {
+  requestId += 1;
+});
 </script>

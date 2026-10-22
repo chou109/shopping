@@ -87,6 +87,10 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
+    <el-alert v-if="listError" :title="listError" type="error" :closable="false" show-icon>
+      <template #default><el-button link type="primary" :disabled="loading" @click="getList">重试</el-button></template>
+    </el-alert>
+
     <el-table v-loading="loading" :data="tableList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" align="center" width="55"></el-table-column>
       <el-table-column label="序号" type="index" width="50" align="center">
@@ -171,6 +175,8 @@ const { proxy } = getCurrentInstance();
 
 const tableList = ref([]);
 const loading = ref(true);
+const listError = ref("");
+let tableListRequestId = 0;
 const showSearch = ref(true);
 const ids = ref([]);
 const single = ref(true);
@@ -209,13 +215,24 @@ onActivated(() => {
 })
 
 /** 查询表集合 */
-function getList() {
+async function getList() {
+  const requestId = ++tableListRequestId;
   loading.value = true;
-  listTable(proxy.addDateRange(queryParams.value, dateRange.value)).then(response => {
+  listError.value = "";
+  try {
+    const response = await listTable(proxy.addDateRange(queryParams.value, dateRange.value));
+    if (requestId !== tableListRequestId) return;
+    if (!Array.isArray(response.rows)) throw new Error("数据表列表格式异常");
     tableList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
+    total.value = Number(response.total) || 0;
+  } catch (error) {
+    if (requestId === tableListRequestId) {
+      console.error("获取数据表列表失败:", error);
+      listError.value = "数据表列表加载失败，请重试";
+    }
+  } finally {
+    if (requestId === tableListRequestId) loading.value = false;
+  }
 }
 /** 搜索按钮操作 */
 function handleQuery() {
@@ -295,4 +312,7 @@ function handleDelete(row) {
 }
 
 getList();
+onBeforeUnmount(() => {
+  tableListRequestId += 1;
+});
 </script>
