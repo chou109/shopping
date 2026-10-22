@@ -144,6 +144,7 @@ import { recordFootprint } from '@/api/system/footprint'
 import { checkFavorite, toggleFavorite } from '@/api/system/favorite'
 import { filterProductsByKeyword, isBlindBoxProduct } from '@/utils/product'
 import { getToken } from '@/utils/auth'
+import { formatProductPrice } from '@/utils/productDetail.mjs'
 
 const route = useRoute()
 const router = useRouter()
@@ -169,10 +170,7 @@ const getImageUrl = (path) => {
 }
 
 // 格式化价格
-const formatPrice = (price) => {
-  if (!price) return '0.00'
-  return Number(price).toFixed(2)
-}
+const formatPrice = formatProductPrice
 
 // 格式化评分
 const formatScore = (score) => {

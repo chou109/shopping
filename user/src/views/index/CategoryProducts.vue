@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { listProductByCategory } from '@/api/system/product'
 import { getProductImageUrl, handleImageError } from '@/utils/image'
+import { formatProductPrice } from '@/utils/productDetail.mjs'
 
 const props = defineProps({
   categoryId: {
@@ -43,10 +44,7 @@ const loadProducts = async () => {
 }
 
 // 格式化价格
-const formatPrice = (price) => {
-  if (!price) return '0.00'
-  return parseFloat(price).toFixed(2)
-}
+const formatPrice = formatProductPrice
 
 // 获取商品描述
 const getDescription = (item) => {

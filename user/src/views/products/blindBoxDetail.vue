@@ -13,6 +13,7 @@ import { getMyAddressList } from '@/api/system/address'
 import { getToken } from '@/utils/auth'
 import PurchaseDialog from '@/components/PurchaseDialog/index.vue'
 import { getBlindBoxOrderFailureMessage } from '@/utils/blindBoxCheckout.mjs'
+import { formatProductPrice } from '@/utils/productDetail.mjs'
 
 // 导入盲盒图片
 import BlindBoxImage1 from '@/assets/BlindBox/BlindBox.png'
@@ -91,10 +92,7 @@ const getCurrentImage = () => {
 }
 
 // 格式化价格
-const formatPrice = (price) => {
-  if (!price) return '0.00'
-  return parseFloat(price).toFixed(2)
-}
+const formatPrice = formatProductPrice
 
 // 放大镜功能 - 修复版本
 const handleImageMouseEnter = () => {

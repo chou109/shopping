@@ -124,6 +124,7 @@ import { getProductImageUrl, handleImageError } from '@/utils/image'
 import { listFootprintByUser, deleteFootprint, clearFootprint } from '@/api/system/footprint'
 import { addCart } from '@/api/system/cart'
 import { addFavorite, checkFavorite } from '@/api/system/favorite'
+import { formatProductPrice } from '@/utils/productDetail.mjs'
 
 const router = useRouter()
 const store = useStore()
@@ -360,14 +361,7 @@ const formatTime = (timeString) => {
   }
 }
 
-const formatPrice = (price) => {
-  try {
-    return Number(price).toFixed(2)
-  } catch (error) {
-    console.error('格式化价格出错:', error)
-    return price
-  }
-}
+const formatPrice = formatProductPrice
 
 const getTypeText = (type) => {
   const typeMap = {

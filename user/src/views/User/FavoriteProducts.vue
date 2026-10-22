@@ -52,6 +52,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Star } from '@element-plus/icons-vue'
 import { getMyProductFavorites, removeFavorite } from '@/api/system/favorite'
 import { getProductImageUrl, handleImageError } from '@/utils/image'
+import { formatProductPrice } from '@/utils/productDetail.mjs'
 
 const router = useRouter()
 
@@ -105,10 +106,7 @@ const handleRemoveFavorite = async (item) => {
 }
 
 // 格式化价格
-const formatPrice = (price) => {
-  if (!price) return '0.00'
-  return parseFloat(price).toFixed(2)
-}
+const formatPrice = formatProductPrice
 
 // 格式化时间
 const formatTime = (time) => {

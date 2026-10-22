@@ -168,6 +168,7 @@ import { getFrontCategoryTree } from '@/api/system/category'
 import { getProductImageUrl, handleImageError } from '@/utils/image'
 import { isBlindBoxProduct } from '@/utils/product'
 import { listHotShop } from '@/api/system/shop'
+import { formatProductPrice } from '@/utils/productDetail.mjs'
 
 const route = useRoute()
 const router = useRouter()
@@ -472,10 +473,7 @@ const handleShopClick = (shopId) => {
 }
 
 // 格式化价格
-const formatPrice = (price) => {
-  if (!price) return '0.00'
-  return parseFloat(price).toFixed(2)
-}
+const formatPrice = formatProductPrice
 
 // 格式化销量
 const formatSalesCount = (salesCount) => {

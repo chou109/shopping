@@ -23,6 +23,7 @@
 
 <script setup>
 import { getProductImageUrl, handleImageError } from '@/utils/image'
+import { formatProductPrice } from '@/utils/productDetail.mjs'
 
 defineProps({
   title: { type: String, required: true },
@@ -32,7 +33,7 @@ defineProps({
 
 defineEmits(['select', 'view-more'])
 
-const formatPrice = (price) => Number(price || 0).toFixed(2)
+const formatPrice = formatProductPrice
 </script>
 
 <style scoped>
