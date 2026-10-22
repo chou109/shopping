@@ -350,6 +350,7 @@ import { listProduct, getProduct, delProduct, addProduct, updateProduct, updateP
 import { listCategoryFront } from "@/api/system/category";
 import { getMyShop } from "@/api/system/dashboard";
 import { buildCategoryOptions, buildCategoryTree } from '@/utils/product-category.mjs';
+import { getProductDetailData, normalizeProductPageResponse } from '@/utils/product-response.mjs';
 import { ArrowDown } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import useUserStore from '@/store/modules/user';
@@ -481,8 +482,9 @@ function getList() {
 
   return listProduct(params).then(response => {
     if (requestId !== productListRequestId) return;
-    productList.value = response.rows || [];
-    total.value = Number(response.total) || 0;
+    const page = normalizeProductPageResponse(response);
+    productList.value = page.rows;
+    total.value = page.total;
   }).catch(() => {
     if (requestId === productListRequestId) {
       listError.value = "商品加载失败，请重试";
@@ -577,7 +579,7 @@ function handleUpdate(row) {
   productDetailLoadingId.value = _id;
   getProduct(_id).then(response => {
     if (requestId !== productDetailRequestId) return;
-    form.value = response.data;
+    form.value = getProductDetailData(response);
     if (form.value.status === undefined || form.value.status === null) {
       form.value.status = 1;
     }
@@ -590,7 +592,10 @@ function handleUpdate(row) {
     open.value = true;
     title.value = "修改商品";
   }).catch(error => {
-    if (requestId === productDetailRequestId) console.error('加载商品详情失败:', error);
+    if (requestId === productDetailRequestId) {
+      console.error('加载商品详情失败:', error);
+      ElMessage.error('商品详情加载失败，请重试');
+    }
   }).finally(() => {
     if (requestId === productDetailRequestId) productDetailLoadingId.value = null;
   });
