@@ -46,18 +46,49 @@ public class RefundRecordServiceTest {
         assertEquals(0, fixture.orderUpdates);
     }
 
+    @Test
+    public void cannotMarkUnsupportedPaymentAsRefunded() throws Exception {
+        assertRefundRejected(new RefundFixture(1, OrderStatusConstants.PAYMENT_WECHAT, new BigDecimal("19.90")),
+            "当前仅支持余额支付订单退款，尚未接入原路退款");
+    }
+
+    @Test
+    public void cannotCancelWholeOrderForPartialRefund() throws Exception {
+        assertRefundRejected(new RefundFixture(1, OrderStatusConstants.PAYMENT_BALANCE, new BigDecimal("5.00")),
+            "当前订单仅支持全额退款");
+    }
+
+    private void assertRefundRejected(RefundFixture fixture, String message) {
+        try {
+            fixture.service.processRefund("refund-1", OrderStatusConstants.REFUND_SUCCESS, "通过");
+            fail("Expected refund to be rejected");
+        } catch (RuntimeException error) {
+            assertEquals(message, error.getMessage());
+        }
+
+        assertEquals(0, fixture.statusTransitions);
+        assertEquals(0, fixture.balanceUpdates);
+        assertEquals(0, fixture.stockUpdates);
+        assertEquals(0, fixture.orderUpdates);
+    }
+
     private static class RefundFixture {
         private final RefundRecordServiceImpl service = new RefundRecordServiceImpl();
         private int balanceUpdates;
         private int stockUpdates;
         private int orderUpdates;
+        private int statusTransitions;
 
         private RefundFixture(int transitionResult) throws Exception {
+            this(transitionResult, OrderStatusConstants.PAYMENT_BALANCE, new BigDecimal("19.90"));
+        }
+
+        private RefundFixture(int transitionResult, Integer paymentType, BigDecimal refundAmount) throws Exception {
             RefundRecord record = new RefundRecord();
             record.setRefundNo("refund-1");
             record.setOrderNo("order-1");
             record.setUserId(7L);
-            record.setRefundAmount(new BigDecimal("19.90"));
+            record.setRefundAmount(refundAmount);
 
             OrderDetail detail = new OrderDetail();
             detail.setProductId(42L);
@@ -67,12 +98,16 @@ public class RefundRecordServiceTest {
             OrderInfo order = new OrderInfo();
             order.setOrderNo("order-1");
             order.setUserId(7L);
-            order.setPaymentType(OrderStatusConstants.PAYMENT_BALANCE);
+            order.setPaymentType(paymentType);
+            order.setPayment(new BigDecimal("19.90"));
             order.setOrderDetails(details);
 
             inject("refundRecordMapper", proxy(RefundRecordMapper.class, (method, args) -> {
                 if ("selectRefundRecordByRefundNo".equals(method)) return record;
-                if ("transitionRefundStatus".equals(method)) return transitionResult;
+                if ("transitionRefundStatus".equals(method)) {
+                    statusTransitions++;
+                    return transitionResult;
+                }
                 return null;
             }));
             inject("orderInfoService", proxy(IOrderInfoService.class, (method, args) -> {

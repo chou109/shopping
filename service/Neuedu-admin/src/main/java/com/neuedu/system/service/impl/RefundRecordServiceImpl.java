@@ -239,6 +239,24 @@ public class RefundRecordServiceImpl extends ServiceImpl<RefundRecordMapper, Ref
             throw new RuntimeException("退款记录不存在");
         }
 
+        OrderInfo orderInfo = null;
+        if (OrderStatusConstants.REFUND_SUCCESS.equals(refundStatus)) {
+            orderInfo = orderInfoService.selectOrderInfoByOrderNo(refundRecord.getOrderNo());
+            if (orderInfo == null) {
+                throw new RuntimeException("退款订单不存在");
+            }
+            if (!OrderStatusConstants.PAYMENT_BALANCE.equals(orderInfo.getPaymentType())) {
+                throw new RuntimeException("当前仅支持余额支付订单退款，尚未接入原路退款");
+            }
+            if (refundRecord.getRefundAmount() == null || orderInfo.getPayment() == null
+                    || refundRecord.getRefundAmount().compareTo(orderInfo.getPayment()) != 0) {
+                throw new RuntimeException("当前订单仅支持全额退款");
+            }
+            if (orderInfo.getOrderDetails() == null || orderInfo.getOrderDetails().isEmpty()) {
+                throw new RuntimeException("订单没有明细，无法恢复库存");
+            }
+        }
+
         Date refundTime = OrderStatusConstants.REFUND_SUCCESS.equals(refundStatus)
             ? DateUtils.getNowDate() : null;
         int transitioned = refundRecordMapper.transitionRefundStatus(
@@ -249,30 +267,17 @@ public class RefundRecordServiceImpl extends ServiceImpl<RefundRecordMapper, Ref
 
         // 只有成功取得状态迁移的事务可执行余额和库存副作用。
         if (OrderStatusConstants.REFUND_SUCCESS.equals(refundStatus)) {
-            // 3. 执行退款操作（根据退款方式）
-            OrderInfo orderInfo = orderInfoService.selectOrderInfoByOrderNo(refundRecord.getOrderNo());
-            if (orderInfo != null) {
+            orderInfo.setStatus(OrderStatusConstants.CANCELLED);
+            orderInfo.setStatusDesc(OrderStatusConstants.getOrderStatusDesc(OrderStatusConstants.CANCELLED));
+            orderInfo.setRefundTime(DateUtils.getNowDate());
+            orderInfo.setUpdateTime(DateUtils.getNowDate());
+            orderInfoService.updateOrderInfo(orderInfo);
 
-                // 更新订单状态为已取消
-                orderInfo.setStatus(OrderStatusConstants.CANCELLED);
-                orderInfo.setStatusDesc(OrderStatusConstants.getOrderStatusDesc(OrderStatusConstants.CANCELLED));
-                orderInfo.setRefundTime(DateUtils.getNowDate());
-                orderInfo.setUpdateTime(DateUtils.getNowDate());
-                orderInfoService.updateOrderInfo(orderInfo);
-
-                // 恢复商品库存
-                if (orderInfo.getOrderDetails() != null) {
-                    for (OrderDetail detail : orderInfo.getOrderDetails()) {
-                        productService.updateProductStock(detail.getProductId(), Long.valueOf(detail.getQuantity()));
-                    }
-                }
-                
-                // 如果是余额支付，退还余额到 sys_user 表
-                if (orderInfo.getPaymentType() != null && orderInfo.getPaymentType().equals(OrderStatusConstants.PAYMENT_BALANCE)) {
-                    sysUserService.updateUserBalance(orderInfo.getUserId(), refundRecord.getRefundAmount());
-                }
-                // 其他支付方式的退款逻辑...
+            for (OrderDetail detail : orderInfo.getOrderDetails()) {
+                productService.updateProductStock(detail.getProductId(), Long.valueOf(detail.getQuantity()));
             }
+
+            sysUserService.updateUserBalance(orderInfo.getUserId(), refundRecord.getRefundAmount());
         }
 
         return transitioned;
