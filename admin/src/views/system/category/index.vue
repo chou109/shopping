@@ -247,7 +247,7 @@ function tableRowClassName({ row }) {
 
 /** 分页读取所有管理分类，避免公开树接口隐藏停用/删除项。 */
 async function fetchAllCategoryRows(filters = {}) {
-  return fetchAllCategoryPages(listCategory, filters)
+  return fetchAllCategoryPages(listCategory, { deleteFlag: 0, ...filters })
 }
 
 /** 查询分类列表 */
