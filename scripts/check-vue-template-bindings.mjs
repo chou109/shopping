@@ -49,6 +49,29 @@ function collectAnchorIssues(node, filename) {
   return issues
 }
 
+function collectTargetBlankIssues(node, filename) {
+  const issues = []
+  if (node.type === 1) {
+    const targetBlank = node.props.some(property =>
+      (property.type === 6 && property.name === 'target' && property.value?.content === '_blank') ||
+      (property.type === 7 && property.name === 'bind' && property.arg?.content === 'target' && property.exp?.content?.trim().replace(/^['"]|['"]$/g, '') === '_blank')
+    )
+    if (targetBlank) {
+      const relValue = node.props.find(property =>
+        (property.type === 6 && property.name === 'rel') ||
+        (property.type === 7 && property.name === 'bind' && property.arg?.content === 'rel')
+      )
+      const rel = relValue?.type === 6 ? relValue.value?.content : relValue?.exp?.content?.replace(/^['"]|['"]$/g, '')
+      const relTokens = new Set((rel || '').split(/\s+/))
+      if (!relTokens.has('noopener') || !relTokens.has('noreferrer')) {
+        issues.push(`${path.relative(root, filename)}:${node.loc.start.line}: target="_blank" 需同时设置 rel="noopener noreferrer"`)
+      }
+    }
+  }
+  for (const child of node.children || []) issues.push(...collectTargetBlankIssues(child, filename))
+  return issues
+}
+
 function collectButtonIssues(node, filename) {
   const issues = []
   if (node.type === 1 && node.tag === 'button') {
@@ -130,6 +153,7 @@ for (const sourceRoot of sourceRoots) {
     }
     failures.push(...collectImageAltIssues(parsedTemplate.ast, filename))
     failures.push(...collectAnchorIssues(parsedTemplate.ast, filename))
+    failures.push(...collectTargetBlankIssues(parsedTemplate.ast, filename))
     failures.push(...collectButtonIssues(parsedTemplate.ast, filename))
     failures.push(...collectClickableElementIssues(parsedTemplate.ast, filename))
     failures.push(...collectLegacySlotIssues(parsedTemplate.ast, filename))
