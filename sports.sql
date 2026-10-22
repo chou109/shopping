@@ -49403,6 +49403,7 @@ INSERT INTO `product` VALUES ('9999', '2025-12-28 23:00:17', '2025-12-28 23:00:1
 -- ----------------------------
 -- Table structure for product_comment
 -- ----------------------------
+DROP TABLE IF EXISTS `product_comment_like`;
 DROP TABLE IF EXISTS `product_comment`;
 CREATE TABLE `product_comment` (
   `comment_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '评论ID',
@@ -49427,6 +49428,16 @@ CREATE TABLE `product_comment` (
   KEY `idx_parent_id` (`parent_id`),
   KEY `idx_order_id` (`order_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2211 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='商品评论表';
+
+CREATE TABLE `product_comment_like` (
+  `comment_id` bigint(20) NOT NULL COMMENT '评论ID',
+  `user_id` bigint(20) NOT NULL COMMENT '点赞用户ID',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '点赞时间',
+  PRIMARY KEY (`comment_id`, `user_id`),
+  KEY `idx_product_comment_like_user` (`user_id`, `comment_id`),
+  CONSTRAINT `fk_product_comment_like_comment`
+    FOREIGN KEY (`comment_id`) REFERENCES `product_comment` (`comment_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='商品评论点赞关系';
 
 -- ----------------------------
 -- Records of product_comment

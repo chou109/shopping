@@ -255,7 +255,9 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
      */
     @Override
     public List<ProductComment> getProductComments(Long productId, Integer score, Boolean hasImages) {
-        return productCommentMapper.selectProductCommentPage(productId, null, score, hasImages, 1);
+        List<ProductComment> comments = productCommentMapper.selectProductCommentPage(productId, null, score, hasImages, 1);
+        populateLikeStatus(comments, SecurityUtils.getOptionalUserId());
+        return comments;
     }
 
     /**
@@ -263,7 +265,9 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
      */
     @Override
     public List<ProductComment> getRootComments(Long productId) {
-        return productCommentMapper.selectRootCommentsByProductId(productId, 1);
+        List<ProductComment> comments = productCommentMapper.selectRootCommentsByProductId(productId, 1);
+        populateLikeStatus(comments, SecurityUtils.getOptionalUserId());
+        return comments;
     }
 
     /**
@@ -271,7 +275,9 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
      */
     @Override
     public List<ProductComment> getCommentReplies(Long parentId) {
-        return productCommentMapper.selectRepliesByParentId(parentId, 1);
+        List<ProductComment> comments = productCommentMapper.selectRepliesByParentId(parentId, 1);
+        populateLikeStatus(comments, SecurityUtils.getOptionalUserId());
+        return comments;
     }
 
     /**
@@ -279,16 +285,23 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public boolean likeComment(Long commentId) {
+    public boolean likeComment(Long commentId, Long userId) {
+        if (userId == null) {
+            throw new ServiceException("请先登录");
+        }
         ProductComment comment = selectProductCommentByCommentId(commentId);
         if (comment == null || !comment.isNormal()) {
             throw new ServiceException("评论不存在或已被删除");
         }
-
-        // TODO: 这里可以添加用户点赞记录，防止重复点赞
-
-        int result = productCommentMapper.increaseLikeCount(commentId);
-        return result > 0;
+        int inserted = productCommentMapper.insertCommentLike(commentId, userId);
+        if (inserted > 0) {
+            if (productCommentMapper.increaseLikeCount(commentId) < 1) {
+                throw new ServiceException("评论已不可点赞");
+            }
+            return true;
+        }
+        if (productCommentMapper.countCommentLikesByUser(commentId, userId) > 0) return false;
+        throw new ServiceException("评论已不可点赞");
     }
 
     /**
@@ -296,16 +309,37 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public boolean unlikeComment(Long commentId) {
+    public boolean unlikeComment(Long commentId, Long userId) {
+        if (userId == null) {
+            throw new ServiceException("请先登录");
+        }
         ProductComment comment = selectProductCommentByCommentId(commentId);
         if (comment == null || !comment.isNormal()) {
             throw new ServiceException("评论不存在或已被删除");
         }
+        int removed = productCommentMapper.deleteCommentLike(commentId, userId);
+        if (removed < 1) {
+            return false;
+        }
+        if (productCommentMapper.decreaseLikeCount(commentId) < 1) {
+            throw new ServiceException("评论已不可取消点赞");
+        }
+        return true;
+    }
 
-        // TODO: 这里可以检查用户是否点赞过
+    @Override
+    public List<Long> getLikedCommentIds(Long userId, List<Long> commentIds) {
+        if (userId == null || commentIds == null || commentIds.isEmpty()) return new ArrayList<>();
+        List<Long> likedIds = productCommentMapper.selectLikedCommentIds(userId, commentIds);
+        return likedIds != null ? likedIds : new ArrayList<>();
+    }
 
-        int result = productCommentMapper.decreaseLikeCount(commentId);
-        return result > 0;
+    private void populateLikeStatus(List<ProductComment> comments, Long userId) {
+        if (comments == null || comments.isEmpty()) return;
+        List<Long> commentIds = comments.stream().map(ProductComment::getCommentId)
+            .filter(id -> id != null).collect(java.util.stream.Collectors.toList());
+        Set<Long> likedIds = new HashSet<>(getLikedCommentIds(userId, commentIds));
+        comments.forEach(comment -> comment.setLikedByCurrentUser(likedIds.contains(comment.getCommentId())));
     }
 
     /**
@@ -476,6 +510,10 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
             return new ArrayList<>();
         }
 
+        List<Long> commentIds = allComments.stream().map(ProductComment::getCommentId)
+            .filter(id -> id != null).collect(java.util.stream.Collectors.toList());
+        Set<Long> likedIds = new HashSet<>(getLikedCommentIds(SecurityUtils.getOptionalUserId(), commentIds));
+
         // 3. 准备数据
         Map<Long, Map<String, Object>> nodeMap = new HashMap<>();
         List<Map<String, Object>> rootNodes = new ArrayList<>();
@@ -488,6 +526,7 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
             node.put("content", comment.getContent());
             node.put("score", comment.getScore());
             node.put("likeCount", comment.getLikeCount());
+            node.put("likedByCurrentUser", likedIds.contains(comment.getCommentId()));
             node.put("createTime", comment.getCreateTime());
             node.put("userId", comment.getUserId());
             node.put("images", comment.getImages());

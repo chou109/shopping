@@ -120,6 +120,14 @@ public interface ProductCommentMapper extends BaseMapper<ProductComment>
      */
     int decreaseLikeCount(@Param("commentId") Long commentId);
 
+    int insertCommentLike(@Param("commentId") Long commentId, @Param("userId") Long userId);
+
+    int deleteCommentLike(@Param("commentId") Long commentId, @Param("userId") Long userId);
+
+    int countCommentLikesByUser(@Param("commentId") Long commentId, @Param("userId") Long userId);
+
+    List<Long> selectLikedCommentIds(@Param("userId") Long userId, @Param("commentIds") List<Long> commentIds);
+
     /**
      * 增加评论回复数
      */

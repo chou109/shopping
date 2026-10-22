@@ -92,12 +92,14 @@ public interface IProductCommentService extends IService<ProductComment>
     /**
      * 点赞评论
      */
-    boolean likeComment(Long commentId);
+    boolean likeComment(Long commentId, Long userId);
 
     /**
      * 取消点赞评论
      */
-    boolean unlikeComment(Long commentId);
+    boolean unlikeComment(Long commentId, Long userId);
+
+    List<Long> getLikedCommentIds(Long userId, List<Long> commentIds);
 
     /**
      * 获取商品评论统计信息

@@ -79,6 +79,10 @@ public class ProductComment extends BaseEntity
     @Excel(name = "点赞数")
     private Long likeCount;
 
+    /** Whether the current authenticated user has liked this comment. */
+    @TableField(exist = false)
+    private Boolean likedByCurrentUser;
+
     /** 回复数 */
     @Schema(title = "回复数")
     @Excel(name = "回复数")

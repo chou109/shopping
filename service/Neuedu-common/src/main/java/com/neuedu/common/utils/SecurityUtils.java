@@ -29,6 +29,18 @@ public class SecurityUtils
         }
     }
 
+    /** Returns the current user ID when authenticated, or null for public requests. */
+    public static Long getOptionalUserId()
+    {
+        Authentication authentication = getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated())
+        {
+            return null;
+        }
+        Object principal = authentication.getPrincipal();
+        return principal instanceof LoginUser ? ((LoginUser) principal).getUserId() : null;
+    }
+
     /**
      * 获取部门ID
      **/

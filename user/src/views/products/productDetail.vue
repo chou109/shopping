@@ -26,7 +26,9 @@ import {
   listProductComments,
   getProductCommentStats,
   getProductCommentsFront,
-  getCommentTree
+  getCommentTree,
+  likeComment,
+  unlikeComment
 } from '@/api/system/productComment'
 import { DEFAULT_AVATAR_IMAGE, DEFAULT_PRODUCT_IMAGE, DEFAULT_SHOP_IMAGE, getProductImageUrl, handleImageError } from '@/utils/image'
 import { recordFootprint } from '@/api/system/footprint'
@@ -79,6 +81,7 @@ const shopInfoLoadError = ref(false)
 
 // 商品评价数据
 const productComments = ref([])
+const commentLikeBusyIds = ref(new Set())
 const commentStats = ref({
   total: 0,
   averageScore: 0,
@@ -298,6 +301,7 @@ const loadProductComments = async (productId = product.value.id, requestId = pro
           score: comment.score || 0,
           images: comment.images || comment.imgs || [],
           likeCount: comment.likeCount || 0,
+          likedByCurrentUser: Boolean(comment.likedByCurrentUser),
           replyCount: comment.replyCount || 0,
           createTime: comment.createTime || comment.time || new Date().toISOString(),
           isAnonymous: comment.isAnonymous || 0,
@@ -505,6 +509,35 @@ const ensureLoginForAction = (message = '请先登录后再操作') => {
   ElMessage.warning(message)
   router.push({ path: '/login', query: { redirect: route.fullPath } })
   return false
+}
+
+const toggleCommentLike = async (comment) => {
+  if (!ensureLoginForAction('请先登录后再为评价点赞')) return
+  const commentId = Number(comment?.commentId)
+  if (!Number.isSafeInteger(commentId) || commentId < 1 || commentLikeBusyIds.value.has(commentId)) return
+
+  const wasLiked = Boolean(comment.likedByCurrentUser)
+  commentLikeBusyIds.value.add(commentId)
+  try {
+    const response = wasLiked ? await unlikeComment(commentId) : await likeComment(commentId)
+    if (response?.code !== 200) throw new Error(response?.msg || '评价点赞状态更新失败')
+
+    // A false result means the persisted state already differed (for example, after a lost response).
+    // Reload the server version instead of guessing whether the count changed.
+    if (!response.data) {
+      await loadProductComments(product.value.id)
+      return
+    }
+
+    const likeCount = Number(comment.likeCount)
+    const currentCount = Number.isFinite(likeCount) && likeCount >= 0 ? likeCount : 0
+    comment.likedByCurrentUser = !wasLiked
+    comment.likeCount = Math.max(0, currentCount + (wasLiked ? -1 : 1))
+  } catch (error) {
+    ElMessage.error(error?.message || '评价点赞状态更新失败，请稍后重试')
+  } finally {
+    commentLikeBusyIds.value.delete(commentId)
+  }
 }
 
 // 添加到购物车
@@ -1003,7 +1036,13 @@ watch(() => route.query.id, (newId, oldId) => {
                           </div>
 
                           <div class="comment-footer">
-                            <span class="like-count">👍 {{ comment.likeCount }}</span>
+                            <button type="button" class="comment-like-button"
+                              :aria-pressed="Boolean(comment.likedByCurrentUser)"
+                              :aria-label="`${comment.likedByCurrentUser ? '取消有用评价' : '觉得这条评价有用'}，${comment.likeCount || 0} 人觉得有用`"
+                              :disabled="commentLikeBusyIds.has(comment.commentId)"
+                              @click="toggleCommentLike(comment)">
+                              👍 {{ comment.likedByCurrentUser ? '已觉得有用' : '觉得有用' }} · {{ comment.likeCount || 0 }}
+                            </button>
                             <span class="reply-count" v-if="comment.replyCount > 0">💬 {{ comment.replyCount }}</span>
                           </div>
                         </div>
@@ -1807,6 +1846,31 @@ watch(() => route.query.id, (newId, oldId) => {
   font-size: 13px;
   color: #999;
   margin-top: 10px;
+}
+
+.comment-like-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #666;
+  font: inherit;
+  cursor: pointer;
+}
+
+.comment-like-button:hover,
+.comment-like-button[aria-pressed="true"] {
+  color: #d4380d;
+}
+
+.comment-like-button:focus-visible {
+  outline: 2px solid #d4380d;
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+.comment-like-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
 }
 
 .no-comments .empty-state {

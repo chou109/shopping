@@ -1,14 +1,17 @@
 package com.neuedu.system.controller;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.neuedu.common.core.domain.entity.SysUser;
+import com.neuedu.common.utils.SecurityUtils;
 import com.neuedu.system.service.ISysUserService;
 import lombok.RequiredArgsConstructor;
 import javax.servlet.http.HttpServletResponse;
@@ -179,7 +182,7 @@ public class ProductCommentController extends BaseController
     @PreAuthorize("isAuthenticated()")
     @PostMapping("/{commentId}/like")
     public AjaxResult likeComment(@PathVariable Long commentId) {
-        boolean result = productCommentService.likeComment(commentId);
+        boolean result = productCommentService.likeComment(commentId, getUserId());
         return success(result);
     }
 
@@ -190,7 +193,7 @@ public class ProductCommentController extends BaseController
     @PreAuthorize("isAuthenticated()")
     @PostMapping("/{commentId}/unlike")
     public AjaxResult unlikeComment(@PathVariable Long commentId) {
-        boolean result = productCommentService.unlikeComment(commentId);
+        boolean result = productCommentService.unlikeComment(commentId, getUserId());
         return success(result);
     }
 
@@ -321,6 +324,9 @@ public class ProductCommentController extends BaseController
 
         Map<String, Object> result = new HashMap<>();
         result.put("comment", comment);
+        comment.setLikedByCurrentUser(productCommentService.getLikedCommentIds(
+            SecurityUtils.getOptionalUserId(),
+            java.util.Collections.singletonList(commentId)).contains(commentId));
 
         if (comment.isRootComment()) {
             List<ProductComment> replies = productCommentService.getCommentReplies(commentId);
@@ -374,6 +380,11 @@ public class ProductCommentController extends BaseController
 
         List<ProductComment> children = productCommentService.list(childQuery);
 
+        List<Long> allCommentIds = new ArrayList<>(rootIds);
+        allCommentIds.addAll(children.stream().map(ProductComment::getCommentId).collect(Collectors.toList()));
+        Set<Long> likedCommentIds = new HashSet<>(productCommentService.getLikedCommentIds(
+            SecurityUtils.getOptionalUserId(), allCommentIds));
+
         // 构建树
         Map<Long, Map<String, Object>> rootMap = new HashMap<>();
         List<Map<String, Object>> resultTree = new ArrayList<>();
@@ -385,6 +396,7 @@ public class ProductCommentController extends BaseController
             node.put("content", root.getContent());
             node.put("score", root.getScore());
             node.put("likeCount", root.getLikeCount());
+            node.put("likedByCurrentUser", likedCommentIds.contains(root.getCommentId()));
             node.put("createTime", root.getCreateTime());
             node.put("userId", root.getUserId());
             node.put("images", root.getImages());
@@ -408,6 +420,7 @@ public class ProductCommentController extends BaseController
             node.put("content", child.getContent());
             node.put("score", child.getScore());
             node.put("likeCount", child.getLikeCount());
+            node.put("likedByCurrentUser", likedCommentIds.contains(child.getCommentId()));
             node.put("createTime", child.getCreateTime());
             node.put("userId", child.getUserId());
             node.put("images", child.getImages());
