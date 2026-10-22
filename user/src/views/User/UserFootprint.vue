@@ -3,7 +3,7 @@
     <!-- 页面标题和操作 -->
     <div class="page-header">
       <div class="page-actions">
-        <el-button type="danger" plain :disabled="!footprints || footprints.length === 0 || clearingFootprints" :loading="clearingFootprints" @click="handleClearAll">
+        <el-button type="danger" plain :disabled="!footprints || footprints.length === 0 || clearingFootprints || loading || loadingMore || deletingFootprintIds.size > 0" :loading="clearingFootprints" @click="handleClearAll">
           清空全部足迹
         </el-button>
       </div>
@@ -27,6 +27,9 @@
 
     <!-- 足迹列表 -->
     <div class="footprint-list" ref="footprintListRef" v-loading="loading">
+      <el-alert v-if="loadError && !loadMoreError" :title="loadError" type="error" :closable="false" show-icon>
+        <template #default><el-button link type="primary" :disabled="loading" @click="loadFootprints(true)">重试</el-button></template>
+      </el-alert>
       <!-- 先检查 footprints 是否存在且有数据 -->
       <div v-if="filteredFootprints && filteredFootprints.length > 0" class="footprint-container">
         <!-- 再检查 groupedFootprints 是否存在且有数据 -->
@@ -95,7 +98,7 @@
       </div>
 
       <!-- 空状态 -->
-      <div v-else class="empty-state">
+      <div v-else-if="!loadError" class="empty-state">
         <el-empty :description="getEmptyDescription()">
           <el-button type="primary" @click="handleEmptyAction">
             {{ getEmptyButtonText() }}
@@ -110,6 +113,10 @@
       </div>
       <div v-if="!hasMore && displayedFootprints.length > 0" class="no-more-tip">
         已加载全部
+      </div>
+      <div v-if="loadError && loadMoreError" class="load-more-tip" role="alert">
+        <span>{{ loadError }}</span>
+        <el-button link type="primary" :disabled="loadingMore" @click="loadFootprints(false)">重试加载更多</el-button>
       </div>
     </div>
   </div>
@@ -129,6 +136,8 @@ import { formatProductPrice } from '@/utils/productDetail.mjs'
 const router = useRouter()
 const store = useStore()
 const loading = ref(false)
+const loadError = ref('')
+const loadMoreError = ref(false)
 const footprints = ref([])
 const deletingFootprintIds = ref(new Set())
 const cartActionIds = ref(new Set())
@@ -217,7 +226,9 @@ const groupedFootprints = computed(() => {
     }
 
     try {
-      const date = new Date(item.lastBrowseTime).toDateString()
+      const timestamp = new Date(item.lastBrowseTime)
+      if (!Number.isFinite(timestamp.getTime())) return
+      const date = timestamp.toDateString()
 
       if (!groups[date]) {
         groups[date] = []
@@ -334,6 +345,7 @@ const handleFollowShop = async (item) => {
 const formatDate = (dateString) => {
   try {
     const date = new Date(dateString)
+    if (!Number.isFinite(date.getTime())) return '日期未知'
     const today = new Date()
     const yesterday = new Date(today)
     yesterday.setDate(yesterday.getDate() - 1)
@@ -354,6 +366,7 @@ const formatDate = (dateString) => {
 const formatTime = (timeString) => {
   try {
     const date = new Date(timeString)
+    if (!Number.isFinite(date.getTime())) return '时间未知'
     return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
   } catch (error) {
     console.error('格式化时间出错:', error)
@@ -387,9 +400,11 @@ const loadFootprints = async (reset = true) => {
     totalCount.value = 0
     footprints.value = []
     loading.value = true
+    loadMoreError.value = false
   } else {
     loadingMore.value = true
   }
+  loadError.value = ''
   const requestId = ++footprintRequestId
   const requestedPageNum = pageNum.value
   try {
@@ -400,18 +415,20 @@ const loadFootprints = async (reset = true) => {
       targetType
     })
     if (requestId !== footprintRequestId) return
-    if (response.code === 200) {
-      const rows = response.rows || []
+    if (response.code === 200 && Array.isArray(response.rows)) {
+      const rows = response.rows
       footprints.value = reset ? rows : footprints.value.concat(rows)
       totalCount.value = Number(response.total) || 0
       pageNum.value += 1
     } else {
-      ElMessage.error(response.msg || '获取足迹数据失败')
+      loadMoreError.value = !reset
+      loadError.value = response.msg || '足迹数据格式异常，请重试'
     }
   } catch (error) {
     if (requestId !== footprintRequestId) return
     console.error('加载足迹数据失败:', error)
-    ElMessage.error('加载足迹数据失败')
+    loadMoreError.value = !reset
+    loadError.value = reset ? '足迹加载失败，请重试' : '更多足迹加载失败，请重试'
   } finally {
     if (requestId === footprintRequestId) {
       loading.value = false
@@ -422,7 +439,7 @@ const loadFootprints = async (reset = true) => {
 
 // 删除单个足迹
 const handleDelete = async (footprintId) => {
-  if (deletingFootprintIds.value.has(footprintId)) return
+  if (clearingFootprints.value || deletingFootprintIds.value.has(footprintId)) return
   deletingFootprintIds.value.add(footprintId)
   try {
     await ElMessageBox.confirm('确定要删除这条足迹吗？', '提示', {
@@ -440,7 +457,7 @@ const handleDelete = async (footprintId) => {
       ElMessage.error(response.msg || '删除失败')
     }
   } catch (error) {
-    if (error !== 'cancel') {
+    if (error !== 'cancel' && error !== 'close') {
       console.error('删除足迹失败:', error)
       ElMessage.error('删除失败')
     }
@@ -451,7 +468,7 @@ const handleDelete = async (footprintId) => {
 
 // 清空全部足迹
 const handleClearAll = async () => {
-  if (clearingFootprints.value) return
+  if (clearingFootprints.value || loading.value || loadingMore.value || deletingFootprintIds.value.size > 0) return
   clearingFootprints.value = true
   try {
     await ElMessageBox.confirm('确定要清空所有足迹吗？此操作不可恢复', '警告', {
@@ -471,11 +488,13 @@ const handleClearAll = async () => {
       ElMessage.success('清空成功')
       footprints.value = []
       totalCount.value = 0
+      loadError.value = ''
+      loadMoreError.value = false
     } else {
       ElMessage.error(response.msg || '清空失败')
     }
   } catch (error) {
-    if (error !== 'cancel') {
+    if (error !== 'cancel' && error !== 'close') {
       console.error('清空足迹失败:', error)
       ElMessage.error('清空失败')
     }
@@ -495,6 +514,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  footprintRequestId++
   if (scrollContainer && scrollContainer.value) {
     scrollContainer.value.removeEventListener('scroll', handleScroll)
   }
