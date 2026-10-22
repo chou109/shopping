@@ -104,6 +104,7 @@ const availableStock = computed(() => normalizeProductStock(product.value.stock)
 // 购买弹窗相关
 const purchaseDialogVisible = ref(false)
 const checkoutInFlight = ref(false)
+const checkoutPreparing = ref(false)
 const purchaseProducts = ref([])
 const purchaseOrder = ref({})
 
@@ -116,6 +117,12 @@ const zoomImageUrl = ref('')
 const loadProductData = async () => {
   const requestId = ++productRequestId
   const productId = route.query.id
+  checkoutPreparing.value = false
+  if (!checkoutInFlight.value) {
+    purchaseDialogVisible.value = false
+    purchaseProducts.value = []
+    purchaseOrder.value = {}
+  }
 
   if (!productId) {
     ElMessage.error('商品不存在')
@@ -552,6 +559,7 @@ const handleAddToCart = async () => {
 
 // 立即购买
 const handleBuyNow = async () => {
+  if (checkoutPreparing.value || checkoutInFlight.value) return
   if (!ensureLoginForAction('请先登录后再购买')) return
 
   if (!product.value.id) {
@@ -571,9 +579,12 @@ const handleBuyNow = async () => {
     return
   }
 
+  const requestId = productRequestId
+  checkoutPreparing.value = true
   try {
     // 获取用户地址列表
     const addressRes = await getMyAddressList()
+    if (requestId !== productRequestId) return
     const addressData = addressRes.data || addressRes.rows || []
 
     if (addressRes.code !== 200 || addressData.length === 0) {
@@ -607,8 +618,11 @@ const handleBuyNow = async () => {
     }
     purchaseDialogVisible.value = true
   } catch (error) {
+    if (requestId !== productRequestId) return
     console.error('购买失败:', error)
     ElMessage.error('购买失败，请稍后重试')
+  } finally {
+    if (requestId === productRequestId) checkoutPreparing.value = false
   }
 }
 
@@ -1078,8 +1092,8 @@ watch(() => route.query.id, (newId, oldId) => {
                     <span v-else>添加中...</span>
                   </button>
                   <button type="button" class="btn buy-now" @click="handleBuyNow"
-                    :disabled="availableStock === 0 || checkoutInFlight">
-                    立即购买
+                    :disabled="availableStock === 0 || checkoutInFlight || checkoutPreparing">
+                    {{ checkoutPreparing ? '正在准备…' : '立即购买' }}
                   </button>
                   <button type="button" class="btn favorite" :aria-label="isFavorite ? '取消收藏商品' : '收藏商品'"
                     :aria-pressed="isFavorite" :aria-busy="favoriteUpdating" :disabled="favoriteUpdating"

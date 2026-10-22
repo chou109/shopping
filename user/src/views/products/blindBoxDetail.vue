@@ -70,6 +70,7 @@ const quantity = ref(1)
 // 购买弹窗相关
 const purchaseDialogVisible = ref(false)
 const checkoutInFlight = ref(false)
+const checkoutPreparing = ref(false)
 const purchaseProducts = ref([])
 const purchaseOrder = ref({})
 
@@ -158,6 +159,7 @@ const changeMainImage = (index) => {
 // 数量变化处理
 // 立即购买
 const handleBuyNow = async () => {
+  if (checkoutPreparing.value || checkoutInFlight.value) return
   if (!ensureLoginForAction()) return
 
   if (!product.value.id) {
@@ -165,6 +167,7 @@ const handleBuyNow = async () => {
     return
   }
 
+  checkoutPreparing.value = true
   try {
     // 先检查盲盒购买资格
     const checkRes = await checkBlindBoxPurchase()
@@ -222,6 +225,8 @@ const handleBuyNow = async () => {
   } catch (error) {
     console.error('购买失败:', error)
     ElMessage.error('购买失败，请稍后重试')
+  } finally {
+    checkoutPreparing.value = false
   }
 }
 
@@ -440,8 +445,9 @@ onMounted(() => {
                 <!-- 操作按钮 -->
                 <div class="action-buttons">
                   <!-- 盲盒不支持加入购物车，只能直接购买 -->
-                  <button type="button" class="btn buy-now full-width" @click="handleBuyNow" :disabled="checkoutInFlight">
-                    立即购买
+                  <button type="button" class="btn buy-now full-width" @click="handleBuyNow"
+                    :disabled="checkoutInFlight || checkoutPreparing">
+                    {{ checkoutPreparing ? '正在检查购买资格…' : '立即购买' }}
                   </button>
                 </div>
               </div>
