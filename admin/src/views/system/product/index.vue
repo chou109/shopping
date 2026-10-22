@@ -61,7 +61,8 @@
               </el-col>
               <el-col :span="10">
                 <el-form-item label="品类" prop="categoryId">
-                  <el-select v-model="queryParams.categoryId" placeholder="点击选择品类" clearable filterable style="width: 150px">
+                  <el-select v-model="queryParams.categoryId" placeholder="点击选择品类" clearable filterable
+                    :loading="categoryTreeLoading" style="width: 150px">
                     <el-option label="全部" :value="null" />
                     <el-option v-for="category in categoryTreeOptions" :key="category.id" :label="category.name" :value="category.id" />
                   </el-select>
@@ -72,6 +73,13 @@
         </el-collapse-transition>
       </el-form>
       
+      <el-alert v-if="categoryTreeError" class="category-load-error" type="error" :closable="false"
+        :title="categoryTreeError">
+        <template #default>
+          <el-button link type="primary" :disabled="categoryTreeLoading" @click="loadCategoryTree">重试加载分类</el-button>
+        </template>
+      </el-alert>
+
       <!-- 筛选条件标签展示 -->
       <div class="filter-tags" v-if="hasActiveFilters">
         <span class="filter-label">当前筛选：</span>
@@ -251,11 +259,18 @@
           <el-col :span="12">
             <el-form-item label="品类" prop="categoryId">
               <el-select v-model="form.categoryId" placeholder="点击选择品类" clearable filterable
+                  :loading="categoryTreeLoading"
                   style="width: 200px" @click.stop>
                   <el-option label="全部" :value="null" />
                   <el-option v-for="category in categoryTreeOptions" :key="category.id" :label="category.name"
                     :value="category.id" />
                 </el-select>
+                <el-alert v-if="categoryTreeError" class="category-load-error" type="error" :closable="false"
+                  :title="categoryTreeError">
+                  <template #default>
+                    <el-button link type="primary" :disabled="categoryTreeLoading" @click="loadCategoryTree">重试加载分类</el-button>
+                  </template>
+                </el-alert>
             </el-form-item>
           </el-col>
         </el-row>
@@ -359,8 +374,11 @@ const total = ref(0);
 const title = ref("");
 const categoryTree = ref([]);
 const categoryTreeOptions = ref([]);
+const categoryTreeLoading = ref(false);
+const categoryTreeError = ref("");
 const myShopId = ref(null);  // 当前用户的店铺ID
 let productListRequestId = 0;
+let categoryTreeRequestId = 0;
 
 const data = reactive({
   form: {},
@@ -412,26 +430,30 @@ function clearFilter(field) {
 
 /** 从后端加载分类树 */
 async function loadCategoryTree() {
+  const requestId = ++categoryTreeRequestId;
+  categoryTreeLoading.value = true;
+  categoryTreeError.value = "";
   try {
     const response = await listCategoryFront();
-
-    if (response && response.data) {
-      const categories = response.data;
-
-      if (Array.isArray(categories)) {
-        const firstItem = categories[0];
-        if (firstItem && firstItem.children !== undefined) {
-          categoryTree.value = categories;
-        } else {
-          categoryTree.value = buildCategoryTree(categories);
-        }
-        generateCategoryOptions();
-      }
+    if (requestId !== categoryTreeRequestId) return;
+    if (response?.code !== 200 || !Array.isArray(response.data)) {
+      throw new Error(response?.msg || '分类数据格式异常');
     }
+    const categories = response.data;
+    const firstItem = categories[0];
+    if (firstItem && firstItem.children !== undefined) {
+      categoryTree.value = categories;
+    } else {
+      categoryTree.value = buildCategoryTree(categories);
+    }
+    generateCategoryOptions();
   } catch (error) {
-    console.error('加载分类树失败:', error);
-    categoryTree.value = [];
-    categoryTreeOptions.value = [];
+    if (requestId === categoryTreeRequestId) {
+      console.error('加载分类树失败:', error);
+      categoryTreeError.value = '商品分类加载失败，请重试';
+    }
+  } finally {
+    if (requestId === categoryTreeRequestId) categoryTreeLoading.value = false;
   }
 }
 
