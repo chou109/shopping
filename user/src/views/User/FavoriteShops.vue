@@ -7,13 +7,16 @@
 
     <!-- 店铺列表 -->
     <div class="shops-container" v-loading="loading">
-      <div v-if="favoriteList.length === 0" class="empty-state">
+      <el-alert v-if="loadError" :title="loadError" type="error" :closable="false" show-icon>
+        <template #default><el-button link type="primary" :disabled="loading" @click="loadFavorites">重试</el-button></template>
+      </el-alert>
+      <div v-if="!loading && !loadError && favoriteList.length === 0" class="empty-state">
         <el-empty description="暂无关注的店铺">
           <el-button type="primary" @click="goShopping">去逛逛</el-button>
         </el-empty>
       </div>
 
-      <div v-else class="shop-list">
+      <div v-if="favoriteList.length > 0" class="shop-list">
         <article v-for="item in favoriteList" :key="item.favoriteId" class="shop-card">
           <router-link class="shop-card-link" :to="{ path: '/shop', query: { id: item.targetId } }"
             :aria-label="`查看店铺：${item.shopName || '未知店铺'}`">
@@ -57,7 +60,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { User, Star } from '@element-plus/icons-vue'
@@ -67,22 +70,28 @@ const router = useRouter()
 
 // 响应式数据
 const loading = ref(false)
+const loadError = ref('')
 const favoriteList = ref([])
 const removingFavoriteIds = ref(new Set())
+let favoritesRequestId = 0
 
 // 加载收藏列表
 const loadFavorites = async () => {
+  const requestId = ++favoritesRequestId
   loading.value = true
+  loadError.value = ''
   try {
     const res = await getMyShopFavorites()
-    if (res.code === 200) {
-      favoriteList.value = res.data || []
-    }
+    if (requestId !== favoritesRequestId) return
+    if (res.code !== 200 || !Array.isArray(res.data)) throw new Error(res.msg || '关注数据格式异常')
+    favoriteList.value = res.data
   } catch (e) {
-    console.error('加载收藏列表失败', e)
-    ElMessage.error('加载收藏列表失败')
+    if (requestId === favoritesRequestId) {
+      console.error('加载收藏列表失败', e)
+      loadError.value = '关注店铺列表加载失败，请重试'
+    }
   } finally {
-    loading.value = false
+    if (requestId === favoritesRequestId) loading.value = false
   }
 }
 
@@ -106,9 +115,7 @@ const handleRemoveFavorite = async (item) => {
       ElMessage.error(res.msg || '操作失败')
     }
   } catch (e) {
-    if (e !== 'cancel') {
-      ElMessage.error('操作失败')
-    }
+    if (e !== 'cancel' && e !== 'close') console.error('取消关注失败', e)
   } finally {
     removingFavoriteIds.value.delete(item.favoriteId)
   }
@@ -138,11 +145,8 @@ const formatNumber = (num) => {
 // 格式化时间
 const formatTime = (time) => {
   if (!time) return ''
-  try {
-    return new Date(time).toLocaleDateString('zh-CN')
-  } catch (e) {
-    return time
-  }
+  const date = new Date(time)
+  return Number.isFinite(date.getTime()) ? date.toLocaleDateString('zh-CN') : '时间未知'
 }
 
 // 跳转店铺详情
@@ -160,6 +164,10 @@ const goShopping = () => {
 
 onMounted(() => {
   loadFavorites()
+})
+
+onBeforeUnmount(() => {
+  favoritesRequestId++
 })
 </script>
 
