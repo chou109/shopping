@@ -124,6 +124,7 @@ public class ProductCommentController extends BaseController
      * 发表评论
      */
     @Operation(summary = "发表评论")
+    @PreAuthorize("isAuthenticated()")
     @PostMapping("/publish")
     public AjaxResult publish(@RequestBody ProductComment comment) {
         boolean result = productCommentService.publishComment(comment);
@@ -134,6 +135,7 @@ public class ProductCommentController extends BaseController
      * 回复评论
      */
     @Operation(summary = "回复评论")
+    @PreAuthorize("isAuthenticated()")
     @PostMapping("/reply/{parentId}")
     public AjaxResult reply(@PathVariable Long parentId, @RequestBody Map<String, String> params) {
         String content = params.get("content");
@@ -246,6 +248,7 @@ public class ProductCommentController extends BaseController
      * 我的评论列表
      */
     @Operation(summary = "我的评论列表")
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/my")
     public TableDataInfo myComments() {
         startPage();
@@ -268,6 +271,7 @@ public class ProductCommentController extends BaseController
      * 检查用户是否评论过商品
      */
     @Operation(summary = "检查用户是否评论过商品")
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/check")
     public AjaxResult checkUserComment(@RequestParam Long productId,
                                        @RequestParam(required = false) Long orderId) {

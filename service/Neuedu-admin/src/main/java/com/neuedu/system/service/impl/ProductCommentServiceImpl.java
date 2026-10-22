@@ -190,6 +190,15 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
         if (comment.getScore() == null || comment.getScore() < 1 || comment.getScore() > 5) {
             throw new ServiceException("商品评分必须为1到5星");
         }
+        if (comment.getContent() == null || comment.getContent().trim().isEmpty()
+                || comment.getContent().length() > 500) {
+            throw new ServiceException("评价内容不能为空且不能超过500字");
+        }
+        if (comment.getIsAnonymous() != null
+                && !Integer.valueOf(0).equals(comment.getIsAnonymous())
+                && !Integer.valueOf(1).equals(comment.getIsAnonymous())) {
+            throw new ServiceException("匿名评价设置无效");
+        }
 
         // 验证商品是否存在
         var product = productService.selectProductById(comment.getProductId());
@@ -214,16 +223,11 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
             throw new ServiceException("当前订单状态不允许评价");
         }
 
-        // 设置默认值
-        if (comment.getLikeCount() == null) {
-            comment.setLikeCount(0L);
-        }
-        if (comment.getReplyCount() == null) {
-            comment.setReplyCount(0L);
-        }
-        if (comment.getStatus() == null) {
-            comment.setStatus(1); // 默认正常（无需审核）
-        }
+        // 仅接收评价正文和匿名选项，评论层级、审核状态及计数由服务端决定。
+        comment.setParentId(0L);
+        comment.setLikeCount(0L);
+        comment.setReplyCount(0L);
+        comment.setStatus(1);
         if (comment.getIsAnonymous() == null) {
             comment.setIsAnonymous(0); // 默认不匿名
         }
@@ -247,6 +251,10 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean replyComment(Long parentId, String content, Long userId) {
+        if (parentId == null || userId == null || content == null
+                || content.trim().isEmpty() || content.length() > 500) {
+            throw new ServiceException("回复内容不能为空且不能超过500字");
+        }
         ProductComment parentComment = selectProductCommentByCommentId(parentId);
         if (parentComment == null || !parentComment.isNormal()) {
             throw new ServiceException("评论不存在或已被删除");

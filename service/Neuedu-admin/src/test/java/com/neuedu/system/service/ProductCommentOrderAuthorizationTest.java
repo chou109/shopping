@@ -78,6 +78,10 @@ public class ProductCommentOrderAuthorizationTest {
     public void createsReviewForOwnedProductOnReviewEligibleOrder() {
         authenticate(42L);
         ProductComment submitted = comment();
+        submitted.setParentId(123L);
+        submitted.setStatus(3);
+        submitted.setLikeCount(999L);
+        submitted.setReplyCount(999L);
         int[] inserts = {0};
         ProductCommentServiceImpl service = service(order(OrderStatusConstants.WAIT_REVIEW), (method, args) -> {
             if ("insertProductComment".equals(method)) {
@@ -90,6 +94,10 @@ public class ProductCommentOrderAuthorizationTest {
         assertTrue(service.publishComment(submitted));
         assertEquals(1, inserts[0]);
         assertEquals(Long.valueOf(42L), submitted.getUserId());
+        assertEquals(Long.valueOf(0L), submitted.getParentId());
+        assertEquals(Integer.valueOf(1), submitted.getStatus());
+        assertEquals(Long.valueOf(0L), submitted.getLikeCount());
+        assertEquals(Long.valueOf(0L), submitted.getReplyCount());
     }
 
     @Test
@@ -103,6 +111,38 @@ public class ProductCommentOrderAuthorizationTest {
         ProductComment invalidScore = comment();
         invalidScore.setScore(6);
         expectServiceException(() -> service.publishComment(invalidScore));
+        ProductComment blankContent = comment();
+        blankContent.setContent("  ");
+        expectServiceException(() -> service.publishComment(blankContent));
+        ProductComment tooLong = comment();
+        tooLong.setContent(String.join("", Collections.nCopies(501, "a")));
+        expectServiceException(() -> service.publishComment(tooLong));
+        ProductComment invalidAnonymousFlag = comment();
+        invalidAnonymousFlag.setIsAnonymous(2);
+        expectServiceException(() -> service.publishComment(invalidAnonymousFlag));
+    }
+
+    @Test
+    public void validatesReplyContentBeforeCreatingReply() {
+        ProductComment parent = new ProductComment();
+        parent.setCommentId(15L);
+        parent.setStatus(1);
+        int[] inserts = {0};
+        ProductCommentServiceImpl service = service(order(OrderStatusConstants.WAIT_REVIEW), (method, args) -> {
+            if ("selectProductCommentByCommentId".equals(method)) return parent;
+            if ("insertProductComment".equals(method)) {
+                inserts[0]++;
+                return 1;
+            }
+            if ("increaseReplyCount".equals(method)) return 1;
+            return defaultValue(method);
+        });
+
+        expectServiceException(() -> service.replyComment(15L, "  ", 42L));
+        expectServiceException(() -> service.replyComment(15L, String.join("", Collections.nCopies(501, "a")), 42L));
+        assertEquals(0, inserts[0]);
+        assertTrue(service.replyComment(15L, "有帮助的补充", 42L));
+        assertEquals(1, inserts[0]);
     }
 
     private static ProductCommentServiceImpl service(OrderInfo lockedOrder, ProductCommentCall commentCall) {
