@@ -23,8 +23,11 @@
         <el-button icon="Refresh" @click="resetQuery">重置</el-button>
       </el-form-item>
     </el-form>
+    <el-alert v-if="listError" :title="listError" type="error" :closable="false" show-icon>
+      <template #default><el-button link type="primary" :disabled="loading" @click="getList">重试</el-button></template>
+    </el-alert>
     <el-row>
-      <el-table @row-click="clickRow" ref="table" :data="dbTableList" @selection-change="handleSelectionChange" height="260px">
+      <el-table v-loading="loading" @row-click="clickRow" ref="table" :data="dbTableList" @selection-change="handleSelectionChange" height="260px">
         <el-table-column type="selection" width="55"></el-table-column>
         <el-table-column prop="tableName" label="表名称" :show-overflow-tooltip="true"></el-table-column>
         <el-table-column prop="tableComment" label="表描述" :show-overflow-tooltip="true"></el-table-column>
@@ -53,9 +56,12 @@ import { listDbTable, importTable } from "@/api/tool/gen";
 
 const total = ref(0);
 const visible = ref(false);
+const loading = ref(false);
+const listError = ref("");
 const tables = ref([]);
 const dbTableList = ref([]);
 const { proxy } = getCurrentInstance();
+let dbTableListRequestId = 0;
 
 const queryParams = reactive({
   pageNum: 1,
@@ -80,11 +86,24 @@ function handleSelectionChange(selection) {
   tables.value = selection.map(item => item.tableName);
 }
 /** 查询表数据 */
-function getList() {
-  listDbTable(queryParams).then(res => {
+async function getList() {
+  const requestId = ++dbTableListRequestId;
+  loading.value = true;
+  listError.value = "";
+  try {
+    const res = await listDbTable(queryParams);
+    if (requestId !== dbTableListRequestId) return;
+    if (!Array.isArray(res.rows)) throw new Error("待导入数据表列表格式异常");
     dbTableList.value = res.rows;
-    total.value = res.total;
-  });
+    total.value = Number(res.total) || 0;
+  } catch (error) {
+    if (requestId === dbTableListRequestId) {
+      console.error("获取待导入数据表列表失败:", error);
+      listError.value = "待导入数据表列表加载失败，请重试";
+    }
+  } finally {
+    if (requestId === dbTableListRequestId) loading.value = false;
+  }
 }
 /** 搜索按钮操作 */
 function handleQuery() {
@@ -114,5 +133,8 @@ function handleImportTable() {
 
 defineExpose({
   show,
+});
+onBeforeUnmount(() => {
+  dbTableListRequestId += 1;
 });
 </script>

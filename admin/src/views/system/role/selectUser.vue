@@ -25,8 +25,11 @@
             <el-button icon="Refresh" @click="resetQuery">重置</el-button>
          </el-form-item>
       </el-form>
+      <el-alert v-if="listError" :title="listError" type="error" :closable="false" show-icon>
+         <template #default><el-button link type="primary" :disabled="loading" @click="getList">重试</el-button></template>
+      </el-alert>
       <el-row>
-         <el-table @row-click="clickRow" ref="refTable" :data="userList" @selection-change="handleSelectionChange" height="260px">
+         <el-table v-loading="loading" @row-click="clickRow" ref="refTable" :data="userList" @selection-change="handleSelectionChange" height="260px">
             <el-table-column type="selection" width="55"></el-table-column>
             <el-table-column label="用户名称" prop="userName" :show-overflow-tooltip="true" />
             <el-table-column label="用户昵称" prop="nickName" :show-overflow-tooltip="true" />
@@ -74,8 +77,11 @@ const { sys_normal_disable } = proxy.useDict("sys_normal_disable");
 
 const userList = ref([]);
 const visible = ref(false);
+const loading = ref(false);
+const listError = ref("");
 const total = ref(0);
 const userIds = ref([]);
+let userListRequestId = 0;
 
 const queryParams = reactive({
   pageNum: 1,
@@ -100,11 +106,24 @@ function handleSelectionChange(selection) {
   userIds.value = selection.map(item => item.userId);
 }
 // 查询表数据
-function getList() {
-  unallocatedUserList(queryParams).then(res => {
+async function getList() {
+  const requestId = ++userListRequestId;
+  loading.value = true;
+  listError.value = "";
+  try {
+    const res = await unallocatedUserList(queryParams);
+    if (requestId !== userListRequestId) return;
+    if (!Array.isArray(res.rows)) throw new Error("待授权用户列表数据格式异常");
     userList.value = res.rows;
-    total.value = res.total;
-  });
+    total.value = Number(res.total) || 0;
+  } catch (error) {
+    if (requestId === userListRequestId) {
+      console.error("获取待授权用户列表失败:", error);
+      listError.value = "待授权用户列表加载失败，请重试";
+    }
+  } finally {
+    if (requestId === userListRequestId) loading.value = false;
+  }
 }
 /** 搜索按钮操作 */
 function handleQuery() {
@@ -136,5 +155,8 @@ function handleSelectUser() {
 
 defineExpose({
   show,
+});
+onBeforeUnmount(() => {
+  userListRequestId += 1;
 });
 </script>
