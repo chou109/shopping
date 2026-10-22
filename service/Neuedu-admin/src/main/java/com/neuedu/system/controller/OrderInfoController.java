@@ -224,15 +224,19 @@ public class OrderInfoController extends BaseController {
         if (userId == null) {
             return error("用户未登录");
         }
+        if (params == null) {
+            return error("订单参数不能为空");
+        }
 
         try {
-            Long productId = Long.valueOf(params.get("productId").toString());
-            Integer quantity = Integer.valueOf(params.get("quantity").toString());
-            Long addressId = Long.valueOf(params.get("addressId").toString());
-            if (quantity < 1) {
-                return error("购买数量必须大于0");
-            }
+            Long productId = positiveLong(params.get("productId"), "商品 ID");
+            Integer quantity = positiveInteger(params.get("quantity"), "购买数量");
+            Long addressId = positiveLong(params.get("addressId"), "收货地址 ID");
             Object blindBoxParam = params.get("isBlindBox");
+            if (blindBoxParam != null && !("true".equalsIgnoreCase(blindBoxParam.toString())
+                    || "false".equalsIgnoreCase(blindBoxParam.toString()))) {
+                return error("盲盒参数格式无效");
+            }
             boolean requestedBlindBox = blindBoxParam != null && Boolean.parseBoolean(blindBoxParam.toString());
             if (BLIND_BOX_PRODUCT_ID.equals(productId) || requestedBlindBox) {
                 return error("盲盒请通过盲盒页面购买");
@@ -246,6 +250,30 @@ public class OrderInfoController extends BaseController {
         } catch (RuntimeException e) {
             return error(e.getMessage());
         }
+    }
+
+    private Long positiveLong(Object value, String fieldName) {
+        try {
+            long parsed = Long.parseLong(value.toString());
+            if (parsed > 0) {
+                return parsed;
+            }
+        } catch (RuntimeException ignored) {
+            // Return a consistent client-facing validation error for missing or malformed values.
+        }
+        throw new IllegalArgumentException(fieldName + "必须为正整数");
+    }
+
+    private Integer positiveInteger(Object value, String fieldName) {
+        try {
+            int parsed = Integer.parseInt(value.toString());
+            if (parsed > 0) {
+                return parsed;
+            }
+        } catch (RuntimeException ignored) {
+            // Return a consistent client-facing validation error for missing or malformed values.
+        }
+        throw new IllegalArgumentException(fieldName + "必须为正整数");
     }
 
     /**
