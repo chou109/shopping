@@ -205,6 +205,10 @@ const {
   handleCurrentChange
 } = useOrderList(getMyOrders)
 
+const refreshOrderState = async () => {
+  await Promise.all([loadOrders(), loadOrderCounts()])
+}
+
 // 支付相关
 const payDialogVisible = ref(false)
 const currentOrder = ref(null)
@@ -271,7 +275,8 @@ const confirmPay = async () => {
       ElMessage.error(res.msg || '支付失败')
     }
   } catch (e) {
-    ElMessage.error('支付失败：' + (e.message || '未知错误'))
+    await refreshOrderState()
+    ElMessage.warning('支付结果暂未确认，已重新查询订单状态；请核对后再操作')
   } finally {
     paying.value = false
   }
@@ -300,7 +305,8 @@ const confirmCancel = async () => {
       ElMessage.error(res.msg || '取消失败')
     }
   } catch (e) {
-    ElMessage.error('取消失败：' + (e.message || '未知错误'))
+    await refreshOrderState()
+    ElMessage.warning('取消结果暂未确认，已重新查询订单状态；请核对后再操作')
   } finally {
     cancelling.value = false
   }
@@ -328,7 +334,8 @@ const handleConfirmReceipt = async (order) => {
     }
   } catch (e) {
     if (e !== 'cancel' && e !== 'close') {
-      ElMessage.error(e.message ? `操作失败：${e.message}` : '操作失败')
+      await refreshOrderState()
+      ElMessage.warning('收货结果暂未确认，已重新查询订单状态；请核对后再操作')
     }
   } finally {
     receiptSubmitting.value = false
@@ -366,7 +373,8 @@ const submitRefund = async (reason) => {
       ElMessage.error(res.msg || '取消退款失败')
     }
   } catch (e) {
-    ElMessage.error('取消退款失败：' + (e.message || '未知错误'))
+    await refreshOrderState()
+    ElMessage.warning('退款结果暂未确认，已重新查询订单状态；请核对后再操作')
   } finally {
     refunding.value = false
   }
@@ -390,6 +398,7 @@ const submitReviewHandler = async (reviewItems) => {
     reviewDialogVisible.value = false
     loadOrders()
   } catch (e) {
+    await refreshOrderState()
     ElMessage.error('评价失败：' + (e.message || '未知错误'))
   } finally {
     submittingReview.value = false
@@ -412,8 +421,9 @@ const handleDeleteOrder = async (order) => {
       ElMessage.error(res.msg || '删除失败')
     }
   } catch (e) {
-    if (e !== 'cancel') {
-      ElMessage.error('删除失败：' + (e.message || '未知错误'))
+    if (e !== 'cancel' && e !== 'close') {
+      await refreshOrderState()
+      ElMessage.warning('删除结果暂未确认，已重新查询订单状态；请核对后再操作')
     }
   } finally {
     deletingOrderIds.value.delete(order.id)
