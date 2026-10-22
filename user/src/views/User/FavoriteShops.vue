@@ -65,6 +65,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { User, Star } from '@element-plus/icons-vue'
 import { getMyShopFavorites, removeFavorite } from '@/api/system/favorite'
+import { DEFAULT_SHOP_IMAGE, getProductImageUrl, handleImageError } from '@/utils/image'
 
 const router = useRouter()
 
@@ -123,15 +124,11 @@ const handleRemoveFavorite = async (item) => {
 
 // 获取店铺Logo URL
 const getShopLogoUrl = (logo) => {
-  if (!logo) return '/default-shop.png'
-  if (logo.startsWith('http')) return logo
-  return import.meta.env.VITE_APP_BASE_API + logo
+  return logo ? getProductImageUrl(logo) : DEFAULT_SHOP_IMAGE
 }
 
 // Logo加载失败处理
-const handleLogoError = (e) => {
-  e.target.src = '/default-shop.png'
-}
+const handleLogoError = (event) => handleImageError(event, DEFAULT_SHOP_IMAGE)
 
 // 格式化数字
 const formatNumber = (num) => {
