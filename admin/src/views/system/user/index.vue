@@ -51,7 +51,7 @@
                </el-col>
                <el-col :span="1.5">
                   <el-button type="danger" plain icon="Delete"
-                     :disabled="multiple || deletingUserIds.size > 0 || statusUpdatingIds.size > 0"
+                     :disabled="multiple || deletingUserIds.size > 0 || statusUpdatingIds.size > 0 || resettingUserIds.size > 0"
                      :loading="deletingUserIds.size > 0" @click="handleDelete"
                      v-hasPermi="['system:user:remove']">删除</el-button>
                </el-col>
@@ -105,7 +105,7 @@
                      <el-tooltip content="删除" placement="top" v-if="scope.row.userId !== 1">
                         <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)"
                            :loading="deletingUserIds.has(scope.row.userId)"
-                           :disabled="deletingUserIds.size > 0 || statusUpdatingIds.has(scope.row.userId)"
+                           :disabled="deletingUserIds.size > 0 || statusUpdatingIds.has(scope.row.userId) || resettingUserIds.has(scope.row.userId)"
                            :aria-label="`删除用户：${scope.row.userName || '未知用户'}`"
                            v-hasPermi="['system:user:remove']"></el-button>
                      </el-tooltip>
@@ -396,7 +396,7 @@ function resetQuery() {
 async function handleDelete(row) {
    if (deletingUserIds.value.size > 0) return;
    const userIds = row?.userId != null ? [row.userId] : [...ids.value];
-   if (userIds.length === 0 || userIds.some(userId => statusUpdatingIds.value.has(userId))) return;
+   if (userIds.length === 0 || userIds.some(userId => statusUpdatingIds.value.has(userId) || resettingUserIds.value.has(userId))) return;
    deletingUserIds.value = new Set(userIds);
    try {
       await proxy.$modal.confirm('是否确认删除用户编号为"' + userIds.join(",") + '"的数据项？');
