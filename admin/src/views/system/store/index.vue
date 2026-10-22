@@ -168,7 +168,7 @@
           type="success"
           plain
           icon="Edit"
-          :disabled="single"
+          :disabled="single || detailLoading || saving"
           @click="handleUpdate"
           v-hasPermi="['system:store:edit']"
         >修改</el-button>
@@ -178,7 +178,8 @@
           type="danger"
           plain
           icon="Delete"
-          :disabled="multiple"
+          :loading="deleting"
+          :disabled="multiple || deleting"
           @click="handleDelete"
           v-hasPermi="['system:store:remove']"
         >删除</el-button>
@@ -258,22 +259,23 @@
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180">
         <template #default="scope">
           <el-tooltip content="修改" placement="top">
-            <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)"
+            <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" :loading="detailLoading && detailRequestShopId === scope.row.id" :disabled="saving"
               :aria-label="`修改店铺：${scope.row.shopName || '未知店铺'}`" v-hasPermi="['system:store:edit']" />
           </el-tooltip>
           <el-tooltip content="删除" placement="top">
-            <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)"
+            <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" :loading="deleting" :disabled="deleting"
               :aria-label="`删除店铺：${scope.row.shopName || '未知店铺'}`" v-hasPermi="['system:store:remove']" />
           </el-tooltip>
-          <el-tooltip :content="scope.row.status === 1 ? '关闭店铺' : scope.row.status === 2 ? '开启店铺' : '审核中'" placement="top">
+          <el-tooltip :content="scope.row.status === 1 ? '关闭店铺' : scope.row.status === 2 ? (isAdmin ? '开启店铺' : '仅管理员可恢复营业') : '审核中'" placement="top">
             <el-button 
               link 
               :type="scope.row.status === 1 ? 'warning' : scope.row.status === 2 ? 'success' : 'info'" 
               :icon="scope.row.status === 1 ? 'Switch' : 'Check'"
               @click="toggleStatus(scope.row)" 
-              :aria-label="`${scope.row.status === 1 ? '关闭' : scope.row.status === 2 ? '开启' : '审核中'}店铺：${scope.row.shopName || '未知店铺'}`"
+              :aria-label="`${scope.row.status === 1 ? '关闭店铺' : scope.row.status === 2 ? (isAdmin ? '开启店铺' : '仅管理员可恢复营业') : '审核中的店铺'}：${scope.row.shopName || '未知店铺'}`"
               v-hasPermi="['system:store:edit']"
-              :disabled="scope.row.status === 3"
+              :loading="updatingStatusId === scope.row.id"
+              :disabled="updatingStatusId !== null || ![1, 2].includes(scope.row.status) || (scope.row.status === 2 && !isAdmin)"
             />
           </el-tooltip>
         </template>
@@ -289,8 +291,8 @@
     />
 
     <!-- 添加或修改店铺信息对话框 -->
-    <el-dialog :title="title" v-model="open" width="600px" append-to-body>
-      <el-form ref="storeRef" :model="form" :rules="rules" label-width="100px">
+    <el-dialog :title="title" v-model="open" width="600px" append-to-body @close="invalidateStoreDetailRequest">
+      <el-form v-loading="saving || detailLoading" ref="storeRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="店铺名称" prop="shopName">
           <el-input v-model="form.shopName" placeholder="请输入店铺名称" />
         </el-form-item>
@@ -323,8 +325,8 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button type="primary" @click="submitForm">确 定</el-button>
-          <el-button @click="cancel">取 消</el-button>
+          <el-button type="primary" :loading="saving" :disabled="detailLoading" @click="submitForm">确 定</el-button>
+          <el-button :disabled="saving" @click="cancel">取 消</el-button>
         </div>
       </template>
     </el-dialog>
@@ -335,8 +337,11 @@
 <script setup name="Store">
 import { listStore, getStore, delStore, addStore, updateStore, updateStoreStatus } from "@/api/system/store";
 import { ArrowDown, Plus } from '@element-plus/icons-vue';
+import useUserStore from '@/store/modules/user';
 
 const { proxy } = getCurrentInstance();
+const userStore = useUserStore();
+const isAdmin = computed(() => userStore.roles?.includes('admin'));
 
 const storeList = ref([]);
 const storeTableRef = ref(null);
@@ -350,7 +355,13 @@ const single = ref(true);
 const multiple = ref(true);
 const total = ref(0);
 const title = ref("");
+const saving = ref(false);
+const deleting = ref(false);
+const detailLoading = ref(false);
+const detailRequestShopId = ref(null);
+const updatingStatusId = ref(null);
 let storeListRequestId = 0;
+let storeDetailRequestId = 0;
 
 const data = reactive({
   form: {},
@@ -441,8 +452,15 @@ const toggleAdvanced = () => {
 
 // 取消按钮
 function cancel() {
+  invalidateStoreDetailRequest();
   open.value = false;
   reset();
+}
+
+function invalidateStoreDetailRequest() {
+  storeDetailRequestId += 1;
+  detailLoading.value = false;
+  detailRequestShopId.value = null;
 }
 
 // 表单重置
@@ -505,17 +523,24 @@ function handleSelectionChange(selection) {
 
 /** 新增按钮操作 */
 function handleAdd() {
+  invalidateStoreDetailRequest();
   reset();
   open.value = true;
   title.value = "添加店铺信息";
 }
 
 /** 修改按钮操作 */
-function handleUpdate(row) {
+async function handleUpdate(row) {
+  const requestId = ++storeDetailRequestId;
   reset();
   const _id = row.id || ids.value[0];
-  getStore(_id).then(response => {
-    form.value = response.data;
+  if (!_id) return;
+  detailRequestShopId.value = _id;
+  detailLoading.value = true;
+  try {
+    const response = await getStore(_id);
+    if (requestId !== storeDetailRequestId) return;
+    form.value = response.data || {};
     // 确保必要字段有默认值
     if (form.value.status === undefined || form.value.status === null) {
       form.value.status = 1;
@@ -525,35 +550,53 @@ function handleUpdate(row) {
     }
     open.value = true;
     title.value = "修改店铺信息";
-  });
+  } catch (error) {
+    if (requestId === storeDetailRequestId) {
+      proxy.$modal.msgError("店铺详情加载失败：" + (error?.message || error || "请稍后重试"));
+    }
+  } finally {
+    if (requestId === storeDetailRequestId) {
+      detailLoading.value = false;
+      detailRequestShopId.value = null;
+    }
+  }
 }
 
 /** 提交按钮 */
-function submitForm() {
-  proxy.$refs["storeRef"].validate(valid => {
-    if (valid) {
-      if (form.value.id != null) {
-        const storeData = getEditableStoreData();
-        updateStore(storeData).then(response => {
-          proxy.$modal.msgSuccess("修改成功");
-          open.value = false;
-          getList();
-        });
-      } else {
-        const storeData = {
-          ...getEditableStoreData(),
-          userId: form.value.userId,
-          status: 1,
-          deleteFlag: 0
-        };
-        addStore(storeData).then(response => {
-          proxy.$modal.msgSuccess("新增成功");
-          open.value = false;
-          getList();
-        });
-      }
+async function submitForm() {
+  if (saving.value || detailLoading.value) return;
+  const storeForm = proxy.$refs["storeRef"];
+  if (!storeForm) return;
+
+  let valid = false;
+  try {
+    valid = await storeForm.validate();
+  } catch {
+    return;
+  }
+  if (!valid) return;
+
+  saving.value = true;
+  try {
+    if (form.value.id != null) {
+      await updateStore(getEditableStoreData());
+      proxy.$modal.msgSuccess("修改成功");
+    } else {
+      await addStore({
+        ...getEditableStoreData(),
+        userId: form.value.userId,
+        status: 1,
+        deleteFlag: 0
+      });
+      proxy.$modal.msgSuccess("新增成功");
     }
-  });
+    open.value = false;
+    await getList();
+  } catch (error) {
+    proxy.$modal.msgError("保存失败：" + (error?.message || error || "请稍后重试"));
+  } finally {
+    saving.value = false;
+  }
 }
 
 function getEditableStoreData() {
@@ -569,14 +612,27 @@ function getEditableStoreData() {
 }
 
 /** 删除按钮操作 */
-function handleDelete(row) {
+async function handleDelete(row) {
+  if (deleting.value) return;
   const _ids = row.id ? [row.id] : ids.value;
-  proxy.$modal.confirm('是否确认删除店铺信息编号为"' + _ids.join(',') + '"的数据项？').then(function() {
-    return delStore(_ids);
-  }).then(() => {
-    getList();
+  if (_ids.length === 0) return;
+  deleting.value = true;
+  try {
+    await proxy.$modal.confirm('是否确认删除店铺信息编号为"' + _ids.join(',') + '"的数据项？');
+    await delStore(_ids);
+    await getList();
     proxy.$modal.msgSuccess("删除成功");
-  }).catch(() => {});
+  } catch (error) {
+    if (!isConfirmDismissed(error)) {
+      proxy.$modal.msgError("删除失败：" + (error?.message || error || "请稍后重试"));
+    }
+  } finally {
+    deleting.value = false;
+  }
+}
+
+function isConfirmDismissed(error) {
+  return error === "cancel" || error === "close";
 }
 
 /** 导出按钮操作 */
@@ -593,16 +649,23 @@ function handleExport() {
 }
 
 /** 切换店铺状态 */
-function toggleStatus(row) {
+async function toggleStatus(row) {
+  if (updatingStatusId.value !== null || ![1, 2].includes(row.status)) return;
   const newStatus = row.status === 1 ? 2 : 1;
   const statusText = newStatus === 1 ? '开启' : '关闭';
-  
-  proxy.$modal.confirm(`确认要${statusText}店铺"${row.shopName}"吗？`).then(() => {
-    return updateStoreStatus(row.id, newStatus);
-  }).then(response => {
+  updatingStatusId.value = row.id;
+  try {
+    await proxy.$modal.confirm(`确认要${statusText}店铺"${row.shopName}"吗？`);
+    await updateStoreStatus(row.id, newStatus);
     proxy.$modal.msgSuccess(`${statusText}成功`);
-    getList();
-  }).catch(() => {});
+    await getList();
+  } catch (error) {
+    if (!isConfirmDismissed(error)) {
+      proxy.$modal.msgError(`${statusText}失败：` + (error?.message || error || "请稍后重试"));
+    }
+  } finally {
+    updatingStatusId.value = null;
+  }
 }
 
 // 组件挂载时加载数据
