@@ -41,7 +41,11 @@
           </div>
         </button>
 
-        <div class="empty-session" v-if="sessionList.length === 0 && !loadingSession">
+        <div class="data-error" v-if="sessionError" role="alert">
+          <span>{{ sessionError }}</span>
+          <el-button link type="primary" :disabled="loadingSession" @click="loadSessions()">重试</el-button>
+        </div>
+        <div class="empty-session" v-if="sessionList.length === 0 && !loadingSession && !sessionError">
           <el-empty description="暂无会话" :image-size="100" />
         </div>
       </div>
@@ -112,6 +116,11 @@
             </div>
           </div>
 
+          <div v-if="messageError" class="data-error" role="alert">
+            <span>{{ messageError }}</span>
+            <el-button link type="primary" :disabled="loadingMessages"
+              @click="loadMessages(currentSession.sessionId)">重试</el-button>
+          </div>
           <div ref="scrollAnchor"></div>
         </div>
 
@@ -150,9 +159,9 @@ import {
   getSessionList,
   getSessionMessages,
   replyMessage,
-  getUnreadCount,
   markAsRead
 } from '@/api/message/customerMessage'
+import { CustomerMessageDataError, readCustomerMessageList } from '@/utils/customerMessageData.mjs'
 
 // 响应式数据
 const sessionList = ref([])
@@ -163,10 +172,13 @@ const loadingSession = ref(false)
 const loadingMessages = ref(false)
 const sending = ref(false)
 const totalUnreadCount = ref(0)
+const sessionError = ref('')
+const messageError = ref('')
 
 const messageListRef = ref(null)
 const scrollAnchor = ref(null)
 let messageLoadVersion = 0
+let sessionLoadVersion = 0
 let componentActive = false
 
 // 快捷回复
@@ -179,12 +191,16 @@ const quickReplies = ref([
 ])
 
 // 加载会话列表
-const loadSessions = async () => {
-  loadingSession.value = true
+const loadSessions = async (quiet = false) => {
+  const requestVersion = ++sessionLoadVersion
+  if (!quiet) loadingSession.value = true
+  if (!quiet) sessionError.value = ''
   try {
     const response = await getSessionList()
-    if (response.code === 200 && componentActive) {
-      sessionList.value = response.data || []
+    const sessions = readCustomerMessageList(response, '会话列表')
+    if (response.code === 200 && componentActive && requestVersion === sessionLoadVersion) {
+      sessionList.value = sessions
+      sessionError.value = ''
       // 计算总未读数
       totalUnreadCount.value = sessionList.value.reduce((sum, s) => sum + (s.unreadCount || 0), 0)
       if (currentSession.value) {
@@ -193,12 +209,14 @@ const loadSessions = async () => {
       }
     }
   } catch (error) {
-    if (componentActive) {
+    if (componentActive && requestVersion === sessionLoadVersion) {
       console.error('加载会话列表失败:', error)
-      ElMessage.error('加载会话列表失败')
+      sessionError.value = error instanceof CustomerMessageDataError
+        ? error.message
+        : '加载会话列表失败，请检查网络后重试'
     }
   } finally {
-    if (componentActive) loadingSession.value = false
+    if (componentActive && requestVersion === sessionLoadVersion) loadingSession.value = false
   }
 }
 
@@ -229,10 +247,12 @@ const selectSession = async (session) => {
 const loadMessages = async (sessionId) => {
   const requestVersion = ++messageLoadVersion
   loadingMessages.value = true
+  messageError.value = ''
   try {
     const response = await getSessionMessages(sessionId)
+    const messages = readCustomerMessageList(response)
     if (response.code === 200 && componentActive && requestVersion === messageLoadVersion && currentSession.value?.sessionId === sessionId) {
-      messageList.value = response.data || []
+      messageList.value = messages
       await nextTick()
       if (!componentActive || requestVersion !== messageLoadVersion || currentSession.value?.sessionId !== sessionId) return false
       scrollToBottom()
@@ -241,7 +261,9 @@ const loadMessages = async (sessionId) => {
   } catch (error) {
     if (componentActive && requestVersion === messageLoadVersion) {
       console.error('加载消息失败:', error)
-      ElMessage.error('加载消息失败')
+      messageError.value = error instanceof CustomerMessageDataError
+        ? error.message
+        : '加载消息失败，请检查网络后重试'
     }
   } finally {
     if (componentActive && requestVersion === messageLoadVersion) loadingMessages.value = false
@@ -358,11 +380,7 @@ const startRefresh = () => {
     try {
       // 刷新会话列表
       try {
-        const response = await getSessionList()
-        if (response.code === 200 && componentActive) {
-          sessionList.value = response.data || []
-          totalUnreadCount.value = sessionList.value.reduce((sum, s) => sum + (s.unreadCount || 0), 0)
-        }
+        await loadSessions(true)
       } catch (error) {
         console.error('刷新会话失败:', error)
       }
@@ -373,7 +391,7 @@ const startRefresh = () => {
         try {
           const response = await getSessionMessages(sessionId)
           if (response.code === 200 && componentActive && currentSession.value?.sessionId === sessionId) {
-            const newMessages = response.data || []
+            const newMessages = readCustomerMessageList(response)
             const oldIds = messageList.value.map(message => message.id)
             const newIds = newMessages.map(message => message.id)
             if (oldIds.length !== newIds.length || oldIds.some((id, index) => id !== newIds[index])) {
@@ -528,6 +546,16 @@ onUnmounted(() => {
 
 .empty-session {
   padding: 50px 20px;
+}
+
+.data-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px;
+  color: #b42318;
+  font-size: 13px;
 }
 
 /* 右侧聊天区域 */

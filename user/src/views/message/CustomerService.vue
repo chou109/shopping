@@ -30,7 +30,7 @@
       <!-- 消息列表 -->
       <div class="message-list" ref="messageListRef">
         <!-- 欢迎消息 -->
-        <div class="welcome-message" v-if="messages.length === 0">
+        <div class="welcome-message" v-if="messages.length === 0 && !loading && !messageError">
           <div class="welcome-icon">
             <el-icon>
               <Service />
@@ -84,6 +84,11 @@
           <span>正在加载...</span>
         </div>
 
+        <div v-if="messageError" class="message-load-error" role="alert">
+          <span>{{ messageError }}</span>
+          <el-button link type="primary" :disabled="loading" @click="loadMessages">重试</el-button>
+        </div>
+
         <!-- 滚动锚点 -->
         <div ref="scrollAnchor"></div>
       </div>
@@ -117,6 +122,7 @@ import { ElMessage } from 'element-plus'
 import { ArrowLeft, Service, Bell, Loading } from '@element-plus/icons-vue'
 import { sendMessage as sendMessageApi, getMessages, getUnreadCount, markAsRead } from '@/api/system/customerMessage'
 import { getProductImageUrl } from '@/utils/image'
+import { CustomerMessageDataError, readCustomerMessageList, readCustomerUnreadCount } from '@/utils/customerMessageData.mjs'
 
 const router = useRouter()
 const store = useStore()
@@ -128,6 +134,7 @@ const inputMessage = ref('')
 const loading = ref(false)
 const sending = ref(false)
 const unreadCount = ref(0)
+const messageError = ref('')
 const messageListRef = ref(null)
 const scrollAnchor = ref(null)
 let messageLoadVersion = 0
@@ -169,11 +176,13 @@ const loadMessages = async () => {
   const requestReceiverId = receiverId.value
   const requestVersion = ++messageLoadVersion
   loading.value = true
+  messageError.value = ''
   try {
     // 根据receiverId获取与指定接收者的对话
     const response = await getMessages(requestReceiverId)
-    if (response.code === 200 && componentActive && requestVersion === messageLoadVersion) {
-      messages.value = response.data || []
+    const messageList = readCustomerMessageList(response)
+    if (componentActive && requestVersion === messageLoadVersion && requestReceiverId === receiverId.value) {
+      messages.value = messageList
       await nextTick()
       if (!componentActive || requestVersion !== messageLoadVersion) return
       scrollToBottom()
@@ -189,7 +198,9 @@ const loadMessages = async () => {
   } catch (error) {
     if (componentActive && requestVersion === messageLoadVersion) {
       console.error('加载消息失败:', error)
-      ElMessage.error('加载消息失败')
+      messageError.value = error instanceof CustomerMessageDataError
+        ? error.message
+        : '加载消息失败，请检查网络后重试'
     }
   } finally {
     if (componentActive && requestVersion === messageLoadVersion) loading.value = false
@@ -201,7 +212,7 @@ const loadUnreadCount = async () => {
   try {
     const response = await getUnreadCount()
     if (response.code === 200 && componentActive) {
-      unreadCount.value = response.data || 0
+      unreadCount.value = readCustomerUnreadCount(response)
     }
   } catch (error) {
     console.error('获取未读数量失败:', error)
@@ -308,7 +319,7 @@ const startRefresh = () => {
       const response = await getMessages(requestReceiverId)
       if (!componentActive || requestReceiverId !== receiverId.value) return
       if (response.code === 200) {
-        const newMessages = response.data || []
+        const newMessages = readCustomerMessageList(response)
         const oldIds = messages.value.map(message => message.id)
         const newIds = newMessages.map(message => message.id)
         if (oldIds.length !== newIds.length || oldIds.some((id, index) => id !== newIds[index])) {
@@ -349,6 +360,7 @@ onMounted(() => {
 
 watch(receiverId, () => {
   messages.value = []
+  messageError.value = ''
   loadMessages()
 })
 
@@ -600,6 +612,16 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   gap: 8px;
+}
+
+.message-load-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px;
+  color: #b42318;
+  font-size: 13px;
 }
 
 .loading-icon {
