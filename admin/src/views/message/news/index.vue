@@ -65,6 +65,10 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
+    <el-alert v-if="listError" :title="listError" type="error" :closable="false" show-icon>
+      <template #default><el-button link type="primary" :disabled="loading" @click="getList">重试</el-button></template>
+    </el-alert>
+
     <el-table v-loading="loading" :data="newsList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="编号" align="center" prop="id" width="70"/>
@@ -122,6 +126,7 @@ const { proxy } = getCurrentInstance();
 const newsList = ref([]);
 const open = ref(false);
 const loading = ref(true);
+const listError = ref("");
 const showSearch = ref(true);
 const ids = ref([]);
 const single = ref(true);
@@ -144,15 +149,27 @@ const data = reactive({
 });
 
 const { queryParams, form, rules } = toRefs(data);
+let newsListRequestId = 0;
 
 /** 查询新闻公告列表 */
-function getList() {
+async function getList() {
+  const requestId = ++newsListRequestId;
   loading.value = true;
-  listNews(queryParams.value).then(response => {
+  listError.value = "";
+  try {
+    const response = await listNews(queryParams.value);
+    if (requestId !== newsListRequestId) return;
+    if (!Array.isArray(response.rows)) throw new Error("资讯列表数据格式异常");
     newsList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
+    total.value = Number(response.total) || 0;
+  } catch (error) {
+    if (requestId === newsListRequestId) {
+      console.error("获取资讯列表失败:", error);
+      listError.value = "资讯列表加载失败，请重试";
+    }
+  } finally {
+    if (requestId === newsListRequestId) loading.value = false;
+  }
 }
 
 // 取消按钮
@@ -256,4 +273,7 @@ function handleExport() {
 }
 
 getList();
+onBeforeUnmount(() => {
+  newsListRequestId += 1;
+});
 </script>

@@ -91,6 +91,10 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
+    <el-alert v-if="listError" :title="listError" type="error" :closable="false" show-icon>
+      <template #default><el-button link type="primary" :disabled="loading" @click="getList">重试</el-button></template>
+    </el-alert>
+
     <el-table v-loading="loading" :data="feedbackList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="编号" align="center" prop="id" width="55"/>
@@ -178,6 +182,7 @@ const userList = ref([]);
 const feedbackList = ref([]);
 const open = ref(false);
 const loading = ref(true);
+const listError = ref("");
 const showSearch = ref(true);
 const ids = ref([]);
 const single = ref(true);
@@ -205,18 +210,33 @@ const data = reactive({
 });
 
 const { queryParams, form, rules } = toRefs(data);
+let feedbackListRequestId = 0;
 
 /** 查询用户反馈列表 */
-function getList() {
+async function getList() {
+  const requestId = ++feedbackListRequestId;
   loading.value = true;
-  listFeedback(queryParams.value).then(response => {
+  listError.value = "";
+  try {
+    const response = await listFeedback(queryParams.value);
+    if (requestId !== feedbackListRequestId) return;
+    if (!Array.isArray(response.rows)) throw new Error("反馈列表数据格式异常");
     feedbackList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
-  listUser(queryParams.value).then(response => {
-    userList.value = response.rows;
-  });
+    total.value = Number(response.total) || 0;
+  } catch (error) {
+    if (requestId === feedbackListRequestId) {
+      console.error("获取反馈列表失败:", error);
+      listError.value = "反馈列表加载失败，请重试";
+    }
+  } finally {
+    if (requestId === feedbackListRequestId) loading.value = false;
+  }
+  try {
+    const response = await listUser(queryParams.value);
+    if (requestId === feedbackListRequestId && Array.isArray(response.rows)) userList.value = response.rows;
+  } catch (error) {
+    if (requestId === feedbackListRequestId) console.error("获取反馈用户选项失败:", error);
+  }
 }
 
 // 取消按钮
@@ -323,4 +343,7 @@ function handleExport() {
 }
 
 getList();
+onBeforeUnmount(() => {
+  feedbackListRequestId += 1;
+});
 </script>

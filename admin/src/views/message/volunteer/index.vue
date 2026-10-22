@@ -64,6 +64,10 @@
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
+
+    <el-alert v-if="listError" :title="listError" type="error" :closable="false" show-icon>
+      <template #default><el-button link type="primary" :disabled="loading" @click="getList">重试</el-button></template>
+    </el-alert>
  
     <el-table v-loading="loading" :data="volunteerList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
@@ -121,6 +125,7 @@ const { proxy } = getCurrentInstance();
 const volunteerList = ref([]);
 const open = ref(false);
 const loading = ref(true);
+const listError = ref("");
 const showSearch = ref(true);
 const ids = ref([]);
 const single = ref(true);
@@ -142,15 +147,27 @@ const data = reactive({
 });
 
 const { queryParams, form, rules } = toRefs(data);
+let volunteerListRequestId = 0;
 
 /** 查询志愿者信息中心列表 */
-function getList() {
+async function getList() {
+  const requestId = ++volunteerListRequestId;
   loading.value = true;
-  listVolunteer(queryParams.value).then(response => {
+  listError.value = "";
+  try {
+    const response = await listVolunteer(queryParams.value);
+    if (requestId !== volunteerListRequestId) return;
+    if (!Array.isArray(response.rows)) throw new Error("志愿者列表数据格式异常");
     volunteerList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
+    total.value = Number(response.total) || 0;
+  } catch (error) {
+    if (requestId === volunteerListRequestId) {
+      console.error("获取志愿者列表失败:", error);
+      listError.value = "志愿者列表加载失败，请重试";
+    }
+  } finally {
+    if (requestId === volunteerListRequestId) loading.value = false;
+  }
 }
 
 // 取消按钮
@@ -253,4 +270,7 @@ function handleExport() {
 }
 
 getList();
+onBeforeUnmount(() => {
+  volunteerListRequestId += 1;
+});
 </script>
