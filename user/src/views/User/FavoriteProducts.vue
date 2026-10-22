@@ -27,7 +27,7 @@
               <div class="product-name">{{ item.productName }}</div>
               <div class="product-subtitle" v-if="item.productSubtitle">{{ item.productSubtitle }}</div>
               <div class="product-price">
-                <span class="price">¥{{ formatPrice(item.productPrice) }}</span>
+                <span class="price">{{ formatPrice(item.productPrice) }}</span>
               </div>
               <div class="favorite-time">
                 收藏于 {{ formatTime(item.createTime) }}
@@ -113,7 +113,10 @@ const handleRemoveFavorite = async (item) => {
 }
 
 // 格式化价格
-const formatPrice = formatProductPrice
+const formatPrice = (value) => {
+  if (value == null || value === '' || !Number.isFinite(Number(value))) return '价格未知'
+  return `¥${formatProductPrice(value)}`
+}
 
 // 格式化时间
 const formatTime = (time) => {
