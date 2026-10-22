@@ -85,6 +85,11 @@
          </el-col>
          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
       </el-row>
+      <el-alert v-if="listError" :title="listError" type="error" :closable="false" show-icon>
+         <template #default>
+            <el-button link type="primary" :disabled="loading" @click="getTypes(route.params && route.params.dictId)">重试</el-button>
+         </template>
+      </el-alert>
 
       <el-table v-loading="loading" :data="dataList" @selection-change="handleSelectionChange">
          <el-table-column type="selection" width="55" align="center" />
@@ -186,6 +191,7 @@ const { sys_normal_disable } = proxy.useDict("sys_normal_disable");
 const dataList = ref([]);
 const open = ref(false);
 const loading = ref(true);
+const listError = ref("");
 const showSearch = ref(true);
 const ids = ref([]);
 const single = ref(true);
@@ -195,6 +201,8 @@ const title = ref("");
 const defaultDictType = ref("");
 const typeOptions = ref([]);
 const route = useRoute();
+let typeRequestId = 0;
+let dataListRequestId = 0;
 // 数据标签回显样式
 const listClassOptions = ref([
   { value: "default", label: "默认" }, 
@@ -224,12 +232,27 @@ const data = reactive({
 const { queryParams, form, rules } = toRefs(data);
 
 /** 查询字典类型详细 */
-function getTypes(dictId) {
-  getType(dictId).then(response => {
+async function getTypes(dictId) {
+  const requestId = ++typeRequestId;
+  dataListRequestId += 1;
+  loading.value = true;
+  listError.value = "";
+  try {
+    if (dictId == null || dictId === "") throw new Error("缺少字典类型编号");
+    const response = await getType(dictId);
+    if (requestId !== typeRequestId) return;
+    if (!response.data?.dictType) throw new Error("字典类型数据格式异常");
     queryParams.value.dictType = response.data.dictType;
     defaultDictType.value = response.data.dictType;
-    getList();
-  });
+    queryParams.value.pageNum = 1;
+    await getList();
+  } catch (error) {
+    if (requestId === typeRequestId) {
+      console.error("获取字典类型失败:", error);
+      listError.value = "字典类型加载失败，请重试";
+      loading.value = false;
+    }
+  }
 }
 
 /** 查询字典类型列表 */
@@ -239,13 +262,24 @@ function getTypeList() {
   });
 }
 /** 查询字典数据列表 */
-function getList() {
+async function getList() {
+  const requestId = ++dataListRequestId;
   loading.value = true;
-  listData(queryParams.value).then(response => {
+  listError.value = "";
+  try {
+    const response = await listData(queryParams.value);
+    if (requestId !== dataListRequestId) return;
+    if (!Array.isArray(response.rows)) throw new Error("字典数据列表格式异常");
     dataList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
+    total.value = Number(response.total) || 0;
+  } catch (error) {
+    if (requestId === dataListRequestId) {
+      console.error("获取字典数据列表失败:", error);
+      listError.value = "字典数据列表加载失败，请重试";
+    }
+  } finally {
+    if (requestId === dataListRequestId) loading.value = false;
+  }
 }
 /** 取消按钮 */
 function cancel() {
@@ -345,6 +379,10 @@ function handleExport() {
   }, `dict_data_${new Date().getTime()}.xlsx`);
 }
 
-getTypes(route.params && route.params.dictId);
+watch(() => route.params && route.params.dictId, dictId => getTypes(dictId), { immediate: true });
 getTypeList();
+onBeforeUnmount(() => {
+  typeRequestId += 1;
+  dataListRequestId += 1;
+});
 </script>
