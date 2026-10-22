@@ -172,8 +172,8 @@
     </div>
 
     <!-- 订单详情/编辑弹窗 -->
-    <el-dialog :title="title" v-model="open" width="720px" append-to-body class="order-dialog">
-      <el-form ref="infoRef" :model="form" :rules="rules" label-width="100px" class="order-form" disabled>
+    <el-dialog :title="title" v-model="open" width="720px" append-to-body class="order-dialog" @close="invalidateOrderDetailRequest">
+      <el-form v-loading="detailLoading" ref="infoRef" :model="form" :rules="rules" label-width="100px" class="order-form" disabled>
         <!-- 订单基本信息 -->
         <div class="form-section">
           <div class="section-title">订单信息</div>
@@ -313,6 +313,7 @@ const infoList = ref([]);
 const infoTableRef = ref(null);
 const open = ref(false);
 const loading = ref(true);
+const detailLoading = ref(false);
 const listError = ref("");
 const showSearch = ref(true);
 const ids = ref([]);
@@ -326,6 +327,7 @@ const shippingOrderNo = ref(null);
 const shippingSubmitting = ref(false);
 const deleting = ref(false);
 let listRequestId = 0;
+let orderDetailRequestId = 0;
 
 const data = reactive({
   form: {},
@@ -397,8 +399,14 @@ function getList() {
 
 // 取消按钮
 function cancel() {
+  invalidateOrderDetailRequest();
   open.value = false;
   reset();
+}
+
+function invalidateOrderDetailRequest() {
+  orderDetailRequestId += 1;
+  detailLoading.value = false;
 }
 
 // 表单重置
@@ -465,12 +473,19 @@ function clearStatusFilter() {
   handleQuery();
 }
 
-/** 修改按钮操作 */
-function handleUpdate(row) {
+/** 查看订单详情 */
+async function handleUpdate(row) {
+  const requestId = ++orderDetailRequestId;
   reset();
   const _id = row.id || ids.value[0];
-  getInfo(_id).then(response => {
-    form.value = response.data;
+  if (!_id) return;
+  open.value = true;
+  title.value = "订单详情";
+  detailLoading.value = true;
+  try {
+    const response = await getInfo(_id);
+    if (requestId !== orderDetailRequestId) return;
+    form.value = response.data || {};
     // 确保必要字段有默认值
     if (form.value.status === undefined || form.value.status === null) {
       form.value.status = 0;
@@ -478,9 +493,14 @@ function handleUpdate(row) {
     if (form.value.deleteFlag === undefined || form.value.deleteFlag === null) {
       form.value.deleteFlag = 0;
     }
-    open.value = true;
-    title.value = "订单详情";
-  });
+  } catch (error) {
+    if (requestId === orderDetailRequestId) {
+      open.value = false;
+      proxy.$modal.msgError("订单详情加载失败：" + (error?.message || error || "请稍后重试"));
+    }
+  } finally {
+    if (requestId === orderDetailRequestId) detailLoading.value = false;
+  }
 }
 
 /** 删除按钮操作 */
