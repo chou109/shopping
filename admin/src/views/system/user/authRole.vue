@@ -17,6 +17,9 @@
       </el-form>
 
       <h4 class="form-header h4">角色信息</h4>
+      <el-alert v-if="loadError" :title="loadError" type="error" :closable="false" show-icon>
+         <template #default><el-button link type="primary" :disabled="loading" @click="loadUserRoles">重试</el-button></template>
+      </el-alert>
       <el-table v-loading="loading" :row-key="getRowKey" @row-click="clickRow" ref="roleRef" @selection-change="handleSelectionChange" :data="roles.slice((pageNum - 1) * pageSize, pageNum * pageSize)">
          <el-table-column label="序号" width="55" type="index" align="center">
             <template #default="scope">
@@ -52,6 +55,7 @@ const route = useRoute();
 const { proxy } = getCurrentInstance();
 
 const loading = ref(true);
+const loadError = ref("");
 const total = ref(0);
 const pageNum = ref(1);
 const pageSize = ref(10);
@@ -62,6 +66,7 @@ const form = ref({
   userName: undefined,
   userId: undefined
 });
+let userRoleRequestId = 0;
 
 /** 单击选中行数据 */
 function clickRow(row) {
@@ -90,23 +95,40 @@ function submitForm() {
   });
 };
 
-(() => {
+async function loadUserRoles() {
   const userId = route.params && route.params.userId;
-  if (userId) {
-    loading.value = true;
-    getAuthRole(userId).then(response => {
-      form.value = response.user;
-      roles.value = response.roles;
-      total.value = roles.value.length;
-      nextTick(() => {
-        roles.value.forEach(row => {
-          if (row.flag) {
-            proxy.$refs["roleRef"].toggleRowSelection(row);
-          }
-        });
-      });
-      loading.value = false;
-    });
+  const requestId = ++userRoleRequestId;
+  if (!userId) {
+    loading.value = false;
+    loadError.value = "用户编号缺失，无法加载角色";
+    return;
   }
-})();
+  loading.value = true;
+  loadError.value = "";
+  try {
+    const response = await getAuthRole(userId);
+    if (requestId !== userRoleRequestId) return;
+    if (!response?.user || !Array.isArray(response.roles)) throw new Error("用户角色数据格式异常");
+    form.value = response.user;
+    roles.value = response.roles;
+    total.value = roles.value.length;
+    await nextTick();
+    if (requestId !== userRoleRequestId) return;
+    roles.value.forEach(row => {
+      if (row.flag) proxy.$refs["roleRef"]?.toggleRowSelection(row);
+    });
+  } catch (error) {
+    if (requestId === userRoleRequestId) {
+      console.error("获取用户角色失败:", error);
+      loadError.value = "用户角色加载失败，请重试";
+    }
+  } finally {
+    if (requestId === userRoleRequestId) loading.value = false;
+  }
+}
+
+loadUserRoles();
+onBeforeUnmount(() => {
+  userRoleRequestId += 1;
+});
 </script>

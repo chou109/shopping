@@ -57,6 +57,9 @@
               </template>
             </el-table-column>
           </el-table>
+          <el-alert v-if="cacheNamesError" :title="cacheNamesError" type="error" :closable="false" show-icon>
+            <template #default><el-button link type="primary" :disabled="loading" @click="refreshCacheNames">重试</el-button></template>
+          </el-alert>
         </el-card>
       </el-col>
 
@@ -108,6 +111,9 @@
               </template>
             </el-table-column>
           </el-table>
+          <el-alert v-if="cacheKeysError" :title="cacheKeysError" type="error" :closable="false" show-icon>
+            <template #default><el-button link type="primary" :disabled="subLoading" @click="refreshCacheKeys">重试</el-button></template>
+          </el-alert>
         </el-card>
       </el-col>
 
@@ -148,6 +154,9 @@
               </el-col>
             </el-row>
           </el-form>
+          <el-alert v-if="cacheValueError" :title="cacheValueError" type="error" :closable="false" show-icon>
+            <template #default><el-button link type="primary" @click="retryCacheValue">重试</el-button></template>
+          </el-alert>
         </el-card>
       </el-col>
     </el-row>
@@ -164,58 +173,105 @@ const cacheKeys = ref([]);
 const cacheForm = ref({});
 const loading = ref(true);
 const subLoading = ref(false);
+const cacheNamesError = ref("");
+const cacheKeysError = ref("");
+const cacheValueError = ref("");
 const nowCacheName = ref("");
 const tableHeight = ref(window.innerHeight - 200);
+let cacheNamesRequestId = 0;
+let cacheKeysRequestId = 0;
+let cacheValueRequestId = 0;
+let selectedCacheKey = "";
 
 /** 查询缓存名称列表 */
-function getCacheNames() {
+async function getCacheNames() {
+  const requestId = ++cacheNamesRequestId;
   loading.value = true;
-  listCacheName().then(response => {
+  cacheNamesError.value = "";
+  try {
+    const response = await listCacheName();
+    if (requestId !== cacheNamesRequestId) return false;
+    if (!Array.isArray(response.data)) throw new Error("缓存名称列表格式异常");
     cacheNames.value = response.data;
-    loading.value = false;
-  });
+    return true;
+  } catch (error) {
+    if (requestId === cacheNamesRequestId) {
+      console.error("获取缓存名称列表失败:", error);
+      cacheNamesError.value = "缓存名称列表加载失败，请重试";
+    }
+    return false;
+  } finally {
+    if (requestId === cacheNamesRequestId) loading.value = false;
+  }
 }
 
 /** 刷新缓存名称列表 */
-function refreshCacheNames() {
-  getCacheNames();
-  proxy.$modal.msgSuccess("刷新缓存列表成功");
+async function refreshCacheNames() {
+  if (await getCacheNames()) proxy.$modal.msgSuccess("刷新缓存列表成功");
 }
 
 /** 清理指定名称缓存 */
-function handleClearCacheName(row) {
-  clearCacheName(row.cacheName).then(response => {
-    proxy.$modal.msgSuccess("清理缓存名称[" + nowCacheName.value + "]成功");
-    getCacheKeys();
-  });
+async function handleClearCacheName(row) {
+  try {
+    await clearCacheName(row.cacheName);
+    proxy.$modal.msgSuccess("清理缓存名称[" + row.cacheName + "]成功");
+    if (nowCacheName.value === row.cacheName) {
+      nowCacheName.value = "";
+      cacheKeys.value = [];
+      cacheForm.value = {};
+    }
+    await getCacheNames();
+  } catch (error) {
+    console.error("清理缓存名称失败:", error);
+    proxy.$modal.msgError("清理缓存名称失败");
+  }
 }
 
 /** 查询缓存键名列表 */
-function getCacheKeys(row) {
+async function getCacheKeys(row) {
   const cacheName = row !== undefined ? row.cacheName : nowCacheName.value;
   if (cacheName === "") {
     return;
   }
+  const requestId = ++cacheKeysRequestId;
+  cacheValueRequestId += 1;
+  selectedCacheKey = "";
+  nowCacheName.value = cacheName;
   subLoading.value = true;
-  listCacheKey(cacheName).then(response => {
+  cacheKeysError.value = "";
+  cacheForm.value = {};
+  try {
+    const response = await listCacheKey(cacheName);
+    if (requestId !== cacheKeysRequestId) return;
+    if (!Array.isArray(response.data)) throw new Error("缓存键名列表格式异常");
     cacheKeys.value = response.data;
-    subLoading.value = false;
-    nowCacheName.value = cacheName;
-  });
+  } catch (error) {
+    if (requestId === cacheKeysRequestId) {
+      console.error("获取缓存键名列表失败:", error);
+      cacheKeys.value = [];
+      cacheKeysError.value = "缓存键名列表加载失败，请重试";
+    }
+  } finally {
+    if (requestId === cacheKeysRequestId) subLoading.value = false;
+  }
 }
 
 /** 刷新缓存键名列表 */
-function refreshCacheKeys() {
-  getCacheKeys();
-  proxy.$modal.msgSuccess("刷新键名列表成功");
+async function refreshCacheKeys() {
+  await getCacheKeys();
+  if (!cacheKeysError.value) proxy.$modal.msgSuccess("刷新键名列表成功");
 }
 
 /** 清理指定键名缓存 */
-function handleClearCacheKey(cacheKey) {
-  clearCacheKey(cacheKey).then(response => {
+async function handleClearCacheKey(cacheKey) {
+  try {
+    await clearCacheKey(cacheKey);
     proxy.$modal.msgSuccess("清理缓存键名[" + cacheKey + "]成功");
-    getCacheKeys();
-  });
+    await getCacheKeys();
+  } catch (error) {
+    console.error("清理缓存键名失败:", error);
+    proxy.$modal.msgError("清理缓存键名失败");
+  }
 }
 
 /** 列表前缀去除 */
@@ -229,18 +285,45 @@ function keyFormatter(cacheKey) {
 }
 
 /** 查询缓存内容详细 */
-function handleCacheValue(cacheKey) {
-  getCacheValue(nowCacheName.value, cacheKey).then(response => {
+async function handleCacheValue(cacheKey) {
+  const requestId = ++cacheValueRequestId;
+  selectedCacheKey = cacheKey;
+  cacheValueError.value = "";
+  try {
+    const response = await getCacheValue(nowCacheName.value, cacheKey);
+    if (requestId !== cacheValueRequestId) return;
+    if (!response?.data || typeof response.data !== "object") throw new Error("缓存内容格式异常");
     cacheForm.value = response.data;
-  });
+  } catch (error) {
+    if (requestId === cacheValueRequestId) {
+      console.error("获取缓存内容失败:", error);
+      cacheValueError.value = "缓存内容加载失败，请重试";
+    }
+  }
+}
+
+function retryCacheValue() {
+  if (selectedCacheKey) handleCacheValue(selectedCacheKey);
 }
 
 /** 清理全部缓存 */
-function handleClearCacheAll() {
-  clearCacheAll().then(response => {
+async function handleClearCacheAll() {
+  try {
+    await clearCacheAll();
+    cacheKeys.value = [];
+    cacheForm.value = {};
     proxy.$modal.msgSuccess("清理全部缓存成功");
-  });
+    await getCacheNames();
+  } catch (error) {
+    console.error("清理全部缓存失败:", error);
+    proxy.$modal.msgError("清理全部缓存失败");
+  }
 }
 
 getCacheNames();
+onBeforeUnmount(() => {
+  cacheNamesRequestId += 1;
+  cacheKeysRequestId += 1;
+  cacheValueRequestId += 1;
+});
 </script>
