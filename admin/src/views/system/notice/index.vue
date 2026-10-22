@@ -67,6 +67,11 @@
          </el-col>
          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
       </el-row>
+      <el-alert v-if="listError" :title="listError" type="error" :closable="false" show-icon>
+         <template #default>
+            <el-button link type="primary" :disabled="loading" @click="getList">重试</el-button>
+         </template>
+      </el-alert>
 
       <el-table v-loading="loading" :data="noticeList" @selection-change="handleSelectionChange">
          <el-table-column type="selection" width="55" align="center" />
@@ -174,12 +179,14 @@ const { sys_notice_status, sys_notice_type } = proxy.useDict("sys_notice_status"
 const noticeList = ref([]);
 const open = ref(false);
 const loading = ref(true);
+const listError = ref("");
 const showSearch = ref(true);
 const ids = ref([]);
 const single = ref(true);
 const multiple = ref(true);
 const total = ref(0);
 const title = ref("");
+let noticeListRequestId = 0;
 
 const data = reactive({
   form: {},
@@ -199,13 +206,24 @@ const data = reactive({
 const { queryParams, form, rules } = toRefs(data);
 
 /** 查询公告列表 */
-function getList() {
+async function getList() {
+  const requestId = ++noticeListRequestId;
   loading.value = true;
-  listNotice(queryParams.value).then(response => {
+  listError.value = "";
+  try {
+    const response = await listNotice(queryParams.value);
+    if (requestId !== noticeListRequestId) return;
+    if (!Array.isArray(response.rows)) throw new Error("公告列表数据格式异常");
     noticeList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
+    total.value = Number(response.total) || 0;
+  } catch (error) {
+    if (requestId === noticeListRequestId) {
+      console.error("获取公告列表失败:", error);
+      listError.value = "公告列表加载失败，请重试";
+    }
+  } finally {
+    if (requestId === noticeListRequestId) loading.value = false;
+  }
 }
 /** 取消按钮 */
 function cancel() {
@@ -287,4 +305,7 @@ function handleDelete(row) {
 }
 
 getList();
+onBeforeUnmount(() => {
+  noticeListRequestId += 1;
+});
 </script>

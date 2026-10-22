@@ -76,6 +76,11 @@
          </el-col>
          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
       </el-row>
+      <el-alert v-if="listError" :title="listError" type="error" :closable="false" show-icon>
+         <template #default>
+            <el-button link type="primary" :disabled="loading" @click="getList">重试</el-button>
+         </template>
+      </el-alert>
 
       <el-table v-loading="loading" :data="postList" @selection-change="handleSelectionChange">
          <el-table-column type="selection" width="55" align="center" />
@@ -153,12 +158,14 @@ const { sys_normal_disable } = proxy.useDict("sys_normal_disable");
 const postList = ref([]);
 const open = ref(false);
 const loading = ref(true);
+const listError = ref("");
 const showSearch = ref(true);
 const ids = ref([]);
 const single = ref(true);
 const multiple = ref(true);
 const total = ref(0);
 const title = ref("");
+let postListRequestId = 0;
 
 const data = reactive({
   form: {},
@@ -179,13 +186,24 @@ const data = reactive({
 const { queryParams, form, rules } = toRefs(data);
 
 /** 查询岗位列表 */
-function getList() {
+async function getList() {
+  const requestId = ++postListRequestId;
   loading.value = true;
-  listPost(queryParams.value).then(response => {
+  listError.value = "";
+  try {
+    const response = await listPost(queryParams.value);
+    if (requestId !== postListRequestId) return;
+    if (!Array.isArray(response.rows)) throw new Error("岗位列表数据格式异常");
     postList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
+    total.value = Number(response.total) || 0;
+  } catch (error) {
+    if (requestId === postListRequestId) {
+      console.error("获取岗位列表失败:", error);
+      listError.value = "岗位列表加载失败，请重试";
+    }
+  } finally {
+    if (requestId === postListRequestId) loading.value = false;
+  }
 }
 /** 取消按钮 */
 function cancel() {
@@ -274,4 +292,7 @@ function handleExport() {
 }
 
 getList();
+onBeforeUnmount(() => {
+  postListRequestId += 1;
+});
 </script>
