@@ -18,7 +18,6 @@
           <el-col :span="6">
             <el-form-item label="状态" prop="status">
               <el-select v-model="queryParams.status" placeholder="全部状态" clearable style="width: 100%">
-                <el-option label="全部" :value="undefined" />
                 <el-option label="启用" :value="1" />
                 <el-option label="禁用" :value="0" />
               </el-select>

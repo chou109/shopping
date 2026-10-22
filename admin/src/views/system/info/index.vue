@@ -29,7 +29,6 @@
           <el-col :span="6">
             <el-form-item label="订单状态" prop="status">
               <el-select v-model="queryParams.status" placeholder="全部状态" clearable style="width: 100%" @change="handleQuery">
-                <el-option label="全部" :value="null" />
                 <el-option label="待付款" :value="10" />
                 <el-option label="待发货" :value="20" />
                 <el-option label="待收货" :value="30" />

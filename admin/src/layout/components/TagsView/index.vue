@@ -31,6 +31,7 @@
 </template>
 
 <script setup>
+import { Back, Right } from '@element-plus/icons-vue'
 import ScrollPane from './ScrollPane'
 import { getNormalPath } from '@/utils/neuedu'
 import useTagsViewStore from '@/store/modules/tagsView'

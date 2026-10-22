@@ -12,7 +12,6 @@
           <el-col :span="6">
             <el-form-item label="商品状态" prop="status">
               <el-select v-model="queryParams.status" placeholder="全部状态" clearable style="width: 100%" @change="handleQuery">
-                <el-option label="全部" :value="null" />
                 <el-option label="上架" :value="1" />
                 <el-option label="下架" :value="0" />
               </el-select>
@@ -21,7 +20,6 @@
           <el-col :span="6">
             <el-form-item label="热门状态" prop="hotFlag">
               <el-select v-model="queryParams.hotFlag" placeholder="全部" clearable style="width: 100%" @change="handleQuery">
-                <el-option label="全部" :value="null" />
                 <el-option label="热门" :value="1" />
                 <el-option label="非热门" :value="0" />
               </el-select>
@@ -63,7 +61,6 @@
                 <el-form-item label="品类" prop="categoryId">
                   <el-select v-model="queryParams.categoryId" placeholder="点击选择品类" clearable filterable
                     :loading="categoryTreeLoading" style="width: 150px">
-                    <el-option label="全部" :value="null" />
                     <el-option v-for="category in categoryTreeOptions" :key="category.id" :label="category.name" :value="category.id" />
                   </el-select>
                 </el-form-item>
@@ -261,7 +258,6 @@
               <el-select v-model="form.categoryId" placeholder="点击选择品类" clearable filterable
                   :loading="categoryTreeLoading"
                   style="width: 200px" @click.stop>
-                  <el-option label="全部" :value="null" />
                   <el-option v-for="category in categoryTreeOptions" :key="category.id" :label="category.name"
                     :value="category.id" />
                 </el-select>

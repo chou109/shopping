@@ -9,11 +9,11 @@
         <header-search id="header-search" class="right-menu-item" />
 
         <el-tooltip content="源码地址" effect="dark" placement="bottom">
-          <ruo-yi-git id="neuedu-git" class="right-menu-item hover-effect" />
+          <neuedu-git id="neuedu-git" class="right-menu-item hover-effect" />
         </el-tooltip>
 
         <el-tooltip content="文档地址" effect="dark" placement="bottom">
-          <ruo-yi-doc id="neuedu-doc" class="right-menu-item hover-effect" />
+          <neuedu-doc id="neuedu-doc" class="right-menu-item hover-effect" />
         </el-tooltip>
 
         <screenfull id="screenfull" class="right-menu-item hover-effect" />

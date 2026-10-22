@@ -98,6 +98,18 @@ function collectDeprecatedElementPlusButtonIssues(node, filename) {
   return issues
 }
 
+function collectEmptyElementPlusOptionIssues(node, filename) {
+  const issues = []
+  if (node.type === 1 && node.tag === 'el-option' && node.props.some(property =>
+    property.type === 7 && property.name === 'bind' && property.arg?.content === 'value'
+      && ['null', 'undefined'].includes(property.exp?.content?.trim())
+  )) {
+    issues.push(`${path.relative(root, filename)}:${node.loc.start.line}: el-option 的值不能为 null 或 undefined，请依靠可清除选择器表示空选项`)
+  }
+  for (const child of node.children || []) issues.push(...collectEmptyElementPlusOptionIssues(child, filename))
+  return issues
+}
+
 function collectClickableElementIssues(node, filename) {
   const issues = []
   const nativeInteractiveElements = new Set([
@@ -167,6 +179,7 @@ for (const sourceRoot of sourceRoots) {
     failures.push(...collectTargetBlankIssues(parsedTemplate.ast, filename))
     failures.push(...collectButtonIssues(parsedTemplate.ast, filename))
     failures.push(...collectDeprecatedElementPlusButtonIssues(parsedTemplate.ast, filename))
+    failures.push(...collectEmptyElementPlusOptionIssues(parsedTemplate.ast, filename))
     failures.push(...collectClickableElementIssues(parsedTemplate.ast, filename))
     failures.push(...collectLegacySlotIssues(parsedTemplate.ast, filename))
     if (!descriptor.scriptSetup) continue

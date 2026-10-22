@@ -37,7 +37,6 @@
           <el-col :span="8">
             <el-form-item label="店铺状态" prop="status" label-width="70px" class="compact-item">
               <el-select v-model="queryParams.status" placeholder="全部状态" clearable style="width: 200px">
-                <el-option label="全部" :value="null" />
                 <el-option label="正常营业" :value="1" />
                 <el-option label="已关闭" :value="2" />
                 <el-option label="审核中" :value="3" />
@@ -142,7 +141,6 @@
           <el-col :span="8">
             <el-form-item label="删除状态" prop="deleteFlag" label-width="70px" class="compact-item">
               <el-select v-model="queryParams.deleteFlag" placeholder="全部" clearable style="width: 200px">
-                <el-option label="全部" :value="null" />
                 <el-option label="正常" :value="0" />
                 <el-option label="已删除" :value="1" />
               </el-select>
