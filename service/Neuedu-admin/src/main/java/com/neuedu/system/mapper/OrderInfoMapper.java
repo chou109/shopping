@@ -25,6 +25,11 @@ public interface OrderInfoMapper extends BaseMapper<OrderInfo>
      */
     public OrderInfo selectOrderInfoById(Long id);
 
+    /** 锁定当前用户包含指定商品且未删除的订单，供评价幂等校验使用。 */
+    public OrderInfo lockOrderForProductReview(@Param("userId") Long userId,
+                                               @Param("orderId") Long orderId,
+                                               @Param("productId") Long productId);
+
     /**
      * 查询订单列表
      * 

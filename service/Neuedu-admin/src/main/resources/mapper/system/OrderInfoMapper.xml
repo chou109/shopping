@@ -148,6 +148,23 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where oi.order_no = #{orderNo} and oi.delete_flag = 0
     </select>
 
+    <!-- 评价时锁定订单行，校验归属、商品明细并串行化同一订单商品的重复提交。 -->
+    <select id="lockOrderForProductReview" resultMap="OrderInfoResult">
+        select oi.id, oi.order_no, oi.user_id, oi.status
+        from order_info oi
+        where oi.id = #{orderId}
+          and oi.user_id = #{userId}
+          and oi.delete_flag = 0
+          and exists (
+              select 1
+              from order_detail od
+              where od.order_no = oi.order_no
+                and od.product_id = #{productId}
+                and od.delete_flag = 0
+          )
+        for update
+    </select>
+
     <!-- 原子完成退款取消，只有一个并发请求能从待发货变为已取消 -->
     <update id="cancelOrderForRefund">
         update order_info

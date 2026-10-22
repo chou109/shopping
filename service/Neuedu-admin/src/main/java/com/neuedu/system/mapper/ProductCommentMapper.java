@@ -150,4 +150,9 @@ public interface ProductCommentMapper extends BaseMapper<ProductComment>
     ProductComment selectUserCommentOnProduct(@Param("userId") Long userId,
                                               @Param("productId") Long productId,
                                               @Param("orderId") Long orderId);
+
+    /** 查询指定订单商品已有的有效评价，包括待审核记录。 */
+    ProductComment selectReviewForOrderProduct(@Param("userId") Long userId,
+                                               @Param("productId") Long productId,
+                                               @Param("orderId") Long orderId);
 }

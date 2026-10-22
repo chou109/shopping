@@ -7,6 +7,9 @@ import com.neuedu.common.core.domain.entity.SysUser;
 import com.neuedu.system.service.IProductService;
 import com.neuedu.system.service.IShopService;
 import com.neuedu.system.service.ISysUserService;
+import com.neuedu.system.constants.OrderStatusConstants;
+import com.neuedu.system.domain.OrderInfo;
+import com.neuedu.system.mapper.OrderInfoMapper;
 import lombok.RequiredArgsConstructor;
 
 import java.util.ArrayList;
@@ -43,6 +46,8 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
     private final IShopService shopService; // 注入店铺服务
     @Autowired
     private ISysUserService sysUserService;
+    @Autowired
+    private OrderInfoMapper orderInfoMapper;
     /**
      * 查询商品评论
      * 
@@ -179,19 +184,34 @@ public class ProductCommentServiceImpl extends ServiceImpl<ProductCommentMapper,
     public boolean publishComment(ProductComment comment) {
         Long userId = SecurityUtils.getUserId();
 
+        if (comment == null || comment.getProductId() == null || comment.getOrderId() == null) {
+            throw new ServiceException("评价必须关联有效订单和商品");
+        }
+        if (comment.getScore() == null || comment.getScore() < 1 || comment.getScore() > 5) {
+            throw new ServiceException("商品评分必须为1到5星");
+        }
+
         // 验证商品是否存在
         var product = productService.selectProductById(comment.getProductId());
         if (product == null) {
             throw new ServiceException("商品不存在");
         }
 
-        // 同一订单商品重复提交按幂等成功处理，支持客户端在部分成功或网络超时后恢复。
-        if (comment.getOrderId() != null) {
-            ProductComment existing = productCommentMapper.selectUserCommentOnProduct(
-                    userId, comment.getProductId(), comment.getOrderId());
-            if (existing != null) {
-                return true;
-            }
+        // 锁定并校验订单归属及商品明细，跨实例的同订单商品评价会在此串行处理。
+        OrderInfo order = orderInfoMapper.lockOrderForProductReview(
+                userId, comment.getOrderId(), comment.getProductId());
+        if (order == null) {
+            throw new ServiceException("订单不存在、无权评价或订单不包含该商品");
+        }
+
+        // 同一订单商品重复提交按幂等成功处理，包含待审核记录。
+        ProductComment existing = productCommentMapper.selectReviewForOrderProduct(
+                userId, comment.getProductId(), comment.getOrderId());
+        if (existing != null) {
+            return true;
+        }
+        if (!OrderStatusConstants.WAIT_REVIEW.equals(order.getStatus())) {
+            throw new ServiceException("当前订单状态不允许评价");
         }
 
         // 设置默认值

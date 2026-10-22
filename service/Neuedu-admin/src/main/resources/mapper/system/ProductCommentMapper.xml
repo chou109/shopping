@@ -164,6 +164,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         ORDER BY pc.create_time DESC
         LIMIT 1
     </select>
+    <select id="selectReviewForOrderProduct" resultMap="ProductCommentResult">
+        <include refid="selectProductCommentVo"/>
+        WHERE pc.user_id = #{userId}
+          AND pc.product_id = #{productId}
+          AND pc.order_id = #{orderId}
+          AND pc.status IN (1, 2)
+        ORDER BY pc.create_time DESC
+        LIMIT 1
+    </select>
 
     <insert id="insertProductComment" parameterType="ProductComment" useGeneratedKeys="true" keyProperty="commentId">
         insert into product_comment
