@@ -2,6 +2,10 @@
   <div class="dashboard-container">
     <!-- 页面标题 -->
     <h1 class="page-title">{{ pageTitle }}</h1>
+    <div v-if="dashboardErrors.statistics" class="dashboard-error" role="alert">
+      <span>{{ dashboardErrors.statistics }}</span>
+      <el-button link type="primary" :disabled="loading.statistics" @click="loadStatistics">重试</el-button>
+    </div>
     
     <!-- 用户欢迎区域 -->
     <div class="welcome-section">
@@ -63,6 +67,10 @@
           </el-card>
         </el-col>
       </el-row>
+      <div v-if="dashboardErrors.stats" class="dashboard-error" role="alert">
+        <span>{{ dashboardErrors.stats }}</span>
+        <el-button link type="primary" :disabled="loading.stats" @click="loadStatsCards">重试</el-button>
+      </div>
     </div>
 
     <!-- 图表区域 -->
@@ -82,6 +90,10 @@
               </div>
             </template>
             <div ref="salesChart" class="chart-container" v-loading="loading.salesTrend"></div>
+            <div v-if="dashboardErrors.salesTrend" class="dashboard-error" role="alert">
+              <span>{{ dashboardErrors.salesTrend }}</span>
+              <el-button link type="primary" :disabled="loading.salesTrend" @click="loadSalesTrend">重试</el-button>
+            </div>
           </el-card>
         </el-col>
         <el-col :xs="24" :lg="8">
@@ -90,6 +102,10 @@
               <h3>订单状态分布</h3>
             </template>
             <div ref="orderStatusChart" class="chart-container" v-loading="loading.orderStatus"></div>
+            <div v-if="dashboardErrors.orderStatus" class="dashboard-error" role="alert">
+              <span>{{ dashboardErrors.orderStatus }}</span>
+              <el-button link type="primary" :disabled="loading.orderStatus" @click="loadOrderStatus">重试</el-button>
+            </div>
           </el-card>
         </el-col>
       </el-row>
@@ -107,7 +123,11 @@
               </div>
             </template>
             <div class="products-list" v-loading="loading.hotProducts">
-              <el-empty v-if="hotProducts.length === 0" description="暂无热门商品" />
+              <div v-if="dashboardErrors.hotProducts" class="dashboard-error" role="alert">
+                <span>{{ dashboardErrors.hotProducts }}</span>
+                <el-button link type="primary" :disabled="loading.hotProducts" @click="loadHotProducts">重试</el-button>
+              </div>
+              <el-empty v-else-if="hotProducts.length === 0" description="暂无热门商品" />
               <div v-else v-for="product in hotProducts" :key="product.id" class="product-item">
                 <div class="product-image">
                   <el-image :src="getProductImage(product.mainImage)" fit="cover" style="width: 60px; height: 60px; border-radius: 8px;">
@@ -139,7 +159,11 @@
               </div>
             </template>
             <div class="orders-list" v-loading="loading.recentOrders">
-              <el-empty v-if="recentOrders.length === 0" description="暂无订单" />
+              <div v-if="dashboardErrors.recentOrders" class="dashboard-error" role="alert">
+                <span>{{ dashboardErrors.recentOrders }}</span>
+                <el-button link type="primary" :disabled="loading.recentOrders" @click="loadRecentOrders">重试</el-button>
+              </div>
+              <el-empty v-else-if="recentOrders.length === 0" description="暂无订单" />
               <div v-else v-for="order in recentOrders" :key="order.id" class="order-item">
                 <div class="order-info">
                   <div class="order-no">{{ order.orderNo }}</div>
@@ -165,6 +189,10 @@
           <h3>商品分类分布</h3>
         </template>
         <div ref="categoryChart" class="chart-container" v-loading="loading.categoryStats"></div>
+        <div v-if="dashboardErrors.categoryStats" class="dashboard-error" role="alert">
+          <span>{{ dashboardErrors.categoryStats }}</span>
+          <el-button link type="primary" :disabled="loading.categoryStats" @click="loadCategoryStats">重试</el-button>
+        </div>
       </el-card>
     </div>
   </div>
@@ -189,6 +217,12 @@ import {
   getOrderStatusDistribution
 } from '@/api/system/dashboard'
 import { getDashboardActionRoute } from '@/utils/dashboardRoutes.mjs'
+import {
+  DashboardDataError,
+  readDashboardArray,
+  readDashboardObject,
+  readDashboardSalesTrend
+} from '@/utils/dashboardData.mjs'
 import useUserStore from '@/store/modules/user'
 
 const router = useRouter()
@@ -196,6 +230,7 @@ const userStore = useUserStore()
 
 // 加载状态
 const loading = ref({
+  statistics: false,
   stats: false,
   salesTrend: false,
   hotProducts: false,
@@ -203,6 +238,17 @@ const loading = ref({
   categoryStats: false,
   orderStatus: false
 })
+const dashboardErrors = ref({
+  statistics: '',
+  stats: '',
+  salesTrend: '',
+  hotProducts: '',
+  recentOrders: '',
+  categoryStats: '',
+  orderStatus: ''
+})
+const requestVersions = Object.create(null)
+let dashboardActive = false
 
 // 用户信息
 const userInfo = computed(() => {
@@ -315,110 +361,78 @@ const getOrderStatusText = (status) => {
   return textMap[status] || '未知'
 }
 
-// 加载统计数据
-const loadStatistics = async () => {
-  try {
-    const res = await getStatistics()
-    if (res.code === 200) {
-      statistics.value = res.data || {}
-    }
-  } catch (error) {
-    console.error('获取统计数据失败:', error)
-  }
-}
+const loadDashboardSection = async (key, label, request, parse, apply) => {
+  const requestVersion = (requestVersions[key] || 0) + 1
+  requestVersions[key] = requestVersion
+  dashboardErrors.value[key] = ''
+  loading.value[key] = true
 
-// 加载统计卡片
-const loadStatsCards = async () => {
-  loading.value.stats = true
+  const isCurrent = () => dashboardActive && requestVersions[key] === requestVersion
   try {
-    const res = await getStatsCards()
-    if (res.code === 200) {
-      statsData.value = res.data || []
-    }
+    const data = parse(await request())
+    if (isCurrent()) apply(data)
   } catch (error) {
-    console.error('获取统计卡片失败:', error)
+    if (isCurrent()) {
+      dashboardErrors.value[key] = error instanceof DashboardDataError
+        ? error.message
+        : `${label}加载失败，请检查网络后重试`
+    }
   } finally {
-    loading.value.stats = false
+    if (isCurrent()) loading.value[key] = false
   }
 }
 
-// 加载销售趋势
-const loadSalesTrend = async () => {
-  loading.value.salesTrend = true
-  try {
-    const res = await getSalesTrend(timeRange.value)
-    if (res.code === 200) {
-      salesTrendData.value = res.data || { dates: [], amounts: [], orderCounts: [] }
+const loadStatistics = () => loadDashboardSection(
+  'statistics', '统计信息', getStatistics, readDashboardObject,
+  data => { statistics.value = data }
+)
+
+const loadStatsCards = () => loadDashboardSection(
+  'stats', '统计卡片', getStatsCards,
+  response => readDashboardArray(response, '统计卡片'),
+  data => { statsData.value = data }
+)
+
+const loadSalesTrend = () => {
+  const range = timeRange.value
+  return loadDashboardSection(
+    'salesTrend', '销售趋势', () => getSalesTrend(range), readDashboardSalesTrend,
+    data => {
+      salesTrendData.value = data
       renderSalesChart()
     }
-  } catch (error) {
-    console.error('获取销售趋势失败:', error)
-  } finally {
-    loading.value.salesTrend = false
-  }
+  )
 }
 
-// 加载热门商品
-const loadHotProducts = async () => {
-  loading.value.hotProducts = true
-  try {
-    const res = await getHotProducts(5)
-    if (res.code === 200) {
-      hotProducts.value = res.data || []
-    }
-  } catch (error) {
-    console.error('获取热门商品失败:', error)
-  } finally {
-    loading.value.hotProducts = false
-  }
-}
+const loadHotProducts = () => loadDashboardSection(
+  'hotProducts', '热门商品', () => getHotProducts(5),
+  response => readDashboardArray(response, '热门商品'),
+  data => { hotProducts.value = data }
+)
 
-// 加载最新订单
-const loadRecentOrders = async () => {
-  loading.value.recentOrders = true
-  try {
-    const res = await getRecentOrders(5)
-    if (res.code === 200) {
-      recentOrders.value = res.data || []
-    }
-  } catch (error) {
-    console.error('获取最新订单失败:', error)
-  } finally {
-    loading.value.recentOrders = false
-  }
-}
+const loadRecentOrders = () => loadDashboardSection(
+  'recentOrders', '最新订单', () => getRecentOrders(5),
+  response => readDashboardArray(response, '最新订单'),
+  data => { recentOrders.value = data }
+)
 
-// 加载分类统计
-const loadCategoryStats = async () => {
-  loading.value.categoryStats = true
-  try {
-    const res = await getCategoryStats()
-    if (res.code === 200) {
-      categoryStats.value = res.data || []
-      renderCategoryChart()
-    }
-  } catch (error) {
-    console.error('获取分类统计失败:', error)
-  } finally {
-    loading.value.categoryStats = false
+const loadCategoryStats = () => loadDashboardSection(
+  'categoryStats', '商品分类统计', getCategoryStats,
+  response => readDashboardArray(response, '商品分类统计'),
+  data => {
+    categoryStats.value = data
+    renderCategoryChart()
   }
-}
+)
 
-// 加载订单状态分布
-const loadOrderStatus = async () => {
-  loading.value.orderStatus = true
-  try {
-    const res = await getOrderStatusDistribution()
-    if (res.code === 200) {
-      orderStatusData.value = res.data || []
-      renderOrderStatusChart()
-    }
-  } catch (error) {
-    console.error('获取订单状态分布失败:', error)
-  } finally {
-    loading.value.orderStatus = false
+const loadOrderStatus = () => loadDashboardSection(
+  'orderStatus', '订单状态分布', getOrderStatusDistribution,
+  response => readDashboardArray(response, '订单状态分布'),
+  data => {
+    orderStatusData.value = data
+    renderOrderStatusChart()
   }
-}
+)
 
 // 渲染销售图表
 const renderSalesChart = () => {
@@ -615,22 +629,27 @@ const handleResize = () => {
 
 // 加载所有数据
 const loadAllData = async () => {
-  await loadStatistics()
-  loadStatsCards()
-  loadSalesTrend()
-  loadHotProducts()
-  loadRecentOrders()
-  loadCategoryStats()
-  loadOrderStatus()
+  await Promise.all([
+    loadStatistics(),
+    loadStatsCards(),
+    loadSalesTrend(),
+    loadHotProducts(),
+    loadRecentOrders(),
+    loadCategoryStats(),
+    loadOrderStatus()
+  ])
 }
 
 // 生命周期
 onMounted(() => {
+  dashboardActive = true
   loadAllData()
   window.addEventListener('resize', handleResize)
 })
 
 onUnmounted(() => {
+  dashboardActive = false
+  Object.keys(requestVersions).forEach(key => { requestVersions[key] += 1 })
   salesChartInstance?.dispose()
   orderStatusChartInstance?.dispose()
   categoryChartInstance?.dispose()
@@ -650,6 +669,19 @@ onUnmounted(() => {
   font-size: 24px;
   font-weight: 600;
   color: #333;
+}
+
+.dashboard-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 8px 0;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: #fff2f0;
+  color: #b42318;
+  font-size: 13px;
 }
 
 // 欢迎区域样式
