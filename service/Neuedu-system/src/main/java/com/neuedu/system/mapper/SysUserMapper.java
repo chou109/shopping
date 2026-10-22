@@ -60,6 +60,9 @@ public interface SysUserMapper
      */
     public SysUser selectUserById(Long userId);
 
+    /** Lock an existing user's row for the duration of the current transaction. */
+    public Long lockUserForUpdate(@Param("userId") Long userId);
+
     /**
      * 新增用户信息
      * 

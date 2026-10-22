@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import com.neuedu.common.annotation.Log;
 import com.neuedu.common.core.controller.BaseController;
@@ -26,6 +27,7 @@ import com.neuedu.system.service.IProductService;
 import com.neuedu.system.service.IShopService;
 import com.neuedu.system.service.BlindBoxLockRegistry;
 import com.neuedu.system.service.BlindBoxPrizePolicy;
+import com.neuedu.system.mapper.SysUserMapper;
 import com.neuedu.system.constants.OrderStatusConstants;
 import com.neuedu.common.utils.poi.ExcelUtil;
 import com.neuedu.common.core.page.TableDataInfo;
@@ -49,6 +51,9 @@ public class OrderInfoController extends BaseController {
     private static final BlindBoxLockRegistry BLIND_BOX_LOCKS = new BlindBoxLockRegistry(512);
 
     private final IOrderInfoService orderInfoService;
+
+    @Autowired
+    private SysUserMapper sysUserMapper;
 
     @Autowired
     private IProductService productService;
@@ -114,6 +119,7 @@ public class OrderInfoController extends BaseController {
     @Operation(summary = "抽取盲盒并创建订单")
     @Log(title = "盲盒订单", businessType = BusinessType.INSERT)
     @PostMapping("/blind-box/create")
+    @Transactional(rollbackFor = Exception.class)
     public AjaxResult createBlindBoxOrder(@RequestParam Long addressId) {
         Long userId = SecurityUtils.getUserId();
         if (userId == null) {
@@ -122,6 +128,10 @@ public class OrderInfoController extends BaseController {
         Object userLock = BLIND_BOX_LOCKS.lockFor(userId);
         synchronized (userLock) {
             try {
+                // Serialize this user's eligibility check and order insert across service instances.
+                if (sysUserMapper.lockUserForUpdate(userId) == null) {
+                    return error("用户不存在或已停用");
+                }
                 if (hasPurchasedBlindBox(userId)) {
                     return error("每个用户只能购买一次盲盒，您已经购买过了");
                 }
