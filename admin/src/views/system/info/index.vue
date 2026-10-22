@@ -229,11 +229,8 @@
             </el-col>
             <el-col :span="8">
               <el-form-item label="支付类型" prop="paymentType">
-                <el-select v-model="form.paymentType" placeholder="请选择" style="width: 100%">
-                  <el-option label="微信支付" :value="1" />
-                  <el-option label="支付宝支付" :value="2" />
-                  <el-option label="银行卡支付" :value="3" />
-                  <el-option label="余额支付" :value="4" />
+                <el-select v-model="form.paymentType" :placeholder="form.paymentType == null ? '待支付' : '请选择'" style="width: 100%">
+                  <el-option v-for="paymentType in PAYMENT_TYPES" :key="paymentType.value" :label="paymentType.label" :value="paymentType.value" />
                 </el-select>
               </el-form-item>
             </el-col>
@@ -306,6 +303,7 @@
 import { listInfo, getInfo, delInfo, shipInfo } from "@/api/system/info";
 import { User, Phone, Location, Van } from '@element-plus/icons-vue';
 import useUserStore from '@/store/modules/user';
+import { PAYMENT_TYPES, getPaymentTypeLabel, getPaymentTypeTag } from '@/utils/order-payment.mjs';
 
 const { proxy } = getCurrentInstance();
 const userStore = useUserStore();
@@ -479,9 +477,6 @@ function handleUpdate(row) {
     if (form.value.deleteFlag === undefined || form.value.deleteFlag === null) {
       form.value.deleteFlag = 0;
     }
-    if (form.value.paymentType === undefined || form.value.paymentType === null) {
-      form.value.paymentType = 1;
-    }
     open.value = true;
     title.value = "订单详情";
   });
@@ -606,24 +601,12 @@ function getStatusText(status) {
 
 /** 获取支付类型标签类型 */
 function getPaymentTagType(paymentType) {
-  switch (paymentType) {
-    case 1: return 'success';   // 微信支付
-    case 2: return 'primary';   // 支付宝支付
-    case 3: return 'warning';   // 银行卡支付
-    case 4: return '';          // 余额支付
-    default: return 'info';     // 待支付
-  }
+  return getPaymentTypeTag(paymentType)
 }
 
 /** 获取支付类型文本 */
 function getPaymentText(paymentType) {
-  switch (paymentType) {
-    case 1: return '微信支付';
-    case 2: return '支付宝支付';
-    case 3: return '银行卡支付';
-    case 4: return '余额支付';
-    default: return '待支付';
-  }
+  return getPaymentTypeLabel(paymentType)
 }
 
 // 组件挂载时加载数据
