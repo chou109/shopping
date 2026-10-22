@@ -4,6 +4,7 @@ import java.util.List;
 import com.neuedu.system.domain.RefundRecord;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 /**
  * 退款记录Mapper接口
  * 
@@ -36,6 +37,13 @@ public interface RefundRecordMapper extends BaseMapper<RefundRecord>
      * @return 退款记录
      */
     RefundRecord selectRefundRecordByRefundNo(String refundNo);
+
+    /** 原子变更仍处于申请中/处理中的退款单，防止并发审核重复执行退款副作用。 */
+    int transitionRefundStatus(@Param("refundNo") String refundNo,
+                               @Param("refundStatus") Integer refundStatus,
+                               @Param("refundStatusDesc") String refundStatusDesc,
+                               @Param("auditOpinion") String auditOpinion,
+                               @Param("refundTime") java.util.Date refundTime);
 
     /**
      * 新增退款记录

@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Date;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.neuedu.common.utils.DateUtils;
 import org.hibernate.validator.internal.util.stereotypes.Lazy;
@@ -222,22 +223,32 @@ public class RefundRecordServiceImpl extends ServiceImpl<RefundRecordMapper, Ref
     @Transactional(rollbackFor = Exception.class)
     public int processRefund(String refundNo, Integer refundStatus, String auditOpinion)
     {
+        if (refundNo == null || refundNo.trim().isEmpty()) {
+            throw new RuntimeException("退款单号不能为空");
+        }
+        if (!OrderStatusConstants.REFUND_PROCESSING.equals(refundStatus)
+                && !OrderStatusConstants.REFUND_SUCCESS.equals(refundStatus)
+                && !OrderStatusConstants.REFUND_FAILED.equals(refundStatus)
+                && !OrderStatusConstants.REFUND_REJECTED.equals(refundStatus)) {
+            throw new RuntimeException("退款状态不合法");
+        }
+
         // 1. 获取退款记录
         RefundRecord refundRecord = refundRecordMapper.selectRefundRecordByRefundNo(refundNo);
         if (refundRecord == null) {
             throw new RuntimeException("退款记录不存在");
         }
 
-        // 2. 更新退款记录状态
-        refundRecord.setRefundStatus(refundStatus);
-        refundRecord.setRefundStatusDesc(OrderStatusConstants.getRefundStatusDesc(refundStatus));
-        refundRecord.setAuditOpinion(auditOpinion);
-        refundRecord.setUpdateTime(DateUtils.getNowDate());
+        Date refundTime = OrderStatusConstants.REFUND_SUCCESS.equals(refundStatus)
+            ? DateUtils.getNowDate() : null;
+        int transitioned = refundRecordMapper.transitionRefundStatus(
+            refundNo, refundStatus, OrderStatusConstants.getRefundStatusDesc(refundStatus), auditOpinion, refundTime);
+        if (transitioned == 0) {
+            throw new RuntimeException("退款单已处理，请刷新后重试");
+        }
 
-        // 如果是退款成功，设置退款时间
+        // 只有成功取得状态迁移的事务可执行余额和库存副作用。
         if (OrderStatusConstants.REFUND_SUCCESS.equals(refundStatus)) {
-            refundRecord.setRefundTime(DateUtils.getNowDate());
-
             // 3. 执行退款操作（根据退款方式）
             OrderInfo orderInfo = orderInfoService.selectOrderInfoByOrderNo(refundRecord.getOrderNo());
             if (orderInfo != null) {
@@ -264,7 +275,7 @@ public class RefundRecordServiceImpl extends ServiceImpl<RefundRecordMapper, Ref
             }
         }
 
-        return refundRecordMapper.updateRefundRecord(refundRecord);
+        return transitioned;
     }
 
     /**

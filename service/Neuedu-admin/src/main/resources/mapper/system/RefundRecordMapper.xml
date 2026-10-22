@@ -69,6 +69,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="selectRefundRecordVo"/>
         where refund_no = #{refundNo} and delete_flag = 0
     </select>
+
+    <update id="transitionRefundStatus">
+        update refund_record
+        set refund_status = #{refundStatus},
+            refund_status_desc = #{refundStatusDesc},
+            audit_opinion = #{auditOpinion},
+            update_time = now()
+            <if test="refundTime != null">, refund_time = #{refundTime}</if>
+        where refund_no = #{refundNo}
+          and delete_flag = 0
+          and refund_status in (1, 2)
+    </update>
         
     <insert id="insertRefundRecord" parameterType="RefundRecord" useGeneratedKeys="true" keyProperty="id">
         insert into refund_record
