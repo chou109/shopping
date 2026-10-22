@@ -95,6 +95,7 @@ const loadError = ref('')
 const hasMore = ref(true)
 const currentPage = ref(1)
 const pageSize = ref(20)
+let loadRequestId = 0
 
 // 格式化价格
 const formatPrice = (price) => {
@@ -114,9 +115,11 @@ const formatSalesCount = (salesCount) => {
 
 // 加载商品数据
 const loadProducts = async (reset = false) => {
-  if (loading.value) return
+  if (loading.value && !reset) return
 
   if (reset) {
+    // A reset supersedes any page request already in flight.
+    loadRequestId += 1
     currentPage.value = 1
     products.value = []
     hasMore.value = true
@@ -125,6 +128,7 @@ const loadProducts = async (reset = false) => {
 
   if (!hasMore.value) return
 
+  const requestId = ++loadRequestId
   loading.value = true
   loadError.value = ''
 
@@ -139,6 +143,8 @@ const loadProducts = async (reset = false) => {
         status: 1 // 只查询上架商品
       }
     })
+
+    if (requestId !== loadRequestId) return
 
     if (response.code === 200) {
       // Get raw data first
@@ -169,12 +175,15 @@ const loadProducts = async (reset = false) => {
       hasMore.value = false
     }
   } catch (error) {
+    if (requestId !== loadRequestId) return
     console.error('加载商品失败:', error)
     loadError.value = '加载商品失败，请检查网络后重试'
     ElMessage.error(loadError.value)
     hasMore.value = false
   } finally {
-    loading.value = false
+    if (requestId === loadRequestId) {
+      loading.value = false
+    }
   }
 }
 
@@ -229,6 +238,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  loadRequestId += 1
   removeScrollListener()
 })
 
