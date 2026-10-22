@@ -183,6 +183,7 @@ import { getMyAddressList } from '@/api/system/address'
 import { addFavorite, checkFavorite } from '@/api/system/favorite'
 import { isBlindBoxProduct } from '@/utils/product'
 import { moveCartItemToFavorite } from '@/utils/cartFavorite.mjs'
+import { formatProductPrice } from '@/utils/productDetail.mjs'
 import PurchaseDialog from '@/components/PurchaseDialog/index.vue'
 
 const router = useRouter()
@@ -246,10 +247,7 @@ const actualTotalPrice = computed(() => {
 })
 
 // 方法
-const formatPrice = (price) => {
-  if (!price) return '0.00'
-  return parseFloat(price).toFixed(2)
-}
+const formatPrice = formatProductPrice
 
 // 加载购物车数据
 const loadCartData = async () => {
