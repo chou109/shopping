@@ -271,6 +271,7 @@ const shouldShowTime = (index) => {
   if (index === 0) return true
   const current = new Date(messages.value[index].createTime).getTime()
   const prev = new Date(messages.value[index - 1].createTime).getTime()
+  if (!Number.isFinite(current) || !Number.isFinite(prev)) return true
   // 超过5分钟显示时间
   return current - prev > 5 * 60 * 1000
 }
@@ -279,6 +280,7 @@ const shouldShowTime = (index) => {
 const formatTime = (timeStr) => {
   if (!timeStr) return ''
   const date = new Date(timeStr)
+  if (!Number.isFinite(date.getTime())) return '时间未知'
   const now = new Date()
   const isToday = date.toDateString() === now.toDateString()
 
