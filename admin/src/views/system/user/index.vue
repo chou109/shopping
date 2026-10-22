@@ -80,7 +80,8 @@
                   v-if="columns[4].visible" width="120" />
                <el-table-column label="状态" align="center" key="status" v-if="columns[5].visible">
                   <template #default="scope">
-                     <el-switch v-model="scope.row.status" active-value="0" inactive-value="1"
+               <el-switch v-model="scope.row.status" active-value="0" inactive-value="1"
+                  :disabled="statusUpdatingIds.has(scope.row.userId)"
                         @change="handleStatusChange(scope.row)"></el-switch>
                   </template>
                </el-table-column>
@@ -95,6 +96,7 @@
                   <template #default="scope">
                      <el-tooltip content="修改" placement="top" v-if="scope.row.userId !== 1">
                         <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)"
+                           :loading="userDetailLoadingId === scope.row.userId"
                            :aria-label="`修改用户：${scope.row.userName || '未知用户'}`"
                            v-hasPermi="['system:user:edit']"></el-button>
                      </el-tooltip>
@@ -122,7 +124,9 @@
       </el-row>
 
       <!-- 添加或修改用户配置对话框 -->
-      <el-dialog :title="title" v-model="open" width="600px" append-to-body>
+      <el-dialog :title="title" v-model="open" width="600px" append-to-body
+         :close-on-click-modal="!formSubmitting" :close-on-press-escape="!formSubmitting"
+         :show-close="!formSubmitting">
          <el-form :model="form" :rules="rules" ref="userRef" label-width="80px">
             <el-row>
                <el-col :span="12">
@@ -210,8 +214,8 @@
 
          <template #footer>
             <div class="dialog-footer">
-               <el-button type="primary" @click="submitForm">确 定</el-button>
-               <el-button @click="cancel">取 消</el-button>
+               <el-button type="primary" :loading="formSubmitting" :disabled="formSubmitting" @click="submitForm">确 定</el-button>
+               <el-button :disabled="formSubmitting" @click="cancel">取 消</el-button>
             </div>
          </template>
       </el-dialog>
@@ -259,6 +263,9 @@ const userTableRef = ref(null);
 const open = ref(false);
 const loading = ref(true);
 const listError = ref("");
+const formSubmitting = ref(false);
+const userDetailLoadingId = ref(null);
+const statusUpdatingIds = ref(new Set());
 const showSearch = ref(true);
 const ids = ref([]);
 const single = ref(true);
@@ -272,6 +279,7 @@ const initPassword = ref(undefined);
 const postOptions = ref([]);
 const roleOptions = ref([]);
 let userListRequestId = 0;
+let userDetailRequestId = 0;
 /*** 用户导入参数 */
 const upload = reactive({
    // 是否显示弹出层（用户导入）
@@ -393,15 +401,25 @@ function handleExport() {
    }, `user_${new Date().getTime()}.xlsx`);
 };
 /** 用户状态修改  */
-function handleStatusChange(row) {
-   let text = row.status === "0" ? "启用" : "停用";
-   proxy.$modal.confirm('确认要"' + text + '""' + row.userName + '"用户吗?').then(function () {
-      return changeUserStatus(row.userId, row.status);
-   }).then(() => {
+async function handleStatusChange(row) {
+   if (statusUpdatingIds.value.has(row.userId)) return;
+   const requestedStatus = row.status;
+   const originalStatus = requestedStatus === "0" ? "1" : "0";
+   const text = requestedStatus === "0" ? "启用" : "停用";
+   statusUpdatingIds.value = new Set([...statusUpdatingIds.value, row.userId]);
+   try {
+      await proxy.$modal.confirm('确认要"' + text + '""' + row.userName + '"用户吗?');
+      const response = await changeUserStatus(row.userId, requestedStatus);
+      if (response.code !== 200) throw new Error(response.msg || `${text}失败`);
       proxy.$modal.msgSuccess(text + "成功");
-   }).catch(function () {
-      row.status = row.status === "0" ? "1" : "0";
-   });
+   } catch (error) {
+      row.status = originalStatus;
+      if (error !== "cancel" && error !== "close") console.error(`${text}用户失败:`, error);
+   } finally {
+      const pendingIds = new Set(statusUpdatingIds.value);
+      pendingIds.delete(row.userId);
+      statusUpdatingIds.value = pendingIds;
+   }
 };
 /** 更多操作 */
 function handleCommand(command, row) {
@@ -492,25 +510,41 @@ function reset() {
 };
 /** 取消按钮 */
 function cancel() {
+   userDetailRequestId++;
+   userDetailLoadingId.value = null;
    open.value = false;
    reset();
 };
 /** 新增按钮操作 */
 function handleAdd() {
+   if (formSubmitting.value) return;
+   userDetailRequestId++;
+   const requestId = userDetailRequestId;
+   userDetailLoadingId.value = "new";
    reset();
    getUser().then(response => {
+      if (requestId !== userDetailRequestId) return;
       postOptions.value = response.posts;
       roleOptions.value = response.roles;
       open.value = true;
       title.value = "添加用户";
       form.value.password = initPassword.value;
+   }).catch(error => {
+      if (requestId === userDetailRequestId) console.error("加载新增用户选项失败:", error);
+   }).finally(() => {
+      if (requestId === userDetailRequestId) userDetailLoadingId.value = null;
    });
 };
 /** 修改按钮操作 */
 function handleUpdate(row) {
+   if (formSubmitting.value) return;
    reset();
-   const userId = row.userId || ids.value;
+   const userId = row?.userId || ids.value[0];
+   if (!userId) return;
+   const requestId = ++userDetailRequestId;
+   userDetailLoadingId.value = userId;
    getUser(userId).then(response => {
+      if (requestId !== userDetailRequestId) return;
       form.value = response.data;
       postOptions.value = response.posts;
       roleOptions.value = response.roles;
@@ -519,27 +553,36 @@ function handleUpdate(row) {
       open.value = true;
       title.value = "修改用户";
       form.password = "";
+   }).catch(error => {
+      if (requestId === userDetailRequestId) console.error("加载用户详情失败:", error);
+   }).finally(() => {
+      if (requestId === userDetailRequestId) userDetailLoadingId.value = null;
    });
 };
 /** 提交按钮 */
-function submitForm() {
-   proxy.$refs["userRef"].validate(valid => {
-      if (valid) {
-         if (form.value.userId != undefined) {
-            updateUser(form.value).then(response => {
-               proxy.$modal.msgSuccess("修改成功");
-               open.value = false;
-               getList();
-            });
-         } else {
-            addUser(form.value).then(response => {
-               proxy.$modal.msgSuccess("新增成功");
-               open.value = false;
-               getList();
-            });
-         }
+async function submitForm() {
+   if (formSubmitting.value || !proxy.$refs["userRef"]) return;
+   formSubmitting.value = true;
+   try {
+      let valid = false;
+      try {
+         valid = await proxy.$refs["userRef"].validate();
+      } catch {
+         return;
       }
-   });
+      if (!valid) return;
+      if (form.value.userId != undefined) {
+         await updateUser(form.value);
+         proxy.$modal.msgSuccess("修改成功");
+      } else {
+         await addUser(form.value);
+         proxy.$modal.msgSuccess("新增成功");
+      }
+      open.value = false;
+      await getList();
+   } finally {
+      formSubmitting.value = false;
+   }
 };
 
 getDeptTree();
