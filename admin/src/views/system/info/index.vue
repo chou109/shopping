@@ -66,7 +66,7 @@
     <!-- 操作按钮区域 -->
     <div class="toolbar-wrapper">
       <div class="action-buttons">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:info:remove']" v-hasRole="['admin']">删除</el-button>
+        <el-button type="danger" plain icon="Delete" :loading="deleting" :disabled="multiple || deleting" @click="handleDelete" v-hasPermi="['system:info:remove']" v-hasRole="['admin']">删除</el-button>
         <el-button type="primary" plain :loading="batchShipping" :disabled="!hasShippableOrders || batchShipping || shippingOrderNo !== null" @click="handleBatchShip" v-hasPermi="['system:info:edit', 'system:order:edit']">
           <el-icon><Van /></el-icon>一键发货
         </el-button>
@@ -144,7 +144,7 @@
           <template #default="scope">
             <div class="action-column">
               <el-button link type="primary" icon="View" @click="handleUpdate(scope.row)" v-hasPermi="['system:info:query']">查看</el-button>
-              <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:info:remove']" v-hasRole="['admin']">删除</el-button>
+              <el-button link type="danger" icon="Delete" :loading="deleting" :disabled="deleting" @click="handleDelete(scope.row)" v-hasPermi="['system:info:remove']" v-hasRole="['admin']">删除</el-button>
               <el-button 
                 v-if="scope.row.status === 20"
                 type="warning" 
@@ -324,6 +324,7 @@ const title = ref("");
 const batchShipping = ref(false);
 const shippingOrderNo = ref(null);
 const shippingSubmitting = ref(false);
+const deleting = ref(false);
 let listRequestId = 0;
 
 const data = reactive({
@@ -483,15 +484,23 @@ function handleUpdate(row) {
 }
 
 /** 删除按钮操作 */
-function handleDelete(row) {
+async function handleDelete(row) {
+  if (deleting.value) return;
   const _ids = row.id ? [row.id] : ids.value;
-  proxy.$modal.confirm('是否确认删除订单编号为"' + _ids.join(',') + '"的数据项？').then(function() {
-    return delInfo(_ids);
-  }).then(() => {
-    // 删除后重新查询数据
-    getList();
+  if (_ids.length === 0) return;
+  deleting.value = true;
+  try {
+    await proxy.$modal.confirm('是否确认删除订单编号为"' + _ids.join(',') + '"的数据项？');
+    await delInfo(_ids);
+    await getList();
     proxy.$modal.msgSuccess("删除成功");
-  }).catch(() => {});
+  } catch (error) {
+    if (!isConfirmDismissed(error)) {
+      proxy.$modal.msgError("删除失败：" + (error?.message || error || "请稍后重试"));
+    }
+  } finally {
+    deleting.value = false;
+  }
 }
 
 /** 导出按钮操作 */
