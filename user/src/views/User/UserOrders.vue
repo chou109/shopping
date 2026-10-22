@@ -41,6 +41,11 @@
         </template>
       </el-tab-pane>
     </el-tabs>
+    <el-alert v-if="orderCountsError" :title="orderCountsError" type="warning" :closable="false" show-icon>
+      <template #default>
+        <el-button link type="primary" :disabled="orderCountsLoading" @click="loadOrderCounts">重试</el-button>
+      </template>
+    </el-alert>
 
     <!-- 订单列表 -->
     <div class="orders-container" v-loading="loading">
@@ -191,6 +196,8 @@ const {
   pageNum,
   pageSize,
   orderCounts,
+  orderCountsLoading,
+  orderCountsError,
   loadOrders,
   loadOrderCounts,
   handleTabChange,

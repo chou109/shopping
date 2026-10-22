@@ -22,6 +22,8 @@ export function useOrderList(fetchOrders) {
   const pageNum = ref(1)
   const pageSize = ref(10)
   const orderCounts = ref({ waitPay: 0, waitShip: 0, waitReceive: 0 })
+  const orderCountsLoading = ref(false)
+  const orderCountsError = ref('')
   let orderRequestId = 0
   let countsRequestId = 0
 
@@ -57,20 +59,39 @@ export function useOrderList(fetchOrders) {
 
   const loadOrderCounts = async () => {
     const requestId = ++countsRequestId
+    orderCountsLoading.value = true
+    orderCountsError.value = ''
     try {
-      const [waitPay, waitShip, waitReceive] = await Promise.all([
+      const results = await Promise.allSettled([
         fetchOrders(10, 1, 1),
         fetchOrders(20, 1, 1),
         fetchOrders(30, 1, 1)
       ])
       if (requestId !== countsRequestId) return
-      orderCounts.value = {
-        waitPay: waitPay.code === 200 ? Number(waitPay.total) || 0 : 0,
-        waitShip: waitShip.code === 200 ? Number(waitShip.total) || 0 : 0,
-        waitReceive: waitReceive.code === 200 ? Number(waitReceive.total) || 0 : 0
-      }
+      const keys = ['waitPay', 'waitShip', 'waitReceive']
+      const nextCounts = { ...orderCounts.value }
+      let hasFailure = false
+      results.forEach((result, index) => {
+        if (result.status !== 'fulfilled' || result.value.code !== 200) {
+          hasFailure = true
+          return
+        }
+        const count = Number(result.value.total)
+        if (!Number.isFinite(count) || count < 0) {
+          hasFailure = true
+          return
+        }
+        nextCounts[keys[index]] = count
+      })
+      orderCounts.value = nextCounts
+      if (hasFailure) orderCountsError.value = '部分订单数量暂时无法更新，请重试'
     } catch (error) {
-      console.error('加载订单数量失败', error)
+      if (requestId === countsRequestId) {
+        console.error('加载订单数量失败', error)
+        orderCountsError.value = '订单数量加载失败，请重试'
+      }
+    } finally {
+      if (requestId === countsRequestId) orderCountsLoading.value = false
     }
   }
 
@@ -99,6 +120,8 @@ export function useOrderList(fetchOrders) {
     pageNum,
     pageSize,
     orderCounts,
+    orderCountsLoading,
+    orderCountsError,
     loadOrders,
     loadOrderCounts,
     handleTabChange,

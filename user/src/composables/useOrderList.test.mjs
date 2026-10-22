@@ -77,4 +77,36 @@ test('loads the three status badge counts from their matching filters', async ()
 
   assert.deepEqual(calls, [[10, 1, 1], [20, 1, 1], [30, 1, 1]])
   assert.deepEqual(state.orderCounts.value, { waitPay: 2, waitShip: 3, waitReceive: 4 })
+  assert.equal(state.orderCountsError.value, '')
+  assert.equal(state.orderCountsLoading.value, false)
+})
+
+test('reports failed order count filters and keeps valid counts available', async () => {
+  const state = useOrderList(async status => {
+    if (status === 20) throw new Error('network unavailable')
+    return { code: 200, total: status === 10 ? 2 : 4 }
+  })
+
+  await state.loadOrderCounts()
+
+  assert.deepEqual(state.orderCounts.value, { waitPay: 2, waitShip: 0, waitReceive: 4 })
+  assert.equal(state.orderCountsError.value, '部分订单数量暂时无法更新，请重试')
+  assert.equal(state.orderCountsLoading.value, false)
+})
+
+test('clears the order count error after a successful retry', async () => {
+  let failed = true
+  const state = useOrderList(async status => {
+    if (failed && status === 20) return { code: 500, total: 0 }
+    return { code: 200, total: status / 10 }
+  })
+
+  await state.loadOrderCounts()
+  assert.notEqual(state.orderCountsError.value, '')
+
+  failed = false
+  await state.loadOrderCounts()
+
+  assert.equal(state.orderCountsError.value, '')
+  assert.deepEqual(state.orderCounts.value, { waitPay: 1, waitShip: 2, waitReceive: 3 })
 })
