@@ -162,7 +162,8 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements IC
         if (existingCart == null) {
             throw new RuntimeException("购物车不存在");
         }
-        if (cart.getUpdateUser() != null && !cart.getUpdateUser().equals(existingCart.getUserId())) {
+        if (cart.getUpdateUser() == null || (!cart.getUpdateUser().equals(existingCart.getUserId())
+                && !com.neuedu.common.utils.SecurityUtils.isAdmin(cart.getUpdateUser()))) {
             throw new RuntimeException("无权修改此购物车");
         }
 

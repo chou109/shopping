@@ -40,7 +40,7 @@ public class CartController extends BaseController
      * 查询购物车列表
      */
     @Operation(summary = "查询购物车列表")
-    @PreAuthorize("@ss.hasPermi('system:cart:list')")
+    @PreAuthorize("@ss.hasRole('common')")
     @GetMapping("/list")
     public AjaxResult  list()
     {
@@ -74,7 +74,7 @@ public class CartController extends BaseController
      * 获取购物车详细信息
      */
     @Operation(summary = "获取购物车详细信息")
-    @PreAuthorize("@ss.hasPermi('system:cart:query')")
+    @PreAuthorize("@ss.hasRole('common')")
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {
@@ -91,7 +91,7 @@ public class CartController extends BaseController
      * 新增购物车
      */
     @Operation(summary = "新增购物车")
-    @PreAuthorize("@ss.hasPermi('system:cart:add')")
+    @PreAuthorize("@ss.hasRole('common')")
     @Log(title = "购物车", businessType = BusinessType.INSERT)
     @PostMapping
     public AjaxResult add(@RequestBody Cart cart)
@@ -119,14 +119,33 @@ public class CartController extends BaseController
      * 修改购物车(修改数量)
      */
     @Operation(summary = "修改购物车")
-    @PreAuthorize("@ss.hasPermi('system:cart:edit')")
+    @PreAuthorize("@ss.hasRole('common')")
     @Log(title = "购物车", businessType = BusinessType.UPDATE)
     @PutMapping("/{id}")
     public AjaxResult edit(@PathVariable Long id, @RequestBody Cart cart)
     {
+        Cart existingCart = cartService.selectCartById(id);
+        Long currentUserId = SecurityUtils.getUserId();
+        if (existingCart == null)
+        {
+            return error("购物车不存在");
+        }
+        if (currentUserId == null || (!SecurityUtils.isAdmin(currentUserId)
+                && !currentUserId.equals(existingCart.getUserId())))
+        {
+            return error("无权修改此购物车");
+        }
         cart.setId(id);
+        // 购物车所有者、商品和活动关系由服务端既有记录决定，不能从请求体改写。
+        cart.setUserId(existingCart.getUserId());
+        cart.setProductId(existingCart.getProductId());
+        cart.setActivityId(existingCart.getActivityId());
+        cart.setActivityName(existingCart.getActivityName());
+        cart.setCreateUser(existingCart.getCreateUser());
+        cart.setCreateTime(existingCart.getCreateTime());
+        cart.setDeleteFlag(existingCart.getDeleteFlag());
         // 设置更新人为当前用户
-        cart.setUpdateUser(SecurityUtils.getUserId());
+        cart.setUpdateUser(currentUserId);
         return toAjax(cartService.updateCart(cart));
     }
 
@@ -134,7 +153,7 @@ public class CartController extends BaseController
      * 删除购物车（删除商品）
      */
     @Operation(summary = "删除购物车")
-    @PreAuthorize("@ss.hasPermi('system:cart:remove')")
+    @PreAuthorize("@ss.hasRole('common')")
     @Log(title = "购物车", businessType = BusinessType.DELETE)
 	@DeleteMapping("/{id}")
     public AjaxResult remove(@PathVariable Long id)
@@ -151,7 +170,7 @@ public class CartController extends BaseController
      * 批量删除购物车
      */
     @Operation(summary = "批量删除购物车商品")
-    @PreAuthorize("@ss.hasPermi('system:cart:remove')")
+    @PreAuthorize("@ss.hasRole('common')")
     @Log(title = "购物车", businessType = BusinessType.DELETE)
     @DeleteMapping("/batch")
     public AjaxResult removeBatch(@RequestBody Long[] ids)
@@ -167,7 +186,7 @@ public class CartController extends BaseController
      * 清空当前用户购物车
      */
     @Operation(summary = "清空购物车")
-    @PreAuthorize("@ss.hasPermi('system:cart:clear')")
+    @PreAuthorize("@ss.hasRole('common')")
     @Log(title = "购物车", businessType = BusinessType.DELETE)
     @DeleteMapping("/clear")
     public AjaxResult clear()
@@ -183,7 +202,7 @@ public class CartController extends BaseController
      * 获取当前用户购物车数量
      */
     @Operation(summary = "获取购物车商品数量")
-    @PreAuthorize("@ss.hasPermi('system:cart:query')")
+    @PreAuthorize("@ss.hasRole('common')")
     @GetMapping("/count")
     public AjaxResult count()
     {
@@ -216,7 +235,7 @@ public class CartController extends BaseController
      * 批量选择/取消选择商品
      */
     @Operation(summary = "批量选择商品")
-    @PreAuthorize("@ss.hasPermi('system:cart:edit')")
+    @PreAuthorize("@ss.hasRole('common')")
     @Log(title = "购物车", businessType = BusinessType.UPDATE)
     @PutMapping("/batch-select")
     public AjaxResult batchSelect(@RequestBody Map<String, Object> params) {
