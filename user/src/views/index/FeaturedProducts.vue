@@ -1,5 +1,11 @@
 <template>
-  <section v-if="hotProducts.length || phoneProducts.length" class="featured-sections">
+  <section v-if="loading || loadError || hotProducts.length || phoneProducts.length" class="featured-sections">
+    <p v-if="loading" class="featured-loading" role="status">精选商品加载中…</p>
+    <el-alert v-if="loadError" :title="loadError" type="warning" :closable="false" show-icon>
+      <template #default>
+        <el-button link type="primary" :disabled="loading" @click="loadFeaturedProducts">重试</el-button>
+      </template>
+    </el-alert>
     <FeaturedProductGrid
       v-if="hotProducts.length"
       title="热门商品"
@@ -18,66 +24,82 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { listProductByCategory, listProductHot } from '@/api/system/product'
 import { getEnabledCategories } from '@/api/system/category'
 import { isBlindBoxProduct } from '@/utils/product'
+import { findPhoneCategory, readCategoryList, readProductRows } from '@/utils/featuredProducts.mjs'
 import FeaturedProductGrid from '@/views/index/FeaturedProductGrid.vue'
 
 const router = useRouter()
 const hotProducts = ref([])
 const phoneProducts = ref([])
-
-const rowsFrom = (response) => {
-  if (Array.isArray(response)) return response
-  if (Array.isArray(response?.rows)) return response.rows
-  if (Array.isArray(response?.data)) return response.data
-  return []
-}
-
-const categoryListFrom = (response) => {
-  const data = response?.data
-  if (Array.isArray(data)) return data
-  if (Array.isArray(data?.list)) return data.list
-  if (Array.isArray(data?.rows)) return data.rows
-  return []
-}
-
-const findPhoneCategory = (categories) => {
-  const queue = [...categories]
-  while (queue.length) {
-    const category = queue.shift()
-    const name = category?.name || category?.categoryName || ''
-    if (name.includes('手机') || name.includes('数码')) return category
-    const children = category?.children || category?.childList || []
-    if (Array.isArray(children)) queue.push(...children)
-  }
-  return null
-}
+const loading = ref(false)
+const loadError = ref('')
+let loadRequestId = 0
 
 const loadFeaturedProducts = async () => {
-  const hotRequest = listProductHot(8).catch((error) => {
-    console.warn('加载热门商品失败:', error)
-    return null
-  })
-  const categoryRequest = getEnabledCategories().catch((error) => {
-    console.warn('加载商品分类失败:', error)
-    return null
-  })
+  if (loading.value) return
+  const requestId = ++loadRequestId
+  loading.value = true
+  loadError.value = ''
+  hotProducts.value = []
+  phoneProducts.value = []
 
-  const [hotResponse, categoryResponse] = await Promise.all([hotRequest, categoryRequest])
-  hotProducts.value = rowsFrom(hotResponse).filter(product => !isBlindBoxProduct(product)).slice(0, 8)
+  try {
+    const [hotResult, categoryResult] = await Promise.allSettled([
+      listProductHot(8),
+      getEnabledCategories()
+    ])
+    if (requestId !== loadRequestId) return
 
-  const phoneCategory = findPhoneCategory(categoryListFrom(categoryResponse))
-  const categoryId = phoneCategory?.id || phoneCategory?.categoryId
-  if (categoryId) {
-    try {
-      const response = await listProductByCategory(categoryId)
-      phoneProducts.value = rowsFrom(response).filter(product => !isBlindBoxProduct(product)).slice(0, 8)
-    } catch (error) {
-      console.warn('加载手机数码商品失败:', error)
+    let hasFailure = false
+    if (hotResult.status === 'fulfilled') {
+      try {
+        hotProducts.value = readProductRows(hotResult.value)
+          .filter(product => !isBlindBoxProduct(product)).slice(0, 8)
+      } catch (error) {
+        hasFailure = true
+        console.warn('加载热门商品失败:', error)
+      }
+    } else {
+      hasFailure = true
+      console.warn('加载热门商品失败:', hotResult.reason)
     }
+
+    let categories = []
+    if (categoryResult.status === 'fulfilled') {
+      try {
+        categories = readCategoryList(categoryResult.value)
+      } catch (error) {
+        hasFailure = true
+        console.warn('加载商品分类失败:', error)
+      }
+    } else {
+      hasFailure = true
+      console.warn('加载商品分类失败:', categoryResult.reason)
+    }
+
+    const phoneCategory = findPhoneCategory(categories)
+    const categoryId = phoneCategory?.id || phoneCategory?.categoryId
+    if (categoryId) {
+      try {
+        const response = await listProductByCategory(categoryId)
+        if (requestId !== loadRequestId) return
+        phoneProducts.value = readProductRows(response)
+          .filter(product => !isBlindBoxProduct(product)).slice(0, 8)
+      } catch (error) {
+        hasFailure = true
+        console.warn('加载手机数码商品失败:', error)
+      }
+    }
+
+    if (requestId === loadRequestId && hasFailure) {
+      loadError.value = '部分精选商品暂时无法加载，请重试'
+    }
+  } finally {
+    if (requestId === loadRequestId) loading.value = false
   }
 }
 
@@ -89,6 +111,9 @@ const openProduct = (product) => {
 const goToProducts = () => router.push('/products')
 
 onMounted(loadFeaturedProducts)
+onBeforeUnmount(() => {
+  loadRequestId += 1
+})
 </script>
 
 <style scoped>
@@ -97,5 +122,11 @@ onMounted(loadFeaturedProducts)
   gap: 24px;
   margin: 28px auto 40px;
   width: 100%;
+}
+
+.featured-loading {
+  margin: 0;
+  color: #777;
+  text-align: center;
 }
 </style>
