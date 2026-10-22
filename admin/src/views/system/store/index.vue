@@ -335,6 +335,7 @@
 <script setup name="Store">
 import { listStore, getStore, delStore, addStore, updateStore, updateStoreStatus } from "@/api/system/store";
 import { ArrowDown, Plus } from '@element-plus/icons-vue';
+import { getObjectResponseData, normalizePagedResponse } from '@/utils/response-data.mjs';
 import useUserStore from '@/store/modules/user';
 
 const { proxy } = getCurrentInstance();
@@ -432,8 +433,9 @@ function getList() {
   
   return listStore(params).then(response => {
     if (requestId !== storeListRequestId) return;
-    storeList.value = response.rows || [];
-    total.value = Number(response.total) || 0;
+    const page = normalizePagedResponse(response);
+    storeList.value = page.rows;
+    total.value = page.total;
   }).catch(() => {
     if (requestId === storeListRequestId) {
       listError.value = "店铺加载失败，请重试";
@@ -538,7 +540,7 @@ async function handleUpdate(row) {
   try {
     const response = await getStore(_id);
     if (requestId !== storeDetailRequestId) return;
-    form.value = response.data || {};
+    form.value = getObjectResponseData(response);
     // 确保必要字段有默认值
     if (form.value.status === undefined || form.value.status === null) {
       form.value.status = 1;

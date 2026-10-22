@@ -350,7 +350,7 @@ import { listProduct, getProduct, delProduct, addProduct, updateProduct, updateP
 import { listCategoryFront } from "@/api/system/category";
 import { getMyShop } from "@/api/system/dashboard";
 import { buildCategoryOptions, buildCategoryTree } from '@/utils/product-category.mjs';
-import { getProductDetailData, normalizeProductPageResponse } from '@/utils/product-response.mjs';
+import { getObjectResponseData, normalizePagedResponse } from '@/utils/response-data.mjs';
 import { ArrowDown } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import useUserStore from '@/store/modules/user';
@@ -482,7 +482,7 @@ function getList() {
 
   return listProduct(params).then(response => {
     if (requestId !== productListRequestId) return;
-    const page = normalizeProductPageResponse(response);
+    const page = normalizePagedResponse(response);
     productList.value = page.rows;
     total.value = page.total;
   }).catch(() => {
@@ -579,7 +579,7 @@ function handleUpdate(row) {
   productDetailLoadingId.value = _id;
   getProduct(_id).then(response => {
     if (requestId !== productDetailRequestId) return;
-    form.value = getProductDetailData(response);
+    form.value = getObjectResponseData(response);
     if (form.value.status === undefined || form.value.status === null) {
       form.value.status = 1;
     }
