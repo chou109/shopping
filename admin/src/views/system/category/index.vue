@@ -123,7 +123,7 @@
     </el-card>
 
     <!-- 添加或修改分类对话框 -->
-    <el-dialog :title="title" v-model="open" width="500px" append-to-body>
+    <el-dialog :title="title" v-model="open" width="500px" append-to-body @close="invalidateCategoryDialogRequest">
       <el-form ref="categoryRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="上级分类" prop="parentId">
           <el-tree-select
@@ -188,6 +188,7 @@ const loading = ref(false)
 const listError = ref('')
 let listRequestId = 0
 let categoryOptionsRequestId = 0
+let categoryDialogRequestId = 0
 const open = ref(false)
 const title = ref("")
 const categoryOptions = ref([])
@@ -317,8 +318,13 @@ function loadCategoryOptions() {
 
 /** 取消按钮 */
 function cancel() {
+  invalidateCategoryDialogRequest()
   open.value = false
   reset()
+}
+
+function invalidateCategoryDialogRequest() {
+  categoryDialogRequestId += 1
 }
 
 /** 表单重置 */
@@ -352,8 +358,10 @@ function resetQuery() {
 
 /** 新增按钮操作 */
 function handleAdd(row) {
+  const requestId = ++categoryDialogRequestId
   reset()
   loadCategoryOptions().then(() => {
+    if (requestId !== categoryDialogRequestId) return
     // 如果有传入row，说明是添加子分类
     if (row && row.id) {
       form.value.parentId = row.id
@@ -374,11 +382,13 @@ function toggleExpandAll() {
 
 /** 修改按钮操作 */
 function handleUpdate(row) {
+  const requestId = ++categoryDialogRequestId
   reset()
   const categoryId = row.id
   
   // 获取分类详情
   getCategory(categoryId).then(response => {
+    if (requestId !== categoryDialogRequestId) return
     if (response.code === 200) {
       const data = response.data || {}
       // 处理NULL值
@@ -396,9 +406,11 @@ function handleUpdate(row) {
       throw new Error(response.msg || "获取分类信息失败")
     }
   }).then(() => {
+    if (requestId !== categoryDialogRequestId) return
     open.value = true
     title.value = "修改分类"
   }).catch(error => {
+    if (requestId !== categoryDialogRequestId) return
     console.error('修改操作失败:', error)
     ElMessage.error(error.message || "获取分类信息失败")
   })
