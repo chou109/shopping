@@ -13,22 +13,28 @@
       <span>加载中...</span>
     </div>
 
+    <el-alert v-if="loadError" :title="loadError" type="error" :closable="false" show-icon>
+      <template #default>
+        <el-button link type="primary" :disabled="loading" @click="fetchReviews">重试</el-button>
+      </template>
+    </el-alert>
+
     <!-- 空状态 -->
-    <div v-else-if="reviews.length === 0" class="empty-container">
+    <div v-if="!loading && !loadError && reviews.length === 0" class="empty-container">
       <el-empty description="暂无评价记录">
         <el-button type="primary" @click="goShopping">去购物</el-button>
       </el-empty>
     </div>
 
     <!-- 评价列表 -->
-    <div v-else class="reviews-list">
+    <div v-if="!loading && reviews.length > 0" class="reviews-list">
       <div v-for="review in reviews" :key="review.commentId" class="review-card">
         <!-- 商品信息 -->
         <router-link class="product-info" :to="{ path: '/product/detail', query: { id: review.productId } }" :aria-label="`查看商品：${review.productName || '商品'}`">
-          <img :src="getImageUrl(review.productImage)" alt="商品图片" class="product-image" />
+          <img :src="getImageUrl(review.productImage)" :alt="`${review.productName || '商品'}图片`" class="product-image" />
           <div class="product-detail">
             <div class="product-name">{{ review.productName || '商品' }}</div>
-            <div class="product-price">¥{{ review.productPrice || '-' }}</div>
+            <div class="product-price">{{ formatPrice(review.productPrice) }}</div>
           </div>
         </router-link>
 
@@ -88,7 +94,7 @@
 
 <script setup>
 import { DEFAULT_PRODUCT_IMAGE } from '@/utils/image'
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { getMyComments, deleteComment } from '@/api/comment'
 import { ElMessage } from 'element-plus'
@@ -97,6 +103,7 @@ import { Loading, Pointer } from '@element-plus/icons-vue'
 const router = useRouter()
 
 const loading = ref(false)
+const loadError = ref('')
 const reviews = ref([])
 const deletingCommentIds = ref(new Set())
 const total = ref(0)
@@ -104,20 +111,32 @@ const queryParams = ref({
   pageNum: 1,
   pageSize: 10
 })
+let reviewsRequestId = 0
 
 // 获取评价列表
 const fetchReviews = async () => {
+  const requestId = ++reviewsRequestId
   loading.value = true
+  loadError.value = ''
   try {
     const res = await getMyComments(queryParams.value)
-    reviews.value = res.rows || []
-    total.value = res.total || 0
+    if (requestId !== reviewsRequestId) return
+    if (!Array.isArray(res.rows)) throw new Error('评价数据格式异常')
+    reviews.value = res.rows
+    total.value = Number(res.total) || 0
   } catch (error) {
-    console.error('获取评价失败:', error)
-    ElMessage.error('获取评价失败')
+    if (requestId === reviewsRequestId) {
+      console.error('获取评价失败:', error)
+      loadError.value = '评价加载失败，请重试'
+    }
   } finally {
-    loading.value = false
+    if (requestId === reviewsRequestId) loading.value = false
   }
+}
+
+const formatPrice = (value) => {
+  if (value == null || value === '' || !Number.isFinite(Number(value))) return '-'
+  return `¥${Number(value).toFixed(2)}`
 }
 
 // 解析图片
@@ -142,6 +161,7 @@ const getImageUrl = (url) => {
 const formatTime = (time) => {
   if (!time) return ''
   const date = new Date(time)
+  if (!Number.isFinite(date.getTime())) return '时间未知'
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 
@@ -159,12 +179,16 @@ const goShopping = () => {
 // 删除评价
 const handleDelete = async (commentId) => {
   if (deletingCommentIds.value.has(commentId)) return
+  const pageAtDelete = queryParams.value.pageNum
+  const wasLastItemOnPage = reviews.value.length === 1
   deletingCommentIds.value.add(commentId)
   try {
     await deleteComment(commentId)
     ElMessage.success('删除成功')
+    if (wasLastItemOnPage && queryParams.value.pageNum === pageAtDelete && pageAtDelete > 1) queryParams.value.pageNum--
     await fetchReviews()
   } catch (error) {
+    console.error('删除评价失败:', error)
     ElMessage.error('删除失败')
   } finally {
     deletingCommentIds.value.delete(commentId)
@@ -184,6 +208,10 @@ const handleCurrentChange = (val) => {
 
 onMounted(() => {
   fetchReviews()
+})
+
+onBeforeUnmount(() => {
+  reviewsRequestId++
 })
 </script>
 
