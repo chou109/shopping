@@ -30,6 +30,10 @@ public interface OrderInfoMapper extends BaseMapper<OrderInfo>
                                                @Param("orderId") Long orderId,
                                                @Param("productId") Long productId);
 
+    /** 锁定当前用户订单，防止评价与完成状态并发穿透。 */
+    public OrderInfo lockOrderForCompletion(@Param("userId") Long userId,
+                                            @Param("orderNo") String orderNo);
+
     /**
      * 查询订单列表
      * 

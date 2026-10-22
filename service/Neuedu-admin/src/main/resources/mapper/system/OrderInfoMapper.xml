@@ -165,6 +165,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         for update
     </select>
 
+    <select id="lockOrderForCompletion" resultMap="OrderInfoResult">
+        select oi.id, oi.order_no, oi.user_id, oi.status
+        from order_info oi
+        where oi.order_no = #{orderNo}
+          and oi.user_id = #{userId}
+          and oi.delete_flag = 0
+        for update
+    </select>
+
     <!-- 原子完成退款取消，只有一个并发请求能从待发货变为已取消 -->
     <update id="cancelOrderForRefund">
         update order_info

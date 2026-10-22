@@ -17,6 +17,8 @@ import org.hibernate.validator.internal.util.stereotypes.Lazy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.neuedu.system.mapper.OrderInfoMapper;
+import com.neuedu.system.mapper.ProductCommentMapper;
+import com.neuedu.common.utils.SecurityUtils;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -31,6 +33,9 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
 {
     @Autowired
     private OrderInfoMapper orderInfoMapper;
+
+    @Autowired
+    private ProductCommentMapper productCommentMapper;
 
     @Autowired
     private IOrderDetailService orderDetailService;
@@ -785,14 +790,27 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
     @Transactional(rollbackFor = Exception.class)
     public int completeOrder(String orderNo)
     {
-        OrderInfo orderInfo = orderInfoMapper.selectOrderInfoByOrderNo(orderNo);
+        Long userId = SecurityUtils.getUserId();
+        OrderInfo orderInfo = orderInfoMapper.lockOrderForCompletion(userId, orderNo);
         if (orderInfo == null) {
-            throw new RuntimeException("订单不存在");
+            throw new RuntimeException("订单不存在或无权操作");
         }
 
         // 验证订单状态（只有待评价的订单可以完成）
         if (!OrderStatusConstants.WAIT_REVIEW.equals(orderInfo.getStatus())) {
             throw new RuntimeException("订单状态不正确，无法完成");
+        }
+
+        List<OrderDetail> details = orderDetailService.selectOrderDetailByOrderNo(orderNo);
+        if (details == null || details.isEmpty()) {
+            throw new RuntimeException("订单商品明细不存在，无法完成评价");
+        }
+        for (OrderDetail detail : details) {
+            if (detail.getProductId() == null
+                    || productCommentMapper.selectReviewForOrderProduct(
+                        userId, detail.getProductId(), orderInfo.getId()) == null) {
+                throw new RuntimeException("请先评价订单中的全部商品");
+            }
         }
 
         // 更新订单状态为交易完成
