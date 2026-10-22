@@ -11,6 +11,10 @@
 
     <!-- 购物车内容 -->
     <div class="cart-content" v-loading="loading || checkoutPreparing">
+      <div v-if="loadError" class="cart-load-error" role="alert">
+        <span>{{ loadError }}</span>
+        <el-button link type="primary" :disabled="loading" @click="loadCartData">重试</el-button>
+      </div>
       <div v-if="cartItems.length > 0" class="cart-container">
         <!-- 左侧商品列表 -->
         <div class="cart-list-section">
@@ -90,10 +94,12 @@
                 <!-- 操作按钮 -->
                 <div class="item-actions">
                   <el-button type="danger" text size="small" :loading="deletingCartIds.has(item.id)"
-                    :disabled="deletingCartIds.has(item.id)" @click="handleDeleteItem(item.id)">
+                    :disabled="deletingCartIds.has(item.id) || favoriteSavingIds.has(item.id)" @click="handleDeleteItem(item.id)">
                     删除
                   </el-button>
-                  <el-button type="primary" text size="small" @click="addToFavorites(item)">
+                  <el-button type="primary" text size="small" :loading="favoriteSavingIds.has(item.id)"
+                    :disabled="favoriteSavingIds.has(item.id) || deletingCartIds.has(item.id) || batchDeleting || clearingCart"
+                    @click="moveToFavorites(item)">
                     移入收藏
                   </el-button>
                 </div>
@@ -149,7 +155,7 @@
       </div>
 
       <!-- 空购物车状态 -->
-      <div v-else class="empty-cart">
+      <div v-else-if="!loading && !loadError" class="empty-cart">
         <el-empty description="购物车还是空的">
           <el-button type="primary" @click="goShopping">去逛逛</el-button>
         </el-empty>
@@ -174,19 +180,23 @@ import { BLIND_BOX_IMAGE, getProductImageUrl, handleImageError } from '@/utils/i
 import { listCart, updateCart, delCart, batchDelCart, clearCart, batchSelectCart } from '@/api/system/cart'
 import { createOrderFromCart, payOrder } from '@/api/system/orderInfo'
 import { getMyAddressList } from '@/api/system/address'
-import { addFavorite } from '@/api/system/favorite'
+import { addFavorite, checkFavorite } from '@/api/system/favorite'
 import { isBlindBoxProduct } from '@/utils/product'
+import { moveCartItemToFavorite } from '@/utils/cartFavorite.mjs'
 import PurchaseDialog from '@/components/PurchaseDialog/index.vue'
 
 const router = useRouter()
 const store = useStore()
 const loading = ref(false)
+const loadError = ref('')
+let cartLoadRequestId = 0
 const batchDeleting = ref(false)
 const clearingCart = ref(false)
 const selectionSavingIds = ref(new Set())
 const selectionBatchSaving = ref(false)
 const quantitySavingIds = ref(new Set())
 const deletingCartIds = ref(new Set())
+const favoriteSavingIds = ref(new Set())
 
 // 购物车数据
 const cartItems = ref([])
@@ -243,7 +253,9 @@ const formatPrice = (price) => {
 
 // 加载购物车数据
 const loadCartData = async () => {
+  const requestId = ++cartLoadRequestId
   loading.value = true
+  loadError.value = ''
   try {
     const userId = store.state.user?.userId
     if (!userId) {
@@ -253,8 +265,9 @@ const loadCartData = async () => {
     }
 
     const response = await listCart()
+    if (requestId !== cartLoadRequestId) return
     if (response.code === 200) {
-      cartItems.value = response.data || []
+      cartItems.value = Array.isArray(response.data) ? response.data : []
       // 计算小计并转换selected为布尔值
       cartItems.value.forEach(item => {
         // 后端返回的selected是数字(0/1)，需要转换为布尔值
@@ -267,16 +280,15 @@ const loadCartData = async () => {
         item.productTotalPrice = Number(item.productUnitPrice || 0) * Number(item.quantity || 0)
       })
     } else {
-      ElMessage.error('获取购物车数据失败')
-      cartItems.value = []
+      loadError.value = response.msg || '获取购物车数据失败，请重试'
     }
 
   } catch (error) {
+    if (requestId !== cartLoadRequestId) return
     console.error('加载购物车数据失败:', error)
-    ElMessage.error('加载购物车数据失败')
-    cartItems.value = []
+    loadError.value = error.message || '加载购物车数据失败，请检查网络后重试'
   } finally {
-    loading.value = false
+    if (requestId === cartLoadRequestId) loading.value = false
   }
 }
 
@@ -392,7 +404,7 @@ const updateCartItem = async (item) => {
 
 // 删除单个商品
 const handleDeleteItem = async (itemId) => {
-  if (deletingCartIds.value.has(itemId)) return
+  if (deletingCartIds.value.has(itemId) || favoriteSavingIds.value.has(itemId)) return
   deletingCartIds.value.add(itemId)
   try {
     await ElMessageBox.confirm('确定要删除这个商品吗？', '提示', {
@@ -421,6 +433,10 @@ const handleDeleteItem = async (itemId) => {
 // 批量删除
 const handleBatchDelete = async () => {
   if (batchDeleting.value) return
+  if (favoriteSavingIds.value.size > 0) {
+    ElMessage.warning('请等待移入收藏操作完成后再删除')
+    return
+  }
   if (selectedCount.value === 0) {
     ElMessage.warning('请先选择要删除的商品')
     return
@@ -451,6 +467,10 @@ const handleBatchDelete = async () => {
 // 清空购物车
 const handleClearCart = async () => {
   if (clearingCart.value) return
+  if (favoriteSavingIds.value.size > 0) {
+    ElMessage.warning('请等待移入收藏操作完成后再清空')
+    return
+  }
   if (cartItems.value.length === 0) {
     ElMessage.warning('购物车已经是空的')
     return
@@ -586,15 +606,37 @@ const handlePayNow = async (orderData) => {
   }
 }
 
-// 添加到收藏
-const addToFavorites = async (item) => {
+// 移入收藏：收藏确认成功后再从购物车删除，避免失败时丢失商品。
+const moveToFavorites = async (item) => {
+  if (favoriteSavingIds.value.has(item.id) || deletingCartIds.value.has(item.id)
+    || batchDeleting.value || clearingCart.value) return
+  favoriteSavingIds.value.add(item.id)
   try {
-    const response = await addFavorite(1, item.productId)
-    if (response.code !== 200) throw new Error(response.msg || '收藏失败')
-    ElMessage.success('已添加到收藏')
+    const result = await moveCartItemToFavorite({
+      productId: item.productId,
+      cartItemId: item.id,
+      checkFavorite,
+      addFavorite,
+      removeCartItem: delCart
+    })
+    cartItems.value = cartItems.value.filter(cartItem => cartItem.id !== item.id)
+    ElMessage.success(result.alreadyFavorite ? '商品已在收藏中，并已从购物车移除' : '已移入收藏')
   } catch (error) {
-    console.error('添加到收藏失败:', error)
-    ElMessage.error('添加失败')
+    console.error('移入收藏失败:', error)
+    if (error.favoriteSaved) {
+      await loadCartData()
+      if (!cartItems.value.some(cartItem => cartItem.id === item.id)) {
+        ElMessage.success(error.alreadyFavorite ? '商品已在收藏中，并已从购物车移除' : '已移入收藏')
+      } else {
+        ElMessage.warning(error.alreadyFavorite
+          ? '商品已在收藏中，但未能从购物车移除，请重试'
+          : '商品已加入收藏，但未能从购物车移除，请重试')
+      }
+    } else {
+      ElMessage.error(error.message || '移入收藏失败')
+    }
+  } finally {
+    favoriteSavingIds.value.delete(item.id)
   }
 }
 
@@ -645,6 +687,19 @@ onMounted(() => {
   max-width: 1500px;
   margin: 0 auto;
   padding: 0 20px;
+}
+
+.cart-load-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  color: #b42318;
+  background: #fef3f2;
+  border: 1px solid #fecdca;
+  border-radius: 8px;
 }
 
 .cart-container {
