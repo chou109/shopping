@@ -609,6 +609,9 @@ class OrderInfoAdminController extends BaseController
     public AjaxResult getStatistics(@RequestParam(required = false) String startTime,
                                     @RequestParam(required = false) String endTime)
     {
+        if (!SecurityUtils.isAdmin(SecurityUtils.getUserId())) {
+            return error("仅管理员可查看全平台订单统计");
+        }
         Map<String, Object> statistics = orderInfoService.getOrderStatistics(startTime, endTime);
         return success(statistics);
     }
@@ -649,6 +652,9 @@ class OrderInfoAdminController extends BaseController
     @PutMapping("/{orderNo}/admin-cancel")
     public AjaxResult adminCancelOrder(@PathVariable String orderNo, @RequestParam String cancelReason)
     {
+        if (!SecurityUtils.isAdmin(SecurityUtils.getUserId())) {
+            return error("仅管理员可取消订单");
+        }
         try {
             int result = orderInfoService.cancelOrder(orderNo, cancelReason);
             return toAjax(result);
@@ -709,6 +715,9 @@ class OrderInfoAdminController extends BaseController
     @PostMapping("/auto-cancel")
     public AjaxResult autoCancelExpiredOrders()
     {
+        if (!SecurityUtils.isAdmin(SecurityUtils.getUserId())) {
+            return error("仅管理员可批量取消超时订单");
+        }
         int count = orderInfoService.autoCancelExpiredOrders();
         return success("成功取消 " + count + " 个超时订单");
     }
@@ -722,6 +731,9 @@ class OrderInfoAdminController extends BaseController
     @PostMapping("/auto-confirm")
     public AjaxResult autoConfirmReceipt()
     {
+        if (!SecurityUtils.isAdmin(SecurityUtils.getUserId())) {
+            return error("仅管理员可批量确认收货");
+        }
         int count = orderInfoService.autoConfirmReceipt();
         return success("成功确认 " + count + " 个订单收货");
     }
