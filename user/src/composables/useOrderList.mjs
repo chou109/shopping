@@ -36,16 +36,21 @@ export function useOrderList(fetchOrders) {
       const response = await fetchOrders(statusCode, pageNum.value, pageSize.value)
       if (requestId !== orderRequestId) return
 
-      if (response.code === 200) {
-        orderList.value = response.rows || []
-        total.value = Number(response.total) || 0
+      if (response?.code === 200) {
+        const responseTotal = Number(response.total)
+        if (!Array.isArray(response.rows) || !Number.isFinite(responseTotal) || responseTotal < 0) {
+          loadError.value = '订单数据格式异常，请重试'
+          return
+        }
+        orderList.value = response.rows
+        total.value = responseTotal
         if (orderList.value.length === 0 && total.value > 0 && pageNum.value > 1) {
           pageNum.value -= 1
           await loadOrders()
           return
         }
       } else {
-        loadError.value = response.msg || '订单加载失败，请重试'
+        loadError.value = response?.msg || '订单加载失败，请重试'
       }
     } catch (error) {
       if (requestId === orderRequestId) {
@@ -72,11 +77,11 @@ export function useOrderList(fetchOrders) {
       const nextCounts = { ...orderCounts.value }
       let hasFailure = false
       results.forEach((result, index) => {
-        if (result.status !== 'fulfilled' || result.value.code !== 200) {
+        if (result.status !== 'fulfilled' || result.value?.code !== 200) {
           hasFailure = true
           return
         }
-        const count = Number(result.value.total)
+        const count = Number(result.value?.total)
         if (!Number.isFinite(count) || count < 0) {
           hasFailure = true
           return

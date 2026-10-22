@@ -31,6 +31,17 @@ test('loads the selected status and requested page', async () => {
   assert.equal(state.loading.value, false)
 })
 
+test('shows an error instead of an empty state for a malformed successful list response', async () => {
+  const state = useOrderList(async () => ({ code: 200, total: 0 }))
+
+  await state.loadOrders()
+
+  assert.deepEqual(state.orderList.value, [])
+  assert.equal(state.total.value, 0)
+  assert.equal(state.loadError.value, '订单数据格式异常，请重试')
+  assert.equal(state.loading.value, false)
+})
+
 test('ignores a stale response after a newer status request succeeds', async () => {
   const older = deferred()
   const newer = deferred()
@@ -84,6 +95,19 @@ test('loads the three status badge counts from their matching filters', async ()
 test('reports failed order count filters and keeps valid counts available', async () => {
   const state = useOrderList(async status => {
     if (status === 20) throw new Error('network unavailable')
+    return { code: 200, total: status === 10 ? 2 : 4 }
+  })
+
+  await state.loadOrderCounts()
+
+  assert.deepEqual(state.orderCounts.value, { waitPay: 2, waitShip: 0, waitReceive: 4 })
+  assert.equal(state.orderCountsError.value, '部分订单数量暂时无法更新，请重试')
+  assert.equal(state.orderCountsLoading.value, false)
+})
+
+test('keeps valid order badge counts when one successful response has an invalid shape', async () => {
+  const state = useOrderList(async status => {
+    if (status === 20) return null
     return { code: 200, total: status === 10 ? 2 : 4 }
   })
 
