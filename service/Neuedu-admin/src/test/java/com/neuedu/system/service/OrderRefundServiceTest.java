@@ -60,6 +60,22 @@ public class OrderRefundServiceTest {
         assertEquals(0, fixture.stockUpdates);
     }
 
+    @Test
+    public void rejectsNonBalanceRefundBeforeChangingOrderOrBalance() throws Exception {
+        RefundFixture fixture = new RefundFixture(1, false, OrderStatusConstants.PAYMENT_WECHAT);
+
+        try {
+            fixture.service.applyRefund("order-1", "用户取消", null, null);
+            fail("Expected non-balance refund to be rejected");
+        } catch (RuntimeException error) {
+            assertEquals("仅余额支付订单可取消并退回余额", error.getMessage());
+        }
+
+        assertEquals(0, fixture.refundUpdates);
+        assertEquals(0, fixture.balanceUpdates);
+        assertEquals(0, fixture.stockUpdates);
+    }
+
     private static class RefundFixture {
         private final OrderInfoServiceImpl service = new OrderInfoServiceImpl();
         private int refundUpdates;
@@ -67,10 +83,15 @@ public class OrderRefundServiceTest {
         private int stockUpdates;
 
         private RefundFixture(int conditionalUpdateResult, boolean blindBox) throws Exception {
+            this(conditionalUpdateResult, blindBox, OrderStatusConstants.PAYMENT_BALANCE);
+        }
+
+        private RefundFixture(int conditionalUpdateResult, boolean blindBox, Integer paymentType) throws Exception {
             OrderInfo order = new OrderInfo();
             order.setStatus(OrderStatusConstants.WAIT_SHIP);
             order.setUserId(7L);
             order.setPayment(new BigDecimal("19.90"));
+            order.setPaymentType(paymentType);
             order.setIsBlindBox(blindBox);
 
             OrderDetail detail = new OrderDetail();

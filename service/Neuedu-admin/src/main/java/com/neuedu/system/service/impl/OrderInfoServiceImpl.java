@@ -840,6 +840,10 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
             throw new RuntimeException("仅待发货订单可取消并退款");
         }
 
+        if (!OrderStatusConstants.PAYMENT_BALANCE.equals(orderInfo.getPaymentType())) {
+            throw new RuntimeException("仅余额支付订单可取消并退回余额");
+        }
+
         // 获取订单明细
         List<OrderDetail> details = orderDetailService.selectOrderDetailByOrderNo(orderNo);
         if (details.isEmpty()) {
