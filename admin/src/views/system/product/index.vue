@@ -143,8 +143,8 @@
       </el-table-column>
       <el-table-column label="状态" align="center" prop="status" width="100">
         <template #default="scope">
-          <el-tag :type="scope.row.status === 1 ? 'success' : 'danger'" size="small">
-            {{ scope.row.status === 1 ? '上架' : '下架' }}
+          <el-tag :type="scope.row.status === 1 ? 'success' : scope.row.status === 0 ? 'danger' : 'warning'" size="small">
+            {{ scope.row.status === 1 ? '上架' : scope.row.status === 0 ? '下架' : '状态未知' }}
           </el-tag>
         </template>
       </el-table-column>
@@ -157,8 +157,8 @@
       </el-table-column>
       <el-table-column label="热门" align="center" prop="hotFlag" width="90">
         <template #default="scope">
-          <el-tag :type="scope.row.hotFlag === 1 ? 'danger' : 'info'" size="small">
-            {{ scope.row.hotFlag === 1 ? '热门' : '普通' }}
+          <el-tag :type="scope.row.hotFlag === 1 ? 'danger' : scope.row.hotFlag === 0 ? 'info' : 'warning'" size="small">
+            {{ scope.row.hotFlag === 1 ? '热门' : scope.row.hotFlag === 0 ? '普通' : '状态未知' }}
           </el-tag>
         </template>
       </el-table-column>
@@ -182,11 +182,15 @@
           <el-tooltip :content="scope.row.status === 1 ? '下架' : '上架'" placement="top">
             <el-button link :type="scope.row.status === 1 ? 'warning' : 'success'"
               :icon="scope.row.status === 1 ? 'Top' : 'Bottom'" @click="toggleStatus(scope.row)"
-              :aria-label="`${scope.row.status === 1 ? '下架' : '上架'}商品：${scope.row.name || '未知商品'}`"
+              :loading="statusUpdatingIds.has(scope.row.id)"
+              :disabled="statusUpdatingIds.has(scope.row.id) || ![0, 1].includes(scope.row.status)"
+              :aria-label="`${[0, 1].includes(scope.row.status) ? (scope.row.status === 1 ? '下架' : '上架') : '状态未知'}商品：${scope.row.name || '未知商品'}`"
               v-hasPermi="['system:product:edit']" />
           </el-tooltip>
           <el-tooltip :content="scope.row.hotFlag === 1 ? '取消热门' : '设为热门'" placement="top">
             <el-button link :type="scope.row.hotFlag === 1 ? 'danger' : 'info'" @click="toggleHot(scope.row)"
+              :loading="hotUpdatingIds.has(scope.row.id)"
+              :disabled="hotUpdatingIds.has(scope.row.id) || ![0, 1].includes(scope.row.hotFlag)"
               :aria-label="`${scope.row.hotFlag === 1 ? '取消热门' : '设为热门'}：${scope.row.name || '未知商品'}`"
               v-hasPermi="['system:product:edit']">
               <template #icon>
@@ -381,6 +385,8 @@ const data = reactive({
 
 const { queryParams, form, rules } = toRefs(data);
 const productRef = ref(null);
+const statusUpdatingIds = ref(new Set());
+const hotUpdatingIds = ref(new Set());
 
 // 计算属性：是否有激活的筛选条件
 const hasActiveFilters = computed(() => {
@@ -593,29 +599,53 @@ function handleExport() {
 }
 
 /** 切换商品状态 */
-function toggleStatus(row) {
+async function toggleStatus(row) {
+  if (statusUpdatingIds.value.has(row.id)) return;
+  if (![0, 1].includes(row.status)) {
+    ElMessage.warning('商品状态未知，请刷新列表后重试');
+    return;
+  }
   const newStatus = row.status === 1 ? 0 : 1;
   const statusText = newStatus === 1 ? '上架' : '下架';
-
-  proxy.$modal.confirm(`确认要${statusText}商品"${row.name}"吗？`).then(() => {
-    return updateProductStatus(row.id, newStatus);
-  }).then(response => {
+  statusUpdatingIds.value = new Set([...statusUpdatingIds.value, row.id]);
+  try {
+    await proxy.$modal.confirm(`确认要${statusText}商品"${row.name}"吗？`);
+    const response = await updateProductStatus(row.id, newStatus);
+    if (response.code !== 200) throw new Error(response.msg || `${statusText}失败`);
     proxy.$modal.msgSuccess(`${statusText}成功`);
-    getList();
-  }).catch(() => { });
+    await getList();
+  } catch (error) {
+    if (error !== 'cancel' && error !== 'close') console.error(`${statusText}商品失败:`, error);
+  } finally {
+    const ids = new Set(statusUpdatingIds.value);
+    ids.delete(row.id);
+    statusUpdatingIds.value = ids;
+  }
 }
 
 /** 切换热门状态 */
-function toggleHot(row) {
+async function toggleHot(row) {
+  if (hotUpdatingIds.value.has(row.id)) return;
+  if (![0, 1].includes(row.hotFlag)) {
+    ElMessage.warning('商品热门状态未知，请刷新列表后重试');
+    return;
+  }
   const newHotFlag = row.hotFlag === 1 ? 0 : 1;
   const hotText = newHotFlag === 1 ? '设为热门' : '取消热门';
-
-  proxy.$modal.confirm(`确认要${hotText}商品"${row.name}"吗？`).then(() => {
-    return updateProductHotFlag(row.id, newHotFlag);
-  }).then(response => {
+  hotUpdatingIds.value = new Set([...hotUpdatingIds.value, row.id]);
+  try {
+    await proxy.$modal.confirm(`确认要${hotText}商品"${row.name}"吗？`);
+    const response = await updateProductHotFlag(row.id, newHotFlag);
+    if (response.code !== 200) throw new Error(response.msg || `${hotText}失败`);
     proxy.$modal.msgSuccess(`${hotText}成功`);
-    getList();
-  }).catch(() => { });
+    await getList();
+  } catch (error) {
+    if (error !== 'cancel' && error !== 'close') console.error(`${hotText}商品失败:`, error);
+  } finally {
+    const ids = new Set(hotUpdatingIds.value);
+    ids.delete(row.id);
+    hotUpdatingIds.value = ids;
+  }
 }
 
 /** 加载当前用户的店铺信息 */
