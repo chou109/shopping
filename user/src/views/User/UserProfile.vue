@@ -141,7 +141,7 @@
 
               <!-- 地址管理 -->
               <el-tab-pane label="地址管理" name="address">
-                <div class="address-section">
+                <div class="address-section" v-loading="addressListLoading">
                   <div class="address-header">
                     <h3>我的收货地址</h3>
                     <el-button type="primary" @click="openAddAddressDialog">
@@ -151,6 +151,12 @@
                       新增地址
                     </el-button>
                   </div>
+
+                  <el-alert v-if="addressListError" :title="addressListError" type="error" :closable="false" show-icon>
+                    <template #default>
+                      <el-button link type="primary" :disabled="addressListLoading" @click="loadAddressList">重试加载地址</el-button>
+                    </template>
+                  </el-alert>
 
                   <div class="address-list" v-if="addressList.length > 0">
                     <div v-for="address in addressList" :key="address.id" class="address-item"
@@ -181,7 +187,7 @@
                     </div>
                   </div>
 
-                  <div v-else class="empty-address">
+                  <div v-else-if="!addressListLoading && !addressListError" class="empty-address">
                     <el-empty description="暂无收货地址">
                       <el-button type="primary" @click="openAddAddressDialog">添加地址</el-button>
                     </el-empty>
@@ -651,6 +657,8 @@ const {
   addressDialogVisible,
   addressLoading,
   addressMutations,
+  addressListLoading,
+  addressListError,
   isEditAddress,
   currentAddressId,
   addressList,

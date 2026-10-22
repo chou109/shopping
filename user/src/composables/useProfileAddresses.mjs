@@ -21,6 +21,9 @@ export function useProfileAddresses(currentUserId) {
 
   // 地址列表数据
   const addressList = ref([])
+  const addressListLoading = ref(false)
+  const addressListError = ref('')
+  let addressListRequestId = 0
 
   // 地址表单数据
   const addressForm = reactive({
@@ -78,20 +81,34 @@ export function useProfileAddresses(currentUserId) {
   }
 
   const areaService = new AreaDataService()
+  const provinceLoading = ref(false)
+  const cityLoading = ref(false)
+  const areaLoading = ref(false)
+  const regionLoadError = ref('')
+  const provinces = ref([])
+  const cities = ref([])
+  const areas = ref([])
   let provinceRequestId = 0
   let cityRequestId = 0
+  let provinceListRequestId = 0
 
   // 加载省份数据
   const loadProvinces = async () => {
+    const requestId = ++provinceListRequestId
     provinceLoading.value = true
+    regionLoadError.value = ''
     try {
-      provinces.value = await areaService.getProvinces()
-
+      const result = await areaService.getProvinces()
+      if (requestId !== provinceListRequestId) return
+      if (!Array.isArray(result)) throw new Error('省份数据格式异常')
+      provinces.value = result
     } catch (error) {
-      console.error('加载省份数据失败:', error)
-      ElMessage.error('加载省份数据失败')
+      if (requestId === provinceListRequestId) {
+        console.error('加载省份数据失败:', error)
+        regionLoadError.value = '省份数据加载失败，请检查网络后重试。'
+      }
     } finally {
-      provinceLoading.value = false
+      if (requestId === provinceListRequestId) provinceLoading.value = false
     }
   }
 
@@ -210,7 +227,10 @@ export function useProfileAddresses(currentUserId) {
   };
 
   const retryRegionLoad = async () => {
-    if (!addressForm.provinceCode) return
+    if (!addressForm.provinceCode) {
+      await loadProvinces()
+      return
+    }
     if (cityLoading.value || areaLoading.value) return
     regionLoadError.value = ''
     if (isEditAddress.value) {
@@ -298,16 +318,23 @@ export function useProfileAddresses(currentUserId) {
 
   // 加载地址列表
   const loadAddressList = async () => {
+    const requestId = ++addressListRequestId
+    addressListLoading.value = true
+    addressListError.value = ''
     try {
       const response = await getMyAddressList()
-      if (response.code === 200) {
-        addressList.value = response.data || []
-      } else {
-        ElMessage.error(response.msg || '获取地址列表失败')
+      if (requestId !== addressListRequestId) return
+      if (response.code !== 200 || !Array.isArray(response.data)) {
+        throw new Error(response.msg || '地址数据格式异常')
       }
+      addressList.value = response.data
     } catch (error) {
-      console.error('加载地址列表失败:', error)
-      ElMessage.error('加载地址列表失败')
+      if (requestId === addressListRequestId) {
+        console.error('加载地址列表失败:', error)
+        addressListError.value = '收货地址加载失败，请重试'
+      }
+    } finally {
+      if (requestId === addressListRequestId) addressListLoading.value = false
     }
   }
 
@@ -669,6 +696,8 @@ export function useProfileAddresses(currentUserId) {
     addressDialogVisible,
     addressLoading,
     addressMutations,
+    addressListLoading,
+    addressListError,
     isEditAddress,
     currentAddressId,
     addressList,
