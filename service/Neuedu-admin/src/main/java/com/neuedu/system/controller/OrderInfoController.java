@@ -624,6 +624,14 @@ class OrderInfoAdminController extends BaseController
                                     @RequestParam Integer refundStatus,
                                     @RequestParam(required = false) String auditOpinion)
     {
+        return processRefundForUser(SecurityUtils.getUserId(), refundNo, refundStatus, auditOpinion);
+    }
+
+    AjaxResult processRefundForUser(Long currentUserId, String refundNo, Integer refundStatus, String auditOpinion)
+    {
+        if (!SecurityUtils.isAdmin(currentUserId)) {
+            return error("仅管理员可处理退款");
+        }
         try {
             int result = orderInfoService.processRefund(refundNo, refundStatus, auditOpinion);
             return toAjax(result);
