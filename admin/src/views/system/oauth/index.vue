@@ -57,6 +57,10 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
+    <el-alert v-if="listError" :title="listError" type="error" :closable="false" show-icon>
+      <template #default><el-button link type="primary" :disabled="loading" @click="getList">重试</el-button></template>
+    </el-alert>
+
     <el-table v-loading="loading" :data="oauthList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="主键" align="center" prop="id" />
@@ -157,6 +161,7 @@ const { proxy } = getCurrentInstance();
 const oauthList = ref([]);
 const open = ref(false);
 const loading = ref(true);
+const listError = ref("");
 const showSearch = ref(true);
 const ids = ref([]);
 const single = ref(true);
@@ -205,15 +210,27 @@ const data = reactive({
 });
 
 const { queryParams, form, rules } = toRefs(data);
+let oauthListRequestId = 0;
 
 /** 查询第三方认证列表 */
-function getList() {
+async function getList() {
+  const requestId = ++oauthListRequestId;
   loading.value = true;
-  listOauth(queryParams.value).then(response => {
+  listError.value = "";
+  try {
+    const response = await listOauth(queryParams.value);
+    if (requestId !== oauthListRequestId) return;
+    if (!Array.isArray(response.rows)) throw new Error("第三方认证列表数据格式异常");
     oauthList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
+    total.value = Number(response.total) || 0;
+  } catch (error) {
+    if (requestId === oauthListRequestId) {
+      console.error("获取第三方认证列表失败:", error);
+      listError.value = "第三方认证列表加载失败，请重试";
+    }
+  } finally {
+    if (requestId === oauthListRequestId) loading.value = false;
+  }
 }
 
 // 取消按钮
@@ -327,4 +344,7 @@ function handleExport() {
 }
 
 getList();
+onBeforeUnmount(() => {
+  oauthListRequestId += 1;
+});
 </script>

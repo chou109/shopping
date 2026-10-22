@@ -24,6 +24,9 @@
             <el-button icon="Refresh" @click="resetQuery">重置</el-button>
          </el-form-item>
       </el-form>
+      <el-alert v-if="listError" :title="listError" type="error" :closable="false" show-icon>
+         <template #default><el-button link type="primary" :disabled="loading" @click="getList">重试</el-button></template>
+      </el-alert>
       <el-table
          v-loading="loading"
          :data="onlineList.slice((pageNum - 1) * pageSize, pageNum * pageSize)"
@@ -64,6 +67,7 @@ const { proxy } = getCurrentInstance();
 
 const onlineList = ref([]);
 const loading = ref(true);
+const listError = ref("");
 const total = ref(0);
 const pageNum = ref(1);
 const pageSize = ref(10);
@@ -72,15 +76,28 @@ const queryParams = ref({
   ipaddr: undefined,
   userName: undefined
 });
+let onlineListRequestId = 0;
 
 /** 查询登录日志列表 */
-function getList() {
+async function getList() {
+  const requestId = ++onlineListRequestId;
   loading.value = true;
-  initData(queryParams.value).then(response => {
+  listError.value = "";
+  try {
+    const response = await initData(queryParams.value);
+    if (requestId !== onlineListRequestId) return;
+    if (!Array.isArray(response.rows)) throw new Error("在线会话列表数据格式异常");
     onlineList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
+    total.value = Number(response.total) || 0;
+    if (pageNum.value > Math.max(1, Math.ceil(total.value / pageSize.value))) pageNum.value = 1;
+  } catch (error) {
+    if (requestId === onlineListRequestId) {
+      console.error("获取在线会话列表失败:", error);
+      listError.value = "在线会话列表加载失败，请重试";
+    }
+  } finally {
+    if (requestId === onlineListRequestId) loading.value = false;
+  }
 }
 /** 搜索按钮操作 */
 function handleQuery() {
@@ -103,4 +120,7 @@ function handleForceLogout(row) {
 }
 
 getList();
+onBeforeUnmount(() => {
+  onlineListRequestId += 1;
+});
 </script>
