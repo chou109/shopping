@@ -98,6 +98,18 @@ public class SysProfileController extends BaseController
     public AjaxResult updatePwd(String oldPassword, String newPassword)
     {
         LoginUser loginUser = getLoginUser();
+        if (StringUtils.isEmpty(oldPassword))
+        {
+            return error("原密码不能为空");
+        }
+        if (StringUtils.isEmpty(newPassword))
+        {
+            return error("新密码不能为空");
+        }
+        if (newPassword.length() < 6 || newPassword.length() > 20)
+        {
+            return error("新密码长度必须在6到20个字符之间");
+        }
         String userName = loginUser.getUsername();
         String password = loginUser.getPassword();
         if (!SecurityUtils.matchesPassword(oldPassword, password))
