@@ -46,6 +46,11 @@
          </el-col>
          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
       </el-row>
+      <el-alert v-if="listError" :title="listError" type="error" :closable="false" show-icon>
+         <template #default>
+            <el-button link type="primary" :disabled="loading" @click="getList">重试</el-button>
+         </template>
+      </el-alert>
 
       <el-table
          v-if="refreshTable"
@@ -149,11 +154,13 @@ const { sys_normal_disable } = proxy.useDict("sys_normal_disable");
 const deptList = ref([]);
 const open = ref(false);
 const loading = ref(true);
+const listError = ref("");
 const showSearch = ref(true);
 const title = ref("");
 const deptOptions = ref([]);
 const isExpandAll = ref(true);
 const refreshTable = ref(true);
+let deptListRequestId = 0;
 
 const data = reactive({
   form: {},
@@ -173,12 +180,23 @@ const data = reactive({
 const { queryParams, form, rules } = toRefs(data);
 
 /** 查询部门列表 */
-function getList() {
+async function getList() {
+  const requestId = ++deptListRequestId;
   loading.value = true;
-  listDept(queryParams.value).then(response => {
+  listError.value = "";
+  try {
+    const response = await listDept(queryParams.value);
+    if (requestId !== deptListRequestId) return;
+    if (!Array.isArray(response.data)) throw new Error("部门列表数据格式异常");
     deptList.value = proxy.handleTree(response.data, "deptId");
-    loading.value = false;
-  });
+  } catch (error) {
+    if (requestId === deptListRequestId) {
+      console.error("获取部门列表失败:", error);
+      listError.value = "部门列表加载失败，请重试";
+    }
+  } finally {
+    if (requestId === deptListRequestId) loading.value = false;
+  }
 }
 /** 取消按钮 */
 function cancel() {
@@ -271,4 +289,7 @@ function handleDelete(row) {
 }
 
 getList();
+onBeforeUnmount(() => {
+  deptListRequestId += 1;
+});
 </script>

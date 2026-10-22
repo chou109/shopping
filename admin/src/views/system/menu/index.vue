@@ -46,6 +46,11 @@
          </el-col>
          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
       </el-row>
+      <el-alert v-if="listError" :title="listError" type="error" :closable="false" show-icon>
+         <template #default>
+            <el-button link type="primary" :disabled="loading" @click="getList">重试</el-button>
+         </template>
+      </el-alert>
 
       <el-table
          v-if="refreshTable"
@@ -89,9 +94,16 @@
             <el-row>
                <el-col :span="24">
                   <el-form-item label="上级菜单">
+                     <el-alert v-if="menuOptionsError" :title="menuOptionsError" type="error" :closable="false" show-icon>
+                        <template #default>
+                           <el-button link type="primary" :disabled="menuOptionsLoading" @click="getTreeselect">重试</el-button>
+                        </template>
+                     </el-alert>
                      <el-tree-select
                         v-model="form.parentId"
                         :data="menuOptions"
+                        :loading="menuOptionsLoading"
+                        :disabled="menuOptionsLoading || Boolean(menuOptionsError)"
                         :props="{ value: 'menuId', label: 'menuName', children: 'children' }"
                         value-key="menuId"
                         placeholder="选择上级菜单"
@@ -291,13 +303,18 @@ const { sys_show_hide, sys_normal_disable } = proxy.useDict("sys_show_hide", "sy
 const menuList = ref([]);
 const open = ref(false);
 const loading = ref(true);
+const listError = ref("");
 const showSearch = ref(true);
 const title = ref("");
 const menuOptions = ref([]);
+const menuOptionsLoading = ref(false);
+const menuOptionsError = ref("");
 const isExpandAll = ref(false);
 const refreshTable = ref(true);
 const showChooseIcon = ref(false);
 const iconSelectRef = ref(null);
+let menuListRequestId = 0;
+let menuOptionsRequestId = 0;
 
 const data = reactive({
   form: {},
@@ -315,21 +332,45 @@ const data = reactive({
 const { queryParams, form, rules } = toRefs(data);
 
 /** 查询菜单列表 */
-function getList() {
+async function getList() {
+  const requestId = ++menuListRequestId;
   loading.value = true;
-  listMenu(queryParams.value).then(response => {
+  listError.value = "";
+  try {
+    const response = await listMenu(queryParams.value);
+    if (requestId !== menuListRequestId) return;
+    if (!Array.isArray(response.data)) throw new Error("菜单列表数据格式异常");
     menuList.value = proxy.handleTree(response.data, "menuId");
-    loading.value = false;
-  });
+  } catch (error) {
+    if (requestId === menuListRequestId) {
+      console.error("获取菜单列表失败:", error);
+      listError.value = "菜单列表加载失败，请重试";
+    }
+  } finally {
+    if (requestId === menuListRequestId) loading.value = false;
+  }
 }
 /** 查询菜单下拉树结构 */
-function getTreeselect() {
+async function getTreeselect() {
+  const requestId = ++menuOptionsRequestId;
+  menuOptionsLoading.value = true;
+  menuOptionsError.value = "";
   menuOptions.value = [];
-  listMenu().then(response => {
+  try {
+    const response = await listMenu();
+    if (requestId !== menuOptionsRequestId) return;
+    if (!Array.isArray(response.data)) throw new Error("菜单选项数据格式异常");
     const menu = { menuId: 0, menuName: "主类目", children: [] };
     menu.children = proxy.handleTree(response.data, "menuId");
     menuOptions.value.push(menu);
-  });
+  } catch (error) {
+    if (requestId === menuOptionsRequestId) {
+      console.error("获取上级菜单选项失败:", error);
+      menuOptionsError.value = "上级菜单加载失败，请重试";
+    }
+  } finally {
+    if (requestId === menuOptionsRequestId) menuOptionsLoading.value = false;
+  }
 }
 /** 取消按钮 */
 function cancel() {
@@ -440,4 +481,8 @@ function handleDelete(row) {
 }
 
 getList();
+onBeforeUnmount(() => {
+  menuListRequestId += 1;
+  menuOptionsRequestId += 1;
+});
 </script>
