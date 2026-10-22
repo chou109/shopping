@@ -94,8 +94,7 @@ export const constantRoutes = [
     component: Layout,
     meta: { requiresAuth: true },
     props: (route) => ({
-      page: route.params.page || 'profile',
-      query: route.query
+      page: route.params.page || 'profile'
     }),
     children: [
       {

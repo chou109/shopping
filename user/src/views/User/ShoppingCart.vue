@@ -28,7 +28,7 @@
               <span class="selected-count">已选 {{ selectedCount }} 件商品</span>
             </div>
             <div class="toolbar-right">
-              <el-button type="text" @click="handleBatchDelete" :disabled="selectedCount === 0 || cartInteractionLocked" :loading="batchDeleting">
+              <el-button link @click="handleBatchDelete" :disabled="selectedCount === 0 || cartInteractionLocked" :loading="batchDeleting">
                 删除选中
               </el-button>
             </div>

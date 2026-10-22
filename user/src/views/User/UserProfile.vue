@@ -112,7 +112,7 @@
                       <div class="security-title">登录密码</div>
                       <div class="security-desc">定期更改密码可以提高账户安全性</div>
                     </div>
-                    <el-button type="text" @click="openPasswordDialog">修改密码</el-button>
+                    <el-button link @click="openPasswordDialog">修改密码</el-button>
                   </div>
                 </div>
               </el-tab-pane>
@@ -171,14 +171,14 @@
                         <div class="full-address">{{ formatFullAddress(address) }}</div>
                       </div>
                       <div class="address-actions">
-                        <el-button v-if="address.defaultFlag !== 1" type="text"
+                        <el-button v-if="address.defaultFlag !== 1" link
                           :loading="addressMutations.has(address.id)"
                           :disabled="addressMutations.has(address.id)"
                           @click="handleSetDefaultAddress(address.id)">
                           设为默认
                         </el-button>
-                        <el-button type="text" @click="openEditAddressDialog(address)">编辑</el-button>
-                        <el-button type="text" @click="handleDeleteAddress(address.id)"
+                        <el-button link @click="openEditAddressDialog(address)">编辑</el-button>
+                        <el-button link @click="handleDeleteAddress(address.id)"
                           :loading="addressMutations.has(address.id)"
                           :disabled="address.defaultFlag === 1 || addressMutations.has(address.id)">
                           删除

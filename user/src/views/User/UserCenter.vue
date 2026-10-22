@@ -55,7 +55,7 @@
           <h2>{{ pageTitle }}</h2>
           <div class="page-subtitle">{{ pageSubtitle }}</div>
         </div>
-        <component :is="currentComponent" :key="activeNav" v-bind="componentProps" />
+        <component :is="currentComponent" :key="activeNav" />
       </div>
 
       <!-- 回到顶部按钮 -->
@@ -93,8 +93,7 @@ import FavoriteProducts from '@/views/User/FavoriteProducts.vue'
 import UserReviews from '@/views/User/UserReviews.vue'
 import UserMessage from '@/views/User/UserMessage.vue'
 const props = defineProps({
-  page: { type: String, default: 'profile' },
-  query: { type: Object, default: () => ({}) }
+  page: { type: String, default: 'profile' }
 })
 
 const store = useStore()
@@ -183,11 +182,6 @@ const currentComponent = computed(() => {
     'favoriteProduct': FavoriteProducts, 'review': UserReviews, 'message': UserMessage
   }
   return map[activeNav.value] || UserProfile
-})
-
-const componentProps = computed(() => {
-  const map = { 'orders': { query: props.query }, 'cart': { query: props.query } }
-  return map[activeNav.value] || {}
 })
 
 // 内容区域滚动容器引用

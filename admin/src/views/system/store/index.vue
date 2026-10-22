@@ -20,7 +20,7 @@
           <el-form-item class="search-actions compact-item" label-width="0">
             <el-button type="primary" icon="Search" @click="handleQuery" size="default">搜索</el-button>
             <el-button icon="Refresh" @click="resetQuery" size="default">重置</el-button>
-            <el-button type="text" @click="toggleAdvanced" size="default" style="margin-left: 10px;">
+            <el-button link @click="toggleAdvanced" size="default" style="margin-left: 10px;">
               {{ showAdvanced ? '收起' : '展开' }}
               <el-icon :style="{ transform: showAdvanced ? 'rotate(180deg)' : '', transition: 'transform 0.3s', marginLeft: '4px' }">
                 <ArrowDown />

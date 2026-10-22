@@ -87,6 +87,17 @@ function collectButtonIssues(node, filename) {
   return issues
 }
 
+function collectDeprecatedElementPlusButtonIssues(node, filename) {
+  const issues = []
+  if (node.type === 1 && node.tag === 'el-button' && node.props.some(property =>
+    property.type === 6 && property.name === 'type' && property.value?.content === 'text'
+  )) {
+    issues.push(`${path.relative(root, filename)}:${node.loc.start.line}: el-button 的 type="text" 已弃用，请改用 link 属性`)
+  }
+  for (const child of node.children || []) issues.push(...collectDeprecatedElementPlusButtonIssues(child, filename))
+  return issues
+}
+
 function collectClickableElementIssues(node, filename) {
   const issues = []
   const nativeInteractiveElements = new Set([
@@ -155,6 +166,7 @@ for (const sourceRoot of sourceRoots) {
     failures.push(...collectAnchorIssues(parsedTemplate.ast, filename))
     failures.push(...collectTargetBlankIssues(parsedTemplate.ast, filename))
     failures.push(...collectButtonIssues(parsedTemplate.ast, filename))
+    failures.push(...collectDeprecatedElementPlusButtonIssues(parsedTemplate.ast, filename))
     failures.push(...collectClickableElementIssues(parsedTemplate.ast, filename))
     failures.push(...collectLegacySlotIssues(parsedTemplate.ast, filename))
     if (!descriptor.scriptSetup) continue
