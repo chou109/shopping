@@ -2,8 +2,11 @@
   <div class="user-message">
     <!-- 消息列表 -->
     <div class="message-list" v-loading="loading">
+      <el-alert v-if="loadError" :title="loadError" type="error" :closable="false" show-icon>
+        <template #default><el-button link type="primary" :disabled="loading" @click="loadSessions">重试</el-button></template>
+      </el-alert>
       <!-- 空状态 -->
-      <div v-if="!loading && sessionList.length === 0" class="empty-state">
+      <div v-if="!loading && !loadError && sessionList.length === 0" class="empty-state">
         <el-icon class="empty-icon">
           <ChatDotRound />
         </el-icon>
@@ -12,7 +15,7 @@
       </div>
 
       <!-- 会话列表 -->
-      <div v-else class="session-list">
+      <div v-if="sessionList.length > 0" class="session-list">
         <div v-for="session in sessionList" :key="session.sessionId" class="session-item" role="button"
           tabindex="0" :aria-label="`打开与${session.shopName || '客服'}的消息`" @click="openChat(session)"
           @keydown.enter.prevent="openChat(session)" @keydown.space.prevent="openChat(session)">
@@ -41,9 +44,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
 import { ChatDotRound, Shop } from '@element-plus/icons-vue'
 import { getUserSessions } from '@/api/system/customerMessage'
 import { getProductImageUrl } from '@/utils/image'
@@ -52,7 +54,9 @@ const router = useRouter()
 
 // 响应式数据
 const loading = ref(false)
+const loadError = ref('')
 const sessionList = ref([])
+let sessionsRequestId = 0
 
 // 获取图片URL
 const getImageUrl = (url) => {
@@ -68,6 +72,7 @@ const handleImageError = (e) => {
 const formatTime = (timeStr) => {
   if (!timeStr) return ''
   const date = new Date(timeStr)
+  if (!Number.isFinite(date.getTime())) return '时间未知'
   const now = new Date()
   const diff = now - date
 
@@ -95,17 +100,21 @@ const formatTime = (timeStr) => {
 
 // 加载会话列表
 const loadSessions = async () => {
+  const requestId = ++sessionsRequestId
   loading.value = true
+  loadError.value = ''
   try {
     const response = await getUserSessions()
-    if (response.code === 200) {
-      sessionList.value = response.data || []
-    }
+    if (requestId !== sessionsRequestId) return
+    if (response.code !== 200 || !Array.isArray(response.data)) throw new Error(response.msg || '消息数据格式异常')
+    sessionList.value = response.data
   } catch (error) {
-    console.error('加载会话列表失败:', error)
-    ElMessage.error('加载消息失败')
+    if (requestId === sessionsRequestId) {
+      console.error('加载会话列表失败:', error)
+      loadError.value = '消息加载失败，请重试'
+    }
   } finally {
-    loading.value = false
+    if (requestId === sessionsRequestId) loading.value = false
   }
 }
 
@@ -123,6 +132,10 @@ const openChat = (session) => {
 
 onMounted(() => {
   loadSessions()
+})
+
+onBeforeUnmount(() => {
+  sessionsRequestId++
 })
 </script>
 
