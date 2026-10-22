@@ -144,6 +144,8 @@ public class UserAddressController extends BaseController
 
         // 设置用户ID到createUser字段
         userAddress.setCreateUser(currentUserId);
+        // 服务层兼容后台录入接口时会从 userId 设置 createUser；同步覆盖客户端值，确保新地址归属当前用户。
+        userAddress.setUserId(currentUserId);
 
         // 设置更新人
         userAddress.setUpdateUser(currentUserId);
