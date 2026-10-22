@@ -49,13 +49,13 @@ public class ProductController extends BaseController
     @GetMapping("/list")
     public TableDataInfo list(Product product)
     {
-        startPage();
-        
         // 获取当前登录用户ID
         Long currentUserId = getUserId();
 
         scopeProductQueryToCurrentShop(product, currentUserId);
-        
+
+        // Resolve the merchant's shop before starting pagination; the lookup itself is a database query.
+        startPage();
         List<Product> list = productService.selectProductList(product);
         
         return getDataTable(list);

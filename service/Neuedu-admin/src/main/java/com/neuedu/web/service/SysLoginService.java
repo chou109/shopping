@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 import com.neuedu.common.constant.CacheConstants;
 import com.neuedu.common.constant.Constants;
 import com.neuedu.common.core.domain.entity.SysUser;
+import com.neuedu.common.core.domain.entity.SysRole;
 import com.neuedu.common.core.domain.model.LoginUser;
 import com.neuedu.common.core.redis.RedisCache;
 import com.neuedu.common.exception.ServiceException;
@@ -30,7 +31,6 @@ import com.neuedu.framework.security.context.AuthenticationContextHolder;
 import com.neuedu.system.service.ISysConfigService;
 import com.neuedu.system.service.ISysUserService;
 
-import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -109,45 +109,21 @@ public class SysLoginService
 
 //        SysUser type = loginUser.getUserType()l
 
-        // ============ 检查是否是管理员 ============
-        boolean isAdmin = false;
-
-        // 1. 首先检查 user_id == 1（超级管理员）
-        if (user.getUserId() != null && (user.getUserId() == 1L ||user.getUserId() == 2L)) {
-            isAdmin = true;
-        }
-
-        // 2. 如果user_id不是1，再检查user_type字段
-        if (!isAdmin) {
-            try {
-                Method getUserTypeMethod = user.getClass().getMethod("getUserType");
-                Object userTypeObj = getUserTypeMethod.invoke(user);
-                if (userTypeObj instanceof Integer) {
-                    int userType = (Integer) userTypeObj;
-                    if (userType >= 1) {
-                        isAdmin = true;
-                    }
-                }
-            } catch (NoSuchMethodException e) {
-                // 如果没有getUserType方法，说明这个字段不存在
-            } catch (Exception e) {
-                // 其他异常
-            }
-        }
+        boolean isAdmin = isAdminAccount(user);
 
         if ("admin".equals(clientType)) {
-            // 管理端登录：必须是管理员
-            if (!isAdmin) {
+            // 管理端同时承载商家和管理员页面，角色权限仍由动态菜单及后端接口校验。
+            if (!isAdmin && !isMerchantAccount(user)) {
                 AsyncManager.me().execute(AsyncFactory.recordLogininfor(
-                        username, Constants.LOGIN_FAIL, "非管理员账号尝试登录管理端"));
-                throw new ServiceException("该账号不是管理员，无法登录管理后台");
+                        username, Constants.LOGIN_FAIL, "无商家或管理员角色的账号尝试登录管理端"));
+                throw new ServiceException("该账号没有管理后台权限");
             }
 
         } else if ("user".equals(clientType)) {
-            // 用户端登录，禁止管理员
-            if (isAdmin) {
+            // 消费者端登录，禁止商家和管理员账号。
+            if (isAdmin || isMerchantAccount(user)) {
                 AsyncManager.me().execute(AsyncFactory.recordLogininfor(
-                        username, Constants.LOGIN_FAIL, "管理员账号尝试登录用户端"));
+                        username, Constants.LOGIN_FAIL, "商家或管理员账号尝试登录用户端"));
                 throw new ServiceException("登录失败");
             }
 
@@ -158,6 +134,21 @@ public class SysLoginService
         recordLoginInfo(loginUser.getUserId());
         // 生成token
         return tokenService.createToken(loginUser);
+    }
+
+    static boolean isAdminAccount(SysUser user)
+    {
+        return user != null && (SysUser.isAdmin(user.getUserId())
+                || UserTypeConstants.isAdmin(user.getUserType()));
+    }
+
+    static boolean isMerchantAccount(SysUser user)
+    {
+        if (user == null || user.getRoles() == null)
+        {
+            return false;
+        }
+        return user.getRoles().stream().map(SysRole::getRoleKey).anyMatch("shang"::equals);
     }
 
     /**

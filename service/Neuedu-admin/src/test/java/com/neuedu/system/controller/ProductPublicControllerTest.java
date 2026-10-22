@@ -1,14 +1,24 @@
 package com.neuedu.system.controller;
 
 import com.neuedu.common.core.domain.AjaxResult;
+import com.neuedu.common.core.domain.entity.SysUser;
+import com.neuedu.common.core.domain.model.LoginUser;
+import com.github.pagehelper.PageHelper;
 import com.neuedu.system.domain.Product;
 import com.neuedu.system.domain.Shop;
 import com.neuedu.system.service.IProductService;
 import com.neuedu.system.service.IShopService;
 import org.junit.Test;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
+import java.util.Collections;
+import java.util.concurrent.atomic.AtomicBoolean;
+import javax.servlet.http.HttpServletRequest;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -83,6 +93,41 @@ public class ProductPublicControllerTest {
         controller.scopeProductQueryToCurrentShop(query, 71L);
 
         assertEquals(Long.valueOf(-1L), query.getShopId());
+    }
+
+    @Test
+    public void merchantShopLookupDoesNotConsumeProductListPagination() {
+        PageHelper.clearPage();
+        HttpServletRequest request = (HttpServletRequest) Proxy.newProxyInstance(
+            HttpServletRequest.class.getClassLoader(), new Class<?>[]{HttpServletRequest.class},
+            (instance, method, args) -> null);
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+        SysUser user = new SysUser();
+        LoginUser loginUser = new LoginUser(71L, null, user, Collections.<String>emptySet());
+        SecurityContextHolder.getContext().setAuthentication(
+            new UsernamePasswordAuthenticationToken(loginUser, null, Collections.emptyList()));
+
+        Shop ownShop = new Shop();
+        ownShop.setId(12L);
+        AtomicBoolean paginationWasStartedDuringShopLookup = new AtomicBoolean(false);
+        IShopService shops = proxy(IShopService.class, (methodName, args) -> {
+            if ("selectShopByUserId".equals(methodName)) {
+                paginationWasStartedDuringShopLookup.set(PageHelper.getLocalPage() != null);
+                return ownShop;
+            }
+            return null;
+        });
+        IProductService products = proxy(IProductService.class, (methodName, args) ->
+            "selectProductList".equals(methodName) ? Collections.emptyList() : null);
+
+        try {
+            new ProductController(products, shops).list(new Product());
+            assertEquals(false, paginationWasStartedDuringShopLookup.get());
+        } finally {
+            PageHelper.clearPage();
+            SecurityContextHolder.clearContext();
+            RequestContextHolder.resetRequestAttributes();
+        }
     }
 
     @Test
