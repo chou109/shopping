@@ -92,7 +92,9 @@
       <div class="action-buttons">
         <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['system:product:add']">新增</el-button>
         <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['system:product:edit']">修改</el-button>
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:product:remove']">删除</el-button>
+        <el-button type="danger" plain icon="Delete"
+          :disabled="multiple || deletingProductIds.size > 0 || statusUpdatingIds.size > 0 || hotUpdatingIds.size > 0"
+          :loading="deletingProductIds.size > 0" @click="handleDelete" v-hasPermi="['system:product:remove']">删除</el-button>
         <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['system:product:export']">导出</el-button>
       </div>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
@@ -177,6 +179,8 @@
           </el-tooltip>
           <el-tooltip content="删除" placement="top">
             <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)"
+              :loading="deletingProductIds.has(scope.row.id)"
+              :disabled="deletingProductIds.size > 0 || statusUpdatingIds.has(scope.row.id) || hotUpdatingIds.has(scope.row.id)"
               :aria-label="`删除商品：${scope.row.name || '未知商品'}`"
               v-hasPermi="['system:product:remove']" />
           </el-tooltip>
@@ -184,14 +188,14 @@
             <el-button link :type="scope.row.status === 1 ? 'warning' : 'success'"
               :icon="scope.row.status === 1 ? 'Top' : 'Bottom'" @click="toggleStatus(scope.row)"
               :loading="statusUpdatingIds.has(scope.row.id)"
-              :disabled="statusUpdatingIds.has(scope.row.id) || ![0, 1].includes(scope.row.status)"
+              :disabled="statusUpdatingIds.has(scope.row.id) || deletingProductIds.has(scope.row.id) || ![0, 1].includes(scope.row.status)"
               :aria-label="`${[0, 1].includes(scope.row.status) ? (scope.row.status === 1 ? '下架' : '上架') : '状态未知'}商品：${scope.row.name || '未知商品'}`"
               v-hasPermi="['system:product:edit']" />
           </el-tooltip>
           <el-tooltip :content="scope.row.hotFlag === 1 ? '取消热门' : '设为热门'" placement="top">
             <el-button link :type="scope.row.hotFlag === 1 ? 'danger' : 'info'" @click="toggleHot(scope.row)"
               :loading="hotUpdatingIds.has(scope.row.id)"
-              :disabled="hotUpdatingIds.has(scope.row.id) || ![0, 1].includes(scope.row.hotFlag)"
+              :disabled="hotUpdatingIds.has(scope.row.id) || deletingProductIds.has(scope.row.id) || ![0, 1].includes(scope.row.hotFlag)"
               :aria-label="`${scope.row.hotFlag === 1 ? '取消热门' : '设为热门'}：${scope.row.name || '未知商品'}`"
               v-hasPermi="['system:product:edit']">
               <template #icon>
@@ -390,6 +394,7 @@ const { queryParams, form, rules } = toRefs(data);
 const productRef = ref(null);
 const statusUpdatingIds = ref(new Set());
 const hotUpdatingIds = ref(new Set());
+const deletingProductIds = ref(new Set());
 const formSubmitting = ref(false);
 const productDetailLoadingId = ref(null);
 let productDetailRequestId = 0;
@@ -604,19 +609,27 @@ const submitForm = async () => {
 };
 
 /** 删除按钮操作 */
-function handleDelete(row) {
+async function handleDelete(row) {
+  if (deletingProductIds.value.size > 0) return;
   const userStore = useUserStore();
   if (!userStore.userId) {
     ElMessage.error('无法获取用户信息，请重新登录');
     return;
   }
   const _ids = row.id ? [row.id] : ids.value;
-  proxy.$modal.confirm('是否确认删除商品编号为"' + _ids.join(',') + '"的数据项？').then(function () {
-    return delProduct(_ids, { createUser: userStore.userId });
-  }).then(() => {
-    getList();
+  if (_ids.length === 0) return;
+  if (_ids.some(id => statusUpdatingIds.value.has(id) || hotUpdatingIds.value.has(id))) return;
+  deletingProductIds.value = new Set(_ids);
+  try {
+    await proxy.$modal.confirm('是否确认删除商品编号为"' + _ids.join(',') + '"的数据项？');
+    await delProduct(_ids);
     proxy.$modal.msgSuccess("删除成功");
-  }).catch(() => { });
+    await getList();
+  } catch (error) {
+    if (error !== 'cancel' && error !== 'close') console.error('删除商品失败:', error);
+  } finally {
+    deletingProductIds.value = new Set();
+  }
 }
 
 /** 导出按钮操作 */
@@ -627,7 +640,7 @@ function handleExport() {
 
 /** 切换商品状态 */
 async function toggleStatus(row) {
-  if (statusUpdatingIds.value.has(row.id)) return;
+  if (statusUpdatingIds.value.has(row.id) || deletingProductIds.value.has(row.id)) return;
   if (![0, 1].includes(row.status)) {
     ElMessage.warning('商品状态未知，请刷新列表后重试');
     return;
@@ -652,7 +665,7 @@ async function toggleStatus(row) {
 
 /** 切换热门状态 */
 async function toggleHot(row) {
-  if (hotUpdatingIds.value.has(row.id)) return;
+  if (hotUpdatingIds.value.has(row.id) || deletingProductIds.value.has(row.id)) return;
   if (![0, 1].includes(row.hotFlag)) {
     ElMessage.warning('商品热门状态未知，请刷新列表后重试');
     return;
