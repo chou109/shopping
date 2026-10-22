@@ -26,7 +26,8 @@
             <div class="shop-desc">{{ shopInfo.description || '暂无店铺简介' }}</div>
           </div>
           <div class="shop-actions">
-            <el-button type="primary" @click="followShop" :icon="Star">
+            <el-button type="primary" @click="followShop" :icon="Star" :loading="followUpdating"
+              :disabled="followUpdating">
               {{ isFollowed ? '已关注' : '关注店铺' }}
             </el-button>
             <el-button style="margin-left: -0.1px;" @click="contactService" :icon="Service">联系客服</el-button>
@@ -157,6 +158,7 @@ const sortBy = ref('default')
 const priceOrder = ref('asc')
 const viewMode = ref('grid')
 const isFollowed = ref(false)
+const followUpdating = ref(false)
 let shopRequestId = 0
 
 // 获取图片URL
@@ -215,6 +217,7 @@ const goToProduct = (id) => {
 
 // 关注店铺
 const followShop = async () => {
+  if (followUpdating.value) return
   if (!getToken()) {
     ElMessage.warning('请先登录后再关注店铺')
     router.push({ path: '/login', query: { redirect: route.fullPath } })
@@ -224,6 +227,7 @@ const followShop = async () => {
   const shopId = route.query.id
   if (!shopId) return
   const requestId = shopRequestId
+  followUpdating.value = true
   try {
     const res = await toggleFavorite(2, shopId) // 2表示店铺
     if (res.code === 200) {
@@ -236,6 +240,8 @@ const followShop = async () => {
     }
   } catch (e) {
     if (requestId === shopRequestId) ElMessage.error('操作失败')
+  } finally {
+    if (requestId === shopRequestId) followUpdating.value = false
   }
 }
 
@@ -335,6 +341,7 @@ watch(() => route.query.id, (shopId) => {
   products.value = []
   shopInfo.value = {}
   isFollowed.value = false
+  followUpdating.value = false
   loadShopData(shopId, requestId)
   checkFollowStatus(shopId, requestId)
 }, { immediate: true })

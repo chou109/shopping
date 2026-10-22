@@ -97,6 +97,7 @@ const currentImageIndex = ref(0)
 const quantity = ref(1)
 const addingToCart = ref(false)
 const isFavorite = ref(false)
+const favoriteUpdating = ref(false)
 const activeTab = ref('detail')
 const availableStock = computed(() => normalizeProductStock(product.value.stock))
 
@@ -144,6 +145,7 @@ const loadProductData = async () => {
   activeTab.value = 'detail'
   zoomVisible.value = false
   isFavorite.value = false
+  favoriteUpdating.value = false
   try {
     const response = await getProduct(productId)
     if (requestId !== productRequestId) return
@@ -679,11 +681,15 @@ const checkProductFavorite = async (productId, requestId = productRequestId) => 
 
 // 收藏商品
 const handleToggleFavorite = async () => {
+  if (favoriteUpdating.value) return
   if (!ensureLoginForAction('请先登录后再收藏')) return
 
+  const requestId = productRequestId
+  const productId = route.query.id
+  favoriteUpdating.value = true
   try {
-    const productId = route.query.id
     const res = await toggleFavorite(1, productId) // 1表示商品
+    if (requestId !== productRequestId) return
     if (res.code === 200) {
       isFavorite.value = res.data
       if (isFavorite.value) {
@@ -695,8 +701,11 @@ const handleToggleFavorite = async () => {
       ElMessage.error(res.msg || '操作失败')
     }
   } catch (e) {
+    if (requestId !== productRequestId) return
     console.error('收藏操作失败', e)
     ElMessage.error('操作失败')
+  } finally {
+    if (requestId === productRequestId) favoriteUpdating.value = false
   }
 }
 
@@ -1073,7 +1082,8 @@ watch(() => route.query.id, (newId, oldId) => {
                     立即购买
                   </button>
                   <button type="button" class="btn favorite" :aria-label="isFavorite ? '取消收藏商品' : '收藏商品'"
-                    :aria-pressed="isFavorite" @click="handleToggleFavorite">
+                    :aria-pressed="isFavorite" :aria-busy="favoriteUpdating" :disabled="favoriteUpdating"
+                    @click="handleToggleFavorite">
                     <el-icon :class="{ 'favorited': isFavorite }">
                       <StarFilled v-if="isFavorite" />
                       <Star v-else />
