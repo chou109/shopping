@@ -2,6 +2,9 @@ package com.neuedu.system.demoai.repository;
 
 import com.neuedu.system.demoai.entity.Product;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 import java.math.BigDecimal;
@@ -80,8 +83,13 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
     Product findByNameAndDeleteFlagAndStatus(String name, Integer deleteFlag, Integer status);
 
     // 新增：名称或副标题查询
+    @Query("SELECT p FROM Product p WHERE (p.name LIKE CONCAT('%', :keyword, '%') OR p.subTitle LIKE CONCAT('%', :keyword, '%')) AND p.deleteFlag = 0 AND p.status = 1")
+    List<Product> searchActiveByKeyword(@Param("keyword") String keyword, Pageable pageable);
+
+    @Query("SELECT p FROM Product p WHERE (p.name LIKE CONCAT('%', :name, '%') OR p.subTitle LIKE CONCAT('%', :subTitle, '%')) AND p.deleteFlag = :deleteFlag AND p.status = :status")
     List<Product> findByNameContainingOrSubTitleContainingAndDeleteFlagAndStatus(
-            String name, String subTitle, Integer deleteFlag, Integer status
+            @Param("name") String name, @Param("subTitle") String subTitle,
+            @Param("deleteFlag") Integer deleteFlag, @Param("status") Integer status
     );
 
     // 新增：根据ID查询

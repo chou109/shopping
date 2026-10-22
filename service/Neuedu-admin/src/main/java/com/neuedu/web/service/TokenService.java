@@ -77,6 +77,24 @@ public class TokenService
         return null;
     }
 
+    /** Resolve a bearer token supplied during WebSocket messaging. Never log the token. */
+    public LoginUser getLoginUserFromToken(String token)
+    {
+        if (StringUtils.isEmpty(token)) return null;
+        String cleanToken = token.startsWith(Constants.TOKEN_PREFIX) ? token.substring(Constants.TOKEN_PREFIX.length()) : token;
+        try
+        {
+            Claims claims = parseToken(cleanToken);
+            String uuid = (String) claims.get(Constants.LOGIN_USER_KEY);
+            if (StringUtils.isEmpty(uuid)) return null;
+            return redisCache.getCacheObject(getTokenKey(uuid));
+        }
+        catch (Exception ignored)
+        {
+            return null;
+        }
+    }
+
     /**
      * 设置用户身份信息
      */

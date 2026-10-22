@@ -22,19 +22,19 @@ public class AIChatWebSocketPrivacyTest {
         });
         Session session = proxy(Session.class, (instance, method, args) -> {
             if ("getBasicRemote".equals(method.getName())) return remote;
+            if ("isOpen".equals(method.getName())) return true;
             if ("getId".equals(method.getName())) return "privacy-test";
             return null;
         });
 
         AIChatWebSocket endpoint = new AIChatWebSocket();
-        endpoint.setZhipuAIService(new ZhipuAIService());
         endpoint.onMessage("{\"question\":\"查看我的订单\",\"userId\":12345}", session);
 
-        assertEquals(2, sentMessages.size());
+        assertEquals(3, sentMessages.size());
         assertTrue(sentMessages.get(0).contains("为保护订单信息"));
-        assertTrue(sentMessages.get(0).contains("我的订单"));
+        assertTrue(sentMessages.get(0).contains("只查询您自己的订单状态"));
         assertTrue(!sentMessages.get(0).contains("订单编号"));
-        assertTrue(sentMessages.get(1).contains("\"type\":\"end\""));
+        assertTrue(sentMessages.get(2).contains("\"type\":\"end\""));
     }
 
     @Test
@@ -46,15 +46,15 @@ public class AIChatWebSocketPrivacyTest {
         });
         Session session = proxy(Session.class, (instance, method, args) -> {
             if ("getBasicRemote".equals(method.getName())) return remote;
+            if ("isOpen".equals(method.getName())) return true;
             if ("getId".equals(method.getName())) return "privacy-test-order-number";
             return null;
         });
 
         AIChatWebSocket endpoint = new AIChatWebSocket();
-        endpoint.setZhipuAIService(new ZhipuAIService());
         endpoint.onMessage("{\"question\":\"查询订单 O12345678901234567890\"}", session);
 
-        assertEquals(2, sentMessages.size());
+        assertEquals(3, sentMessages.size());
         assertTrue(sentMessages.get(0).contains("为保护订单信息"));
         assertTrue(!sentMessages.get(0).contains("12345678901234567890"));
     }

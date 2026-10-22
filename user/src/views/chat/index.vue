@@ -11,7 +11,7 @@
           <div class="service-name">商城助手</div>
           <div class="service-status">
             <span class="online-dot" :class="{ online: isConnected }"></span>
-            {{ isConnected ? '自动回复在线' : '正在连接自动回复...' }}
+            {{ isConnected ? '客服通道已连接' : '正在连接客服...' }}
           </div>
         </div>
       </div>
@@ -53,6 +53,10 @@
           </template>
           <div class="msg-content" :class="{ 'product-list': isProductList(msg.content) }">
             <span v-html="formatChatMessage(msg.content)"></span>
+            <div v-if="msg.sources && msg.sources.length" class="chat-sources">
+              参考资料：<span v-for="(source, sourceIndex) in msg.sources" :key="sourceIndex">{{ source.title }}<span v-if="sourceIndex < msg.sources.length - 1">、</span></span>
+            </div>
+            <button v-if="msg.handoff" type="button" class="handoff-link" @click="goToHumanService">转接人工客服</button>
             <div class="msg-time">{{ formatTime(msg.time) }}</div>
           </div>
           <template v-if="msg.type === 'user'">
@@ -119,9 +123,12 @@ import { formatChatMessage } from '@/utils/chat'
 import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue';
 import { useStore } from 'vuex';
 import { getWebSocketUrl } from '@/utils/request';
+import { getToken } from '@/utils/auth';
+import { useRouter } from 'vue-router';
 
 // Vuex store
 const store = useStore();
+const router = useRouter();
 
 const userAvatarImage = computed(() => store.state.user?.avatar || DEFAULT_AVATAR_IMAGE)
 // 响应式数据
@@ -131,6 +138,8 @@ const isConnected = ref(false);
 const isAiTyping = ref(false);
 const showQuickReplies = ref(true);
 const currentAiMessage = ref('');
+const currentSources = ref([]);
+const currentHandoff = ref(false);
 const autoScrollEnabled = ref(true);
 const showWelcomeMessage = ref(true); // 控制欢迎消息显示
 
@@ -303,8 +312,19 @@ const initWebSocket = () => {
           isAiTyping.value = true;
           forceScrollToBottom();
 
+        } else if (type === 'sources') {
+          currentSources.value = Array.isArray(content) ? content : [];
+        } else if (type === 'handoff') {
+          currentHandoff.value = true;
         } else if (type === 'end') {
           isAiTyping.value = false;
+          const lastMsg = chatList.value[chatList.value.length - 1];
+          if (lastMsg && lastMsg.type === 'ai') {
+            lastMsg.sources = currentSources.value;
+            lastMsg.handoff = currentHandoff.value;
+          }
+          currentSources.value = [];
+          currentHandoff.value = false;
           currentAiMessage.value = '';
 
           scheduleTimeout(() => {
@@ -377,7 +397,8 @@ const sendMessage = () => {
 
   ws.send(JSON.stringify({
     question: text,
-    productId: null
+    productId: null,
+    token: getToken() || ''
   }));
 
   inputMsg.value = '';
@@ -399,6 +420,9 @@ const useExample = (example) => {
   inputMsg.value = example;
   sendMessage();
 };
+
+// 转到平台人工客服
+const goToHumanService = () => router.push('/customer-service');
 
 // 返回上一页
 const goBack = () => {
@@ -1156,4 +1180,9 @@ onUnmounted(() => {
     font-size: 16px;
   }
 }
+</style>
+
+<style scoped>
+.chat-sources { margin-top: 8px; color: #7a8491; font-size: 12px; line-height: 1.6; }
+.handoff-link { margin-top: 8px; border: 0; padding: 0; background: transparent; color: #409eff; cursor: pointer; font-size: 13px; }
 </style>
