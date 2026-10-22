@@ -67,6 +67,9 @@ onMounted(() => {
   initTags()
   addTags()
 })
+onBeforeUnmount(() => {
+  document.body.removeEventListener('click', closeMenu)
+})
 
 function isActive(r) {
   return r.path === route.path

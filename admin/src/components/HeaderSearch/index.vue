@@ -144,6 +144,10 @@ watch(show, (value) => {
   }
 })
 
+onBeforeUnmount(() => {
+  document.body.removeEventListener('click', close)
+})
+
 watch(searchPool, (list) => {
   initFuse(list)
 })
