@@ -281,7 +281,7 @@ public class OrderInfoController extends BaseController {
      * 获取订单详情（用户端）
      */
     @Operation(summary = "获取订单详情")
-    @GetMapping("/{orderNo}")
+    @GetMapping("/detail/{orderNo}")
     public AjaxResult getOrderDetail(@PathVariable String orderNo) {
         Long userId = SecurityUtils.getUserId();
         OrderInfo orderInfo = orderInfoService.selectOrderInfoByOrderNo(orderNo);
