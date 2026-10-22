@@ -91,6 +91,7 @@ export function useProfileAddresses(currentUserId) {
   let provinceRequestId = 0
   let cityRequestId = 0
   let provinceListRequestId = 0
+  let addressEditRequestId = 0
 
   // 加载省份数据
   const loadProvinces = async () => {
@@ -340,6 +341,10 @@ export function useProfileAddresses(currentUserId) {
 
   // 打开新增地址对话框
   const openAddAddressDialog = () => {
+    addressEditRequestId++
+    isLoadingEditData.value = false
+    cityLoading.value = false
+    areaLoading.value = false
     isEditAddress.value = false
     currentAddressId.value = null
 
@@ -374,6 +379,8 @@ export function useProfileAddresses(currentUserId) {
 
   // 打开编辑地址对话框
   const openEditAddressDialog = async (address) => {
+    const requestId = ++addressEditRequestId
+    isLoadingEditData.value = true
     isEditAddress.value = true
     currentAddressId.value = address.id
 
@@ -404,15 +411,21 @@ export function useProfileAddresses(currentUserId) {
     if (provinces.value.length === 0) {
       await loadProvinces()
     }
+    if (requestId !== addressEditRequestId) return
 
     // 先打开对话框
     addressDialogVisible.value = true
 
     // 等待对话框DOM渲染完成
     await nextTick()
+    if (requestId !== addressEditRequestId) return
 
     // 加载并设置省市区数据
-    await loadEditAddressData(address)
+    try {
+      await loadEditAddressData(address, requestId)
+    } finally {
+      if (requestId === addressEditRequestId) isLoadingEditData.value = false
+    }
 
   }
 
@@ -485,7 +498,8 @@ export function useProfileAddresses(currentUserId) {
   })
 
   // 专门处理编辑时的省市区数据加载
-  const loadEditAddressData = async (address) => {
+  const loadEditAddressData = async (address, requestId = addressEditRequestId) => {
+    if (requestId !== addressEditRequestId) return
     // 统一转换为字符串
     const provinceCode = String(address.provinceCode || '')
     const cityCode = String(address.cityCode || '')
@@ -506,15 +520,17 @@ export function useProfileAddresses(currentUserId) {
         areaLoading.value = true
         try {
           areas.value = await areaService.getAreas(provinceCode)
+          if (requestId !== addressEditRequestId) return
           if (areas.value.length === 0) {
             areas.value = await loadMunicipalityAreas(provinceCode)
           }
         } finally {
-          areaLoading.value = false
+          if (requestId === addressEditRequestId) areaLoading.value = false
         }
 
         await nextTick()
         await nextTick()
+        if (requestId !== addressEditRequestId) return
 
         addressForm.provinceCode = provinceCode
         addressForm.province = province.name
@@ -532,12 +548,14 @@ export function useProfileAddresses(currentUserId) {
         cityLoading.value = true
         try {
           cities.value = await areaService.getCities(provinceCode)
+          if (requestId !== addressEditRequestId) return
         } finally {
-          cityLoading.value = false
+          if (requestId === addressEditRequestId) cityLoading.value = false
         }
 
         await nextTick()
         await nextTick()
+        if (requestId !== addressEditRequestId) return
 
         addressForm.provinceCode = provinceCode
         addressForm.province = province.name
@@ -549,12 +567,14 @@ export function useProfileAddresses(currentUserId) {
           areaLoading.value = true
           try {
             areas.value = await areaService.getAreas(cityCode)
+            if (requestId !== addressEditRequestId) return
           } finally {
-            areaLoading.value = false
+            if (requestId === addressEditRequestId) areaLoading.value = false
           }
 
           await nextTick()
           await nextTick()
+          if (requestId !== addressEditRequestId) return
 
           addressForm.cityCode = cityCode
           addressForm.city = city.name
@@ -569,6 +589,7 @@ export function useProfileAddresses(currentUserId) {
         }
       }
     } catch (error) {
+      if (requestId !== addressEditRequestId) return
       console.error('加载省市区数据失败:', error)
       regionLoadError.value = '地区数据加载失败，请检查网络后重试。'
     }
@@ -576,11 +597,15 @@ export function useProfileAddresses(currentUserId) {
 
   // 处理地址提交
   const handleAddressSubmit = async () => {
-    if (!addressFormRef.value) return
+    if (!addressFormRef.value || addressLoading.value) return
+    addressLoading.value = true
 
     try {
-      await addressFormRef.value.validate()
-      addressLoading.value = true
+      try {
+        await addressFormRef.value.validate()
+      } catch {
+        return
+      }
 
       // 修复数据：确保编码是字符串而不是数组
       const submitData = {
@@ -622,7 +647,7 @@ export function useProfileAddresses(currentUserId) {
       }
     } catch (error) {
       console.error('操作地址失败:', error)
-      ElMessage.error('操作失败')
+      ElMessage.error(error?.message || '操作失败')
     } finally {
       addressLoading.value = false
     }
@@ -683,6 +708,10 @@ export function useProfileAddresses(currentUserId) {
 
   // 关闭地址对话框时的处理
   const handleAddressDialogClose = () => {
+    addressEditRequestId++
+    isLoadingEditData.value = false
+    cityLoading.value = false
+    areaLoading.value = false
     // 重置表单
     if (addressFormRef.value) {
       addressFormRef.value.resetFields()

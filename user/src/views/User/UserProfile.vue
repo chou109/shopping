@@ -252,7 +252,8 @@
 
     <!-- 地址编辑对话框 -->
     <el-dialog :title="isEditAddress ? '编辑地址' : '新增地址'" v-model="addressDialogVisible" width="600px"
-      @close="handleAddressDialogClose">
+      :close-on-click-modal="!addressLoading" :close-on-press-escape="!addressLoading"
+      :show-close="!addressLoading" @close="handleAddressDialogClose">
       <el-form ref="addressFormRef" :model="addressForm" :rules="addressRules" label-width="80px">
         <el-row :gutter="20">
           <el-col :span="12">
@@ -342,8 +343,8 @@
       </el-form>
 
       <template #footer>
-        <el-button @click="addressDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleAddressSubmit" :loading="addressLoading">
+        <el-button :disabled="addressLoading" @click="addressDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleAddressSubmit" :loading="addressLoading" :disabled="addressLoading">
           {{ isEditAddress ? '更新' : '添加' }}
         </el-button>
       </template>
@@ -497,9 +498,9 @@ const loadProfileStats = async () => {
 
 const handleBasicSubmit = async () => {
   if (!basicFormRef.value || basicLoading.value) return
+  basicLoading.value = true
   try {
     await basicFormRef.value.validate()
-    basicLoading.value = true
     const response = await updateUserProfile({ ...basicForm })
     if (response.code !== 200) throw new Error(response.msg || '资料保存失败')
     userInfo.value = { ...userInfo.value, ...basicForm }
@@ -534,9 +535,9 @@ const openPasswordDialog = () => {
 
 const handlePasswordSubmit = async () => {
   if (!passwordFormRef.value || passwordLoading.value) return
+  passwordLoading.value = true
   try {
     await passwordFormRef.value.validate()
-    passwordLoading.value = true
     const response = await updateUserPwd(passwordForm.oldPassword, passwordForm.newPassword)
     if (response.code !== 200) throw new Error(response.msg || '密码修改失败')
     passwordDialogVisible.value = false
