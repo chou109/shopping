@@ -171,6 +171,7 @@
         <template #default="scope">
           <el-tooltip content="修改" placement="top">
             <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)"
+              :loading="productDetailLoadingId === scope.row.id"
               :aria-label="`修改商品：${scope.row.name || '未知商品'}`"
               v-hasPermi="['system:product:edit']" />
           </el-tooltip>
@@ -225,7 +226,9 @@
     </div>
 
     <!-- 添加或修改商品对话框 -->
-    <el-dialog :title="title" v-model="open" width="800px" append-to-body>
+    <el-dialog :title="title" v-model="open" width="800px" append-to-body
+      :close-on-click-modal="!formSubmitting" :close-on-press-escape="!formSubmitting"
+      :show-close="!formSubmitting">
       <el-form ref="productRef" :model="form" :rules="rules" label-width="100px">
         <el-row :gutter="20">
           <el-col :span="12">
@@ -319,8 +322,8 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button type="primary" @click="submitForm">确 定</el-button>
-          <el-button @click="cancel">取 消</el-button>
+        <el-button type="primary" :loading="formSubmitting" :disabled="formSubmitting" @click="submitForm">确 定</el-button>
+        <el-button :disabled="formSubmitting" @click="cancel">取 消</el-button>
         </div>
       </template>
     </el-dialog>
@@ -387,6 +390,9 @@ const { queryParams, form, rules } = toRefs(data);
 const productRef = ref(null);
 const statusUpdatingIds = ref(new Set());
 const hotUpdatingIds = ref(new Set());
+const formSubmitting = ref(false);
+const productDetailLoadingId = ref(null);
+let productDetailRequestId = 0;
 
 // 计算属性：是否有激活的筛选条件
 const hasActiveFilters = computed(() => {
@@ -470,6 +476,8 @@ const toggleAdvanced = () => {
 
 // 取消按钮
 function cancel() {
+  productDetailRequestId++;
+  productDetailLoadingId.value = null;
   open.value = false;
   reset();
 }
@@ -531,6 +539,8 @@ function handleSelectionChange(selection) {
 
 /** 新增按钮操作 */
 function handleAdd() {
+  productDetailRequestId++;
+  productDetailLoadingId.value = null;
   reset();
   open.value = true;
   title.value = "添加商品";
@@ -540,7 +550,10 @@ function handleAdd() {
 function handleUpdate(row) {
   reset();
   const _id = row.id || ids.value[0];
+  const requestId = ++productDetailRequestId;
+  productDetailLoadingId.value = _id;
   getProduct(_id).then(response => {
+    if (requestId !== productDetailRequestId) return;
     form.value = response.data;
     if (form.value.status === undefined || form.value.status === null) {
       form.value.status = 1;
@@ -553,27 +566,41 @@ function handleUpdate(row) {
     }
     open.value = true;
     title.value = "修改商品";
+  }).catch(error => {
+    if (requestId === productDetailRequestId) console.error('加载商品详情失败:', error);
+  }).finally(() => {
+    if (requestId === productDetailRequestId) productDetailLoadingId.value = null;
   });
 }
 
 /** 提交按钮 */
 const submitForm = async () => {
-  await productRef.value.validate();
-  const userStore = useUserStore();
-  if (!userStore.userId) {
-    ElMessage.error('无法获取用户信息，请重新登录');
-    return;
+  if (formSubmitting.value || !productRef.value) return;
+  formSubmitting.value = true;
+  try {
+    try {
+      await productRef.value.validate();
+    } catch {
+      return;
+    }
+    const userStore = useUserStore();
+    if (!userStore.userId) {
+      ElMessage.error('无法获取用户信息，请重新登录');
+      return;
+    }
+    form.value.createUser = userStore.userId;
+    if (form.value.id != null) {
+      await updateProduct(form.value);
+      proxy.$modal.msgSuccess("修改成功");
+    } else {
+      await addProduct(form.value);
+      proxy.$modal.msgSuccess("新增成功");
+    }
+    open.value = false;
+    await getList();
+  } finally {
+    formSubmitting.value = false;
   }
-  form.value.createUser = userStore.userId;
-  if (form.value.id != null) {
-    await updateProduct(form.value);
-    proxy.$modal.msgSuccess("修改成功");
-  } else {
-    await addProduct(form.value);
-    proxy.$modal.msgSuccess("新增成功");
-  }
-  open.value = false;
-  getList();
 };
 
 /** 删除按钮操作 */
