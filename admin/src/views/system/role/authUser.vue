@@ -57,6 +57,10 @@
          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
       </el-row>
 
+      <el-alert v-if="listError" :title="listError" type="error" :closable="false" show-icon>
+         <template #default><el-button link type="primary" :disabled="loading" @click="getList">重试</el-button></template>
+      </el-alert>
+
       <el-table v-loading="loading" :data="userList" @selection-change="handleSelectionChange">
          <el-table-column type="selection" width="55" align="center" />
          <el-table-column label="用户名称" prop="userName" :show-overflow-tooltip="true" />
@@ -101,10 +105,12 @@ const { sys_normal_disable } = proxy.useDict("sys_normal_disable");
 
 const userList = ref([]);
 const loading = ref(true);
+const listError = ref("");
 const showSearch = ref(true);
 const multiple = ref(true);
 const total = ref(0);
 const userIds = ref([]);
+let authorizedUserListRequestId = 0;
 
 const queryParams = reactive({
   pageNum: 1,
@@ -115,13 +121,24 @@ const queryParams = reactive({
 });
 
 /** 查询授权用户列表 */
-function getList() {
+async function getList() {
+  const requestId = ++authorizedUserListRequestId;
   loading.value = true;
-  allocatedUserList(queryParams).then(response => {
+  listError.value = "";
+  try {
+    const response = await allocatedUserList(queryParams);
+    if (requestId !== authorizedUserListRequestId) return;
+    if (!Array.isArray(response.rows)) throw new Error("已授权用户列表数据格式异常");
     userList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
+    total.value = Number(response.total) || 0;
+  } catch (error) {
+    if (requestId === authorizedUserListRequestId) {
+      console.error("获取已授权用户列表失败:", error);
+      listError.value = "已授权用户列表加载失败，请重试";
+    }
+  } finally {
+    if (requestId === authorizedUserListRequestId) loading.value = false;
+  }
 }
 // 返回按钮
 function handleClose() {
@@ -169,4 +186,7 @@ function cancelAuthUserAll(row) {
 }
 
 getList();
+onBeforeUnmount(() => {
+  authorizedUserListRequestId += 1;
+});
 </script>
