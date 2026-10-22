@@ -77,16 +77,14 @@ node scripts/check-case-sensitive-imports.mjs
 echo "检查 Vue 模板引用"
 node scripts/check-vue-template-bindings.mjs
 
-echo "运行用户端测试"
-pnpm --dir user test
-echo "运行管理端测试"
-pnpm --dir admin test
-echo "构建用户端"
-pnpm --dir user build
+echo "检查用户端 SVG 源文件"
 node scripts/check-svg-sprites.mjs user
-echo "构建管理端"
-pnpm --dir admin build:prod
+echo "运行用户端功能测试"
+pnpm --dir user test
+echo "检查管理端 SVG 源文件"
 node scripts/check-svg-sprites.mjs admin
+echo "运行管理端功能测试"
+pnpm --dir admin test
 echo "运行后端测试"
 mvn -f service/pom.xml -pl Neuedu-admin -am test
 

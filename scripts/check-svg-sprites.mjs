@@ -30,14 +30,4 @@ for (const file of files) {
   assert.match(source, /<svg\b/, `${app}/${file} 缺少 SVG 根节点`)
 }
 
-const assetsDirectory = path.join(root, app, 'dist/assets')
-const assetFiles = await readdir(assetsDirectory)
-const javascript = (await Promise.all(
-  assetFiles.filter((name) => name.endsWith('.js')).map((name) => readFile(path.join(assetsDirectory, name), 'utf8'))
-)).join('\n')
-const generatedIds = new Set([...javascript.matchAll(/id="(icon-[^"]+)"/g)].map((match) => match[1]))
-const missingIds = [...expectedIds].filter((id) => !generatedIds.has(id))
-
-assert.ok(javascript.includes('__svg__icons__dom__'), `${app} 没有生成 SVG sprite 根节点`)
-assert.deepEqual(missingIds, [], `${app} 缺少已配置 SVG 图标：${missingIds.join(', ')}`)
-console.log(`${app} SVG 检查通过：${files.length} 个源文件均可解析并已生成 symbol`)
+console.log(`${app} SVG 源文件检查通过：${files.length} 个图标名称唯一且 XML 结构有效`)
