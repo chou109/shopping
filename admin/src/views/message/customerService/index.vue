@@ -304,7 +304,10 @@ const sendReply = async () => {
     }
   } catch (error) {
     console.error('发送回复失败:', error)
-    ElMessage.error('发送失败，请重试')
+    if (componentActive && currentSession.value?.sessionId === sessionId) {
+      await loadMessages(sessionId)
+      ElMessage.warning('回复结果暂不确定，草稿已保留。请先检查消息记录，确认未发送后再重试')
+    }
   } finally {
     sending.value = false
   }

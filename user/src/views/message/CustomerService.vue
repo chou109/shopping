@@ -224,6 +224,7 @@ const sendMessage = async () => {
   if (!inputMessage.value.trim() || sending.value) return
 
   const content = inputMessage.value.trim()
+  const requestReceiverId = receiverId.value
   sending.value = true
 
   // 先在界面上显示用户消息
@@ -240,7 +241,7 @@ const sendMessage = async () => {
   scrollToBottom()
 
   try {
-    const response = await sendMessageApi(content, 1, receiverId.value)
+    const response = await sendMessageApi(content, 1, requestReceiverId)
     if (response.code === 200) {
       // 替换临时消息
       const index = messages.value.findIndex(m => m.id === tempMessage.id)
@@ -251,14 +252,20 @@ const sendMessage = async () => {
       }
     } else {
       // 发送失败，移除临时消息
-      messages.value = messages.value.filter(m => m.id !== tempMessage.id)
+      if (componentActive && requestReceiverId === receiverId.value) {
+        messages.value = messages.value.filter(m => m.id !== tempMessage.id)
+        if (!inputMessage.value) inputMessage.value = content
+      }
       ElMessage.error(response.msg || '发送失败')
     }
   } catch (error) {
     console.error('发送消息失败:', error)
-    // 发送失败，移除临时消息
-    messages.value = messages.value.filter(m => m.id !== tempMessage.id)
-    ElMessage.error('发送失败，请重试')
+    if (componentActive && requestReceiverId === receiverId.value) {
+      messages.value = messages.value.filter(m => m.id !== tempMessage.id)
+      if (!inputMessage.value) inputMessage.value = content
+      await loadMessages()
+      ElMessage.warning('发送结果暂不确定，已保留草稿。请先检查消息列表，确认未发送后再重试')
+    }
   } finally {
     sending.value = false
   }
