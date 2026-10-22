@@ -167,6 +167,7 @@ const totalUnreadCount = ref(0)
 const messageListRef = ref(null)
 const scrollAnchor = ref(null)
 let messageLoadVersion = 0
+let componentActive = false
 
 // 快捷回复
 const quickReplies = ref([
@@ -182,7 +183,7 @@ const loadSessions = async () => {
   loadingSession.value = true
   try {
     const response = await getSessionList()
-    if (response.code === 200) {
+    if (response.code === 200 && componentActive) {
       sessionList.value = response.data || []
       // 计算总未读数
       totalUnreadCount.value = sessionList.value.reduce((sum, s) => sum + (s.unreadCount || 0), 0)
@@ -192,10 +193,12 @@ const loadSessions = async () => {
       }
     }
   } catch (error) {
-    console.error('加载会话列表失败:', error)
-    ElMessage.error('加载会话列表失败')
+    if (componentActive) {
+      console.error('加载会话列表失败:', error)
+      ElMessage.error('加载会话列表失败')
+    }
   } finally {
-    loadingSession.value = false
+    if (componentActive) loadingSession.value = false
   }
 }
 
@@ -210,9 +213,10 @@ const selectSession = async (session) => {
   currentSession.value = session
   const loaded = await loadMessages(session.sessionId)
   // 标记为已读
-  if (loaded && currentSession.value?.sessionId === session.sessionId && session.unreadCount > 0) {
+  if (loaded && componentActive && currentSession.value?.sessionId === session.sessionId && session.unreadCount > 0) {
     try {
       await markAsRead(session.sessionId)
+      if (!componentActive || currentSession.value?.sessionId !== session.sessionId) return
       session.unreadCount = 0
       totalUnreadCount.value = sessionList.value.reduce((sum, s) => sum + (s.unreadCount || 0), 0)
     } catch (error) {
@@ -227,19 +231,20 @@ const loadMessages = async (sessionId) => {
   loadingMessages.value = true
   try {
     const response = await getSessionMessages(sessionId)
-    if (response.code === 200 && requestVersion === messageLoadVersion && currentSession.value?.sessionId === sessionId) {
+    if (response.code === 200 && componentActive && requestVersion === messageLoadVersion && currentSession.value?.sessionId === sessionId) {
       messageList.value = response.data || []
       await nextTick()
+      if (!componentActive || requestVersion !== messageLoadVersion || currentSession.value?.sessionId !== sessionId) return false
       scrollToBottom()
       return true
     }
   } catch (error) {
-    if (requestVersion === messageLoadVersion) {
+    if (componentActive && requestVersion === messageLoadVersion) {
       console.error('加载消息失败:', error)
       ElMessage.error('加载消息失败')
     }
   } finally {
-    if (requestVersion === messageLoadVersion) loadingMessages.value = false
+    if (componentActive && requestVersion === messageLoadVersion) loadingMessages.value = false
   }
   return false
 }
@@ -350,7 +355,7 @@ const startRefresh = () => {
       // 刷新会话列表
       try {
         const response = await getSessionList()
-        if (response.code === 200) {
+        if (response.code === 200 && componentActive) {
           sessionList.value = response.data || []
           totalUnreadCount.value = sessionList.value.reduce((sum, s) => sum + (s.unreadCount || 0), 0)
         }
@@ -360,21 +365,23 @@ const startRefresh = () => {
 
       // 如果有选中的会话，刷新消息并将当前打开的会话保持为已读。
       const sessionId = currentSession.value?.sessionId
-      if (sessionId) {
+      if (sessionId && componentActive) {
         try {
           const response = await getSessionMessages(sessionId)
-          if (response.code === 200 && currentSession.value?.sessionId === sessionId) {
+          if (response.code === 200 && componentActive && currentSession.value?.sessionId === sessionId) {
             const newMessages = response.data || []
             const oldIds = messageList.value.map(message => message.id)
             const newIds = newMessages.map(message => message.id)
             if (oldIds.length !== newIds.length || oldIds.some((id, index) => id !== newIds[index])) {
               messageList.value = newMessages
               await nextTick()
+              if (!componentActive || currentSession.value?.sessionId !== sessionId) return
               scrollToBottom()
             }
             const session = sessionList.value.find(item => item.sessionId === sessionId)
             if (session?.unreadCount > 0) {
               await markAsRead(sessionId)
+              if (!componentActive || currentSession.value?.sessionId !== sessionId) return
               session.unreadCount = 0
               totalUnreadCount.value = sessionList.value.reduce((sum, item) => sum + (item.unreadCount || 0), 0)
             }
@@ -397,11 +404,13 @@ const stopRefresh = () => {
 }
 
 onMounted(() => {
+  componentActive = true
   loadSessions()
   startRefresh()
 })
 
 onUnmounted(() => {
+  componentActive = false
   messageLoadVersion += 1
   stopRefresh()
 })

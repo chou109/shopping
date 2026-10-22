@@ -131,6 +131,7 @@ const unreadCount = ref(0)
 const messageListRef = ref(null)
 const scrollAnchor = ref(null)
 let messageLoadVersion = 0
+let componentActive = false
 
 // 获取路由参数
 const receiverId = computed(() => {
@@ -171,25 +172,27 @@ const loadMessages = async () => {
   try {
     // 根据receiverId获取与指定接收者的对话
     const response = await getMessages(requestReceiverId)
-    if (response.code === 200 && requestVersion === messageLoadVersion) {
+    if (response.code === 200 && componentActive && requestVersion === messageLoadVersion) {
       messages.value = response.data || []
       await nextTick()
+      if (!componentActive || requestVersion !== messageLoadVersion) return
       scrollToBottom()
       // 标记已读，传递receiverId
       try {
         await markAsRead(requestReceiverId)
+        if (!componentActive || requestVersion !== messageLoadVersion) return
         await loadUnreadCount()
       } catch (error) {
         console.warn('标记消息已读失败:', error)
       }
     }
   } catch (error) {
-    if (requestVersion === messageLoadVersion) {
+    if (componentActive && requestVersion === messageLoadVersion) {
       console.error('加载消息失败:', error)
       ElMessage.error('加载消息失败')
     }
   } finally {
-    if (requestVersion === messageLoadVersion) loading.value = false
+    if (componentActive && requestVersion === messageLoadVersion) loading.value = false
   }
 }
 
@@ -197,7 +200,7 @@ const loadMessages = async () => {
 const loadUnreadCount = async () => {
   try {
     const response = await getUnreadCount()
-    if (response.code === 200) {
+    if (response.code === 200 && componentActive) {
       unreadCount.value = response.data || 0
     }
   } catch (error) {
@@ -301,7 +304,7 @@ const startRefresh = () => {
     const requestReceiverId = receiverId.value
     try {
       const response = await getMessages(requestReceiverId)
-      if (requestReceiverId !== receiverId.value) return
+      if (!componentActive || requestReceiverId !== receiverId.value) return
       if (response.code === 200) {
         const newMessages = response.data || []
         const oldIds = messages.value.map(message => message.id)
@@ -309,9 +312,11 @@ const startRefresh = () => {
         if (oldIds.length !== newIds.length || oldIds.some((id, index) => id !== newIds[index])) {
           messages.value = newMessages
           await nextTick()
+          if (!componentActive || requestReceiverId !== receiverId.value) return
           scrollToBottom()
           try {
             await markAsRead(requestReceiverId)
+            if (!componentActive || requestReceiverId !== receiverId.value) return
             await loadUnreadCount()
           } catch (error) {
             console.warn('标记消息已读失败:', error)
@@ -334,6 +339,7 @@ const stopRefresh = () => {
 }
 
 onMounted(() => {
+  componentActive = true
   loadMessages()
   loadUnreadCount()
   startRefresh()
@@ -346,6 +352,7 @@ watch(receiverId, () => {
 
 // 组件卸载时停止刷新
 onUnmounted(() => {
+  componentActive = false
   messageLoadVersion += 1
   stopRefresh()
 })
