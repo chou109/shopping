@@ -384,8 +384,18 @@ public class OrderInfoController extends BaseController {
     @Log(title = "订单", businessType = BusinessType.UPDATE)
     @PostMapping("/apply-refund")
     public AjaxResult applyRefund(@RequestBody Map<String, Object> refundData) {
-        Long userId = SecurityUtils.getUserId();
-        String orderNo = (String) refundData.get("orderNo");
+        return applyRefundForUser(SecurityUtils.getUserId(), refundData);
+    }
+
+    AjaxResult applyRefundForUser(Long userId, Map<String, Object> refundData) {
+        if (userId == null) {
+            return error("用户未登录");
+        }
+        if (refundData == null || !(refundData.get("orderNo") instanceof String)
+                || ((String) refundData.get("orderNo")).trim().isEmpty()) {
+            return error("订单编号不能为空");
+        }
+        String orderNo = ((String) refundData.get("orderNo")).trim();
         OrderInfo orderInfo = orderInfoService.selectOrderInfoByOrderNo(orderNo);
 
         if (orderInfo == null) {
@@ -398,9 +408,22 @@ public class OrderInfoController extends BaseController {
         }
 
         try {
-            String reason = (String) refundData.get("reason");
-            String description = (String) refundData.get("description");
-            String contactPhone = (String) refundData.get("contactPhone");
+            Object rawReason = refundData.get("reason");
+            if (!(rawReason instanceof String) || ((String) rawReason).trim().isEmpty()) {
+                return error("请选择取消原因");
+            }
+            String reason = ((String) rawReason).trim();
+            if (reason.length() > 500) {
+                return error("取消原因不能超过500个字符");
+            }
+            Object rawDescription = refundData.get("description");
+            Object rawContactPhone = refundData.get("contactPhone");
+            if ((rawDescription != null && !(rawDescription instanceof String))
+                    || (rawContactPhone != null && !(rawContactPhone instanceof String))) {
+                return error("退款信息格式不正确");
+            }
+            String description = (String) rawDescription;
+            String contactPhone = (String) rawContactPhone;
             
             int result = orderInfoService.applyRefund(orderNo, reason, description, contactPhone);
             return toAjax(result);

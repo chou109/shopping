@@ -190,15 +190,16 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     @Transactional(rollbackFor = Exception.class)
     public int updateProductStock(Long productId, Long quantity)
     {
-        // 验证库存是否足够（减少库存时）
-        if (quantity < 0) {
-            Product product = productMapper.selectProductById(productId);
-            if (product != null && product.getStock() + quantity < 0) {
-                throw new RuntimeException("库存不足");
-            }
+        if (productId == null || quantity == null) {
+            throw new RuntimeException("商品和库存变更数量不能为空");
         }
 
-        return productMapper.updateProductStock(productId, quantity);
+        // 扣减条件与更新在同一条 SQL 中执行，避免并发下单基于过期库存重复通过检查。
+        int result = productMapper.updateProductStock(productId, quantity);
+        if (quantity < 0 && result == 0) {
+            throw new RuntimeException("库存不足或商品不存在");
+        }
+        return result;
     }
     /**
      * 设置商品热门状态
