@@ -303,6 +303,7 @@ import { listInfo, getInfo, delInfo, shipInfo } from "@/api/system/info";
 import { User, Phone, Location, Van } from '@element-plus/icons-vue';
 import useUserStore from '@/store/modules/user';
 import { PAYMENT_TYPES, getPaymentTypeLabel, getPaymentTypeTag } from '@/utils/order-payment.mjs';
+import { getObjectResponseData, normalizePagedResponse } from '@/utils/response-data.mjs';
 
 const { proxy } = getCurrentInstance();
 const userStore = useUserStore();
@@ -385,8 +386,9 @@ function getList() {
 
   return listInfo(params).then(response => {
     if (requestId !== listRequestId) return;
-    infoList.value = response.rows || [];
-    total.value = Number(response.total) || 0;
+    const page = normalizePagedResponse(response);
+    infoList.value = page.rows;
+    total.value = page.total;
   }).catch(() => {
     if (requestId === listRequestId) {
       listError.value = "订单加载失败，请重试";
@@ -484,7 +486,7 @@ async function handleUpdate(row) {
   try {
     const response = await getInfo(_id);
     if (requestId !== orderDetailRequestId) return;
-    form.value = response.data || {};
+    form.value = getObjectResponseData(response);
     // 确保必要字段有默认值
     if (form.value.status === undefined || form.value.status === null) {
       form.value.status = 0;
