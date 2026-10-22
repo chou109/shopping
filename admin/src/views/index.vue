@@ -188,6 +188,7 @@ import {
   getCategoryStats,
   getOrderStatusDistribution
 } from '@/api/system/dashboard'
+import { getDashboardActionRoute } from '@/utils/dashboardRoutes.mjs'
 import useUserStore from '@/store/modules/user'
 
 const router = useRouter()
@@ -597,14 +598,8 @@ const renderCategoryChart = () => {
 
 // 处理操作
 const handleAction = (type) => {
-  const routes = {
-    'product': '/shopping/product',
-    'order': '/order/info',
-    'shop': '/store/store',
-  }
-  if (routes[type]) {
-    router.push(routes[type])
-  }
+  const route = getDashboardActionRoute(type)
+  if (route) router.push(route)
 }
 
 // 跳转
