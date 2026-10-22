@@ -58,6 +58,10 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
+    <el-alert v-if="listError" :title="listError" type="error" :closable="false" show-icon>
+      <template #default><el-button link type="primary" :disabled="loading" @click="getList">重试</el-button></template>
+    </el-alert>
+
     <el-table v-loading="loading" :data="mbList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="主键" align="center" prop="mbId" />
@@ -233,12 +237,14 @@ const { online_api_method, online_api_result, online_api_actuator, online_api_ta
 const mbList = ref([]);
 const open = ref(false);
 const loading = ref(true);
+const listError = ref("");
 const showSearch = ref(true);
 const ids = ref([]);
 const single = ref(true);
 const multiple = ref(true);
 const total = ref(0);
 const title = ref("");
+let mbListRequestId = 0;
 
 const data = reactive({
   form: {},
@@ -281,13 +287,24 @@ const data = reactive({
 const { queryParams, form, rules } = toRefs(data);
 
 /** 查询mybatis在线接口列表 */
-function getList() {
+async function getList() {
+  const requestId = ++mbListRequestId;
   loading.value = true;
-  listMb(queryParams.value).then(response => {
+  listError.value = "";
+  try {
+    const response = await listMb(queryParams.value);
+    if (requestId !== mbListRequestId) return;
+    if (!Array.isArray(response.rows)) throw new Error("MyBatis 接口列表数据格式异常");
     mbList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
+    total.value = Number(response.total) || 0;
+  } catch (error) {
+    if (requestId === mbListRequestId) {
+      console.error("获取 MyBatis 接口列表失败:", error);
+      listError.value = "MyBatis 接口列表加载失败，请重试";
+    }
+  } finally {
+    if (requestId === mbListRequestId) loading.value = false;
+  }
 }
 
 // 取消按钮
@@ -392,5 +409,8 @@ function handleExport() {
 }
 
 getList();
+onBeforeUnmount(() => {
+  mbListRequestId += 1;
+});
 
 </script>
