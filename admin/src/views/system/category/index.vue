@@ -44,12 +44,17 @@
 
     <!-- 分类表格卡片 -->
     <el-card class="table-card" shadow="hover">
-      <div v-if="categoryList.length === 0 && !loading" class="empty-table">
+      <div v-if="listError" class="list-error" role="alert">
+        <span>{{ listError }}</span>
+        <el-button link type="primary" :disabled="loading" @click="getList">重试</el-button>
+      </div>
+
+      <div v-if="categoryList.length === 0 && !loading && !listError" class="empty-table">
         <el-empty description="暂无分类数据" />
       </div>
 
       <el-table
-        v-else-if="refreshTable"
+        v-if="categoryList.length > 0 && refreshTable"
         v-loading="loading"
         :data="categoryList"
         row-key="id"
@@ -175,10 +180,14 @@
 import { ref, reactive, onMounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { FolderOpened, Folder, Document } from '@element-plus/icons-vue'
-import { listCategory, getCategory, addCategory, updateCategory, delCategory, listCategoryFront } from "@/api/system/category";
+import { listCategory, getCategory, addCategory, updateCategory, delCategory } from "@/api/system/category";
+import { buildCategoryTree as buildFlatCategoryTree, fetchAllCategoryPages } from '@/utils/product-category.mjs'
 
 // 状态管理
 const loading = ref(false)
+const listError = ref('')
+let listRequestId = 0
+let categoryOptionsRequestId = 0
 const open = ref(false)
 const title = ref("")
 const categoryOptions = ref([])
@@ -235,142 +244,74 @@ function tableRowClassName({ row }) {
   return ''
 }
 
-/** 查询分类列表 - 优先使用树形接口 */
-function getList() {
-  loading.value = true
-  
-  // 先尝试使用树形接口
-  listCategoryFront().then(response => {
-    if (response.code === 200) {
-      const data = response.data || []
-      // 添加层级信息
-      const addLevelInfo = (items, level = 1) => {
-        return items.map(item => {
-          const newItem = {
-            ...item,
-            level: level,
-            status: item.status || 0,
-            parentId: item.parentId || 0
-          }
-          if (item.children && item.children.length > 0) {
-            newItem.children = addLevelInfo(item.children, level + 1)
-          }
-          return newItem
-        })
-      }
-      
-      categoryList.value = addLevelInfo(data)
-      
-      // 同时加载选项数据
-      loadCategoryOptions()
-    } else {
-      ElMessage.warning('树形接口返回异常，尝试普通接口')
-      fallbackToNormalApi()
-    }
-    loading.value = false
-  }).catch(error => {
-    console.warn('树形接口调用失败:', error)
-    ElMessage.warning('树形接口调用失败，尝试普通接口')
-    fallbackToNormalApi()
-  })
+/** 分页读取所有管理分类，避免公开树接口隐藏停用/删除项。 */
+async function fetchAllCategoryRows(filters = {}) {
+  return fetchAllCategoryPages(listCategory, filters)
 }
 
-/** 降级到普通接口 */
-function fallbackToNormalApi() {
-  listCategory(queryParams.value).then(response => {
-    if (response.code === 200) {
-      const data = response.data || []
-      
-      // 处理NULL值
-      const processedData = data.map(item => ({
-        ...item,
-        status: item.status || 0,
-        parentId: item.parentId || 0
-      }))
-      
-      // 构建树形结构
-      categoryList.value = buildTree(processedData)
-    } else {
-      ElMessage.error(response.msg || "加载失败")
-      categoryList.value = []
+/** 查询分类列表 */
+async function getList() {
+  const requestId = ++listRequestId
+  loading.value = true
+  listError.value = ''
+
+  try {
+    const rows = await fetchAllCategoryRows(queryParams.value)
+    if (requestId !== listRequestId) return
+    const processedRows = rows.map(item => ({
+      ...item,
+      status: item.status || 0,
+      parentId: item.parentId || 0
+    }))
+    categoryList.value = buildTree(processedRows)
+    await loadCategoryOptions()
+  } catch (error) {
+    if (requestId === listRequestId) {
+      console.error('加载分类列表失败:', error)
+      listError.value = error.message || '加载分类列表失败，请重试'
     }
-    loading.value = false
-  }).catch(error => {
-    console.error('普通接口也失败:', error)
-    ElMessage.error("加载分类列表失败: " + (error.message || '未知错误'))
-    categoryList.value = []
-    loading.value = false
-  })
+  } finally {
+    if (requestId === listRequestId) loading.value = false
+  }
 }
 
 /** 构建树形结构 */
 function buildTree(data) {
   if (!data || !Array.isArray(data)) return []
-  
-  const result = []
-  const map = {}
-  
-  // 创建映射，处理所有NULL值
-  data.forEach(item => {
-    map[item.id] = { 
-      ...item, 
-      children: [],
-      status: item.status || 0,
-      parentId: item.parentId || 0
-    }
-  })
-  
-  // 构建树
-  data.forEach(item => {
-    const node = map[item.id]
-    const parentId = item.parentId || 0
-    
-    if (parentId === 0) {
-      node.level = 1
-      result.push(node)
-    } else if (map[parentId]) {
-      node.level = (map[parentId].level || 1) + 1
-      if (!map[parentId].children) {
-        map[parentId].children = []
-      }
-      map[parentId].children.push(node)
-    } else {
-      node.level = 1
-      result.push(node)
-    }
-  })
-  
-  return result
+
+  const normalizedRows = data.map(item => ({
+    ...item,
+    status: item.status || 0,
+    parentId: item.parentId || 0
+  }))
+  const assignLevels = (nodes, level = 1) => nodes.map(node => ({
+    ...node,
+    level,
+    children: assignLevels(node.children || [], level + 1)
+  }))
+
+  return assignLevels(buildFlatCategoryTree(normalizedRows))
 }
 
 /** 加载分类选项 */
 function loadCategoryOptions() {
-  return new Promise((resolve) => {
-    listCategory().then(response => {
-      if (response.code === 200) {
-        const data = response.data || []
-        // 处理NULL值
-        const processedData = data.map(item => ({
-          ...item,
-          status: item.status || 0,
-          parentId: item.parentId || 0
-        }))
-        // 构建树形选项
-        const treeData = buildTree(processedData)
-        // 添加顶级选项
-        categoryOptions.value = [
-          {
-            id: 0,
-            name: '顶级分类',
-            children: treeData
-          }
-        ]
-      }
-      resolve()
-    }).catch(() => {
-      categoryOptions.value = []
-      resolve()
-    })
+  const requestId = ++categoryOptionsRequestId
+  return fetchAllCategoryRows().then(rows => {
+    if (requestId !== categoryOptionsRequestId) return
+    const processedRows = rows.map(item => ({
+      ...item,
+      status: item.status || 0,
+      parentId: item.parentId || 0
+    }))
+    categoryOptions.value = [{
+      id: 0,
+      name: '顶级分类',
+      children: buildTree(processedRows)
+    }]
+  }).catch(error => {
+    if (requestId !== categoryOptionsRequestId) return
+    categoryOptions.value = []
+    ElMessage.error(error.message || '加载分类选项失败，请重试')
   })
 }
 
@@ -465,28 +406,20 @@ function handleUpdate(row) {
 
 /** 加载分类选项（排除指定分类及其子分类） */
 function loadCategoryOptionsExcluding(excludeId) {
-  return listCategory().then(response => {
-    if (response.code === 200) {
-      const allCategories = response.data || []
-      // 处理NULL值
-      const processedData = allCategories.map(item => ({
-        ...item,
-        status: item.status || 0,
-        parentId: item.parentId || 0
-      }))
-      // 过滤掉当前分类及其子分类
-      const filteredData = filterCategoryAndChildren(processedData, excludeId)
-      const treeData = buildTree(filteredData)
-      
-      // 添加顶级选项
-      categoryOptions.value = [
-        {
-          id: 0,
-          name: '顶级分类',
-          children: treeData
-        }
-      ]
-    }
+  const requestId = ++categoryOptionsRequestId
+  return fetchAllCategoryRows().then(rows => {
+    if (requestId !== categoryOptionsRequestId) return
+    const processedRows = rows.map(item => ({
+      ...item,
+      status: item.status || 0,
+      parentId: item.parentId || 0
+    }))
+    const filteredRows = filterCategoryAndChildren(processedRows, excludeId)
+    categoryOptions.value = [{
+      id: 0,
+      name: '顶级分类',
+      children: buildTree(filteredRows)
+    }]
   })
 }
 
@@ -670,6 +603,16 @@ onMounted(() => {
 /* 表格卡片 */
 .table-card {
   border-radius: 8px;
+}
+
+.list-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px;
+  color: #b42318;
+  background: #fef3f2;
 }
 
 .table-card :deep(.el-card__body) {

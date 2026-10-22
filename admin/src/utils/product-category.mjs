@@ -49,3 +49,32 @@ export const buildCategoryOptions = tree => {
   visit(tree)
   return result
 }
+
+export const getCategoryPageRows = response => {
+  if (Array.isArray(response?.rows)) return response.rows
+  if (Array.isArray(response?.data)) return response.data
+  return []
+}
+
+export const getCategoryPageTotal = response => {
+  const total = Number(response?.total)
+  return Number.isFinite(total) && total >= 0 ? total : getCategoryPageRows(response).length
+}
+
+export const fetchAllCategoryPages = async (fetchPage, filters = {}, pageSize = 500) => {
+  const allRows = []
+  let pageNum = 1
+  let total = Infinity
+
+  while (allRows.length < total) {
+    const response = await fetchPage({ ...filters, pageNum, pageSize })
+    if (response?.code !== 200) throw new Error(response?.msg || '加载分类失败')
+    const pageRows = getCategoryPageRows(response)
+    total = getCategoryPageTotal(response)
+    allRows.push(...pageRows)
+    if (pageRows.length === 0) break
+    pageNum += 1
+  }
+
+  return allRows
+}
