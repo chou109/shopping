@@ -74,7 +74,8 @@
                type="danger"
                plain
                icon="Delete"
-               :disabled="multiple"
+               :disabled="multiple || deletingRoleIds.size > 0 || statusUpdatingIds.size > 0"
+               :loading="deletingRoleIds.size > 0"
                @click="handleDelete"
                v-hasPermi="['system:role:remove']"
             >删除</el-button>
@@ -90,6 +91,11 @@
          </el-col>
          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
       </el-row>
+      <el-alert v-if="listError" :title="listError" type="error" :closable="false" show-icon>
+         <template #default>
+            <el-button link type="primary" :disabled="loading" @click="getList">重试</el-button>
+         </template>
+      </el-alert>
 
       <!-- 表格数据 -->
       <el-table v-loading="loading" :data="roleList" @selection-change="handleSelectionChange">
@@ -104,6 +110,7 @@
                   v-model="scope.row.status"
                   active-value="0"
                   inactive-value="1"
+                  :disabled="statusUpdatingIds.has(scope.row.roleId) || deletingRoleIds.has(scope.row.roleId)"
                   @change="handleStatusChange(scope.row)"
                ></el-switch>
             </template>
@@ -119,7 +126,10 @@
                 <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:role:edit']"></el-button>
               </el-tooltip>
               <el-tooltip content="删除" placement="top" v-if="scope.row.roleId !== 1">
-                <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:role:remove']"></el-button>
+                <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)"
+                  :loading="deletingRoleIds.has(scope.row.roleId)"
+                  :disabled="deletingRoleIds.size > 0 || statusUpdatingIds.size > 0"
+                  v-hasPermi="['system:role:remove']"></el-button>
               </el-tooltip>
               <el-tooltip content="数据权限" placement="top" v-if="scope.row.roleId !== 1">
                 <el-button link type="primary" icon="CircleCheck" @click="handleDataScope(scope.row)" v-hasPermi="['system:role:edit']"></el-button>
@@ -252,6 +262,7 @@ const { sys_normal_disable } = proxy.useDict("sys_normal_disable");
 const roleList = ref([]);
 const open = ref(false);
 const loading = ref(true);
+const listError = ref("");
 const showSearch = ref(true);
 const ids = ref([]);
 const single = ref(true);
@@ -266,8 +277,11 @@ const deptExpand = ref(true);
 const deptNodeAll = ref(false);
 const deptOptions = ref([]);
 const openDataScope = ref(false);
+const statusUpdatingIds = ref(new Set());
+const deletingRoleIds = ref(new Set());
 const menuRef = ref(null);
 const deptRef = ref(null);
+let roleListRequestId = 0;
 
 /** 数据范围选项*/
 const dataScopeOptions = ref([
@@ -297,13 +311,24 @@ const data = reactive({
 const { queryParams, form, rules } = toRefs(data);
 
 /** 查询角色列表 */
-function getList() {
+async function getList() {
+  const requestId = ++roleListRequestId;
   loading.value = true;
-  listRole(proxy.addDateRange(queryParams.value, dateRange.value)).then(response => {
+  listError.value = "";
+  try {
+    const response = await listRole(proxy.addDateRange(queryParams.value, dateRange.value));
+    if (requestId !== roleListRequestId) return;
+    if (!Array.isArray(response.rows)) throw new Error("角色列表数据格式异常");
     roleList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
+    total.value = Number(response.total) || 0;
+  } catch (error) {
+    if (requestId === roleListRequestId) {
+      console.error("获取角色列表失败:", error);
+      listError.value = "角色列表加载失败，请重试";
+    }
+  } finally {
+    if (requestId === roleListRequestId) loading.value = false;
+  }
 }
 /** 搜索按钮操作 */
 function handleQuery() {
@@ -317,14 +342,22 @@ function resetQuery() {
   handleQuery();
 }
 /** 删除按钮操作 */
-function handleDelete(row) {
-  const roleIds = row.roleId || ids.value;
-  proxy.$modal.confirm('是否确认删除角色编号为"' + roleIds + '"的数据项?').then(function () {
-    return delRole(roleIds);
-  }).then(() => {
-    getList();
+async function handleDelete(row) {
+  if (deletingRoleIds.value.size > 0) return;
+  const roleIds = row?.roleId != null ? [row.roleId] : [...ids.value];
+  if (roleIds.length === 0 || roleIds.some(roleId => statusUpdatingIds.value.has(roleId))) return;
+  deletingRoleIds.value = new Set(roleIds);
+  try {
+    await proxy.$modal.confirm('是否确认删除角色编号为"' + roleIds.join(",") + '"的数据项?');
+    const response = await delRole(roleIds);
+    if (response.code !== 200) throw new Error(response.msg || "删除失败");
+    await getList();
     proxy.$modal.msgSuccess("删除成功");
-  }).catch(() => {});
+  } catch (error) {
+    if (error !== "cancel" && error !== "close") console.error("删除角色失败:", error);
+  } finally {
+    deletingRoleIds.value = new Set();
+  }
 }
 /** 导出按钮操作 */
 function handleExport() {
@@ -339,15 +372,25 @@ function handleSelectionChange(selection) {
   multiple.value = !selection.length;
 }
 /** 角色状态修改 */
-function handleStatusChange(row) {
-  let text = row.status === "0" ? "启用" : "停用";
-  proxy.$modal.confirm('确认要"' + text + '""' + row.roleName + '"角色吗?').then(function () {
-    return changeRoleStatus(row.roleId, row.status);
-  }).then(() => {
+async function handleStatusChange(row) {
+  if (statusUpdatingIds.value.has(row.roleId) || deletingRoleIds.value.has(row.roleId)) return;
+  const requestedStatus = row.status;
+  const originalStatus = requestedStatus === "0" ? "1" : "0";
+  const text = requestedStatus === "0" ? "启用" : "停用";
+  statusUpdatingIds.value = new Set([...statusUpdatingIds.value, row.roleId]);
+  try {
+    await proxy.$modal.confirm('确认要"' + text + '""' + row.roleName + '"角色吗?');
+    const response = await changeRoleStatus(row.roleId, requestedStatus);
+    if (response.code !== 200) throw new Error(response.msg || `${text}失败`);
     proxy.$modal.msgSuccess(text + "成功");
-  }).catch(function () {
-    row.status = row.status === "0" ? "1" : "0";
-  });
+  } catch (error) {
+    row.status = originalStatus;
+    if (error !== "cancel" && error !== "close") console.error(`${text}角色失败:`, error);
+  } finally {
+    const pendingIds = new Set(statusUpdatingIds.value);
+    pendingIds.delete(row.roleId);
+    statusUpdatingIds.value = pendingIds;
+  }
 }
 /** 更多操作 */
 function handleCommand(command, row) {
@@ -556,4 +599,7 @@ function cancelDataScope() {
 }
 
 getList();
+onBeforeUnmount(() => {
+  roleListRequestId += 1;
+});
 </script>
