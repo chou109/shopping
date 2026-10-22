@@ -687,7 +687,7 @@ const {
   getAddressLabelName,
   formatFullAddress,
   handleAddressDialogClose
-} = useProfileAddresses(currentUserId)
+} = useProfileAddresses()
 
 onMounted(() => {
   loadUserInfo()

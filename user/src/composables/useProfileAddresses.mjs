@@ -2,6 +2,7 @@ import { ref, reactive, watch, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { AreaDataService } from '@/utils/areaService.mjs'
 import { addressLabelOptions, formatFullAddress, getAddressLabelName, isMunicipality } from '@/utils/profile.mjs'
+import { buildAddressSubmitData, buildDefaultAddressPayload } from '@/utils/profileAddress.mjs'
 import {
   getMyAddressList,
   addAddress,
@@ -10,7 +11,7 @@ import {
   setDefaultAddress
 } from '@/api/system/address'
 
-export function useProfileAddresses(currentUserId) {
+export function useProfileAddresses() {
   const addressFormRef = ref()
   const isLoadingEditData = ref(false)
   const addressDialogVisible = ref(false)
@@ -40,7 +41,6 @@ export function useProfileAddresses(currentUserId) {
     postalCode: '',
     addressLabel: 1,
     defaultFlag: 0,
-    userId: null
   })
 
   // 地址验证规则
@@ -355,15 +355,13 @@ export function useProfileAddresses(currentUserId) {
       } else if (key === 'defaultFlag') {
         addressForm[key] = 0
       } else if (key === 'addressId') {
-        // 生成一个临时的 addressId
-        addressForm[key] = Date.now()
+        // 新地址编号由服务端生成。
+        addressForm[key] = null
       } else {
         addressForm[key] = ''
       }
     })
-
-    // 设置 userId
-    addressForm.userId = currentUserId.value
+    delete addressForm.id
 
     addressDialogVisible.value = true
 
@@ -399,7 +397,6 @@ export function useProfileAddresses(currentUserId) {
 
     // 设置基本字段
     addressForm.id = address.id
-    addressForm.userId = currentUserId.value
     addressForm.receiveName = address.receiveName || ''
     addressForm.receivePhone = address.receivePhone || ''
     addressForm.street = address.street || ''
@@ -608,12 +605,7 @@ export function useProfileAddresses(currentUserId) {
       }
 
       // 修复数据：确保编码是字符串而不是数组
-      const submitData = {
-        ...addressForm,
-        provinceCode: Array.isArray(addressForm.provinceCode) ? addressForm.provinceCode[0] : addressForm.provinceCode,
-        cityCode: Array.isArray(addressForm.cityCode) ? addressForm.cityCode[0] : addressForm.cityCode,
-        areaCode: Array.isArray(addressForm.areaCode) ? addressForm.areaCode[0] : addressForm.areaCode,
-      }
+      const submitData = buildAddressSubmitData(addressForm, { isEdit: isEditAddress.value })
 
       // 确保名称正确
       if (!submitData.province && submitData.provinceCode) {
@@ -687,10 +679,7 @@ export function useProfileAddresses(currentUserId) {
     if (addressMutations.value.has(addressId)) return
     addressMutations.value.add(addressId)
     try {
-      const response = await setDefaultAddress({
-        addressId: addressId,
-        userId: currentUserId.value
-      })
+      const response = await setDefaultAddress(buildDefaultAddressPayload(addressId))
 
       if (response.code === 200) {
         ElMessage.success('默认地址设置成功')
