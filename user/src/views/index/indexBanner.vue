@@ -14,6 +14,8 @@ const bannerCarousel = ref(null)
 const activeBannerIndex = ref(0)
 const categories = ref([])  // 存储分类数据
 const loading = ref(false)
+const categoryLoading = ref(false)
+const categoryLoadFailed = ref(false)
 const carouselHeight = ref('400px')
 const windowWidth = ref(window.innerWidth)
 const hoveredCategory = ref(null)  // 当前悬停的分类ID
@@ -94,12 +96,15 @@ const moveBanner = (offset) => {
 
 // 加载分类数据
 const loadCategories = async function () {
+  if (categoryLoading.value) return
+  categoryLoading.value = true
+  categoryLoadFailed.value = false
   try {
     const response = await getFrontCategoryTree()
 
-    if (response.code === 200) {
+    if (response.code === 200 && Array.isArray(response.data)) {
       // 过滤出顶级分类（parentId=0）作为大类
-      const topLevelCategories = response.data || []
+      const topLevelCategories = response.data
 
       // 只显示前6个大类
       categories.value = topLevelCategories.slice(0, 6)
@@ -107,10 +112,14 @@ const loadCategories = async function () {
     } else {
       console.error('获取分类树失败:', response.msg)
       categories.value = []
+      categoryLoadFailed.value = true
     }
   } catch (error) {
     console.error('获取分类失败:', error)
     categories.value = []
+    categoryLoadFailed.value = true
+  } finally {
+    categoryLoading.value = false
   }
 }
 
@@ -211,6 +220,12 @@ onUnmounted(() => {
           </li>
         </ul>
       </div>
+    </div>
+    <div v-else-if="categoryLoading || categoryLoadFailed" class="category-placeholder" role="status" aria-live="polite">
+      <span>{{ categoryLoadFailed ? '商品分类暂时无法加载' : '正在加载商品分类…' }}</span>
+      <button v-if="categoryLoadFailed" type="button" @click="loadCategories" :disabled="categoryLoading">
+        {{ categoryLoading ? '正在重试…' : '重试' }}
+      </button>
     </div>
 
     <!-- 轮播图 - 分类导航不随轮播图轮播 -->
@@ -443,6 +458,37 @@ onUnmounted(() => {
   border-right: 1px solid var(--category-border);
 }
 
+.category-placeholder {
+  width: 250px;
+  height: 400px;
+  flex: 0 0 250px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px;
+  box-sizing: border-box;
+  color: #606266;
+  background: var(--category-bg);
+  border-right: 1px solid var(--category-border);
+  text-align: center;
+}
+
+.category-placeholder button {
+  border: 0;
+  padding: 7px 14px;
+  border-radius: 4px;
+  color: #fff;
+  background: var(--primary-color);
+  cursor: pointer;
+}
+
+.category-placeholder button:focus-visible {
+  outline: 3px solid var(--text-primary);
+  outline-offset: 2px;
+}
+
 .menu {
   list-style: none !important;
   padding: 0;
@@ -622,6 +668,12 @@ onUnmounted(() => {
     height: 320px;
   }
 
+  .category-placeholder {
+    width: 180px;
+    height: 320px;
+    flex-basis: 180px;
+  }
+
   .layer {
     width: 200px;
     left: 180px;
@@ -683,6 +735,15 @@ onUnmounted(() => {
     width: 100%;
     height: auto;
     border-right: none;
+    border-bottom: 1px solid var(--category-border);
+  }
+
+  .category-placeholder {
+    width: 100%;
+    height: auto;
+    min-height: 64px;
+    flex-basis: auto;
+    border-right: 0;
     border-bottom: 1px solid var(--category-border);
   }
 
