@@ -6,6 +6,8 @@ import createVitePlugins from './vite/plugins'
 export default defineConfig(({ mode, command }) => {
   const env = loadEnv(mode, process.cwd())
   const { VITE_APP_ENV } = env
+  const apiTarget = env.VITE_API_TARGET || 'http://127.0.0.1:9091'
+  const websocketTarget = apiTarget.replace(/^http/, 'ws')
   return {
     // 部署生产环境和开发环境下的URL。
     // 默认情况下，vite 会假设你的应用是被部署在一个域名的根路径上
@@ -32,14 +34,14 @@ export default defineConfig(({ mode, command }) => {
       proxy: {
         // https://cn.vitejs.dev/config/#server-proxy
         '/dev-api': {
-          target: 'http://127.0.0.1:9091',
+          target: apiTarget,
           changeOrigin: true,
           rewrite: (p) => p.replace(/^\/dev-api/, ''),
           secure: false
         },
         // WebSocket 代理配置
         '/ai/chat': {
-          target: 'ws://localhost:9091',
+          target: websocketTarget,
           ws: true, // 启用 WebSocket 代理
           changeOrigin: true,
            secure: false,
