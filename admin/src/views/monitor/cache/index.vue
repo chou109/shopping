@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container">
+  <div class="app-container" v-loading="loading">
     <el-row>
       <el-col :span="24" class="card-box">
         <el-card>
@@ -63,6 +63,9 @@
         </el-card>
       </el-col>
     </el-row>
+    <el-alert v-if="loadError" :title="loadError" type="error" :closable="false" show-icon>
+      <template #default><el-button link type="primary" :disabled="loading" @click="getList">重试</el-button></template>
+    </el-alert>
   </div>
 </template>
 
@@ -73,16 +76,24 @@ import echarts from '@/utils/echarts';
 const cache = ref([]);
 const commandstats = ref(null);
 const usedmemory = ref(null);
-const { proxy } = getCurrentInstance();
+const loading = ref(true);
+const loadError = ref("");
+let requestId = 0;
 
-function getList() {
-  proxy.$modal.loading("正在加载缓存监控数据，请稍候！");
-  getCache().then(response => {
-    proxy.$modal.closeLoading();
-    cache.value = response.data;
+async function getList() {
+  const currentRequestId = ++requestId;
+  loading.value = true;
+  loadError.value = "";
+  try {
+    const response = await getCache();
+    const data = response?.data;
+    if (!data?.info || !Array.isArray(data.commandStats)) throw new Error("缓存监控数据格式异常");
+    cache.value = data;
+    await nextTick();
+    if (currentRequestId !== requestId) return;
 
-    const commandstatsIntance = echarts.init(commandstats.value, "macarons");
-    commandstatsIntance.setOption({
+    const commandstatsInstance = echarts.getInstanceByDom(commandstats.value) || echarts.init(commandstats.value, "macarons");
+    commandstatsInstance.setOption({
       tooltip: {
         trigger: "item",
         formatter: "{a} <br/>{b} : {c} ({d}%)"
@@ -94,14 +105,14 @@ function getList() {
           roseType: "radius",
           radius: [15, 95],
           center: ["50%", "38%"],
-          data: response.data.commandStats,
+          data: data.commandStats,
           animationEasing: "cubicInOut",
           animationDuration: 1000
         }
       ]
     });
 
-    const usedmemoryInstance = echarts.init(usedmemory.value, "macarons");
+    const usedmemoryInstance = echarts.getInstanceByDom(usedmemory.value) || echarts.init(usedmemory.value, "macarons");
     usedmemoryInstance.setOption({
       tooltip: {
         formatter: "{b} <br/>{a} : " + cache.value.info.used_memory_human
@@ -123,9 +134,22 @@ function getList() {
           ]
         }
       ]
-    })
-  })
+    }, true);
+  } catch (error) {
+    if (currentRequestId === requestId) {
+      console.error("获取缓存监控数据失败:", error);
+      loadError.value = "缓存监控数据加载失败，请重试";
+    }
+  } finally {
+    if (currentRequestId === requestId) loading.value = false;
+  }
 }
 
 getList();
+onBeforeUnmount(() => {
+  requestId += 1;
+  [commandstats.value, usedmemory.value].forEach(element => {
+    if (element) echarts.getInstanceByDom(element)?.dispose();
+  });
+});
 </script>
