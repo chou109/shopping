@@ -117,10 +117,10 @@
           <div class="user-icon-wrapper">
           <img :src="userAvatarImage" class="user-icon" alt="用户">
           </div>
-          <input v-model="inputMsg" aria-label="咨询问题" :placeholder="productContextLoading ? '正在准备商品信息...' : '请输入您想咨询的问题...'" @keyup.enter="sendMessage"
-            @keyup.ctrl.enter="inputMsg += '\n'" :disabled="!isConnected || productContextLoading" class="chat-input" ref="chatInput" />
+          <input v-model="inputMsg" aria-label="咨询问题" :placeholder="productContextLoading ? '正在准备商品信息...' : isRequestInFlight ? '逛逛正在整理答案...' : '请输入您想咨询的问题...'" @keyup.enter="sendMessage"
+            @keyup.ctrl.enter="inputMsg += '\n'" :disabled="!isConnected || productContextLoading || isRequestInFlight" class="chat-input" ref="chatInput" />
           <div class="input-actions">
-            <button type="button" @click="sendMessage" :disabled="!isConnected || productContextLoading || !inputMsg.trim()" class="send-btn">
+            <button type="button" @click="sendMessage" :disabled="!isConnected || productContextLoading || isRequestInFlight || !inputMsg.trim()" class="send-btn">
               <span v-if="isConnected">发送</span>
               <span v-else>连接中...</span>
             </button>
@@ -152,6 +152,7 @@ const userAvatarImage = computed(() => store.state.user?.avatar || DEFAULT_AVATA
 const chatList = ref([]);
 const inputMsg = ref('');
 const isConnected = ref(false);
+const isRequestInFlight = ref(false)
 const isAiTyping = ref(false);
 const showQuickReplies = ref(true);
 const currentAiMessage = ref('');
@@ -323,6 +324,7 @@ const initWebSocket = () => {
     ws.onclose = (event) => {
       if (isUnmounted) return;
       isConnected.value = false;
+      isRequestInFlight.value = false
       isAiTyping.value = false;
       addSystemMessage('连接已断开，正在尝试重新连接...');
       forceScrollToBottom();
@@ -334,6 +336,7 @@ const initWebSocket = () => {
       if (isUnmounted) return;
       console.error('❌ WebSocket错误：', error);
       isConnected.value = false;
+      isRequestInFlight.value = false
       isAiTyping.value = false;
       addSystemMessage('连接失败，请检查后端服务是否启动');
       forceScrollToBottom();
@@ -367,6 +370,7 @@ const initWebSocket = () => {
         } else if (type === 'handoff') {
           currentHandoff.value = true;
         } else if (type === 'end') {
+          isRequestInFlight.value = false
           isAiTyping.value = false;
           const lastMsg = chatList.value[chatList.value.length - 1];
           if (lastMsg && lastMsg.type === 'ai') {
@@ -383,6 +387,7 @@ const initWebSocket = () => {
 
         } else if (type === 'error') {
           addErrorMessage(content);
+          isRequestInFlight.value = false
           isAiTyping.value = false;
           currentAiMessage.value = '';
           forceScrollToBottom();
@@ -390,6 +395,7 @@ const initWebSocket = () => {
       } catch (error) {
         console.error('消息解析失败', error);
         addErrorMessage('消息格式错误，请重试');
+        isRequestInFlight.value = false
         isAiTyping.value = false;
         currentAiMessage.value = '';
         forceScrollToBottom();
@@ -439,17 +445,22 @@ const addErrorMessage = (text) => {
 // 发送消息
 const sendMessage = () => {
   const text = inputMsg.value.trim();
-  if (!text || !isConnected.value) {
+  if (!text || !isConnected.value || !ws || isRequestInFlight.value || productContextLoading.value) {
     return;
   }
 
-  addUserMessage(text);
-
-  ws.send(JSON.stringify({
-    question: text,
-    productId: selectedProduct.value?.id || null,
-    token: getToken() || ''
-  }));
+  try {
+    ws.send(JSON.stringify({
+      question: text,
+      productId: selectedProduct.value?.id || null,
+      token: getToken() || ''
+    }));
+    isRequestInFlight.value = true
+    addUserMessage(text);
+  } catch (error) {
+    addSystemMessage('消息发送失败，请检查连接后重试');
+    return;
+  }
 
   inputMsg.value = '';
 
@@ -530,6 +541,7 @@ watch(() => route.query.productId, (productId) => loadProductContext(productId))
 
 onUnmounted(() => {
   isUnmounted = true;
+  isRequestInFlight.value = false
   if (reconnectTimer) {
     clearTimeout(reconnectTimer);
     reconnectTimer = null;
