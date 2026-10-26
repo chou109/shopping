@@ -154,6 +154,8 @@ public class GogoAssistantService {
         int completionTokens = 0;
         boolean handoff = false;
         StringBuilder finalAnswer = new StringBuilder();
+        Set<String> seenToolCallIds = new HashSet<>();
+        Set<String> executedToolSignatures = new HashSet<>();
         Consumer<String> emit = token -> { finalAnswer.append(token); onToken.accept(token); };
         try {
             for (int turn = 0; turn < 4; turn++) {
@@ -171,6 +173,26 @@ public class GogoAssistantService {
                         || toolCount + result.toolCalls.size() > MAX_TOOL_CALLS_PER_REQUEST) {
                     throw new IllegalStateException("model_tool_call_limit_exceeded");
                 }
+                Set<String> responseIds = new HashSet<>();
+                Set<String> responseSignatures = new HashSet<>();
+                for (JsonNode call : result.toolCalls) {
+                    String id = call.path("id").asText("").trim();
+                    String type = call.path("type").asText("");
+                    String name = call.path("function").path("name").asText("").trim();
+                    String args = call.path("function").path("arguments").asText("{}");
+                    JsonNode parsedArgs = null;
+                    try { parsedArgs = mapper.readTree(args); } catch (Exception ignored) { }
+                    String signature = parsedArgs != null && parsedArgs.isObject()
+                            ? name + "\n" + canonicalJson(parsedArgs).toString() : "";
+                    if (id.isEmpty() || id.length() > 128 || !"function".equals(type) || name.isEmpty() || args.length() > 2048
+                            || parsedArgs == null || !parsedArgs.isObject()
+                            || !responseIds.add(id) || seenToolCallIds.contains(id)
+                            || !responseSignatures.add(signature) || executedToolSignatures.contains(signature)) {
+                        throw new IllegalStateException("model_tool_call_invalid_or_repeated");
+                    }
+                }
+                seenToolCallIds.addAll(responseIds);
+                executedToolSignatures.addAll(responseSignatures);
                 toolCount += result.toolCalls.size();
                 ObjectNode assistantCall = mapper.createObjectNode(); assistantCall.put("role", "assistant");
                 assistantCall.set("tool_calls", result.rawToolCalls);
@@ -203,6 +225,23 @@ public class GogoAssistantService {
         history.add(user.deepCopy());
         ObjectNode answer = mapper.createObjectNode(); answer.put("role", "assistant"); answer.put("content", finalAnswer.toString()); history.add(answer);
         while (history.size() > 12) history.remove(0);
+    }
+
+    private JsonNode canonicalJson(JsonNode value) {
+        if (value.isObject()) {
+            ObjectNode sorted = mapper.createObjectNode();
+            List<String> names = new ArrayList<>();
+            value.fieldNames().forEachRemaining(names::add);
+            Collections.sort(names);
+            for (String name : names) sorted.set(name, canonicalJson(value.get(name)));
+            return sorted;
+        }
+        if (value.isArray()) {
+            ArrayNode ordered = mapper.createArrayNode();
+            for (JsonNode item : value) ordered.add(canonicalJson(item));
+            return ordered;
+        }
+        return value.deepCopy();
     }
 
     private void appendSafeHistory(ArrayNode messages, List<ObjectNode> history) {

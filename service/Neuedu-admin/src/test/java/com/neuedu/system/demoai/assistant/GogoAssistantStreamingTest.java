@@ -14,6 +14,7 @@ import java.io.InputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationHandler;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -21,6 +22,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -114,9 +116,87 @@ public class GogoAssistantStreamingTest {
         }
     }
 
+    @Test
+    public void malformedToolCallIsRejectedBeforeBusinessQuery() throws Exception {
+        String event = "data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"type\":\"function\",\"function\":{\"name\":\"search_products\",\"arguments\":\"{\\\"query\\\":\\\"耳机\\\"}\"}}]}}]}\n\ndata: [DONE]\n\n";
+        HttpServer server = server(200, event);
+        AtomicInteger productQueries = new AtomicInteger();
+        ProductRepository products = proxy(ProductRepository.class, (proxy, method, args) -> {
+            if ("searchActiveByKeyword".equals(method.getName())) productQueries.incrementAndGet();
+            return Collections.emptyList();
+        });
+        try {
+            GogoAssistantService assistant = assistant(server, products);
+            List<String> tokens = new ArrayList<>();
+            AtomicBoolean handoff = new AtomicBoolean(false);
+
+            assistant.answer("推荐耳机", null, null, new ArrayList<>(), tokens::add, sources -> { }, handoff::set);
+
+            assertEquals("only the normal retrieval query may run", 1, productQueries.get());
+            assertTrue(handoff.get());
+            assertTrue(tokens.stream().anyMatch(token -> token.contains("联系人工客服")));
+        } finally { server.stop(0); }
+    }
+
+    @Test
+    public void invalidToolArgumentsAreRejectedBeforeBusinessQuery() throws Exception {
+        HttpServer server = server(200, toolCallEvent("call_invalid", "not-json"));
+        AtomicInteger productQueries = new AtomicInteger();
+        ProductRepository products = proxy(ProductRepository.class, (proxy, method, args) -> {
+            if ("searchActiveByKeyword".equals(method.getName())) productQueries.incrementAndGet();
+            return Collections.emptyList();
+        });
+        try {
+            GogoAssistantService assistant = assistant(server, products);
+            AtomicBoolean handoff = new AtomicBoolean(false);
+
+            assistant.answer("推荐耳机", null, null, new ArrayList<>(), token -> { }, sources -> { }, handoff::set);
+
+            assertEquals("only the normal retrieval query may run", 1, productQueries.get());
+            assertTrue(handoff.get());
+        } finally { server.stop(0); }
+    }
+
+    @Test
+    public void repeatedReadOnlyToolCallIsExecutedOnlyOnce() throws Exception {
+        AtomicInteger requests = new AtomicInteger();
+        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/chat/completions", exchange -> {
+            readAll(exchange.getRequestBody());
+            int request = requests.incrementAndGet();
+            String body = request == 1 ? toolCallEvent("call_1")
+                    : request == 2 ? toolCallEvent("call_2", "{ \"query\" : \"耳机\" }")
+                    : "data: {\"choices\":[{\"delta\":{\"content\":\"完成\"}}]}\n\ndata: [DONE]\n\n";
+            byte[] response = body.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add("Content-Type", "text/event-stream");
+            exchange.sendResponseHeaders(200, response.length);
+            try (OutputStream output = exchange.getResponseBody()) { output.write(response); }
+        });
+        server.start();
+        AtomicInteger productQueries = new AtomicInteger();
+        ProductRepository products = proxy(ProductRepository.class, (proxy, method, args) -> {
+            if ("searchActiveByKeyword".equals(method.getName())) productQueries.incrementAndGet();
+            return Collections.emptyList();
+        });
+        try {
+            GogoAssistantService assistant = assistant(server, products);
+            AtomicBoolean handoff = new AtomicBoolean(false);
+
+            assistant.answer("推荐耳机", null, null, new ArrayList<>(), token -> { }, sources -> { }, handoff::set);
+
+            assertEquals(2, requests.get());
+            assertEquals("retrieval plus one allowed tool execution", 2, productQueries.get());
+            assertTrue(handoff.get());
+        } finally { server.stop(0); }
+    }
+
     private GogoAssistantService assistant(HttpServer server) throws Exception {
+        return assistant(server, proxy(ProductRepository.class));
+    }
+
+    private GogoAssistantService assistant(HttpServer server, ProductRepository products) throws Exception {
         GogoAssistantService assistant = new GogoAssistantService(new ObjectMapper(),
-                proxy(FAQRepository.class), proxy(ProductRepository.class), proxy(IOrderInfoService.class), new GogoPromptFactory());
+                proxy(FAQRepository.class), products, proxy(IOrderInfoService.class), new GogoPromptFactory());
         set(assistant, "apiKey", "unit-test-key");
         set(assistant, "baseUrl", "http://127.0.0.1:" + server.getAddress().getPort());
         set(assistant, "readTimeout", 2000);
@@ -133,6 +213,16 @@ public class GogoAssistantStreamingTest {
         });
         server.start();
         return server;
+    }
+
+    private String toolCallEvent(String id) {
+        return toolCallEvent(id, "{\"query\":\"耳机\"}");
+    }
+
+    private String toolCallEvent(String id, String arguments) {
+        String encodedArguments = arguments.replace("\\", "\\\\").replace("\"", "\\\"");
+        return "data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"" + id
+                + "\",\"type\":\"function\",\"function\":{\"name\":\"search_products\",\"arguments\":\"" + encodedArguments + "\"}}]}}]}\n\ndata: [DONE]\n\n";
     }
 
     private byte[] readAll(InputStream input) throws IOException {
@@ -161,6 +251,11 @@ public class GogoAssistantStreamingTest {
                     }
                     return null;
                 });
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> T proxy(Class<T> type, InvocationHandler handler) {
+        return (T) java.lang.reflect.Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[]{type}, handler);
     }
 
     private void set(Object target, String name, Object value) throws Exception {
