@@ -121,9 +121,6 @@
       </div>
     </main>
 
-    <!-- 侧边栏固定按钮 -->
-    <FixedSidebar />
-
     <!-- 页脚 -->
     <footer class="main-footer">
       <div class="footer-content">
@@ -194,7 +191,6 @@ import {
 import IndexBanner from '@/views/index/indexBanner.vue'
 import FeaturedProducts from '@/views/index/FeaturedProducts.vue'
 import LazyProductList from '@/views/index/LazyProductList.vue'
-import FixedSidebar from '@/views/index/FixedSidebar.vue'
 
 const router = useRouter()
 const store = useStore()

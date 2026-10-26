@@ -3,6 +3,7 @@ import { createApp } from 'vue'
 import { ElLoading, ElLoadingDirective, ElMessage, ElMessageBox, ElNotification } from 'element-plus'
 
 import '@/assets/styles/index.scss' // global css
+import '@/assets/storefront-polish.css' // storefront visual system and responsive layout
 
 import App from './App'
 import store from './store'

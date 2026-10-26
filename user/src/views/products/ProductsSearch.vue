@@ -1,5 +1,5 @@
 <template>
-  <div class="search-container">
+  <div class="search-container product-search-page">
     <!-- 面包屑导航 -->
     <div class="breadcrumb-nav">
       <el-breadcrumb separator="/">

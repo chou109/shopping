@@ -28,13 +28,13 @@ const updateCarouselHeight = () => {
   windowWidth.value = width
 
   if (width < 480) {
-    carouselHeight.value = '180px'
+    carouselHeight.value = '176px'
   } else if (width < 768) {
-    carouselHeight.value = '250px'
-  } else if (width < 992) {
-    carouselHeight.value = '320px'
+    carouselHeight.value = '210px'
+  } else if (width < 1024) {
+    carouselHeight.value = '280px'
   } else {
-    carouselHeight.value = '400px'
+    carouselHeight.value = '330px'
   }
 }
 
