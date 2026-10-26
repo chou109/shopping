@@ -13,4 +13,6 @@ public interface AIChatMetricEventRepository extends JpaRepository<AIChatMetricE
             "COALESCE(SUM(event.promptTokens), 0), COALESCE(SUM(event.completionTokens), 0), " +
             "COALESCE(SUM(event.estimatedCost), 0) FROM AIChatMetricEvent event WHERE event.createTime >= :since")
     Object[] summarizeSince(@Param("since") LocalDateTime since);
+
+    long deleteByCreateTimeBefore(LocalDateTime cutoff);
 }

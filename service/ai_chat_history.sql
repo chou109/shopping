@@ -8,7 +8,8 @@ CREATE TABLE IF NOT EXISTS `ai_chat_conversation` (
   `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_ai_chat_conversation_key` (`conversation_key`),
-  KEY `idx_ai_chat_conversation_user_update` (`user_id`, `update_time`)
+  KEY `idx_ai_chat_conversation_user_update` (`user_id`, `update_time`),
+  KEY `idx_ai_chat_conversation_update_time` (`update_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='逛逛持久会话';
 
 CREATE TABLE IF NOT EXISTS `ai_chat_message` (

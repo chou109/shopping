@@ -6,6 +6,7 @@ import com.neuedu.system.demoai.entity.AIChatConversation;
 import com.neuedu.system.demoai.entity.AIChatMessage;
 import com.neuedu.system.demoai.repository.AIChatConversationRepository;
 import com.neuedu.system.demoai.repository.AIChatMessageRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Service
 public class AIChatConversationService {
@@ -22,6 +24,10 @@ public class AIChatConversationService {
     private final AIChatConversationRepository conversations;
     private final AIChatMessageRepository messages;
     private final ObjectMapper mapper;
+    private final AtomicLong lastCleanupAt = new AtomicLong();
+    private static final long CLEANUP_INTERVAL_MS = 6L * 60L * 60L * 1000L;
+
+    @Value("${ai.gogo.chat-history-retention-days:30}") private int historyRetentionDays = 30;
 
     public AIChatConversationService(AIChatConversationRepository conversations, AIChatMessageRepository messages,
                                     ObjectMapper mapper) {
@@ -30,9 +36,9 @@ public class AIChatConversationService {
         this.mapper = mapper;
     }
 
-    @Transactional
     public Opened open(String requestedKey, Long userId) {
         if (userId == null) return new Opened(null, null, Collections.emptyList());
+        cleanupExpiredIfDue();
         if (isUuid(requestedKey)) {
             AIChatConversation existing = conversations.findByConversationKeyAndUserId(requestedKey, userId).orElse(null);
             if (existing != null) return new Opened(existing.getConversationKey(), existing.getId(), load(existing.getId()));
@@ -44,6 +50,18 @@ public class AIChatConversationService {
         conversation.setUpdateTime(conversation.getCreateTime());
         conversation = conversations.saveAndFlush(conversation);
         return new Opened(conversation.getConversationKey(), conversation.getId(), new ArrayList<>());
+    }
+
+    private void cleanupExpiredIfDue() {
+        long now = System.currentTimeMillis();
+        long last = lastCleanupAt.get();
+        if (now - last < CLEANUP_INTERVAL_MS || !lastCleanupAt.compareAndSet(last, now)) return;
+        try {
+            conversations.deleteByUpdateTimeBefore(LocalDateTime.now().minusDays(Math.max(1, historyRetentionDays)));
+        } catch (Exception ex) {
+            // An uninitialized optional history schema must not prevent chat from working.
+            lastCleanupAt.set(0L);
+        }
     }
 
     @Transactional(readOnly = true)

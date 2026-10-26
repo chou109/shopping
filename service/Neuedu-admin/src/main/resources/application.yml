@@ -150,6 +150,8 @@ ai:
     read-timeout-ms: ${DEEPSEEK_READ_TIMEOUT_MS:45000}
     input-price-per-million: ${DEEPSEEK_INPUT_PRICE_PER_MILLION:0}
     output-price-per-million: ${DEEPSEEK_OUTPUT_PRICE_PER_MILLION:0}
+    chat-history-retention-days: ${AI_CHAT_HISTORY_RETENTION_DAYS:30}
+    metrics-retention-days: ${AI_METRICS_RETENTION_DAYS:90}
     # Optional OpenAI-compatible embedding endpoint; independent from the DeepSeek chat API.
     embedding:
       api-key: ${AI_EMBEDDING_API_KEY:}

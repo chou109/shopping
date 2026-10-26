@@ -33,6 +33,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.concurrent.atomic.LongAdder;
 import java.security.MessageDigest;
+import java.util.concurrent.atomic.AtomicLong;
 
 /** Gogo (逛逛) assistant: DeepSeek chat, retrieval and allow-listed business tools. */
 @Slf4j
@@ -47,6 +48,7 @@ public class GogoAssistantService {
     private final GogoPromptFactory promptFactory;
     private final EmbeddingProvider embeddingProvider;
     private final AIChatMetricEventRepository metricEventRepository;
+    private final AtomicLong lastMetricCleanupAt = new AtomicLong();
     private final Map<String, float[]> embeddingCache = Collections.synchronizedMap(new LinkedHashMap<String, float[]>(128, 0.75f, true) {
         @Override protected boolean removeEldestEntry(Map.Entry<String, float[]> eldest) { return size() > 512; }
     });
@@ -59,6 +61,7 @@ public class GogoAssistantService {
     @Value("${ai.gogo.input-price-per-million:0}") private BigDecimal inputPricePerMillion;
     @Value("${ai.gogo.output-price-per-million:0}") private BigDecimal outputPricePerMillion;
     @Value("${ai.gogo.embedding.minimum-similarity:0.52}") private double minimumEmbeddingSimilarity = 0.52D;
+    @Value("${ai.gogo.metrics-retention-days:90}") private int metricsRetentionDays = 90;
     private final LongAdder requestCount = new LongAdder();
     private final LongAdder retrievalHitCount = new LongAdder();
     private final LongAdder toolCallCount = new LongAdder();
@@ -189,8 +192,17 @@ public class GogoAssistantService {
                 event.setDurationMs(duration); event.setPromptTokens(promptTokens); event.setCompletionTokens(completionTokens);
                 event.setEstimatedCost(cost); event.setCreateTime(java.time.LocalDateTime.now());
                 metricEventRepository.save(event);
+                cleanupMetricEventsIfDue();
             } catch (Exception ex) { log.debug("持久化 AI 指标失败，错误类型={}", ex.getClass().getSimpleName()); }
         }
+    }
+
+    private void cleanupMetricEventsIfDue() {
+        long now = System.currentTimeMillis();
+        long last = lastMetricCleanupAt.get();
+        if (now - last < 6L * 60L * 60L * 1000L || !lastMetricCleanupAt.compareAndSet(last, now)) return;
+        try { metricEventRepository.deleteByCreateTimeBefore(java.time.LocalDateTime.now().minusDays(Math.max(1, metricsRetentionDays))); }
+        catch (Exception ex) { lastMetricCleanupAt.set(0L); }
     }
 
     private BigDecimal estimatedCost(int promptTokens, int completionTokens) {
