@@ -1,0 +1,15 @@
+{
+  "corpus": [
+    { "id": 101, "question": "如何申请退款", "answer": "请在订单页面提交售后退款申请。" },
+    { "id": 102, "question": "如何查看订单配送进度", "answer": "登录后在我的订单查看物流和配送进度。" },
+    { "id": 103, "question": "目前支持哪些支付方式", "answer": "请以结算页面当前展示的支付方式为准。" },
+    { "id": 104, "question": "电子产品保修期限", "answer": "保修期限以商品详情和商家承诺为准。" }
+  ],
+  "cases": [
+    { "query": "退货退款怎么申请", "expectedSourceId": 101 },
+    { "query": "如何查看订单配送进度", "expectedSourceId": 102 },
+    { "query": "支付支持什么方式", "expectedSourceId": 103 },
+    { "query": "电子产品保修多久", "expectedSourceId": 104 },
+    { "query": "显卡可以超频吗", "expectedSourceId": null }
+  ]
+}
