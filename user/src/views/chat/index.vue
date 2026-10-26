@@ -11,7 +11,7 @@
           <div class="service-name">逛逛 <span class="assistant-badge">商城 AI 助手</span></div>
           <div class="service-status">
             <span class="online-dot" :class="{ online: isConnected }"></span>
-            {{ isConnected ? '已连接 · 商品咨询与订单问答' : '正在连接逛逛...' }}
+            {{ isConnected ? (isRestoringConversation ? '正在恢复会话...' : '已连接 · 商品咨询与订单问答') : reconnectAttempts ? `连接中断，正在第 ${reconnectAttempts} 次重连...` : '正在连接逛逛...' }}
           </div>
         </div>
       </div>
@@ -89,6 +89,7 @@
               </ul>
             </details>
             <button v-if="msg.handoff" type="button" class="handoff-link" @click="goToHumanService">转接人工客服</button>
+            <div v-if="msg.interrupted" class="interrupted-note">回复中断，问题已放回输入框。请确认后再发送，不会自动重复提交。</div>
             <div class="msg-time">{{ formatTime(msg.time) }}</div>
           </div>
           <template v-if="msg.type === 'user'">
@@ -122,7 +123,7 @@
         <div class="quick-reply-title">💭 不知道问什么？试试这些：</div>
         <div class="quick-reply-buttons">
           <button type="button" v-for="(example, index) in exampleQuestions" :key="index" @click="useExample(example)"
-            :disabled="!isConnected" class="quick-reply-btn">
+            :disabled="!isConnected || isRestoringConversation" class="quick-reply-btn">
             {{ example }}
           </button>
         </div>
@@ -135,9 +136,9 @@
           <img :src="userAvatarImage" class="user-icon" alt="用户">
           </div>
           <input v-model="inputMsg" aria-label="咨询问题" :placeholder="productContextLoading ? '正在准备商品信息...' : isRequestInFlight ? '逛逛正在整理答案...' : '请输入您想咨询的问题...'" @keyup.enter="sendMessage"
-            @keyup.ctrl.enter="inputMsg += '\n'" :disabled="!isConnected || productContextLoading || isRequestInFlight" class="chat-input" ref="chatInput" />
+            @keyup.ctrl.enter="inputMsg += '\n'" :disabled="!isConnected || isRestoringConversation || productContextLoading || isRequestInFlight" class="chat-input" ref="chatInput" />
           <div class="input-actions">
-            <button type="button" @click="sendMessage" :disabled="!isConnected || productContextLoading || isRequestInFlight || !inputMsg.trim()" class="send-btn">
+            <button type="button" @click="sendMessage" :disabled="!isConnected || isRestoringConversation || productContextLoading || isRequestInFlight || !inputMsg.trim()" class="send-btn">
               <span v-if="isConnected">发送</span>
               <span v-else>连接中...</span>
             </button>
@@ -155,6 +156,7 @@ import { formatChatMessage } from '@/utils/chat'
 import { ref, onMounted, onUnmounted, nextTick, computed, watch } from 'vue';
 import { useStore } from 'vuex';
 import { getWebSocketUrl } from '@/utils/request';
+import { getChatReconnectDelay, restoredHistoryContainsCompletedQuestion } from '@/utils/chatConnection.mjs'
 import { getToken } from '@/utils/auth';
 import { useRoute, useRouter } from 'vue-router';
 import { getProduct } from '@/api/system/product'
@@ -169,6 +171,7 @@ const userAvatarImage = computed(() => store.state.user?.avatar || DEFAULT_AVATA
 const chatList = ref([]);
 const inputMsg = ref('');
 const isConnected = ref(false);
+const isRestoringConversation = ref(false)
 const isRequestInFlight = ref(false)
 const isAiTyping = ref(false);
 const showQuickReplies = ref(true);
@@ -199,6 +202,12 @@ const exampleQuestions = computed(() => selectedProduct.value
 let ws = null;
 let reconnectTimer = null;
 let isUnmounted = false;
+const reconnectAttempts = ref(0);
+let interruptedQuestion = '';
+let activeQuestion = '';
+let restoredHistorySnapshot = [];
+let activeHistorySnapshot = [];
+let interruptedHistorySnapshot = [];
 const pendingTimeouts = new Set();
 
 const conversationStorageKey = () => `gogo-chat-conversation:${store.state.user?.userId || (getToken() ? 'authenticated' : 'guest')}`
@@ -227,6 +236,23 @@ const scheduleReconnect = (delay) => {
     reconnectTimer = null;
     initWebSocket();
   }, delay);
+};
+
+const handleInterruptedRequest = () => {
+  if (!isRequestInFlight.value) return
+  isRequestInFlight.value = false
+  isAiTyping.value = false
+  interruptedQuestion = activeQuestion
+  interruptedHistorySnapshot = activeHistorySnapshot
+  activeHistorySnapshot = []
+  if (interruptedQuestion && !inputMsg.value) inputMsg.value = interruptedQuestion
+  activeQuestion = ''
+  const lastMessage = chatList.value[chatList.value.length - 1]
+  if (lastMessage?.type === 'ai' && lastMessage.content) lastMessage.interrupted = true
+  currentAiMessage.value = ''
+  currentSources.value = []
+  currentToolResults.value = []
+  currentHandoff.value = false
 };
 
 // 关闭欢迎消息
@@ -346,33 +372,34 @@ const initWebSocket = () => {
 
     ws.onopen = (event) => {
       if (isUnmounted) return;
+      reconnectAttempts.value = 0;
       isConnected.value = true;
       addSystemMessage('已连接到逛逛');
       if (conversationId.value) {
+        isRestoringConversation.value = true
         ws.send(JSON.stringify({ action: 'resume', conversationId: conversationId.value, token: getToken() || '' }))
-      }
+      } else isRestoringConversation.value = false
       forceScrollToBottom();
     };
 
     ws.onclose = (event) => {
       if (isUnmounted) return;
       isConnected.value = false;
-      isRequestInFlight.value = false
-      isAiTyping.value = false;
+      isRestoringConversation.value = false
+      handleInterruptedRequest()
       addSystemMessage('连接已断开，正在尝试重新连接...');
       forceScrollToBottom();
 
-      scheduleReconnect(3000);
+      reconnectAttempts.value += 1;
+      scheduleReconnect(getChatReconnectDelay(reconnectAttempts.value));
     };
 
     ws.onerror = (error) => {
       if (isUnmounted) return;
       console.error('❌ WebSocket错误：', error);
       isConnected.value = false;
-      isRequestInFlight.value = false
-      isAiTyping.value = false;
-      addSystemMessage('连接失败，请检查后端服务是否启动');
-      forceScrollToBottom();
+      isRestoringConversation.value = false
+      handleInterruptedRequest()
     };
 
     ws.onmessage = (event) => {
@@ -384,9 +411,20 @@ const initWebSocket = () => {
         if (type === 'conversation') {
           saveConversationId(content)
         } else if (type === 'history') {
+          isRestoringConversation.value = false
+          const completedInterruptedQuestion = restoredHistoryContainsCompletedQuestion(content, interruptedQuestion, interruptedHistorySnapshot)
+          restoredHistorySnapshot = Array.isArray(content)
+            ? content.filter(message => ['user', 'assistant'].includes(message?.role) && typeof message.content === 'string')
+              .map(message => ({ role: message.role, content: message.content }))
+            : []
           chatList.value = Array.isArray(content) ? content
             .filter(message => ['user', 'assistant'].includes(message?.role) && typeof message.content === 'string')
             .map(message => ({ type: message.role === 'user' ? 'user' : 'ai', content: message.content, time: Date.now() })) : []
+          if (completedInterruptedQuestion) {
+            if (inputMsg.value === interruptedQuestion) inputMsg.value = ''
+            interruptedQuestion = ''
+            interruptedHistorySnapshot = []
+          }
           forceScrollToBottom()
         } else if (type === 'stream') {
           currentAiMessage.value += content;
@@ -414,8 +452,19 @@ const initWebSocket = () => {
         } else if (type === 'handoff') {
           currentHandoff.value = true;
         } else if (type === 'end') {
+          isRestoringConversation.value = false
           isRequestInFlight.value = false
           isAiTyping.value = false;
+          if (activeQuestion) {
+            restoredHistorySnapshot = [...activeHistorySnapshot,
+              { role: 'user', content: activeQuestion },
+              { role: 'assistant', content: currentAiMessage.value }
+            ].slice(-12)
+          }
+          activeHistorySnapshot = []
+          activeQuestion = ''
+          interruptedQuestion = ''
+          interruptedHistorySnapshot = []
           const lastMsg = chatList.value[chatList.value.length - 1];
           if (lastMsg && lastMsg.type === 'ai') {
             lastMsg.sources = currentSources.value;
@@ -433,11 +482,16 @@ const initWebSocket = () => {
 
         } else if (type === 'error') {
           addErrorMessage(content);
+          isRestoringConversation.value = false
           isRequestInFlight.value = false
           isAiTyping.value = false;
           currentToolResults.value = []
           currentSources.value = []
           currentAiMessage.value = '';
+          activeQuestion = ''
+          interruptedQuestion = ''
+          activeHistorySnapshot = []
+          interruptedHistorySnapshot = []
           forceScrollToBottom();
         }
       } catch (error) {
@@ -448,6 +502,9 @@ const initWebSocket = () => {
         currentToolResults.value = []
         currentSources.value = []
         currentAiMessage.value = '';
+        activeQuestion = ''
+        activeHistorySnapshot = []
+        interruptedHistorySnapshot = []
         forceScrollToBottom();
       }
     };
@@ -457,7 +514,8 @@ const initWebSocket = () => {
     addSystemMessage('连接失败: ' + error.message);
     forceScrollToBottom();
 
-    scheduleReconnect(5000);
+    reconnectAttempts.value += 1;
+    scheduleReconnect(getChatReconnectDelay(reconnectAttempts.value));
   }
 };
 
@@ -495,7 +553,7 @@ const addErrorMessage = (text) => {
 // 发送消息
 const sendMessage = () => {
   const text = inputMsg.value.trim();
-  if (!text || !isConnected.value || !ws || isRequestInFlight.value || productContextLoading.value) {
+  if (!text || !isConnected.value || isRestoringConversation.value || !ws || isRequestInFlight.value || productContextLoading.value) {
     return;
   }
 
@@ -506,9 +564,14 @@ const sendMessage = () => {
       token: getToken() || '',
       conversationId: conversationId.value || null
     }));
+    activeQuestion = text
+    interruptedQuestion = ''
+    activeHistorySnapshot = restoredHistorySnapshot.slice(-12)
+    interruptedHistorySnapshot = []
     isRequestInFlight.value = true
     addUserMessage(text);
   } catch (error) {
+    activeQuestion = ''
     addSystemMessage('消息发送失败，请检查连接后重试');
     return;
   }
@@ -559,6 +622,13 @@ const clearChat = () => {
       catch (error) { console.warn('逛逛会话清理请求发送失败', error?.message || error) }
     }
     saveConversationId('')
+    isRestoringConversation.value = false
+    interruptedQuestion = ''
+    activeQuestion = ''
+    restoredHistorySnapshot = []
+    activeHistorySnapshot = []
+    interruptedHistorySnapshot = []
+    inputMsg.value = ''
     chatList.value = [];
     currentSources.value = []
     currentToolResults.value = []
@@ -1320,6 +1390,7 @@ onUnmounted(() => {
 .source-list small { display: block; margin-top: 3px; color: #9aa3ad; font-size: 11px; }
 .source-list p { margin: 4px 0 0; color: #7a8491; white-space: pre-wrap; }
 .handoff-link { margin-top: 8px; border: 0; padding: 0; background: transparent; color: #409eff; cursor: pointer; font-size: 13px; }
+.interrupted-note { margin-top: 8px; color: #a16a16; font-size: 12px; line-height: 1.5; }
 </style>
 
 <style scoped>
