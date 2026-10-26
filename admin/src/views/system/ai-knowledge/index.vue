@@ -12,6 +12,7 @@
         <div class="metric"><span>会话请求</span><strong>{{ metrics.requests ?? 0 }}</strong></div>
         <div class="metric"><span>候选资料返回率</span><strong>{{ percent(metrics.retrievalHitRate) }}</strong></div>
         <div class="metric"><span>工具成功率</span><strong>{{ percent(metrics.toolSuccessRate) }}</strong></div>
+        <div class="metric"><span>转人工率</span><strong>{{ percent(metrics.handoffRate) }}</strong></div>
         <div class="metric"><span>平均响应</span><strong>{{ Math.round(metrics.averageResponseMs || 0) }} ms</strong></div>
         <div class="metric"><span>输入 / 输出 Token</span><strong>{{ metrics.promptTokens ?? 0 }} / {{ metrics.completionTokens ?? 0 }}</strong></div>
         <div class="metric"><span>估算模型费用</span><strong>{{ Number(metrics.estimatedCost || 0).toFixed(6) }}</strong></div>

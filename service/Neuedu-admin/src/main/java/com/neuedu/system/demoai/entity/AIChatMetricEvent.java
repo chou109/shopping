@@ -23,6 +23,9 @@ public class AIChatMetricEvent {
     @Column(name = "tool_failures", nullable = false)
     private Integer toolFailures;
 
+    @Column(name = "handoff", nullable = false)
+    private Integer handoff;
+
     @Column(name = "duration_ms", nullable = false)
     private Long durationMs;
 

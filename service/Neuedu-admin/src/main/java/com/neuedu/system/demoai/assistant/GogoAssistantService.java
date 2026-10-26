@@ -73,6 +73,7 @@ public class GogoAssistantService {
     @Value("${ai.gogo.metrics-retention-days:90}") private int metricsRetentionDays = 90;
     private final LongAdder requestCount = new LongAdder();
     private final LongAdder retrievalHitCount = new LongAdder();
+    private final LongAdder handoffCount = new LongAdder();
     private final LongAdder toolCallCount = new LongAdder();
     private final LongAdder toolFailureCount = new LongAdder();
     private final LongAdder totalDurationMs = new LongAdder();
@@ -136,7 +137,7 @@ public class GogoAssistantService {
             onToken.accept("逛逛的模型服务尚未配置，已为您转接人工客服。您也可以先查看商品详情页或登录后的订单页。");
             onHandoff.accept(true);
             long duration = System.currentTimeMillis() - started;
-            recordMetrics(!sources.isEmpty(), 0, 0, 0, 0, duration);
+            recordMetrics(!sources.isEmpty(), 0, 0, 0, 0, duration, true);
             log.info("ai_chat model_configured=false retrieval_hits={} duration_ms={}", sources.size(), duration);
             return;
         }
@@ -222,7 +223,7 @@ public class GogoAssistantService {
         if (finalAnswer.toString().matches("(?s).*(转接人工|联系人工客服|建议.{0,8}客服|无法确认|无法确定).*")) handoff = true;
         onHandoff.accept(handoff);
         long duration = System.currentTimeMillis() - started;
-        recordMetrics(!sources.isEmpty(), toolCount, toolFailures, promptTokens, completionTokens, duration);
+        recordMetrics(!sources.isEmpty(), toolCount, toolFailures, promptTokens, completionTokens, duration, handoff);
         log.info("ai_chat model={} retrieval_hits={} tool_calls={} tool_failures={} prompt_tokens={} completion_tokens={} estimated_cost={} duration_ms={} handoff={}",
                 model, sources.size(), toolCount, toolFailures, promptTokens, completionTokens, estimatedCost(promptTokens, completionTokens), duration, handoff);
         history.add(user.deepCopy());
@@ -268,8 +269,9 @@ public class GogoAssistantService {
         for (ObjectNode item : safe) messages.add(item);
     }
 
-    private void recordMetrics(boolean retrievalHit, int tools, int toolFailures, int promptTokens, int completionTokens, long duration) {
+    private void recordMetrics(boolean retrievalHit, int tools, int toolFailures, int promptTokens, int completionTokens, long duration, boolean handoff) {
         requestCount.increment(); if (retrievalHit) retrievalHitCount.increment();
+        if (handoff) handoffCount.increment();
         toolCallCount.add(tools); toolFailureCount.add(toolFailures); totalDurationMs.add(duration);
         promptTokenCount.add(promptTokens); completionTokenCount.add(completionTokens);
         BigDecimal cost = estimatedCost(promptTokens, completionTokens);
@@ -278,6 +280,7 @@ public class GogoAssistantService {
             try {
                 AIChatMetricEvent event = new AIChatMetricEvent();
                 event.setRetrievalHit(retrievalHit ? 1 : 0); event.setToolCalls(tools); event.setToolFailures(toolFailures);
+                event.setHandoff(handoff ? 1 : 0);
                 event.setDurationMs(duration); event.setPromptTokens(promptTokens); event.setCompletionTokens(completionTokens);
                 event.setEstimatedCost(cost); event.setCreateTime(java.time.LocalDateTime.now());
                 metricEventRepository.save(event);
@@ -305,7 +308,7 @@ public class GogoAssistantService {
         if (metricEventRepository != null) {
             try {
                 Object[] row = metricEventRepository.summarizeSince(java.time.LocalDateTime.now().minusDays(30));
-                if (row != null && row.length >= 8) return metricsFromRow(row);
+                if (row != null && row.length >= 9) return metricsFromRow(row);
             } catch (Exception ex) { log.debug("读取持久化 AI 指标失败，使用进程指标：{}", ex.getClass().getSimpleName()); }
         }
         long requests = requestCount.sum(); long calls = toolCallCount.sum(); long failures = toolFailureCount.sum();
@@ -314,6 +317,7 @@ public class GogoAssistantService {
         metrics.put("retrievalHitRate", requests == 0 ? 0D : (double) retrievalHitCount.sum() / requests);
         metrics.put("toolCalls", calls);
         metrics.put("toolSuccessRate", calls == 0 ? 0D : (double) (calls - failures) / calls);
+        metrics.put("handoffRate", requests == 0 ? 0D : (double) handoffCount.sum() / requests);
         metrics.put("averageResponseMs", requests == 0 ? 0D : (double) totalDurationMs.sum() / requests);
         metrics.put("promptTokens", promptTokenCount.sum());
         metrics.put("completionTokens", completionTokenCount.sum());
@@ -329,6 +333,7 @@ public class GogoAssistantService {
         metrics.put("retrievalHitRate", requests == 0 ? 0D : (double) number(row[1]) / requests);
         metrics.put("toolCalls", calls);
         metrics.put("toolSuccessRate", calls == 0 ? 0D : (double) (calls - failures) / calls);
+        metrics.put("handoffRate", requests == 0 ? 0D : (double) number(row[8]) / requests);
         metrics.put("averageResponseMs", requests == 0 ? 0D : (double) number(row[4]) / requests);
         metrics.put("promptTokens", number(row[5]));
         metrics.put("completionTokens", number(row[6]));

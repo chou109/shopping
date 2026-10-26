@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS `ai_chat_metric_event` (
   `retrieval_hit` TINYINT NOT NULL DEFAULT 0,
   `tool_calls` INT NOT NULL DEFAULT 0,
   `tool_failures` INT NOT NULL DEFAULT 0,
+  `handoff` TINYINT NOT NULL DEFAULT 0,
   `duration_ms` BIGINT NOT NULL DEFAULT 0,
   `prompt_tokens` INT NOT NULL DEFAULT 0,
   `completion_tokens` INT NOT NULL DEFAULT 0,
@@ -37,3 +38,11 @@ CREATE TABLE IF NOT EXISTS `ai_chat_metric_event` (
   PRIMARY KEY (`id`),
   KEY `idx_ai_chat_metric_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='逛逛质量指标';
+
+-- Idempotently add the handoff metric to databases initialized with an older version of this script.
+SET @gogo_sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'ai_chat_metric_event' AND column_name = 'handoff') = 0,
+  'ALTER TABLE `ai_chat_metric_event` ADD COLUMN `handoff` TINYINT NOT NULL DEFAULT 0 AFTER `tool_failures`',
+  'SELECT 1');
+PREPARE gogo_stmt FROM @gogo_sql;
+EXECUTE gogo_stmt;
+DEALLOCATE PREPARE gogo_stmt;
