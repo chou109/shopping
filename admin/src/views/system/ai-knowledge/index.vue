@@ -10,11 +10,11 @@
       </div>
       <div class="metrics-row">
         <div class="metric"><span>会话请求</span><strong>{{ metrics.requests ?? 0 }}</strong></div>
-        <div class="metric"><span>检索命中率</span><strong>{{ percent(metrics.retrievalHitRate) }}</strong></div>
+        <div class="metric"><span>候选资料返回率</span><strong>{{ percent(metrics.retrievalHitRate) }}</strong></div>
         <div class="metric"><span>工具成功率</span><strong>{{ percent(metrics.toolSuccessRate) }}</strong></div>
         <div class="metric"><span>平均响应</span><strong>{{ Math.round(metrics.averageResponseMs || 0) }} ms</strong></div>
       </div>
-      <div class="metrics-note">统计为当前后端进程累计值，重启后清零；检索命中率表示返回了候选资料，不代表答案已通过人工质量评估。</div>
+      <div class="metrics-note">统计为当前后端进程累计值，重启后清零；候选资料返回率不代表答案已通过人工质量评估。</div>
     </el-card>
 
     <el-card shadow="never" class="knowledge-card">
@@ -63,9 +63,12 @@
         <el-form-item label="关联商品" prop="productId">
           <div class="scope-control">
             <el-checkbox v-model="isGlobal" @change="toggleGlobal">通用知识</el-checkbox>
-            <el-input-number v-model="form.productId" :min="1" :precision="0" :disabled="isGlobal" controls-position="right" placeholder="商品 ID" />
+            <el-select v-model="form.productId" filterable remote clearable reserve-keyword :remote-method="searchProducts"
+              :loading="loadingProducts" :disabled="isGlobal" placeholder="搜索并选择商品" class="product-select">
+              <el-option v-for="product in productOptions" :key="product.id" :label="`${product.name}（#${product.id}）`" :value="product.id" />
+            </el-select>
           </div>
-          <div class="field-hint">通用知识适用于所有商品；关联商品资料会在用户查看该商品时一并检索。</div>
+          <div class="field-hint">通用知识适用于所有商品；关联商品资料会在用户查看该商品时一并检索。列表只显示当前账号可访问的在售商品。</div>
         </el-form-item>
         <el-form-item label="优先级" prop="priority">
           <el-input-number v-model="form.priority" :min="0" :max="10000" :precision="0" controls-position="right" />
@@ -85,6 +88,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Refresh, Search } from '@element-plus/icons-vue'
 import { addAiKnowledge, deleteAiKnowledge, getAiKnowledgeMetrics, listAiKnowledge, updateAiKnowledge } from '@/api/system/aiKnowledge'
+import { listProduct } from '@/api/system/product'
 
 const loading = ref(false)
 const loadingMetrics = ref(false)
@@ -93,8 +97,11 @@ const dialogVisible = ref(false)
 const errorMessage = ref('')
 const keyword = ref('')
 const knowledgeRows = ref([])
+const productOptions = ref([])
 const formRef = ref()
 const isGlobal = ref(true)
+const loadingProducts = ref(false)
+let productSearchRequestId = 0
 const metrics = reactive({})
 const form = reactive({ id: null, question: '', answer: '', productId: null, priority: 0 })
 const rules = {
@@ -146,6 +153,7 @@ function resetForm(row = null) {
   form.productId = row?.productId ?? null
   form.priority = row?.priority ?? 0
   isGlobal.value = row?.productId == null
+  productOptions.value = row?.productId == null ? [] : [{ id: row.productId, name: `商品 #${row.productId}` }]
   formRef.value?.clearValidate()
 }
 
@@ -160,7 +168,27 @@ function openEdit(row) {
 }
 
 function toggleGlobal(value) {
-  if (value) form.productId = null
+  if (value) {
+    form.productId = null
+    productOptions.value = []
+  }
+}
+
+async function searchProducts(query = '') {
+  const requestId = ++productSearchRequestId
+  loadingProducts.value = true
+  try {
+    const response = await listProduct({ pageNum: 1, pageSize: 30, status: 1, name: query.trim() })
+    if (requestId !== productSearchRequestId) return
+    if (response?.code !== 200 || !Array.isArray(response.rows)) throw new Error(response?.msg || '商品列表返回格式异常')
+    const selected = productOptions.value.filter(product => product.id === form.productId)
+    const matches = response.rows.map(product => ({ id: product.id, name: product.name || `商品 #${product.id}` }))
+    productOptions.value = [...new Map([...selected, ...matches].map(product => [product.id, product])).values()]
+  } catch (error) {
+    if (requestId === productSearchRequestId) ElMessage.warning(error?.message || '商品搜索失败')
+  } finally {
+    if (requestId === productSearchRequestId) loadingProducts.value = false
+  }
 }
 
 async function saveKnowledge() {
@@ -168,7 +196,7 @@ async function saveKnowledge() {
   const valid = await formRef.value.validate().catch(() => false)
   if (!valid) return
   if (!isGlobal.value && (!Number.isInteger(Number(form.productId)) || Number(form.productId) < 1)) {
-    ElMessage.warning('请输入有效的商品 ID，或选择通用知识')
+    ElMessage.warning('请选择有效的商品，或切换为通用知识')
     return
   }
   const payload = {
@@ -230,7 +258,7 @@ onMounted(() => {
 .answer-cell { display: -webkit-box; overflow: hidden; line-height: 1.6; white-space: pre-line; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
 .table-footnote { padding-top: 12px; line-height: 1.6; }
 .scope-control { gap: 14px; }
-.scope-control .el-input-number { width: 180px; }
+.product-select { width: min(320px, 100%); }
 .field-hint { display: block; margin-top: 4px; line-height: 1.5; }
 .inline-hint { display: inline-block; margin: 0 0 0 10px; }
 @media (max-width: 720px) {
