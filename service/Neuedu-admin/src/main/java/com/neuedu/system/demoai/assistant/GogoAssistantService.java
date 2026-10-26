@@ -44,6 +44,8 @@ import java.util.concurrent.atomic.AtomicLong;
 @Service
 public class GogoAssistantService {
     private static final int MAX_KNOWLEDGE_CHUNKS = 100;
+    private static final int MAX_HISTORY_MESSAGES = 12;
+    private static final int MAX_HISTORY_MESSAGE_CHARS = 4000;
     private static final int MAX_TOOL_CALLS_PER_RESPONSE = 5;
     private static final int MAX_TOOL_CALLS_PER_REQUEST = 8;
     private final ObjectMapper mapper;
@@ -126,6 +128,7 @@ public class GogoAssistantService {
     public void answer(String question, Long productId, LoginUser loginUser, List<ObjectNode> history,
                        Consumer<String> onToken, Consumer<List<Map<String, Object>>> onSources,
                        Consumer<Map<String, Object>> onToolResult, Consumer<Boolean> onHandoff) {
+        if (history == null) history = new ArrayList<>();
         long started = System.currentTimeMillis();
         List<Map<String, Object>> sources = retrieve(question, productId);
         onSources.accept(sources);
@@ -142,7 +145,7 @@ public class GogoAssistantService {
         ObjectNode system = messages.addObject();
         system.put("role", "system");
         system.put("content", promptFactory.create(sources, loginUser != null));
-        for (ObjectNode prior : history) messages.add(prior.deepCopy());
+        appendSafeHistory(messages, history);
         ObjectNode user = messages.addObject(); user.put("role", "user"); user.put("content", question);
 
         int toolCount = 0;
@@ -200,6 +203,27 @@ public class GogoAssistantService {
         history.add(user.deepCopy());
         ObjectNode answer = mapper.createObjectNode(); answer.put("role", "assistant"); answer.put("content", finalAnswer.toString()); history.add(answer);
         while (history.size() > 12) history.remove(0);
+    }
+
+    private void appendSafeHistory(ArrayNode messages, List<ObjectNode> history) {
+        if (history == null || history.isEmpty()) return;
+        List<ObjectNode> safe = new ArrayList<>();
+        for (int i = history.size() - 1; i >= 0 && safe.size() < MAX_HISTORY_MESSAGES; i--) {
+            ObjectNode item = history.get(i);
+            if (item == null) continue;
+            String role = item.path("role").asText("");
+            JsonNode contentNode = item.get("content");
+            if (!("user".equals(role) || "assistant".equals(role)) || contentNode == null || !contentNode.isTextual()) continue;
+            String content = contentNode.asText();
+            if (content.trim().isEmpty()) continue;
+            if (content.length() > MAX_HISTORY_MESSAGE_CHARS) content = content.substring(0, MAX_HISTORY_MESSAGE_CHARS) + "…（历史消息已截断）";
+            ObjectNode message = mapper.createObjectNode();
+            message.put("role", role);
+            message.put("content", content);
+            safe.add(message);
+        }
+        Collections.reverse(safe);
+        for (ObjectNode item : safe) messages.add(item);
     }
 
     private void recordMetrics(boolean retrievalHit, int tools, int toolFailures, int promptTokens, int completionTokens, long duration) {
