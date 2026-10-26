@@ -21,6 +21,7 @@ import java.net.HttpURLConnection;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -33,6 +34,8 @@ import java.util.concurrent.atomic.LongAdder;
 @Slf4j
 @Service
 public class GogoAssistantService {
+    private static final int MAX_TOOL_CALLS_PER_RESPONSE = 5;
+    private static final int MAX_TOOL_CALLS_PER_REQUEST = 8;
     private final ObjectMapper mapper;
     private final FAQRepository faqRepository;
     private final ProductRepository productRepository;
@@ -104,6 +107,10 @@ public class GogoAssistantService {
                         handoff = true;
                     }
                     break;
+                }
+                if (result.toolCalls.size() > MAX_TOOL_CALLS_PER_RESPONSE
+                        || toolCount + result.toolCalls.size() > MAX_TOOL_CALLS_PER_REQUEST) {
+                    throw new IllegalStateException("model_tool_call_limit_exceeded");
                 }
                 toolCount += result.toolCalls.size();
                 ObjectNode assistantCall = mapper.createObjectNode(); assistantCall.put("role", "assistant");
@@ -216,12 +223,18 @@ public class GogoAssistantService {
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod("POST"); connection.setConnectTimeout(connectTimeout); connection.setReadTimeout(readTimeout);
         connection.setDoOutput(true); connection.setRequestProperty("Authorization", "Bearer " + apiKey); connection.setRequestProperty("Content-Type", "application/json");
-        byte[] payload = mapper.writeValueAsBytes(body); connection.getOutputStream().write(payload);
-        int status = connection.getResponseCode();
-        InputStream input = status >= 400 ? connection.getErrorStream() : connection.getInputStream();
-        if (status >= 400) { if (input != null) try(BufferedReader r=new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8))) { while(r.readLine()!=null){} } throw new IllegalStateException("model_http_"+status); }
-        StreamResult result = new StreamResult(); Map<Integer,ObjectNode> calls = new TreeMap<>();
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8))) {
+        try {
+            byte[] payload = mapper.writeValueAsBytes(body);
+            try (OutputStream output = connection.getOutputStream()) { output.write(payload); }
+            int status = connection.getResponseCode();
+            if (status >= 400) {
+                InputStream error = connection.getErrorStream();
+                if (error != null) error.close();
+                throw new IllegalStateException("model_http_" + status);
+            }
+            StreamResult result = new StreamResult(); Map<Integer,ObjectNode> calls = new TreeMap<>();
+            InputStream input = connection.getInputStream();
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 if (!line.startsWith("data:")) continue;
@@ -237,19 +250,20 @@ public class GogoAssistantService {
                     JsonNode fn=tc.path("function"); if(!fn.isMissingNode()) { ObjectNode fnNode=(ObjectNode)call.with("function"); if(fn.has("name")) fnNode.put("name",fn.path("name").asText()); if(fn.has("arguments")) fnNode.put("arguments",fnNode.path("arguments").asText("")+fn.path("arguments").asText()); }
                 }
             }
+            }
+            result.rawToolCalls=mapper.createArrayNode(); for(ObjectNode call:calls.values()) { result.rawToolCalls.add(call); result.toolCalls.add(call); }
+            return result;
         } finally { connection.disconnect(); }
-        result.rawToolCalls=mapper.createArrayNode(); for(ObjectNode call:calls.values()) { result.rawToolCalls.add(call); result.toolCalls.add(call); }
-        return result;
     }
 
     private ArrayNode toolDefinitions(boolean authenticated) {
         ArrayNode tools=mapper.createArrayNode();
-        tools.add(tool("search_products","按名称或关键词搜索在售商品", "query", "string"));
-        if(authenticated) tools.add(tool("get_my_order_status","查询当前登录用户自己的订单状态；不可指定用户或订单号", "status", "integer"));
+        tools.add(tool("search_products","按名称或关键词搜索在售商品", "query", "string", true));
+        if(authenticated) tools.add(tool("get_my_order_status","查询当前登录用户自己的订单状态；不可指定用户或订单号", "status", "integer", false));
         return tools;
     }
-    private ObjectNode tool(String name,String description,String argName,String type) {
-        ObjectNode tool=mapper.createObjectNode(); tool.put("type","function"); ObjectNode fn=tool.putObject("function"); fn.put("name",name); fn.put("description",description); ObjectNode params=fn.putObject("parameters"); params.put("type","object"); ObjectNode props=params.putObject("properties"); props.putObject(argName).put("type",type).put("description",name.equals("search_products")?"商品搜索关键词":"可选订单状态：10待付款、20待发货、30待收货、40待评价、50完成、60取消"); params.putArray("required"); params.put("additionalProperties",false); return tool;
+    private ObjectNode tool(String name,String description,String argName,String type,boolean required) {
+        ObjectNode tool=mapper.createObjectNode(); tool.put("type","function"); ObjectNode fn=tool.putObject("function"); fn.put("name",name); fn.put("description",description); ObjectNode params=fn.putObject("parameters"); params.put("type","object"); ObjectNode props=params.putObject("properties"); props.putObject(argName).put("type",type).put("description",name.equals("search_products")?"商品搜索关键词":"可选订单状态：10待付款、20待发货、30待收货、40待评价、50完成、60取消"); ArrayNode requiredFields=params.putArray("required"); if(required) requiredFields.add(argName); params.put("additionalProperties",false); return tool;
     }
     String executeTool(String name, JsonNode args, LoginUser loginUser) {
         if("search_products".equals(name)) {
