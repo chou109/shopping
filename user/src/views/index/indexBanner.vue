@@ -195,10 +195,16 @@ onUnmounted(() => {
     <!-- 商品分类导航 - 独立于轮播图，固定在轮播图上方 -->
     <div class="home-category" v-if="categories.length > 0" @mouseenter="handleMouseEnterMenu"
       @mouseleave="handleMouseLeaveMenu">
+      <div class="category-heading">
+        <span class="category-heading-title">商品分类</span>
+        <span class="category-heading-hint">按品类选购</span>
+      </div>
       <ul class="menu">
         <li v-for="item in categories" :key="item.id" :class="{ 'active': hoveredCategory === item.id }"
           role="button" tabindex="0" :aria-expanded="Boolean(item.children?.length && hoveredCategory === item.id)"
-          :aria-label="`分类：${item.name}`" @mouseenter="showCategoryChildren(item)" @focus="showCategoryChildren(item)"
+          :aria-label="`分类：${item.name}`"
+          @pointerenter="event => event.pointerType !== 'touch' && showCategoryChildren(item)"
+          @focus="showCategoryChildren(item)"
           @click="handleCategoryActivation(item)" @keydown.enter.prevent="handleCategoryActivation(item)"
           @keydown.space.prevent="handleCategoryActivation(item)">
           <div class="category-main">{{ item.name }}</div>
@@ -207,6 +213,11 @@ onUnmounted(() => {
 
       <!-- 统一的子目录层 - 所有子分类都显示在这个固定位置 -->
       <div class="layer" v-if="categories.find(c => c.id === hoveredCategory)?.children?.length">
+        <div class="layer-heading">
+          <span>{{ categories.find(c => c.id === hoveredCategory)?.name }}</span>
+          <span class="layer-heading-hint">子分类</span>
+          <button type="button" class="layer-close" aria-label="收起子分类" @click.stop="hoveredCategory = null">收起</button>
+        </div>
         <ul>
           <li v-for="child in categories.find(c => c.id === hoveredCategory)?.children" :key="child.id"
             role="button" tabindex="0" :aria-label="`查看分类：${child.name}`"
