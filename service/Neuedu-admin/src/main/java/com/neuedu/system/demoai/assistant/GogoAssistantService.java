@@ -173,7 +173,7 @@ public class GogoAssistantService {
             for (FrequentlyAskedQuestion faq : faqs) {
                 String text = safe(faq.getQuestion()) + " " + safe(faq.getAnswer());
                 int score = score(terms, text);
-                if (score > 0) docs.add(doc("FAQ #" + faq.getId() + "：" + safe(faq.getQuestion()), safe(faq.getAnswer()), score));
+                if (score > 0) docs.add(doc("FAQ #" + faq.getId() + "：" + safe(faq.getQuestion()), safe(faq.getAnswer()), score, "faq", faq.getId()));
             }
         } catch (Exception ex) { log.debug("FAQ retrieval unavailable: {}", ex.getClass().getSimpleName()); }
         try {
@@ -186,7 +186,7 @@ public class GogoAssistantService {
                 String content = "商品：" + p.getName() + "；简介：" + p.getSubTitle() + "；价格：" + p.getPrice() + "；库存：" + p.getStock();
                 int relevance = score(terms, content);
                 boolean explicitlySelected = productId != null && Objects.equals(productId, p.getId());
-                if (relevance > 0 || explicitlySelected) docs.add(doc("商品 #" + p.getId() + "：" + p.getName(), content, relevance));
+                if (relevance > 0 || explicitlySelected) docs.add(doc("商品 #" + p.getId() + "：" + p.getName(), content, relevance, "product", p.getId()));
             }
         } catch (Exception ex) { log.debug("Product retrieval unavailable: {}", ex.getClass().getSimpleName()); }
         docs.sort((a,b) -> Integer.compare((Integer)b.get("score"), (Integer)a.get("score")));
@@ -194,7 +194,7 @@ public class GogoAssistantService {
         for (Map<String,Object> doc : docs) doc.remove("score");
         return docs;
     }
-    private Map<String,Object> doc(String title, String content, int score) { Map<String,Object> d = new LinkedHashMap<>(); d.put("title",title); d.put("content",content); d.put("score",score); return d; }
+    private Map<String,Object> doc(String title, String content, int score, String sourceType, Long sourceId) { Map<String,Object> d = new LinkedHashMap<>(); d.put("title",title); d.put("content",content); d.put("sourceType",sourceType); d.put("sourceId",sourceId); d.put("score",score); return d; }
     private Set<String> terms(String text) { Set<String> out = new LinkedHashSet<>(); if (text == null) return out; for (String w : text.toLowerCase(Locale.ROOT).split("[^\\p{IsHan}a-z0-9]+")) if (w.length()>1) out.add(w); for (int i=0;i+1<text.length();i++) if (Character.UnicodeScript.of(text.charAt(i))==Character.UnicodeScript.HAN && Character.UnicodeScript.of(text.charAt(i+1))==Character.UnicodeScript.HAN) out.add(text.substring(i,i+2)); return out; }
     private int score(Set<String> terms, String text) { int n=0; String lower=text.toLowerCase(Locale.ROOT); for(String term:terms) if(lower.contains(term)) n++; return n; }
     private String safe(String value) { return value == null ? "" : value; }

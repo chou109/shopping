@@ -53,9 +53,16 @@
           </template>
           <div class="msg-content" :class="{ 'product-list': isProductList(msg.content) }">
             <span v-html="formatChatMessage(msg.content)"></span>
-            <div v-if="msg.sources && msg.sources.length" class="chat-sources">
-              参考资料：<span v-for="(source, sourceIndex) in msg.sources" :key="sourceIndex">{{ source.title }}<span v-if="sourceIndex < msg.sources.length - 1">、</span></span>
-            </div>
+            <details v-if="msg.sources && msg.sources.length" class="chat-sources">
+              <summary>参考资料（{{ msg.sources.length }}）</summary>
+              <ul class="source-list">
+                <li v-for="(source, sourceIndex) in msg.sources" :key="`${source.title || '来源'}-${sourceIndex}`">
+                  <strong>{{ source.title || '商城资料' }}</strong>
+                  <small>{{ source.sourceType === 'faq' ? '常见问题' : source.sourceType === 'product' ? '商品资料' : '商城资料' }}<span v-if="source.sourceId != null"> · #{{ source.sourceId }}</span></small>
+                  <p>{{ source.content }}</p>
+                </li>
+              </ul>
+            </details>
             <button v-if="msg.handoff" type="button" class="handoff-link" @click="goToHumanService">转接人工客服</button>
             <div class="msg-time">{{ formatTime(msg.time) }}</div>
           </div>
@@ -1184,5 +1191,11 @@ onUnmounted(() => {
 
 <style scoped>
 .chat-sources { margin-top: 8px; color: #7a8491; font-size: 12px; line-height: 1.6; }
+.chat-sources summary { width: fit-content; cursor: pointer; color: #546477; }
+.source-list { display: grid; gap: 8px; margin: 8px 0 0; padding: 0; list-style: none; }
+.source-list li { padding: 8px 10px; border: 1px solid #e8edf2; border-radius: 8px; background: #fafbfc; }
+.source-list strong { color: #465466; font-weight: 600; }
+.source-list small { display: block; margin-top: 3px; color: #9aa3ad; font-size: 11px; }
+.source-list p { margin: 4px 0 0; color: #7a8491; white-space: pre-wrap; }
 .handoff-link { margin-top: 8px; border: 0; padding: 0; background: transparent; color: #409eff; cursor: pointer; font-size: 13px; }
 </style>

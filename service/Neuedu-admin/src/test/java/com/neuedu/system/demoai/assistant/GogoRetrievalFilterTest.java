@@ -51,6 +51,8 @@ public class GogoRetrievalFilterTest {
 
         assertEquals(1, sources.get().size());
         assertTrue(String.valueOf(sources.get().get(0).get("title")).contains("当前查看的耳机"));
+        assertEquals("product", sources.get().get(0).get("sourceType"));
+        assertEquals(9L, sources.get().get(0).get("sourceId"));
     }
 
     private GogoAssistantService assistant(ProductRepository products) {
