@@ -32,7 +32,7 @@ public class GogoAssistantServiceOrderToolTest {
         GogoAssistantService assistant = new GogoAssistantService(new ObjectMapper(), proxy(FAQRepository.class, emptyProxy()),
                 proxy(ProductRepository.class, emptyProxy()), orders, new GogoPromptFactory());
         LoginUser current = new LoginUser(); current.setUserId(42L);
-        String response = assistant.executeTool("get_my_order_status", new ObjectMapper().readTree("{\"userId\":999,\"orderNo\":\"ORDER-PRIVATE-987654\"}"), current);
+        String response = assistant.executeTool("get_my_order_status", new ObjectMapper().readTree("{\"status\":20}"), current);
         assertEquals(Long.valueOf(42L), queriedUser.get());
         assertTrue(response.contains("****7654"));
         assertFalse(response.contains("ORDER-PRIVATE-987654"));
@@ -49,6 +49,37 @@ public class GogoAssistantServiceOrderToolTest {
                 proxy(ProductRepository.class, emptyProxy()), orders, new GogoPromptFactory());
         String response = assistant.executeTool("get_my_order_status", new ObjectMapper().readTree("{}"), null);
         assertTrue(response.contains("请登录"));
+        assertFalse(called.get());
+    }
+
+    @Test
+    public void orderToolRejectsIdentityOverridesAndNonNumericStatus() throws Exception {
+        AtomicReference<Boolean> called = new AtomicReference<>(false);
+        IOrderInfoService orders = proxy(IOrderInfoService.class, (proxy, method, args) -> {
+            if ("selectOrderListByUserId".equals(method.getName())) called.set(true);
+            return defaultValue(method.getReturnType());
+        });
+        GogoAssistantService assistant = new GogoAssistantService(new ObjectMapper(), proxy(FAQRepository.class, emptyProxy()),
+                proxy(ProductRepository.class, emptyProxy()), orders, new GogoPromptFactory());
+        LoginUser current = new LoginUser(); current.setUserId(42L);
+
+        assertTrue(assistant.executeTool("get_my_order_status", new ObjectMapper().readTree("{\"userId\":999}"), current).contains("参数无效"));
+        assertTrue(assistant.executeTool("get_my_order_status", new ObjectMapper().readTree("{\"status\":\"20\"}"), current).contains("状态条件无效"));
+        assertFalse(called.get());
+    }
+
+    @Test
+    public void productToolRequiresAStringAndRejectsAdditionalArguments() throws Exception {
+        AtomicReference<Boolean> called = new AtomicReference<>(false);
+        ProductRepository products = proxy(ProductRepository.class, (proxy, method, args) -> {
+            if ("searchActiveByKeyword".equals(method.getName())) called.set(true);
+            return Collections.emptyList();
+        });
+        GogoAssistantService assistant = new GogoAssistantService(new ObjectMapper(), proxy(FAQRepository.class, emptyProxy()),
+                products, proxy(IOrderInfoService.class, emptyProxy()), new GogoPromptFactory());
+
+        assertTrue(assistant.executeTool("search_products", new ObjectMapper().readTree("{\"query\":7}"), null).contains("搜索参数无效"));
+        assertTrue(assistant.executeTool("search_products", new ObjectMapper().readTree("{\"query\":\"手机\",\"limit\":1000}"), null).contains("搜索参数无效"));
         assertFalse(called.get());
     }
 

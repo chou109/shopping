@@ -3,6 +3,7 @@ package com.neuedu.system.demoai.assistant;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.neuedu.system.demoai.assistant.prompt.GogoPromptFactory;
 import com.neuedu.system.demoai.entity.Product;
+import com.neuedu.system.demoai.entity.FrequentlyAskedQuestion;
 import com.neuedu.system.demoai.repository.FAQRepository;
 import com.neuedu.system.demoai.repository.ProductRepository;
 import com.neuedu.system.service.IOrderInfoService;
@@ -55,14 +56,58 @@ public class GogoRetrievalFilterTest {
         assertEquals(9L, sources.get().get(0).get("sourceId"));
     }
 
+    @Test
+    public void unrelatedFaqWithOnlyOneCoincidentalBigramIsNotReturned() {
+        FrequentlyAskedQuestion faq = faq(21L, "政策支持" , "本店提供日常售后服务");
+        FAQRepository faqs = faqRepository(faq);
+        AtomicReference<List<Map<String, Object>>> sources = new AtomicReference<>();
+
+        assistant(faqs, emptyProducts()).answer("退款政策如何申请", null, null, new ArrayList<>(), token -> { }, sources::set, handoff -> { });
+
+        assertTrue(sources.get().isEmpty());
+    }
+
+    @Test
+    public void faqWithEnoughQuestionTermOverlapIsReturnedAsItsSourceType() {
+        FrequentlyAskedQuestion faq = faq(22L, "如何申请退款", "请从订单页面提交售后申请");
+        faq.setSourceType("POLICY");
+        AtomicReference<List<Map<String, Object>>> sources = new AtomicReference<>();
+
+        assistant(faqRepository(faq), emptyProducts()).answer("退款政策如何申请", null, null, new ArrayList<>(), token -> { }, sources::set, handoff -> { });
+
+        assertEquals(1, sources.get().size());
+        assertEquals("policy", sources.get().get(0).get("sourceType"));
+    }
+
     private GogoAssistantService assistant(ProductRepository products) {
-        FAQRepository faqs = proxy(FAQRepository.class, (proxy, method, args) -> {
-            if ("findForAssistant".equals(method.getName())) return Collections.emptyList();
-            return defaultValue(method.getReturnType());
-        });
+        return assistant(faqRepository(), products);
+    }
+
+    private GogoAssistantService assistant(FAQRepository faqs, ProductRepository products) {
         return new GogoAssistantService(new ObjectMapper(), faqs, products,
                 proxy(IOrderInfoService.class, (proxy, method, args) -> defaultValue(method.getReturnType())),
                 new GogoPromptFactory());
+    }
+
+    private FAQRepository faqRepository(FrequentlyAskedQuestion... rows) {
+        List<FrequentlyAskedQuestion> data = rows.length == 0 ? Collections.emptyList() : java.util.Arrays.asList(rows);
+        return proxy(FAQRepository.class, (proxy, method, args) -> {
+            if ("findForAssistant".equals(method.getName())) return data;
+            return defaultValue(method.getReturnType());
+        });
+    }
+
+    private ProductRepository emptyProducts() {
+        return proxy(ProductRepository.class, (proxy, method, args) -> defaultValue(method.getReturnType()));
+    }
+
+    private FrequentlyAskedQuestion faq(Long id, String question, String answer) {
+        FrequentlyAskedQuestion faq = new FrequentlyAskedQuestion();
+        faq.setId(id);
+        faq.setQuestion(question);
+        faq.setAnswer(answer);
+        faq.setSourceType("FAQ");
+        return faq;
     }
 
     private Product product(Long id, String name) {

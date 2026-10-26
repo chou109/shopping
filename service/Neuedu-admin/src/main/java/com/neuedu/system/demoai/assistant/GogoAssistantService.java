@@ -173,7 +173,7 @@ public class GogoAssistantService {
             for (FrequentlyAskedQuestion faq : faqs) {
                 String text = safe(faq.getQuestion()) + " " + safe(faq.getAnswer());
                 int score = score(terms, text);
-                if (score > 0) {
+                if (relevant(terms, score)) {
                     String sourceType = safe(faq.getSourceType()).isEmpty() ? "FAQ" : faq.getSourceType().toLowerCase(Locale.ROOT);
                     docs.add(doc(sourceType.toUpperCase(Locale.ROOT) + " #" + faq.getId() + "：" + safe(faq.getQuestion()),
                             safe(faq.getAnswer()), score, sourceType, faq.getId()));
@@ -190,7 +190,7 @@ public class GogoAssistantService {
                 String content = "商品：" + p.getName() + "；简介：" + p.getSubTitle() + "；价格：" + p.getPrice() + "；库存：" + p.getStock();
                 int relevance = score(terms, content);
                 boolean explicitlySelected = productId != null && Objects.equals(productId, p.getId());
-                if (relevance > 0 || explicitlySelected) docs.add(doc("商品 #" + p.getId() + "：" + p.getName(), content, relevance, "product", p.getId()));
+                if (relevant(terms, relevance) || explicitlySelected) docs.add(doc("商品 #" + p.getId() + "：" + p.getName(), content, relevance, "product", p.getId()));
             }
         } catch (Exception ex) { log.debug("Product retrieval unavailable: {}", ex.getClass().getSimpleName()); }
         docs.sort((a,b) -> Integer.compare((Integer)b.get("score"), (Integer)a.get("score")));
@@ -201,6 +201,11 @@ public class GogoAssistantService {
     private Map<String,Object> doc(String title, String content, int score, String sourceType, Long sourceId) { Map<String,Object> d = new LinkedHashMap<>(); d.put("title",title); d.put("content",content); d.put("sourceType",sourceType); d.put("sourceId",sourceId); d.put("score",score); return d; }
     private Set<String> terms(String text) { Set<String> out = new LinkedHashSet<>(); if (text == null) return out; for (String w : text.toLowerCase(Locale.ROOT).split("[^\\p{IsHan}a-z0-9]+")) if (w.length()>1) out.add(w); for (int i=0;i+1<text.length();i++) if (Character.UnicodeScript.of(text.charAt(i))==Character.UnicodeScript.HAN && Character.UnicodeScript.of(text.charAt(i+1))==Character.UnicodeScript.HAN) out.add(text.substring(i,i+2)); return out; }
     private int score(Set<String> terms, String text) { int n=0; String lower=text.toLowerCase(Locale.ROOT); for(String term:terms) if(lower.contains(term)) n++; return n; }
+    private boolean relevant(Set<String> terms, int matchedTerms) {
+        if (terms.isEmpty() || matchedTerms == 0) return false;
+        int minimumMatches = Math.min(2, terms.size());
+        return matchedTerms >= minimumMatches;
+    }
     private String safe(String value) { return value == null ? "" : value; }
 
     private StreamResult stream(ArrayNode messages, LoginUser loginUser, Consumer<String> onToken) throws Exception {
@@ -248,12 +253,16 @@ public class GogoAssistantService {
     }
     String executeTool(String name, JsonNode args, LoginUser loginUser) {
         if("search_products".equals(name)) {
+            if (!onlyFields(args, "query") || !args.path("query").isTextual()) return "搜索参数无效。";
             String query=args.path("query").asText("").trim(); if(query.isEmpty() || query.length()>80) return "搜索词无效。";
             List<Product> found=productRepository.searchActiveByKeyword(query, PageRequest.of(0, 5)); StringBuilder b=new StringBuilder();
             for(int i=0;i<Math.min(found.size(),5);i++){ Product p=found.get(i); b.append("商品").append(p.getName()).append("，价格").append(p.getPrice()).append("，库存").append(p.getStock()).append("；"); }
             return b.length()==0?"没有找到在售商品。":b.toString();
         }
         if("get_my_order_status".equals(name)) {
+            if (!onlyFields(args, "status")) return "订单查询参数无效。";
+            if (args.has("status") && !args.get("status").isNull()
+                    && (!args.get("status").isIntegralNumber() || !args.get("status").canConvertToInt())) return "订单状态条件无效。";
             if(loginUser==null || loginUser.getUserId()==null) return "请登录后查询订单。";
             Integer status=args.hasNonNull("status")?args.path("status").asInt():null;
             if(status!=null && !Arrays.asList(10,20,30,40,50,60).contains(status)) return "订单状态条件无效。";
@@ -262,6 +271,13 @@ public class GogoAssistantService {
             return b.length()==0?"当前没有符合条件的订单。":b.toString();
         }
         return "未授权的工具。";
+    }
+    private boolean onlyFields(JsonNode args, String... allowed) {
+        if (args == null || !args.isObject()) return false;
+        Set<String> names = new HashSet<>(Arrays.asList(allowed));
+        Iterator<String> fields = args.fieldNames();
+        while (fields.hasNext()) if (!names.contains(fields.next())) return false;
+        return true;
     }
     private String mask(String orderNo) { if(orderNo==null)return "未知"; return orderNo.length()<=4?"****": "****"+orderNo.substring(orderNo.length()-4); }
     private static class StreamResult { final StringBuilder text=new StringBuilder(); final List<JsonNode> toolCalls=new ArrayList<>(); ArrayNode rawToolCalls; int promptTokens; int completionTokens; }
