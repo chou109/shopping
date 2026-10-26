@@ -311,7 +311,8 @@ body {
 
 #app .layer {
   width: min(400px, 34vw);
-  height: 330px;
+  height: auto;
+  max-height: 330px;
   left: 100%;
   margin-left: 8px;
   padding: 14px;
@@ -327,16 +328,21 @@ body {
 }
 
 #app .layer ul {
-  align-content: flex-start;
-  gap: 4px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  gap: 6px;
+  max-height: 288px;
+  overflow-y: auto;
 }
 
 #app .layer li {
-  width: 50%;
+  width: auto;
   height: auto;
-  min-height: 38px;
+  min-height: 42px;
   line-height: 1.4;
-  padding: 8px;
+  margin: 0;
+  padding: 8px 10px;
   border-radius: 7px;
   text-align: left;
 }
@@ -1117,6 +1123,7 @@ body {
     position: static;
     width: 100%;
     height: auto;
+    max-height: none;
     margin: 5px 0 0;
     padding: 8px 2px 0;
     border: 0;
@@ -1136,13 +1143,15 @@ body {
   }
 
   #app .layer ul {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-height: none;
+    overflow: visible;
     gap: 5px;
   }
 
   #app .layer li {
-    width: calc(50% - 3px);
+    width: auto;
     min-height: 32px;
     padding: 7px 9px;
     border-radius: 6px;
