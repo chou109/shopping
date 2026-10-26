@@ -550,6 +550,10 @@ const toggleQuickReplies = () => {
 // 清空聊天记录
 const clearChat = () => {
   if (confirm('确定要清空聊天记录吗？')) {
+    if (conversationId.value && !isConnected.value) {
+      addErrorMessage('当前未连接，暂时无法删除服务器中的聊天记录；恢复连接后再试一次。')
+      return
+    }
     if (isConnected.value && ws && conversationId.value) {
       try { ws.send(JSON.stringify({ action: 'clear', conversationId: conversationId.value, token: getToken() || '' })) }
       catch (error) { console.warn('逛逛会话清理请求发送失败', error?.message || error) }

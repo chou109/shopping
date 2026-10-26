@@ -16,6 +16,7 @@ import java.util.Optional;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class AIChatConversationServiceTest {
     @Test
@@ -71,6 +72,24 @@ public class AIChatConversationServiceTest {
                 proxy(AIChatMessageRepository.class, (instance, method, args) -> defaultValue(method.getReturnType())), new ObjectMapper());
 
         assertFalse(service.saveExchange("7f4e8888-8d6e-40d9-a6e6-cb9ebf295615", 55L, "question", "answer"));
+    }
+
+    @Test
+    public void clearsOnlyTheAuthenticatedUsersConversation() {
+        AIChatConversation conversation = new AIChatConversation(); conversation.setId(31L);
+        AIChatConversationRepository conversations = proxy(AIChatConversationRepository.class, (instance, method, args) -> {
+            if ("findByConversationKeyAndUserId".equals(method.getName())) {
+                assertEquals("7f4e8888-8d6e-40d9-a6e6-cb9ebf295615", args[0]);
+                assertEquals(Long.valueOf(55L), args[1]);
+                return Optional.of(conversation);
+            }
+            return defaultValue(method.getReturnType());
+        });
+        AIChatMessageRepository messages = proxy(AIChatMessageRepository.class,
+                (instance, method, args) -> "deleteByConversationId".equals(method.getName()) ? null : defaultValue(method.getReturnType()));
+        AIChatConversationService service = new AIChatConversationService(conversations, messages, new ObjectMapper());
+
+        assertTrue(service.clear("7f4e8888-8d6e-40d9-a6e6-cb9ebf295615", 55L));
     }
 
     @SuppressWarnings("unchecked")

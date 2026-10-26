@@ -39,8 +39,8 @@ public class AIChatWebSocket {
             Long userId = loginUser == null ? null : loginUser.getUserId();
             if ("clear".equals(request.getAction())) {
                 ChatState state = stateFor(session, userId);
-                if (conversationService != null && state.conversationKey != null && userId != null) {
-                    try { conversationService.clear(state.conversationKey, userId); }
+                if (conversationService != null && request.getConversationId() != null && userId != null) {
+                    try { conversationService.clear(request.getConversationId(), userId); }
                     catch (Exception e) { log.debug("清理 AI 会话记录失败，错误类型={}", e.getClass().getSimpleName()); }
                 }
                 state.conversationKey = null;
