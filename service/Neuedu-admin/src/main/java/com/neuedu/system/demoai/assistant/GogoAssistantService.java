@@ -8,6 +8,8 @@ import com.neuedu.common.core.domain.model.LoginUser;
 import com.neuedu.system.demoai.entity.FrequentlyAskedQuestion;
 import com.neuedu.system.demoai.entity.Product;
 import com.neuedu.system.demoai.repository.FAQRepository;
+import com.neuedu.system.demoai.repository.AIChatMetricEventRepository;
+import com.neuedu.system.demoai.entity.AIChatMetricEvent;
 import com.neuedu.system.demoai.repository.ProductRepository;
 import com.neuedu.system.domain.OrderInfo;
 import com.neuedu.system.service.IOrderInfoService;
@@ -44,6 +46,7 @@ public class GogoAssistantService {
     private final IOrderInfoService orderInfoService;
     private final GogoPromptFactory promptFactory;
     private final EmbeddingProvider embeddingProvider;
+    private final AIChatMetricEventRepository metricEventRepository;
     private final Map<String, float[]> embeddingCache = Collections.synchronizedMap(new LinkedHashMap<String, float[]>(128, 0.75f, true) {
         @Override protected boolean removeEldestEntry(Map.Entry<String, float[]> eldest) { return size() > 512; }
     });
@@ -67,13 +70,20 @@ public class GogoAssistantService {
 
     @Autowired
     public GogoAssistantService(ObjectMapper mapper, FAQRepository faqRepository, ProductRepository productRepository,
-                              IOrderInfoService orderInfoService, GogoPromptFactory promptFactory, EmbeddingProvider embeddingProvider) {
+                              IOrderInfoService orderInfoService, GogoPromptFactory promptFactory, EmbeddingProvider embeddingProvider,
+                              AIChatMetricEventRepository metricEventRepository) {
         this.mapper = mapper;
         this.faqRepository = faqRepository;
         this.productRepository = productRepository;
         this.orderInfoService = orderInfoService;
         this.promptFactory = promptFactory;
         this.embeddingProvider = embeddingProvider;
+        this.metricEventRepository = metricEventRepository;
+    }
+
+    public GogoAssistantService(ObjectMapper mapper, FAQRepository faqRepository, ProductRepository productRepository,
+                              IOrderInfoService orderInfoService, GogoPromptFactory promptFactory, EmbeddingProvider embeddingProvider) {
+        this(mapper, faqRepository, productRepository, orderInfoService, promptFactory, embeddingProvider, null);
     }
 
     public GogoAssistantService(ObjectMapper mapper, FAQRepository faqRepository, ProductRepository productRepository,
@@ -170,7 +180,17 @@ public class GogoAssistantService {
         requestCount.increment(); if (retrievalHit) retrievalHitCount.increment();
         toolCallCount.add(tools); toolFailureCount.add(toolFailures); totalDurationMs.add(duration);
         promptTokenCount.add(promptTokens); completionTokenCount.add(completionTokens);
-        estimatedCost.add(estimatedCost(promptTokens, completionTokens).doubleValue());
+        BigDecimal cost = estimatedCost(promptTokens, completionTokens);
+        estimatedCost.add(cost.doubleValue());
+        if (metricEventRepository != null) {
+            try {
+                AIChatMetricEvent event = new AIChatMetricEvent();
+                event.setRetrievalHit(retrievalHit ? 1 : 0); event.setToolCalls(tools); event.setToolFailures(toolFailures);
+                event.setDurationMs(duration); event.setPromptTokens(promptTokens); event.setCompletionTokens(completionTokens);
+                event.setEstimatedCost(cost); event.setCreateTime(java.time.LocalDateTime.now());
+                metricEventRepository.save(event);
+            } catch (Exception ex) { log.debug("持久化 AI 指标失败，错误类型={}", ex.getClass().getSimpleName()); }
+        }
     }
 
     private BigDecimal estimatedCost(int promptTokens, int completionTokens) {
@@ -181,6 +201,12 @@ public class GogoAssistantService {
     }
 
     public Map<String, Object> metricsSnapshot() {
+        if (metricEventRepository != null) {
+            try {
+                Object[] row = metricEventRepository.summarizeSince(java.time.LocalDateTime.now().minusDays(30));
+                if (row != null && row.length >= 8) return metricsFromRow(row);
+            } catch (Exception ex) { log.debug("读取持久化 AI 指标失败，使用进程指标：{}", ex.getClass().getSimpleName()); }
+        }
         long requests = requestCount.sum(); long calls = toolCallCount.sum(); long failures = toolFailureCount.sum();
         Map<String, Object> metrics = new LinkedHashMap<>();
         metrics.put("requests", requests);
@@ -191,8 +217,27 @@ public class GogoAssistantService {
         metrics.put("promptTokens", promptTokenCount.sum());
         metrics.put("completionTokens", completionTokenCount.sum());
         metrics.put("estimatedCost", BigDecimal.valueOf(estimatedCost.sum()).setScale(8, RoundingMode.HALF_UP));
+        metrics.put("periodDays", 0);
         return metrics;
     }
+
+    private Map<String, Object> metricsFromRow(Object[] row) {
+        long requests = number(row[0]); long calls = number(row[2]); long failures = number(row[3]);
+        Map<String, Object> metrics = new LinkedHashMap<>();
+        metrics.put("requests", requests);
+        metrics.put("retrievalHitRate", requests == 0 ? 0D : (double) number(row[1]) / requests);
+        metrics.put("toolCalls", calls);
+        metrics.put("toolSuccessRate", calls == 0 ? 0D : (double) (calls - failures) / calls);
+        metrics.put("averageResponseMs", requests == 0 ? 0D : (double) number(row[4]) / requests);
+        metrics.put("promptTokens", number(row[5]));
+        metrics.put("completionTokens", number(row[6]));
+        BigDecimal cost = row[7] instanceof BigDecimal ? (BigDecimal) row[7] : BigDecimal.valueOf(row[7] instanceof Number ? ((Number) row[7]).doubleValue() : 0D);
+        metrics.put("estimatedCost", cost.setScale(8, RoundingMode.HALF_UP));
+        metrics.put("periodDays", 30);
+        return metrics;
+    }
+
+    private long number(Object value) { return value instanceof Number ? ((Number) value).longValue() : 0L; }
 
     private List<Map<String, Object>> retrieve(String question, Long productId) {
         List<Map<String, Object>> candidates = new ArrayList<>();

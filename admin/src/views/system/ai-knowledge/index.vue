@@ -13,8 +13,10 @@
         <div class="metric"><span>候选资料返回率</span><strong>{{ percent(metrics.retrievalHitRate) }}</strong></div>
         <div class="metric"><span>工具成功率</span><strong>{{ percent(metrics.toolSuccessRate) }}</strong></div>
         <div class="metric"><span>平均响应</span><strong>{{ Math.round(metrics.averageResponseMs || 0) }} ms</strong></div>
+        <div class="metric"><span>输入 / 输出 Token</span><strong>{{ metrics.promptTokens ?? 0 }} / {{ metrics.completionTokens ?? 0 }}</strong></div>
+        <div class="metric"><span>估算模型费用</span><strong>{{ Number(metrics.estimatedCost || 0).toFixed(6) }}</strong></div>
       </div>
-      <div class="metrics-note">统计为当前后端进程累计值，重启后清零；候选资料返回率不代表答案已通过人工质量评估。</div>
+      <div class="metrics-note">{{ metrics.periodDays ? `统计近 ${metrics.periodDays} 天，后端重启后保留` : '数据库统计表未启用，当前显示本进程数据，重启后清零' }}；候选资料返回率不代表答案已通过人工质量评估。</div>
     </el-card>
 
     <el-card shadow="never" class="knowledge-card">

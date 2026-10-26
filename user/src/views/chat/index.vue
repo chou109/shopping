@@ -176,6 +176,7 @@ const currentAiMessage = ref('');
 const currentSources = ref([]);
 const currentToolResults = ref([])
 const currentHandoff = ref(false);
+const conversationId = ref('')
 const autoScrollEnabled = ref(true);
 const showWelcomeMessage = ref(true); // 控制欢迎消息显示
 const selectedProduct = ref(null)
@@ -199,6 +200,17 @@ let ws = null;
 let reconnectTimer = null;
 let isUnmounted = false;
 const pendingTimeouts = new Set();
+
+const conversationStorageKey = () => `gogo-chat-conversation:${store.state.user?.userId || (getToken() ? 'authenticated' : 'guest')}`
+const saveConversationId = (value) => {
+  conversationId.value = value || ''
+  try {
+    if (conversationId.value) localStorage.setItem(conversationStorageKey(), conversationId.value)
+    else localStorage.removeItem(conversationStorageKey())
+  } catch (error) {
+    console.warn('逛逛会话编号无法保存到本地', error?.message || error)
+  }
+}
 
 const scheduleTimeout = (callback, delay) => {
   const timer = window.setTimeout(() => {
@@ -336,6 +348,9 @@ const initWebSocket = () => {
       if (isUnmounted) return;
       isConnected.value = true;
       addSystemMessage('已连接到逛逛');
+      if (conversationId.value) {
+        ws.send(JSON.stringify({ action: 'resume', conversationId: conversationId.value, token: getToken() || '' }))
+      }
       forceScrollToBottom();
     };
 
@@ -366,7 +381,14 @@ const initWebSocket = () => {
         const response = JSON.parse(event.data);
         const { type, content } = response;
 
-        if (type === 'stream') {
+        if (type === 'conversation') {
+          saveConversationId(content)
+        } else if (type === 'history') {
+          chatList.value = Array.isArray(content) ? content
+            .filter(message => ['user', 'assistant'].includes(message?.role) && typeof message.content === 'string')
+            .map(message => ({ type: message.role === 'user' ? 'user' : 'ai', content: message.content, time: Date.now() })) : []
+          forceScrollToBottom()
+        } else if (type === 'stream') {
           currentAiMessage.value += content;
 
           const lastMsg = chatList.value[chatList.value.length - 1];
@@ -481,7 +503,8 @@ const sendMessage = () => {
     ws.send(JSON.stringify({
       question: text,
       productId: selectedProduct.value?.id || null,
-      token: getToken() || ''
+      token: getToken() || '',
+      conversationId: conversationId.value || null
     }));
     isRequestInFlight.value = true
     addUserMessage(text);
@@ -527,6 +550,11 @@ const toggleQuickReplies = () => {
 // 清空聊天记录
 const clearChat = () => {
   if (confirm('确定要清空聊天记录吗？')) {
+    if (isConnected.value && ws && conversationId.value) {
+      try { ws.send(JSON.stringify({ action: 'clear', conversationId: conversationId.value, token: getToken() || '' })) }
+      catch (error) { console.warn('逛逛会话清理请求发送失败', error?.message || error) }
+    }
+    saveConversationId('')
     chatList.value = [];
     currentSources.value = []
     currentToolResults.value = []
@@ -551,6 +579,8 @@ const handleGlobalKeydown = (event) => {
 
 onMounted(() => {
   isUnmounted = false;
+  try { conversationId.value = localStorage.getItem(conversationStorageKey()) || '' }
+  catch (error) { conversationId.value = '' }
   loadProductContext(route.query.productId)
   initWebSocket();
 
