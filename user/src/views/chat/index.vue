@@ -8,10 +8,10 @@
           <img :src="aiAvatarImage" alt="逛逛头像" class="ai-avatar">
         </div>
         <div class="service-name-status">
-          <div class="service-name">逛逛</div>
+          <div class="service-name">逛逛 <span class="assistant-badge">商城 AI 助手</span></div>
           <div class="service-status">
             <span class="online-dot" :class="{ online: isConnected }"></span>
-            {{ isConnected ? '客服通道已连接' : '正在连接客服...' }}
+            {{ isConnected ? '已连接 · 商品咨询与订单问答' : '正在连接逛逛...' }}
           </div>
         </div>
       </div>
@@ -23,20 +23,27 @@
 
     <!-- 聊天区域 -->
     <div class="chat-container" ref="chatContainer">
+      <section v-if="selectedProduct" class="product-context" aria-label="当前咨询商品">
+        <img :src="getProductImageUrl(selectedProduct.mainImage) || DEFAULT_PRODUCT_IMAGE" :alt="selectedProduct.name" @error="handleImageError" />
+        <div class="product-context-copy">
+          <span class="context-label">正在咨询这件商品</span>
+          <strong>{{ selectedProduct.name }}</strong>
+          <div class="context-meta"><span class="context-price">¥{{ formatPrice(selectedProduct.price) }}</span><span>库存 {{ selectedProduct.stock ?? '—' }}</span></div>
+        </div>
+        <button type="button" class="view-product-btn" @click="viewSelectedProduct">查看商品</button>
+        <button type="button" class="clear-context-btn" aria-label="取消商品上下文" title="取消商品上下文" @click="clearProductContext">×</button>
+      </section>
+
       <!-- 欢迎消息 -->
       <div class="welcome-message" v-if="showWelcomeMessage">
         <button type="button" class="welcome-close-btn" aria-label="关闭欢迎提示" @click="closeWelcomeMessage">×</button>
         <div class="welcome-content">
-          <div class="welcome-icon">🤖</div>
-          <div class="welcome-title">👋 您好！</div>
-          <div class="welcome-text">我是逛逛，可以帮您查询商品和商城常见问题。</div>
+          <div class="welcome-eyebrow"><span class="welcome-sparkle">✦</span> GOGO SHOPPING ASSISTANT</div>
+          <div class="welcome-title">{{ selectedProduct ? '关于这件商品，尽管问我' : '你好，我是逛逛' }}</div>
+          <div class="welcome-text">{{ selectedProduct ? `我已为你带入「${selectedProduct.name}」的商品信息，可以帮你了解参数、价格和购买前常见问题。` : '从挑选商品到了解商城服务，我会结合商品资料和商城知识帮你解答。' }}</div>
           <div class="welcome-tips">
-            我可以帮您：
-            <span class="tip-item">• 查询商品信息</span>
-            <span class="tip-item">• 推荐商品</span>
-            <span class="tip-item">• 解答售后问题</span>
-            <span class="tip-item">• 了解如何查看订单状态</span>
-            <span class="tip-item">• 登录后在“我的订单”查看发货信息</span>
+            <span class="tip-item">商品推荐</span><span class="tip-item">价格与库存</span>
+            <span class="tip-item">配送与售后</span><span class="tip-item">登录后查询本人订单</span>
           </div>
         </div>
       </div>
@@ -58,8 +65,9 @@
               <ul class="source-list">
                 <li v-for="(source, sourceIndex) in msg.sources" :key="`${source.title || '来源'}-${sourceIndex}`">
                   <strong>{{ source.title || '商城资料' }}</strong>
-                  <small>{{ source.sourceType === 'faq' ? '常见问题' : source.sourceType === 'product' ? '商品资料' : '商城资料' }}<span v-if="source.sourceId != null"> · #{{ source.sourceId }}</span></small>
+                  <small>{{ sourceTypeLabel(source.sourceType) }}<span v-if="source.sourceId != null"> · #{{ source.sourceId }}</span></small>
                   <p>{{ source.content }}</p>
+                  <button v-if="source.sourceType === 'product' && source.sourceId != null" type="button" class="source-product-link" @click="viewSourceProduct(source.sourceId)">查看商品 →</button>
                 </li>
               </ul>
             </details>
@@ -109,10 +117,10 @@
           <div class="user-icon-wrapper">
           <img :src="userAvatarImage" class="user-icon" alt="用户">
           </div>
-          <input v-model="inputMsg" aria-label="咨询问题" placeholder="请输入您想咨询的问题..." @keyup.enter="sendMessage"
-            @keyup.ctrl.enter="inputMsg += '\n'" :disabled="!isConnected" class="chat-input" ref="chatInput" />
+          <input v-model="inputMsg" aria-label="咨询问题" :placeholder="productContextLoading ? '正在准备商品信息...' : '请输入您想咨询的问题...'" @keyup.enter="sendMessage"
+            @keyup.ctrl.enter="inputMsg += '\n'" :disabled="!isConnected || productContextLoading" class="chat-input" ref="chatInput" />
           <div class="input-actions">
-            <button type="button" @click="sendMessage" :disabled="!isConnected || !inputMsg.trim()" class="send-btn">
+            <button type="button" @click="sendMessage" :disabled="!isConnected || productContextLoading || !inputMsg.trim()" class="send-btn">
               <span v-if="isConnected">发送</span>
               <span v-else>连接中...</span>
             </button>
@@ -125,17 +133,19 @@
 
 <script setup>
 import aiAvatarImage from '@/assets/logo/logo.png'
-import { DEFAULT_AVATAR_IMAGE } from '@/utils/image'
+import { DEFAULT_AVATAR_IMAGE, DEFAULT_PRODUCT_IMAGE, getProductImageUrl, handleImageError } from '@/utils/image'
 import { formatChatMessage } from '@/utils/chat'
-import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue';
+import { ref, onMounted, onUnmounted, nextTick, computed, watch } from 'vue';
 import { useStore } from 'vuex';
 import { getWebSocketUrl } from '@/utils/request';
 import { getToken } from '@/utils/auth';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
+import { getProduct } from '@/api/system/product'
 
 // Vuex store
 const store = useStore();
 const router = useRouter();
+const route = useRoute();
 
 const userAvatarImage = computed(() => store.state.user?.avatar || DEFAULT_AVATAR_IMAGE)
 // 响应式数据
@@ -149,6 +159,9 @@ const currentSources = ref([]);
 const currentHandoff = ref(false);
 const autoScrollEnabled = ref(true);
 const showWelcomeMessage = ref(true); // 控制欢迎消息显示
+const selectedProduct = ref(null)
+const productContextLoading = ref(false)
+let productContextRequestId = 0
 
 // 获取DOM引用
 const chatContainer = ref(null);
@@ -158,17 +171,9 @@ const scrollAnchor = ref(null);
 const lastMessageRef = ref(null);
 
 // 示例问题
-const exampleQuestions = ref([
-  '你好',
-  '查看我的订单',
-  '我的订单状态',
-  '查看待付款订单',
-  '有没有推荐的苹果手机？',
-  '有没有推荐的小米手机？',
-  '我想要2000元以上的苹果手机',
-  '什么时候发货？',
-  '如何退货？'
-]);
+const exampleQuestions = computed(() => selectedProduct.value
+  ? [`${selectedProduct.value.name}有什么特点？`, '这件商品现在有货吗？', '这件商品适合什么人群？', '配送和售后规则是什么？']
+  : ['帮我推荐一款手机', '怎么查看订单物流？', '商城支持哪些支付方式？', '如何申请退换货？'])
 
 // WebSocket实例
 let ws = null;
@@ -203,6 +208,44 @@ const closeWelcomeMessage = () => {
 const isProductList = (content) => {
   return content.includes('商品列表') || content.includes('AI 智能推荐');
 };
+
+const formatPrice = (value) => {
+  if (value == null || value === '') return '暂无报价'
+  const price = Number(value)
+  return Number.isFinite(price) ? price.toFixed(2) : '暂无报价'
+}
+
+const sourceTypeLabel = (type) => ({ faq: '常见问题', policy: '商城政策', product: '商品资料' })[type] || '商城资料'
+
+const loadProductContext = async (rawId) => {
+  const requestId = ++productContextRequestId
+  const productId = Number(rawId)
+  selectedProduct.value = null
+  productContextLoading.value = Number.isSafeInteger(productId) && productId > 0
+  if (!productContextLoading.value) return
+  try {
+    const response = await getProduct(productId)
+    if (requestId !== productContextRequestId) return
+    if (response?.code === 200 && response.data?.id) selectedProduct.value = response.data
+  } catch (error) {
+    if (requestId === productContextRequestId) console.warn('商品咨询上下文加载失败', error?.message || error)
+  } finally {
+    if (requestId === productContextRequestId) productContextLoading.value = false
+  }
+}
+
+const viewSelectedProduct = () => {
+  if (selectedProduct.value?.id) router.push({ path: '/product/detail', query: { id: selectedProduct.value.id } })
+}
+
+const viewSourceProduct = (productId) => router.push({ path: '/product/detail', query: { id: productId } })
+
+const clearProductContext = async () => {
+  selectedProduct.value = null
+  const query = { ...route.query }
+  delete query.productId
+  await router.replace({ path: route.path, query })
+}
 
 // 格式化时间
 const formatTime = (timestamp) => {
@@ -404,7 +447,7 @@ const sendMessage = () => {
 
   ws.send(JSON.stringify({
     question: text,
-    productId: null,
+    productId: selectedProduct.value?.id || null,
     token: getToken() || ''
   }));
 
@@ -467,6 +510,7 @@ const handleGlobalKeydown = (event) => {
 
 onMounted(() => {
   isUnmounted = false;
+  loadProductContext(route.query.productId)
   initWebSocket();
 
   nextTick(() => {
@@ -481,6 +525,8 @@ onMounted(() => {
 
   document.addEventListener('keydown', handleGlobalKeydown);
 });
+
+watch(() => route.query.productId, (productId) => loadProductContext(productId))
 
 onUnmounted(() => {
   isUnmounted = true;
@@ -1198,4 +1244,82 @@ onUnmounted(() => {
 .source-list small { display: block; margin-top: 3px; color: #9aa3ad; font-size: 11px; }
 .source-list p { margin: 4px 0 0; color: #7a8491; white-space: pre-wrap; }
 .handoff-link { margin-top: 8px; border: 0; padding: 0; background: transparent; color: #409eff; cursor: pointer; font-size: 13px; }
+</style>
+
+<style scoped>
+.chat-page {
+  width: min(100% - 40px, 1180px);
+  height: min(820px, calc(100vh - 148px));
+  min-height: 560px;
+  margin: 28px auto;
+  overflow: hidden;
+  border: 1px solid #ece8e4;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 18px 55px rgba(55, 45, 37, .1);
+}
+.chat-header { min-height: 76px; padding: 14px 24px; border-bottom: 1px solid #f0eeeb; background: linear-gradient(110deg, #fff, #fffaf6); }
+.service-avatar { box-shadow: 0 0 0 4px #fff2e8; }
+.service-name { color: #292d32; font-size: 18px; font-weight: 750; }
+.assistant-badge { margin-left: 8px; padding: 4px 9px; border-radius: 20px; background: #fff0e5; color: #e76d2f; font-size: 11px; font-weight: 650; vertical-align: 2px; }
+.service-status { margin-top: 3px; color: #90979e; font-size: 12px; }
+.online-dot.online { background: #43b581; box-shadow: 0 0 0 3px #e8f7ef; }
+.action-btn { border-radius: 10px; background: #f6f5f3; }
+.action-btn:hover { background: #fff0e5; }
+.chat-container { height: calc(100% - 76px); padding: 22px 32px 18px; background: radial-gradient(ellipse at 50% 0%, #fffaf6 0, #fff 48%); }
+.product-context { display: flex; align-items: center; gap: 14px; max-width: 820px; margin: 0 auto 16px; padding: 10px 14px; border: 1px solid #f4dfd1; border-radius: 15px; background: #fffaf6; }
+.product-context > img { width: 58px; height: 58px; flex: 0 0 auto; border-radius: 10px; background: #f4f2ef; object-fit: cover; }
+.product-context-copy { min-width: 0; flex: 1; }
+.context-label { display: block; color: #99918b; font-size: 11px; }
+.product-context-copy strong { display: block; overflow: hidden; margin-top: 2px; color: #35383c; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
+.context-meta { display: flex; gap: 12px; margin-top: 3px; color: #99918b; font-size: 11px; }
+.context-price { color: #e85d35; font-size: 13px; font-weight: 700; }
+.view-product-btn, .source-product-link { border: 0; background: transparent; color: #df6638; cursor: pointer; font-size: 12px; font-weight: 650; white-space: nowrap; }
+.clear-context-btn { width: 27px; height: 27px; border: 0; border-radius: 50%; background: #f6eee8; color: #8e8178; cursor: pointer; font-size: 19px; line-height: 1; }
+.welcome-message { position: relative; max-width: 820px; margin: 0 auto 18px; padding: 20px 24px; border: 1px solid #f5e6dc; border-radius: 18px; background: linear-gradient(115deg, #fff7f0, #fffdfb 70%); box-shadow: 0 7px 20px rgba(118, 84, 58, .045); }
+.welcome-eyebrow { color: #c57950; font-size: 10px; font-weight: 750; letter-spacing: .12em; }
+.welcome-sparkle { margin-right: 5px; color: #f09a62; }
+.welcome-title { margin-top: 8px; color: #34383d; font-size: 21px; font-weight: 750; }
+.welcome-text { margin-top: 5px; color: #777e85; font-size: 13px; line-height: 1.65; }
+.welcome-tips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
+.tip-item { padding: 5px 9px; border: 1px solid #f2e4da; border-radius: 20px; background: #fff; color: #827870; font-size: 11px; }
+.welcome-close-btn { color: #aa9a8e; }
+.chat-history, .quick-replies, .input-area { max-width: 900px; margin-left: auto; margin-right: auto; }
+.msg-content { border-radius: 4px 16px 16px 16px; box-shadow: 0 3px 12px rgba(48, 48, 48, .045); }
+.user-msg .msg-content { border-radius: 16px 4px 16px 16px; background: #e87543; }
+.ai-avatar-wrapper .avatar { border: 2px solid #fff; box-shadow: 0 2px 8px #e8d9cf; }
+.quick-replies { margin-top: 8px; margin-bottom: 12px; }
+.quick-reply-title { color: #8e8c89; font-size: 11px; }
+.quick-reply-buttons { gap: 7px; }
+.quick-reply-btn { border-color: #eee7e1; border-radius: 18px; background: #fff; color: #696d71; font-size: 12px; }
+.quick-reply-btn:hover:not(:disabled) { border-color: #efb08e; background: #fff7f1; color: #d86539; }
+.input-wrapper { border: 1px solid #e9e5e1; border-radius: 16px; background: #fff; box-shadow: 0 5px 18px rgba(55, 45, 37, .055); }
+.input-wrapper:focus-within { border-color: #e8a17b; box-shadow: 0 0 0 3px rgba(232, 117, 67, .09); }
+.send-btn { border-radius: 11px; background: #e87543; }
+.send-btn:hover:not(:disabled) { background: #d96333; }
+.send-btn:disabled { background: #d8d4d0; }
+.source-product-link { margin-top: 6px; padding: 0; }
+@media (max-width: 700px) {
+  .chat-page { width: 100%; height: 100dvh; min-height: 0; margin: 0; border: 0; border-radius: 0; }
+  .chat-header { min-height: 66px; padding: 10px 14px; }
+  .chat-container { height: calc(100% - 66px); padding: 14px 12px 10px; }
+  .service-name { font-size: 16px; }
+  .service-status { max-width: 210px; font-size: 10px; }
+  .product-context { gap: 9px; padding: 8px; }
+  .product-context > img { width: 48px; height: 48px; }
+  .view-product-btn { font-size: 11px; }
+  .welcome-message { padding: 16px; }
+  .welcome-title { font-size: 18px; }
+  .welcome-text { font-size: 12px; }
+  .chat-history { padding: 8px 2px; }
+  .quick-reply-buttons { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
+  .quick-reply-btn { flex: 0 0 auto; }
+  .input-area { padding-bottom: max(4px, env(safe-area-inset-bottom)); }
+}
+@media (max-width: 390px) {
+  .assistant-badge { display: none; }
+  .header-actions { gap: 4px; }
+  .product-context-copy strong { max-width: 135px; }
+  .context-meta { gap: 7px; }
+}
 </style>

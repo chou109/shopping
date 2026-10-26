@@ -257,6 +257,14 @@ const contactCustomerService = () => {
   })
 }
 
+const askGogoAboutProduct = () => {
+  if (!product.value.id) {
+    ElMessage.warning('商品信息加载完成后即可咨询逛逛')
+    return
+  }
+  router.push({ path: '/chat', query: { productId: String(product.value.id) } })
+}
+
 // 加载商品评价
 const loadProductComments = async (productId = product.value.id, requestId = productRequestId) => {
   if (!productId) return
@@ -1143,6 +1151,12 @@ watch(() => route.query.id, (newId, oldId) => {
                     </el-icon>
                   </button>
                 </div>
+                <button type="button" class="ask-gogo-btn" @click="askGogoAboutProduct" :disabled="!product.id">
+                  <el-icon><ChatDotRound /></el-icon>
+                  <span>问一问逛逛</span>
+                  <small>已带入当前商品信息</small>
+                  <span class="ask-gogo-arrow">→</span>
+                </button>
               </div>
             </div>
           </div>
@@ -2059,6 +2073,28 @@ watch(() => route.query.id, (newId, oldId) => {
   display: flex;
   gap: 10px;
 }
+
+.ask-gogo-btn {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 42px;
+  margin-top: 10px;
+  padding: 0 14px;
+  border: 1px solid #f0d9cb;
+  border-radius: 10px;
+  background: linear-gradient(100deg, #fff7f1, #fffdfb);
+  color: #c95f35;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color .2s ease, background .2s ease;
+}
+.ask-gogo-btn:hover:not(:disabled) { border-color: #e8a17b; background: #fff2e8; }
+.ask-gogo-btn:disabled { cursor: not-allowed; opacity: .55; }
+.ask-gogo-btn > span:nth-of-type(1) { font-size: 13px; font-weight: 700; }
+.ask-gogo-btn small { color: #9a8b82; font-size: 11px; }
+.ask-gogo-arrow { margin-left: auto; color: #c9957b; font-size: 16px; }
 
 .btn {
   flex: 1;
