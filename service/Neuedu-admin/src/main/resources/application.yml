@@ -139,13 +139,14 @@ xss:
   # 匹配链接
   urlPatterns: /system/*,/monitor/*,/tool/*
 
-# Server-only model credentials. Keep ZHIPU_API_KEY in the runtime environment, never in frontend env files.
+# Gogo (逛逛) uses DeepSeek from the backend. Set DEEPSEEK_API_KEY in the local runtime environment.
+# Never place model credentials in frontend environment files or source control.
 ai:
-  zhipu:
-    api-key: ${ZHIPU_API_KEY:}
-    base-url: ${ZHIPU_BASE_URL:https://open.bigmodel.cn/api/paas/v4}
-    model: ${ZHIPU_MODEL:glm-5.2}
-    connect-timeout-ms: ${ZHIPU_CONNECT_TIMEOUT_MS:5000}
-    read-timeout-ms: ${ZHIPU_READ_TIMEOUT_MS:45000}
-    input-price-per-million: ${ZHIPU_INPUT_PRICE_PER_MILLION:0}
-    output-price-per-million: ${ZHIPU_OUTPUT_PRICE_PER_MILLION:0}
+  gogo:
+    api-key: ${DEEPSEEK_API_KEY:}
+    base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+    model: ${DEEPSEEK_MODEL:deepseek-flash}
+    connect-timeout-ms: ${DEEPSEEK_CONNECT_TIMEOUT_MS:5000}
+    read-timeout-ms: ${DEEPSEEK_READ_TIMEOUT_MS:45000}
+    input-price-per-million: ${DEEPSEEK_INPUT_PRICE_PER_MILLION:0}
+    output-price-per-million: ${DEEPSEEK_OUTPUT_PRICE_PER_MILLION:0}

@@ -5,10 +5,10 @@
       <button type="button" class="back-btn" aria-label="返回上一页" @click="goBack">←</button>
       <div class="service-info">
         <div class="service-avatar">
-          <img :src="aiAvatarImage" alt="商城助手头像" class="ai-avatar">
+          <img :src="aiAvatarImage" alt="逛逛头像" class="ai-avatar">
         </div>
         <div class="service-name-status">
-          <div class="service-name">商城助手</div>
+          <div class="service-name">逛逛</div>
           <div class="service-status">
             <span class="online-dot" :class="{ online: isConnected }"></span>
             {{ isConnected ? '客服通道已连接' : '正在连接客服...' }}
@@ -29,7 +29,7 @@
         <div class="welcome-content">
           <div class="welcome-icon">🤖</div>
           <div class="welcome-title">👋 您好！</div>
-          <div class="welcome-text">我是商城助手，可以帮您查询商品和商城常见问题。</div>
+          <div class="welcome-text">我是逛逛，可以帮您查询商品和商城常见问题。</div>
           <div class="welcome-tips">
             我可以帮您：
             <span class="tip-item">• 查询商品信息</span>
@@ -47,7 +47,7 @@
           :ref="el => { if (el && index === chatList.length - 1) lastMessageRef = el }">
           <template v-if="msg.type === 'ai'">
             <div class="avatar-wrapper ai-avatar-wrapper">
-              <img :src="aiAvatarImage" class="avatar ai-avatar" alt="商城助手">
+              <img :src="aiAvatarImage" class="avatar ai-avatar" alt="逛逛">
               <div class="avatar-badge ai-badge">助手</div>
             </div>
           </template>
@@ -70,11 +70,11 @@
         <!-- 助手正在回复指示器 -->
         <div v-if="isAiTyping" class="ai-msg typing-indicator">
           <div class="avatar-wrapper ai-avatar-wrapper">
-            <img :src="aiAvatarImage" class="avatar ai-avatar" alt="商城助手">
+            <img :src="aiAvatarImage" class="avatar ai-avatar" alt="逛逛">
             <div class="avatar-badge ai-badge">助手</div>
           </div>
           <div class="typing-bubble">
-            <div class="typing-text">商城助手正在回复...</div>
+            <div class="typing-text">逛逛正在回复...</div>
             <div class="typing-dots">
               <span></span><span></span><span></span>
             </div>
@@ -266,7 +266,7 @@ const initWebSocket = () => {
     ws.onopen = (event) => {
       if (isUnmounted) return;
       isConnected.value = true;
-      addSystemMessage('已连接到商城助手');
+      addSystemMessage('已连接到逛逛');
       forceScrollToBottom();
     };
 

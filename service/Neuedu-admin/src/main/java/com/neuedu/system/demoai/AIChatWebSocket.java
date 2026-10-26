@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.neuedu.common.core.domain.model.LoginUser;
 import com.neuedu.web.service.TokenService;
+import com.neuedu.system.demoai.assistant.GogoAssistantService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -20,10 +21,10 @@ import java.util.concurrent.ConcurrentHashMap;
 public class AIChatWebSocket {
     private static final Map<Session, List<ObjectNode>> HISTORY = new ConcurrentHashMap<>();
     private static ObjectMapper mapper = new ObjectMapper();
-    private static ZhipuAIService assistantService;
+    private static GogoAssistantService assistantService;
     private static TokenService tokenService;
 
-    @Autowired public void setAssistantService(ZhipuAIService service) { AIChatWebSocket.assistantService = service; }
+    @Autowired public void setAssistantService(GogoAssistantService service) { AIChatWebSocket.assistantService = service; }
     @Autowired public void setTokenService(TokenService service) { AIChatWebSocket.tokenService = service; }
 
     @OnMessage

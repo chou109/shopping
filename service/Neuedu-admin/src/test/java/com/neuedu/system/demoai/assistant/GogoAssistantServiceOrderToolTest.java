@@ -1,4 +1,4 @@
-package com.neuedu.system.demoai;
+package com.neuedu.system.demoai.assistant;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.neuedu.common.core.domain.model.LoginUser;
@@ -6,6 +6,7 @@ import com.neuedu.system.domain.OrderInfo;
 import com.neuedu.system.demoai.repository.FAQRepository;
 import com.neuedu.system.demoai.repository.ProductRepository;
 import com.neuedu.system.service.IOrderInfoService;
+import com.neuedu.system.demoai.assistant.prompt.GogoPromptFactory;
 import org.junit.Test;
 
 import java.lang.reflect.InvocationHandler;
@@ -16,7 +17,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.*;
 
-public class ZhipuAIServiceOrderToolTest {
+public class GogoAssistantServiceOrderToolTest {
     @Test
     public void orderToolAlwaysUsesAuthenticatedUserAndMasksOrderNumber() throws Exception {
         AtomicReference<Long> queriedUser = new AtomicReference<>();
@@ -28,8 +29,8 @@ public class ZhipuAIServiceOrderToolTest {
             }
             return defaultValue(method.getReturnType());
         });
-        ZhipuAIService assistant = new ZhipuAIService(new ObjectMapper(), proxy(FAQRepository.class, emptyProxy()),
-                proxy(ProductRepository.class, emptyProxy()), orders);
+        GogoAssistantService assistant = new GogoAssistantService(new ObjectMapper(), proxy(FAQRepository.class, emptyProxy()),
+                proxy(ProductRepository.class, emptyProxy()), orders, new GogoPromptFactory());
         LoginUser current = new LoginUser(); current.setUserId(42L);
         String response = assistant.executeTool("get_my_order_status", new ObjectMapper().readTree("{\"userId\":999,\"orderNo\":\"ORDER-PRIVATE-987654\"}"), current);
         assertEquals(Long.valueOf(42L), queriedUser.get());
@@ -44,8 +45,8 @@ public class ZhipuAIServiceOrderToolTest {
             if ("selectOrderListByUserId".equals(method.getName())) called.set(true);
             return defaultValue(method.getReturnType());
         });
-        ZhipuAIService assistant = new ZhipuAIService(new ObjectMapper(), proxy(FAQRepository.class, emptyProxy()),
-                proxy(ProductRepository.class, emptyProxy()), orders);
+        GogoAssistantService assistant = new GogoAssistantService(new ObjectMapper(), proxy(FAQRepository.class, emptyProxy()),
+                proxy(ProductRepository.class, emptyProxy()), orders, new GogoPromptFactory());
         String response = assistant.executeTool("get_my_order_status", new ObjectMapper().readTree("{}"), null);
         assertTrue(response.contains("请登录"));
         assertFalse(called.get());

@@ -1,4 +1,4 @@
-package com.neuedu.system.demoai;
+package com.neuedu.system.demoai.assistant;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -9,8 +9,9 @@ import com.neuedu.system.demoai.entity.FrequentlyAskedQuestion;
 import com.neuedu.system.demoai.entity.Product;
 import com.neuedu.system.demoai.repository.FAQRepository;
 import com.neuedu.system.demoai.repository.ProductRepository;
-import com.neuedu.system.service.IOrderInfoService;
 import com.neuedu.system.domain.OrderInfo;
+import com.neuedu.system.service.IOrderInfoService;
+import com.neuedu.system.demoai.assistant.prompt.GogoPromptFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
@@ -28,22 +29,23 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.concurrent.atomic.LongAdder;
 
-/** Service-side Zhipu chat, retrieval and allow-listed business tools. */
+/** Gogo (逛逛) assistant: DeepSeek chat, retrieval and allow-listed business tools. */
 @Slf4j
 @Service
-public class ZhipuAIService {
+public class GogoAssistantService {
     private final ObjectMapper mapper;
     private final FAQRepository faqRepository;
     private final ProductRepository productRepository;
     private final IOrderInfoService orderInfoService;
+    private final GogoPromptFactory promptFactory;
 
-    @Value("${ai.zhipu.api-key:}") private String apiKey;
-    @Value("${ai.zhipu.base-url:https://open.bigmodel.cn/api/paas/v4}") private String baseUrl;
-    @Value("${ai.zhipu.model:glm-5.2}") private String model;
-    @Value("${ai.zhipu.connect-timeout-ms:5000}") private int connectTimeout;
-    @Value("${ai.zhipu.read-timeout-ms:45000}") private int readTimeout;
-    @Value("${ai.zhipu.input-price-per-million:0}") private BigDecimal inputPricePerMillion;
-    @Value("${ai.zhipu.output-price-per-million:0}") private BigDecimal outputPricePerMillion;
+    @Value("${ai.gogo.api-key:}") private String apiKey;
+    @Value("${ai.gogo.base-url:https://api.deepseek.com}") private String baseUrl;
+    @Value("${ai.gogo.model:deepseek-flash}") private String model;
+    @Value("${ai.gogo.connect-timeout-ms:5000}") private int connectTimeout;
+    @Value("${ai.gogo.read-timeout-ms:45000}") private int readTimeout;
+    @Value("${ai.gogo.input-price-per-million:0}") private BigDecimal inputPricePerMillion;
+    @Value("${ai.gogo.output-price-per-million:0}") private BigDecimal outputPricePerMillion;
     private final LongAdder requestCount = new LongAdder();
     private final LongAdder retrievalHitCount = new LongAdder();
     private final LongAdder toolCallCount = new LongAdder();
@@ -53,12 +55,13 @@ public class ZhipuAIService {
     private final LongAdder completionTokenCount = new LongAdder();
     private final java.util.concurrent.atomic.DoubleAdder estimatedCost = new java.util.concurrent.atomic.DoubleAdder();
 
-    public ZhipuAIService(ObjectMapper mapper, FAQRepository faqRepository, ProductRepository productRepository,
-                              IOrderInfoService orderInfoService) {
+    public GogoAssistantService(ObjectMapper mapper, FAQRepository faqRepository, ProductRepository productRepository,
+                              IOrderInfoService orderInfoService, GogoPromptFactory promptFactory) {
         this.mapper = mapper;
         this.faqRepository = faqRepository;
         this.productRepository = productRepository;
         this.orderInfoService = orderInfoService;
+        this.promptFactory = promptFactory;
     }
 
     public void answer(String question, Long productId, LoginUser loginUser, List<ObjectNode> history,
@@ -68,7 +71,7 @@ public class ZhipuAIService {
         List<Map<String, Object>> sources = retrieve(question, productId);
         onSources.accept(sources);
         if (apiKey == null || apiKey.trim().isEmpty()) {
-            onToken.accept("商城助手的模型服务尚未配置，已为您转接人工客服。您也可以先查看商品详情页或登录后的订单页。");
+            onToken.accept("逛逛的模型服务尚未配置，已为您转接人工客服。您也可以先查看商品详情页或登录后的订单页。");
             onHandoff.accept(true);
             long duration = System.currentTimeMillis() - started;
             recordMetrics(!sources.isEmpty(), 0, 0, 0, 0, duration);
@@ -79,7 +82,7 @@ public class ZhipuAIService {
         ArrayNode messages = mapper.createArrayNode();
         ObjectNode system = messages.addObject();
         system.put("role", "system");
-        system.put("content", systemPrompt(sources, loginUser != null));
+        system.put("content", promptFactory.create(sources, loginUser != null));
         for (ObjectNode prior : history) messages.add(prior.deepCopy());
         ObjectNode user = messages.addObject(); user.put("role", "user"); user.put("content", question);
 
@@ -162,14 +165,6 @@ public class ZhipuAIService {
         return metrics;
     }
 
-    private String systemPrompt(List<Map<String, Object>> sources, boolean authenticated) {
-        StringBuilder prompt = new StringBuilder("你是商城客服。只依据提供的资料或工具结果回答；没有依据就明确说明并建议转人工。不可编造商品价格、库存、配送、退换政策。工具返回的数据才是实时商品/订单事实。不要索要密码、令牌或完整支付信息。订单工具只查询当前登录用户自己的订单。只读工具，不执行下单、退款、取消等变更。回答用简体中文，简洁清楚。\n当前访客登录状态：")
-                .append(authenticated ? "已登录" : "未登录").append("\n可引用资料：\n");
-        if (sources.isEmpty()) prompt.append("（没有检索到相关资料）\n");
-        for (Map<String, Object> source : sources) prompt.append("[").append(source.get("title")).append("] ").append(source.get("content")).append("\n");
-        return prompt.toString();
-    }
-
     private List<Map<String, Object>> retrieve(String question, Long productId) {
         List<Map<String, Object>> docs = new ArrayList<>();
         Set<String> terms = terms(question);
@@ -178,18 +173,20 @@ public class ZhipuAIService {
             for (FrequentlyAskedQuestion faq : faqs) {
                 String text = safe(faq.getQuestion()) + " " + safe(faq.getAnswer());
                 int score = score(terms, text);
-                if (score > 0 || terms.isEmpty()) docs.add(doc("FAQ #" + faq.getId() + "：" + safe(faq.getQuestion()), safe(faq.getAnswer()), score));
+                if (score > 0) docs.add(doc("FAQ #" + faq.getId() + "：" + safe(faq.getQuestion()), safe(faq.getAnswer()), score));
             }
         } catch (Exception ex) { log.debug("FAQ retrieval unavailable: {}", ex.getClass().getSimpleName()); }
         try {
-            List<Product> products = productRepository.searchActiveByKeyword(question, PageRequest.of(0, 5));
+            List<Product> products = terms.isEmpty() ? new ArrayList<>() : productRepository.searchActiveByKeyword(question, PageRequest.of(0, 5));
             if (productId != null) {
                 Product selected = productRepository.findByIdAndDeleteFlagAndStatus(productId, 0, 1);
-                if (selected != null) products.add(selected);
+                if (selected != null && products.stream().noneMatch(p -> Objects.equals(p.getId(), selected.getId()))) products.add(selected);
             }
             for (Product p : products) {
                 String content = "商品：" + p.getName() + "；简介：" + p.getSubTitle() + "；价格：" + p.getPrice() + "；库存：" + p.getStock();
-                docs.add(doc("商品 #" + p.getId() + "：" + p.getName(), content, score(terms, content)));
+                int relevance = score(terms, content);
+                boolean explicitlySelected = productId != null && Objects.equals(productId, p.getId());
+                if (relevance > 0 || explicitlySelected) docs.add(doc("商品 #" + p.getId() + "：" + p.getName(), content, relevance));
             }
         } catch (Exception ex) { log.debug("Product retrieval unavailable: {}", ex.getClass().getSimpleName()); }
         docs.sort((a,b) -> Integer.compare((Integer)b.get("score"), (Integer)a.get("score")));

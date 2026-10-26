@@ -4,6 +4,7 @@ import com.neuedu.common.core.controller.BaseController;
 import com.neuedu.common.core.domain.AjaxResult;
 import com.neuedu.system.demoai.entity.FrequentlyAskedQuestion;
 import com.neuedu.system.demoai.repository.FAQRepository;
+import com.neuedu.system.demoai.assistant.GogoAssistantService;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,8 +14,8 @@ import java.util.List;
 @RequestMapping("/system/ai/knowledge")
 public class AIKnowledgeController extends BaseController {
     private final FAQRepository repository;
-    private final ZhipuAIService assistantService;
-    public AIKnowledgeController(FAQRepository repository, ZhipuAIService assistantService) {
+    private final GogoAssistantService assistantService;
+    public AIKnowledgeController(FAQRepository repository, GogoAssistantService assistantService) {
         this.repository = repository; this.assistantService = assistantService;
     }
 
