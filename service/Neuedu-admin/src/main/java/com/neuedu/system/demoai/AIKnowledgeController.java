@@ -4,6 +4,7 @@ import com.neuedu.common.core.controller.BaseController;
 import com.neuedu.common.core.domain.AjaxResult;
 import com.neuedu.system.demoai.entity.FrequentlyAskedQuestion;
 import com.neuedu.system.demoai.repository.FAQRepository;
+import com.neuedu.system.demoai.repository.ProductRepository;
 import com.neuedu.system.demoai.assistant.GogoAssistantService;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -14,9 +15,10 @@ import java.util.List;
 @RequestMapping("/system/ai/knowledge")
 public class AIKnowledgeController extends BaseController {
     private final FAQRepository repository;
+    private final ProductRepository productRepository;
     private final GogoAssistantService assistantService;
-    public AIKnowledgeController(FAQRepository repository, GogoAssistantService assistantService) {
-        this.repository = repository; this.assistantService = assistantService;
+    public AIKnowledgeController(FAQRepository repository, ProductRepository productRepository, GogoAssistantService assistantService) {
+        this.repository = repository; this.productRepository = productRepository; this.assistantService = assistantService;
     }
 
     @PreAuthorize("@ss.hasPermi('system:ai:knowledge:list') or @ss.hasRole('admin')")
@@ -30,7 +32,8 @@ public class AIKnowledgeController extends BaseController {
     @PreAuthorize("@ss.hasPermi('system:ai:knowledge:edit') or @ss.hasRole('admin')")
     @PostMapping
     public AjaxResult create(@RequestBody FrequentlyAskedQuestion faq) {
-        if (!valid(faq)) return error("问题和答案均不能为空，且长度不能超限");
+        String validationError = validationError(faq);
+        if (validationError != null) return error(validationError);
         faq.setId(null);
         if (faq.getPriority() == null) faq.setPriority(0);
         return success(repository.save(faq));
@@ -40,7 +43,9 @@ public class AIKnowledgeController extends BaseController {
     @PutMapping
     public AjaxResult update(@RequestBody FrequentlyAskedQuestion faq) {
         if (faq.getId() == null || !repository.existsById(faq.getId())) return error("知识条目不存在");
-        if (!valid(faq)) return error("问题和答案均不能为空，且长度不能超限");
+        String validationError = validationError(faq);
+        if (validationError != null) return error(validationError);
+        if (faq.getPriority() == null) faq.setPriority(0);
         return success(repository.save(faq));
     }
 
@@ -51,9 +56,19 @@ public class AIKnowledgeController extends BaseController {
         repository.deleteById(id); return success();
     }
 
-    private boolean valid(FrequentlyAskedQuestion faq) {
-        return faq != null && faq.getQuestion() != null && !faq.getQuestion().trim().isEmpty()
-                && faq.getQuestion().length() <= 255 && faq.getAnswer() != null
-                && !faq.getAnswer().trim().isEmpty() && faq.getAnswer().length() <= 10000;
+    private String validationError(FrequentlyAskedQuestion faq) {
+        if (faq == null || faq.getQuestion() == null || faq.getQuestion().trim().isEmpty()
+                || faq.getQuestion().length() > 255 || faq.getAnswer() == null
+                || faq.getAnswer().trim().isEmpty() || faq.getAnswer().length() > 10000) {
+            return "问题和答案均不能为空，问题最多 255 字，答案最多 10000 字";
+        }
+        if (faq.getPriority() != null && (faq.getPriority() < 0 || faq.getPriority() > 10000)) {
+            return "优先级必须在 0 到 10000 之间";
+        }
+        if (faq.getProductId() != null && (faq.getProductId() < 1
+                || productRepository.findByIdAndDeleteFlagAndStatus(faq.getProductId(), 0, 1) == null)) {
+            return "关联商品不存在或当前不可用";
+        }
+        return null;
     }
 }

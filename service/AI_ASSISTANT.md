@@ -9,7 +9,7 @@
 - `DEEPSEEK_CONNECT_TIMEOUT_MS`、`DEEPSEEK_READ_TIMEOUT_MS`：连接和读取超时。
 - `DEEPSEEK_INPUT_PRICE_PER_MILLION`、`DEEPSEEK_OUTPUT_PRICE_PER_MILLION`：按账号实际价格配置，仅用于估算调用成本；默认 0。
 
-首次启用知识库前，在当前购物应用数据库执行 [`ai_knowledge.sql`](ai_knowledge.sql)。脚本只创建 FAQ 表并插入缺失的基础配送/售后条目，不会覆盖已有答案。管理员可通过 `/system/ai/knowledge/list`、`POST/PUT/DELETE /system/ai/knowledge` 管理问题、答案、商品范围和优先级；`/system/ai/knowledge/metrics` 查看当前进程统计。接口需要 `system:ai:knowledge:list` / `system:ai:knowledge:edit` 权限或管理员角色。
+首次启用知识库前，在当前购物应用数据库执行 [`ai_knowledge.sql`](ai_knowledge.sql)。脚本只创建 FAQ 表、插入缺失的基础配送/售后条目，并幂等增加管理员知识库菜单与权限，不会覆盖已有答案。管理员可在后台“逛逛知识库”维护问题、答案、商品范围和优先级；接口仍通过 `/system/ai/knowledge/list`、`POST/PUT/DELETE /system/ai/knowledge` 提供读写，通过 `/system/ai/knowledge/metrics` 查看当前进程统计。接口需要 `system:ai:knowledge:list` / `system:ai:knowledge:edit` 权限或管理员角色。
 
 当前检索对启用 FAQ 和在售商品做中文词项匹配，最多将 5 条资料及其名称作为引用传给前端；这属于轻量关键词 RAG，尚未使用向量数据库或 embedding。客服仅提供商品搜索和“我的订单”只读工具。订单工具从已验签且仍在 Redis 会话中的令牌取得用户 ID，忽略模型提供的用户 ID/订单号，并仅返回脱敏订单尾号和状态。退款、取消、下单等变更不开放给模型，继续由商城现有页面流程处理。
 
