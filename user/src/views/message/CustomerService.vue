@@ -95,6 +95,7 @@
 
       <!-- 输入区域 -->
       <div class="input-area">
+        <div v-if="gogoHandoffPrefilled" class="handoff-context-note">已整理逛逛咨询摘要到输入框，可修改后再发送给平台客服。</div>
         <div class="input-wrapper">
           <el-input v-model="inputMessage" type="textarea" :rows="2" :maxlength="500"
             label="发送给人工客服的消息" placeholder="请输入您的问题..."
@@ -123,6 +124,7 @@ import { ArrowLeft, Service, Bell, Loading } from '@element-plus/icons-vue'
 import { sendMessage as sendMessageApi, getMessages, getUnreadCount, markAsRead } from '@/api/system/customerMessage'
 import { getProductImageUrl } from '@/utils/image'
 import { CustomerMessageDataError, readCustomerMessageList, readCustomerUnreadCount } from '@/utils/customerMessageData.mjs'
+import { formatGogoHandoffDraft, GOGO_HANDOFF_STORAGE_KEY } from '@/utils/gogoHandoff.mjs'
 
 const router = useRouter()
 const store = useStore()
@@ -135,6 +137,7 @@ const loading = ref(false)
 const sending = ref(false)
 const unreadCount = ref(0)
 const messageError = ref('')
+const gogoHandoffPrefilled = ref(false)
 const messageListRef = ref(null)
 const scrollAnchor = ref(null)
 let messageLoadVersion = 0
@@ -156,6 +159,22 @@ const quickQuestions = ref([
   '如何修改收货地址？',
   '优惠券怎么使用？'
 ])
+
+const restoreGogoHandoffDraft = () => {
+  if (route.query.source !== 'gogo') return
+  try {
+    const raw = sessionStorage.getItem(GOGO_HANDOFF_STORAGE_KEY)
+    sessionStorage.removeItem(GOGO_HANDOFF_STORAGE_KEY)
+    if (!raw) return
+    const context = JSON.parse(raw)
+    const draft = formatGogoHandoffDraft(context)
+    if (!draft) return
+    inputMessage.value = draft
+    gogoHandoffPrefilled.value = true
+  } catch (error) {
+    sessionStorage.removeItem(GOGO_HANDOFF_STORAGE_KEY)
+  }
+}
 
 // 用户头像
 const userAvatar = computed(() => {
@@ -243,6 +262,7 @@ const sendMessage = async () => {
   try {
     const response = await sendMessageApi(content, 1, requestReceiverId)
     if (response.code === 200) {
+      gogoHandoffPrefilled.value = false
       // 替换临时消息
       const index = messages.value.findIndex(m => m.id === tempMessage.id)
       if (index !== -1 && response.data) {
@@ -360,6 +380,7 @@ const stopRefresh = () => {
 
 onMounted(() => {
   componentActive = true
+  restoreGogoHandoffDraft()
   loadMessages()
   loadUnreadCount()
   startRefresh()
@@ -386,6 +407,8 @@ onUnmounted(() => {
   flex-direction: column;
   background: #f5f5f5;
 }
+
+.handoff-context-note { padding: 8px 12px; color: #7a5b21; background: #fff7e6; border: 1px solid #f5dfb2; border-radius: 8px; font-size: 12px; line-height: 1.5; }
 
 /* 顶部导航 */
 .cs-header {

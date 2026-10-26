@@ -88,7 +88,7 @@
                 </li>
               </ul>
             </details>
-            <button v-if="msg.handoff" type="button" class="handoff-link" @click="goToHumanService">转接人工客服</button>
+            <button v-if="msg.handoff" type="button" class="handoff-link" @click="goToHumanService(msg)">转接人工客服</button>
             <div v-if="msg.interrupted" class="interrupted-note">回复中断，问题已放回输入框。请确认后再发送，不会自动重复提交。</div>
             <div class="msg-time">{{ formatTime(msg.time) }}</div>
           </div>
@@ -157,6 +157,7 @@ import { ref, onMounted, onUnmounted, nextTick, computed, watch } from 'vue';
 import { useStore } from 'vuex';
 import { getWebSocketUrl } from '@/utils/request';
 import { getChatReconnectDelay, restoredHistoryContainsCompletedQuestion } from '@/utils/chatConnection.mjs'
+import { createGogoHandoffContext, GOGO_HANDOFF_STORAGE_KEY } from '@/utils/gogoHandoff.mjs'
 import { getToken } from '@/utils/auth';
 import { useRoute, useRouter } from 'vue-router';
 import { getProduct } from '@/api/system/product'
@@ -597,7 +598,14 @@ const useExample = (example) => {
 };
 
 // 转到平台人工客服
-const goToHumanService = () => router.push('/customer-service');
+const goToHumanService = (answer) => {
+  const context = createGogoHandoffContext(chatList.value, answer)
+  if (context) {
+    try { sessionStorage.setItem(GOGO_HANDOFF_STORAGE_KEY, JSON.stringify(context)) }
+    catch (error) { console.warn('逛逛咨询摘要暂时无法转交人工客服') }
+  }
+  router.push({ path: '/customer-service', query: { receiverId: 1, shopName: '平台客服', source: 'gogo' } })
+}
 
 // 返回上一页
 const goBack = () => {
