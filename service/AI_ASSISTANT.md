@@ -9,6 +9,14 @@
 - `DEEPSEEK_CONNECT_TIMEOUT_MS`、`DEEPSEEK_READ_TIMEOUT_MS`：连接和读取超时。
 - `DEEPSEEK_INPUT_PRICE_PER_MILLION`、`DEEPSEEK_OUTPUT_PRICE_PER_MILLION`：按账号实际价格配置，仅用于估算调用成本；默认 0。
 
+知识检索默认使用本地 BM25 与问法归一化。需要启用语义向量检索时，可另行配置 OpenAI 兼容的 Embeddings 服务（与 DeepSeek 聊天密钥分开）：
+
+- `AI_EMBEDDING_API_KEY`、`AI_EMBEDDING_BASE_URL`、`AI_EMBEDDING_MODEL`：三项均配置后启用；`BASE_URL` 填 API 根地址，客户端会请求 `/embeddings`。
+- `AI_EMBEDDING_MINIMUM_SIMILARITY`：语义召回阈值，默认 `0.52`，范围建议 `0.4` 到 `0.8`，按所用向量模型评估集调整。
+- `AI_EMBEDDING_CONNECT_TIMEOUT_MS`、`AI_EMBEDDING_READ_TIMEOUT_MS`：向量服务超时配置。
+
+语义向量按问题和知识内容摘要缓存在后端进程内（最多 512 条），知识更新后内容摘要改变会自动重新生成向量。向量服务未配置、超时或返回异常时，助手自动退回 BM25 检索；不会影响 DeepSeek 对话服务。DeepSeek 当前公开 API 文档未列出 Embeddings 端点，因此不要把 `DEEPSEEK_BASE_URL` 当作 Embeddings 服务地址。
+
 首次启用知识库前，在当前购物应用数据库执行 [`ai_knowledge.sql`](ai_knowledge.sql)。脚本会创建 FAQ 表、幂等补齐启停/来源/版本/更新时间字段、插入缺失的基础配送/售后条目，并幂等增加管理员知识库菜单与权限，不会覆盖已有答案。管理员可在后台“逛逛知识库”维护 FAQ、商城政策和商品说明，设置商品范围、优先级并启停条目；停用条目不会进入模型检索，编辑或切换状态会递增条目版本。接口通过 `/system/ai/knowledge/list`、`POST/PUT/DELETE /system/ai/knowledge` 提供读写，`PUT /system/ai/knowledge/{id}/status?enabled=0|1` 用于启停，通过 `/system/ai/knowledge/metrics` 查看当前进程统计。接口需要 `system:ai:knowledge:list` / `system:ai:knowledge:edit` 权限或管理员角色。
 
 当前检索对启用 FAQ 和在售商品做中文词项匹配，最多将 5 条资料及其名称作为引用传给前端；这属于轻量关键词 RAG，尚未使用向量数据库或 embedding。客服仅提供商品搜索和“我的订单”只读工具。订单工具从已验签且仍在 Redis 会话中的令牌取得用户 ID，忽略模型提供的用户 ID/订单号，并仅返回脱敏订单尾号和状态。退款、取消、下单等变更不开放给模型，继续由商城现有页面流程处理。

@@ -14,6 +14,7 @@ import com.neuedu.system.service.IOrderInfoService;
 import com.neuedu.system.demoai.assistant.prompt.GogoPromptFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
@@ -29,6 +30,7 @@ import java.util.function.Consumer;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.concurrent.atomic.LongAdder;
+import java.security.MessageDigest;
 
 /** Gogo (逛逛) assistant: DeepSeek chat, retrieval and allow-listed business tools. */
 @Slf4j
@@ -41,6 +43,10 @@ public class GogoAssistantService {
     private final ProductRepository productRepository;
     private final IOrderInfoService orderInfoService;
     private final GogoPromptFactory promptFactory;
+    private final EmbeddingProvider embeddingProvider;
+    private final Map<String, float[]> embeddingCache = Collections.synchronizedMap(new LinkedHashMap<String, float[]>(128, 0.75f, true) {
+        @Override protected boolean removeEldestEntry(Map.Entry<String, float[]> eldest) { return size() > 512; }
+    });
 
     @Value("${ai.gogo.api-key:}") private String apiKey;
     @Value("${ai.gogo.base-url:https://api.deepseek.com}") private String baseUrl;
@@ -49,6 +55,7 @@ public class GogoAssistantService {
     @Value("${ai.gogo.read-timeout-ms:45000}") private int readTimeout;
     @Value("${ai.gogo.input-price-per-million:0}") private BigDecimal inputPricePerMillion;
     @Value("${ai.gogo.output-price-per-million:0}") private BigDecimal outputPricePerMillion;
+    @Value("${ai.gogo.embedding.minimum-similarity:0.52}") private double minimumEmbeddingSimilarity = 0.52D;
     private final LongAdder requestCount = new LongAdder();
     private final LongAdder retrievalHitCount = new LongAdder();
     private final LongAdder toolCallCount = new LongAdder();
@@ -58,13 +65,20 @@ public class GogoAssistantService {
     private final LongAdder completionTokenCount = new LongAdder();
     private final java.util.concurrent.atomic.DoubleAdder estimatedCost = new java.util.concurrent.atomic.DoubleAdder();
 
+    @Autowired
     public GogoAssistantService(ObjectMapper mapper, FAQRepository faqRepository, ProductRepository productRepository,
-                              IOrderInfoService orderInfoService, GogoPromptFactory promptFactory) {
+                              IOrderInfoService orderInfoService, GogoPromptFactory promptFactory, EmbeddingProvider embeddingProvider) {
         this.mapper = mapper;
         this.faqRepository = faqRepository;
         this.productRepository = productRepository;
         this.orderInfoService = orderInfoService;
         this.promptFactory = promptFactory;
+        this.embeddingProvider = embeddingProvider;
+    }
+
+    public GogoAssistantService(ObjectMapper mapper, FAQRepository faqRepository, ProductRepository productRepository,
+                              IOrderInfoService orderInfoService, GogoPromptFactory promptFactory) {
+        this(mapper, faqRepository, productRepository, orderInfoService, promptFactory, (EmbeddingProvider) null);
     }
 
     public void answer(String question, Long productId, LoginUser loginUser, List<ObjectNode> history,
@@ -222,6 +236,7 @@ public class GogoAssistantService {
             for (String term : new HashSet<>(tokens)) documentFrequency.merge(term, 1, Integer::sum);
         }
         double averageLength = candidates.isEmpty() ? 1D : Math.max(1D, (double) totalLength / candidates.size());
+        Map<Map<String, Object>, Double> semanticScores = semanticScores(question, candidates);
         List<Map<String, Object>> ranked = new ArrayList<>();
         for (Map<String, Object> candidate : candidates) {
             boolean selected = Boolean.TRUE.equals(candidate.get("selected"));
@@ -234,11 +249,14 @@ public class GogoAssistantService {
             int matchedTitleTerms = 0;
             for (String term : queryTerms) if (present.contains(term)) matchedTerms++;
             for (String term : queryTerms) if (titleTerms.contains(term)) matchedTitleTerms++;
-            if (!selected && !relevant(queryTerms, matchedTerms, matchedTitleTerms)) continue;
+            double semanticSimilarity = semanticScores.getOrDefault(candidate, 0D);
+            if (!selected && !relevant(queryTerms, matchedTerms, matchedTitleTerms)
+                    && semanticSimilarity < minimumEmbeddingSimilarity) continue;
 
             List<String> titleTokens = tokens(title);
             List<String> bodyTokens = tokens(content);
             double relevance = selected ? 100D : bm25Score(queryTerms, titleTokens, bodyTokens, documentFrequency, candidates.size(), averageLength);
+            relevance += Math.max(0D, semanticSimilarity) * 5D;
             int priority = candidate.get("priority") instanceof Number ? ((Number) candidate.get("priority")).intValue() : 0;
             relevance += Math.log1p(Math.max(0, Math.min(100, priority))) * 0.05D;
             String normalizedQuestion = normalize(question);
@@ -253,6 +271,72 @@ public class GogoAssistantService {
             doc.remove("score"); doc.remove("priority"); doc.remove("selected"); doc.remove("rankTitle");
         }
         return ranked;
+    }
+    private Map<Map<String, Object>, Double> semanticScores(String question, List<Map<String, Object>> candidates) {
+        Map<Map<String, Object>, Double> scores = new IdentityHashMap<>();
+        if (embeddingProvider == null || !embeddingProvider.isConfigured() || candidates.isEmpty()) return scores;
+        try {
+            String queryKey = embeddingKey(question == null ? "" : question);
+            float[] queryVector = cachedEmbedding(queryKey);
+            List<Map<String, Object>> missingCandidates = new ArrayList<>();
+            Map<Map<String, Object>, float[]> candidateVectors = new IdentityHashMap<>();
+            for (Map<String, Object> candidate : candidates) {
+                String text = String.valueOf(candidate.get("rankTitle")) + "\n" + String.valueOf(candidate.get("content"));
+                String key = embeddingKey(text);
+                float[] vector = cachedEmbedding(key);
+                if (vector == null) missingCandidates.add(candidate);
+                else candidateVectors.put(candidate, vector);
+            }
+            if (queryVector == null || !missingCandidates.isEmpty()) {
+                List<String> batch = new ArrayList<>();
+                List<Map<String, Object>> batchCandidates = new ArrayList<>();
+                boolean queryMissing = queryVector == null;
+                if (queryMissing) batch.add(question == null ? "" : question);
+                for (Map<String, Object> candidate : missingCandidates) {
+                    String text = String.valueOf(candidate.get("rankTitle")) + "\n" + String.valueOf(candidate.get("content"));
+                    batch.add(text); batchCandidates.add(candidate);
+                }
+                // One bounded request keeps the synchronous chat latency predictable; FAQ retrieval is capped at 200 rows.
+                List<float[]> vectors = embeddingProvider.embed(batch);
+                if (vectors == null || vectors.size() != batch.size()) throw new IllegalStateException("embedding_count_mismatch");
+                int vectorIndex = 0;
+                if (queryMissing) { queryVector = vectors.get(vectorIndex++); cacheEmbedding(queryKey, queryVector); }
+                for (Map<String, Object> candidate : batchCandidates) {
+                    String text = String.valueOf(candidate.get("rankTitle")) + "\n" + String.valueOf(candidate.get("content"));
+                    float[] vector = vectors.get(vectorIndex++);
+                    cacheEmbedding(embeddingKey(text), vector);
+                    candidateVectors.put(candidate, vector);
+                }
+            }
+            for (Map.Entry<Map<String, Object>, float[]> entry : candidateVectors.entrySet()) {
+                scores.put(entry.getKey(), cosine(queryVector, entry.getValue()));
+            }
+        } catch (Exception ex) {
+            // Retrieval must remain available when the optional embedding service is down.
+            log.debug("Semantic retrieval unavailable; using lexical retrieval: {}", ex.getClass().getSimpleName());
+            scores.clear();
+        }
+        return scores;
+    }
+    private float[] cachedEmbedding(String key) { synchronized (embeddingCache) { return embeddingCache.get(key); } }
+    private void cacheEmbedding(String key, float[] vector) {
+        if (vector == null || vector.length == 0) return;
+        synchronized (embeddingCache) { embeddingCache.put(key, vector.clone()); }
+    }
+    private String embeddingKey(String text) throws Exception {
+        byte[] digest = MessageDigest.getInstance("SHA-256").digest((text == null ? "" : text).getBytes(StandardCharsets.UTF_8));
+        StringBuilder key = new StringBuilder(digest.length * 2);
+        for (byte value : digest) key.append(String.format(Locale.ROOT, "%02x", value & 0xff));
+        return key.toString();
+    }
+    private double cosine(float[] left, float[] right) {
+        if (left == null || right == null || left.length != right.length || left.length == 0) return 0D;
+        double dot = 0D, leftNorm = 0D, rightNorm = 0D;
+        for (int i = 0; i < left.length; i++) {
+            if (!Float.isFinite(left[i]) || !Float.isFinite(right[i])) return 0D;
+            dot += left[i] * right[i]; leftNorm += left[i] * left[i]; rightNorm += right[i] * right[i];
+        }
+        return leftNorm == 0D || rightNorm == 0D ? 0D : dot / Math.sqrt(leftNorm * rightNorm);
     }
     private Map<String,Object> doc(String title, String content, double score, String sourceType, Long sourceId) { Map<String,Object> d = new LinkedHashMap<>(); d.put("title",title); d.put("content",content); d.put("sourceType",sourceType); d.put("sourceId",sourceId); d.put("score",score); return d; }
     private Set<String> queryTerms(String text) {

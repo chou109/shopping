@@ -150,3 +150,11 @@ ai:
     read-timeout-ms: ${DEEPSEEK_READ_TIMEOUT_MS:45000}
     input-price-per-million: ${DEEPSEEK_INPUT_PRICE_PER_MILLION:0}
     output-price-per-million: ${DEEPSEEK_OUTPUT_PRICE_PER_MILLION:0}
+    # Optional OpenAI-compatible embedding endpoint; independent from the DeepSeek chat API.
+    embedding:
+      api-key: ${AI_EMBEDDING_API_KEY:}
+      base-url: ${AI_EMBEDDING_BASE_URL:}
+      model: ${AI_EMBEDDING_MODEL:}
+      connect-timeout-ms: ${AI_EMBEDDING_CONNECT_TIMEOUT_MS:3000}
+      read-timeout-ms: ${AI_EMBEDDING_READ_TIMEOUT_MS:10000}
+      minimum-similarity: ${AI_EMBEDDING_MINIMUM_SIMILARITY:0.52}

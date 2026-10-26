@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.assertEquals;
@@ -119,14 +120,54 @@ public class GogoRetrievalFilterTest {
         assertEquals(5, sources.get().size());
     }
 
+    @Test
+    public void semanticEmbeddingRecallsParaphraseWithoutLexicalOverlap() {
+        FrequentlyAskedQuestion faq = faq(61L, "配送进度如何查询", "登录订单页查看物流信息。");
+        EmbeddingProvider embeddings = embeddingProvider(text -> text.startsWith("包裹到哪") ? new float[]{1F, 0F} : new float[]{0.9F, 0.1F});
+        AtomicReference<List<Map<String, Object>>> sources = new AtomicReference<>();
+
+        assistant(faqRepository(faq), emptyProducts(), embeddings).answer("包裹到哪了", null, null,
+                new ArrayList<>(), token -> { }, sources::set, handoff -> { });
+
+        assertEquals(1, sources.get().size());
+        assertEquals(Long.valueOf(61L), sources.get().get(0).get("sourceId"));
+    }
+
+    @Test
+    public void lowSemanticSimilarityDoesNotAddUnrelatedKnowledge() {
+        FrequentlyAskedQuestion faq = faq(62L, "配送进度如何查询", "登录订单页查看物流信息。");
+        EmbeddingProvider embeddings = embeddingProvider(text -> text.startsWith("显卡") ? new float[]{1F, 0F} : new float[]{0F, 1F});
+        AtomicReference<List<Map<String, Object>>> sources = new AtomicReference<>();
+
+        assistant(faqRepository(faq), emptyProducts(), embeddings).answer("显卡支持光追吗", null, null,
+                new ArrayList<>(), token -> { }, sources::set, handoff -> { });
+
+        assertTrue(sources.get().isEmpty());
+    }
+
     private GogoAssistantService assistant(ProductRepository products) {
         return assistant(faqRepository(), products);
     }
 
     private GogoAssistantService assistant(FAQRepository faqs, ProductRepository products) {
+        return assistant(faqs, products, null);
+    }
+
+    private GogoAssistantService assistant(FAQRepository faqs, ProductRepository products, EmbeddingProvider embeddings) {
         return new GogoAssistantService(new ObjectMapper(), faqs, products,
                 proxy(IOrderInfoService.class, (proxy, method, args) -> defaultValue(method.getReturnType())),
-                new GogoPromptFactory());
+                new GogoPromptFactory(), embeddings);
+    }
+
+    private EmbeddingProvider embeddingProvider(java.util.function.Function<String, float[]> vectorFactory) {
+        return new EmbeddingProvider() {
+            @Override public boolean isConfigured() { return true; }
+            @Override public List<float[]> embed(List<String> texts) {
+                List<float[]> vectors = new ArrayList<>();
+                for (String text : texts) vectors.add(vectorFactory.apply(text));
+                return vectors;
+            }
+        };
     }
 
     private FAQRepository faqRepository(FrequentlyAskedQuestion... rows) {
