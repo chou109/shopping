@@ -9,10 +9,10 @@ import org.springframework.stereotype.Component;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 /** OpenAI-compatible embeddings client, configured independently from the chat model. */
@@ -34,6 +34,12 @@ public class OpenAiCompatibleEmbeddingProvider implements EmbeddingProvider {
     @Override
     public boolean isConfigured() {
         return hasText(apiKey) && hasText(baseUrl) && hasText(model);
+    }
+
+    @Override
+    public String cacheNamespace() {
+        try { return URI.create(baseUrl).getHost() + ":" + model; }
+        catch (Exception ex) { return model == null ? "embedding-model" : model; }
     }
 
     @Override
@@ -60,12 +66,12 @@ public class OpenAiCompatibleEmbeddingProvider implements EmbeddingProvider {
             JsonNode root = mapper.readTree(connection.getInputStream());
             JsonNode data = root.path("data");
             if (!data.isArray() || data.size() != texts.size()) throw new IllegalStateException("embedding_response_count_mismatch");
-            List<JsonNode> ordered = new ArrayList<>();
-            data.forEach(ordered::add);
-            ordered.sort(Comparator.comparingInt(node -> node.path("index").asInt(Integer.MAX_VALUE)));
-            List<float[]> vectors = new ArrayList<>();
+            float[][] ordered = new float[texts.size()][];
             int dimensions = -1;
-            for (JsonNode row : ordered) {
+            for (JsonNode row : data) {
+                JsonNode indexNode = row.path("index");
+                if (!indexNode.isIntegralNumber() || indexNode.asInt() < 0 || indexNode.asInt() >= texts.size()
+                        || ordered[indexNode.asInt()] != null) throw new IllegalStateException("embedding_index_invalid");
                 JsonNode embedding = row.path("embedding");
                 if (!embedding.isArray() || embedding.isEmpty()) throw new IllegalStateException("embedding_vector_missing");
                 if (dimensions < 0) dimensions = embedding.size();
@@ -73,9 +79,15 @@ public class OpenAiCompatibleEmbeddingProvider implements EmbeddingProvider {
                 float[] vector = new float[embedding.size()];
                 for (int i = 0; i < embedding.size(); i++) {
                     JsonNode value = embedding.get(i);
-                    if (!value.isNumber()) throw new IllegalStateException("embedding_value_invalid");
+                    if (!value.isNumber() || !Double.isFinite(value.asDouble())) throw new IllegalStateException("embedding_value_invalid");
                     vector[i] = (float) value.asDouble();
+                    if (!Float.isFinite(vector[i])) throw new IllegalStateException("embedding_value_invalid");
                 }
+                ordered[indexNode.asInt()] = vector;
+            }
+            List<float[]> vectors = new ArrayList<>();
+            for (float[] vector : ordered) {
+                if (vector == null) throw new IllegalStateException("embedding_index_missing");
                 vectors.add(vector);
             }
             return vectors;

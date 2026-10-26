@@ -6,9 +6,11 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.neuedu.common.core.domain.model.LoginUser;
 import com.neuedu.system.demoai.entity.FrequentlyAskedQuestion;
+import com.neuedu.system.demoai.entity.AIEmbeddingCacheEntry;
 import com.neuedu.system.demoai.entity.Product;
 import com.neuedu.system.demoai.repository.FAQRepository;
 import com.neuedu.system.demoai.repository.AIChatMetricEventRepository;
+import com.neuedu.system.demoai.repository.AIEmbeddingCacheRepository;
 import com.neuedu.system.demoai.entity.AIChatMetricEvent;
 import com.neuedu.system.demoai.repository.ProductRepository;
 import com.neuedu.system.domain.OrderInfo;
@@ -48,6 +50,7 @@ public class GogoAssistantService {
     private final GogoPromptFactory promptFactory;
     private final EmbeddingProvider embeddingProvider;
     private final AIChatMetricEventRepository metricEventRepository;
+    private final AIEmbeddingCacheRepository embeddingCacheRepository;
     private final AtomicLong lastMetricCleanupAt = new AtomicLong();
     private final Map<String, float[]> embeddingCache = Collections.synchronizedMap(new LinkedHashMap<String, float[]>(128, 0.75f, true) {
         @Override protected boolean removeEldestEntry(Map.Entry<String, float[]> eldest) { return size() > 512; }
@@ -74,7 +77,7 @@ public class GogoAssistantService {
     @Autowired
     public GogoAssistantService(ObjectMapper mapper, FAQRepository faqRepository, ProductRepository productRepository,
                               IOrderInfoService orderInfoService, GogoPromptFactory promptFactory, EmbeddingProvider embeddingProvider,
-                              AIChatMetricEventRepository metricEventRepository) {
+                              AIChatMetricEventRepository metricEventRepository, AIEmbeddingCacheRepository embeddingCacheRepository) {
         this.mapper = mapper;
         this.faqRepository = faqRepository;
         this.productRepository = productRepository;
@@ -82,6 +85,13 @@ public class GogoAssistantService {
         this.promptFactory = promptFactory;
         this.embeddingProvider = embeddingProvider;
         this.metricEventRepository = metricEventRepository;
+        this.embeddingCacheRepository = embeddingCacheRepository;
+    }
+
+    public GogoAssistantService(ObjectMapper mapper, FAQRepository faqRepository, ProductRepository productRepository,
+                              IOrderInfoService orderInfoService, GogoPromptFactory promptFactory, EmbeddingProvider embeddingProvider,
+                              AIChatMetricEventRepository metricEventRepository) {
+        this(mapper, faqRepository, productRepository, orderInfoService, promptFactory, embeddingProvider, metricEventRepository, null);
     }
 
     public GogoAssistantService(ObjectMapper mapper, FAQRepository faqRepository, ProductRepository productRepository,
@@ -261,6 +271,7 @@ public class GogoAssistantService {
                 Map<String, Object> candidate = doc(sourceType.toUpperCase(Locale.ROOT) + " #" + faq.getId() + "：" + safe(faq.getQuestion()),
                         safe(faq.getAnswer()), 0D, sourceType, faq.getId());
                 candidate.put("rankTitle", safe(faq.getQuestion()));
+                candidate.put("embeddingText", safe(faq.getQuestion()) + "\n" + safe(faq.getAnswer()));
                 candidate.put("priority", faq.getPriority() == null ? 0 : faq.getPriority());
                 candidates.add(candidate);
             }
@@ -277,6 +288,8 @@ public class GogoAssistantService {
                 boolean explicitlySelected = productId != null && Objects.equals(productId, p.getId());
                 Map<String, Object> candidate = doc(title, content, 0D, "product", p.getId());
                 candidate.put("rankTitle", safe(p.getName()));
+                // Dynamic price and stock stay live tool facts and are excluded from semantic vectors.
+                candidate.put("embeddingText", "商品：" + safe(p.getName()) + "；简介：" + safe(p.getSubTitle()));
                 candidate.put("selected", explicitlySelected);
                 candidates.add(candidate);
             }
@@ -334,39 +347,43 @@ public class GogoAssistantService {
         if (embeddingProvider == null || !embeddingProvider.isConfigured() || candidates.isEmpty()) return scores;
         try {
             String queryKey = embeddingKey(question == null ? "" : question);
+            Map<Map<String, Object>, String> candidateKeys = new IdentityHashMap<>();
+            Map<String, String> missingTexts = new LinkedHashMap<>();
+            Map<String, float[]> vectors = new LinkedHashMap<>();
             float[] queryVector = cachedEmbedding(queryKey);
-            List<Map<String, Object>> missingCandidates = new ArrayList<>();
-            Map<Map<String, Object>, float[]> candidateVectors = new IdentityHashMap<>();
+            if (queryVector != null) vectors.put(queryKey, queryVector);
+            else missingTexts.put(queryKey, question == null ? "" : question);
             for (Map<String, Object> candidate : candidates) {
-                String text = String.valueOf(candidate.get("rankTitle")) + "\n" + String.valueOf(candidate.get("content"));
+                String text = embeddingText(candidate);
                 String key = embeddingKey(text);
+                candidateKeys.put(candidate, key);
                 float[] vector = cachedEmbedding(key);
-                if (vector == null) missingCandidates.add(candidate);
-                else candidateVectors.put(candidate, vector);
+                if (vector != null) vectors.put(key, vector);
+                else missingTexts.put(key, text);
             }
-            if (queryVector == null || !missingCandidates.isEmpty()) {
-                List<String> batch = new ArrayList<>();
-                List<Map<String, Object>> batchCandidates = new ArrayList<>();
-                boolean queryMissing = queryVector == null;
-                if (queryMissing) batch.add(question == null ? "" : question);
-                for (Map<String, Object> candidate : missingCandidates) {
-                    String text = String.valueOf(candidate.get("rankTitle")) + "\n" + String.valueOf(candidate.get("content"));
-                    batch.add(text); batchCandidates.add(candidate);
+
+            loadPersistedEmbeddings(missingTexts.keySet(), vectors);
+            missingTexts.keySet().removeAll(vectors.keySet());
+            if (!missingTexts.isEmpty()) {
+                List<String> batch = new ArrayList<>(missingTexts.values());
+                List<float[]> generated = embeddingProvider.embed(batch);
+                if (generated == null || generated.size() != batch.size()) throw new IllegalStateException("embedding_count_mismatch");
+                List<AIEmbeddingCacheEntry> toPersist = new ArrayList<>();
+                int index = 0;
+                for (Map.Entry<String, String> missing : missingTexts.entrySet()) {
+                    float[] vector = generated.get(index++);
+                    if (vector == null || vector.length == 0) throw new IllegalStateException("embedding_vector_missing");
+                    vectors.put(missing.getKey(), vector);
+                    cacheEmbedding(missing.getKey(), vector);
+                    // Persist reusable knowledge vectors only; user questions stay process-local.
+                    AIEmbeddingCacheEntry entry = queryKey.equals(missing.getKey()) ? null : embeddingEntry(missing.getKey(), missing.getValue(), vector);
+                    if (entry != null) toPersist.add(entry);
                 }
-                // One bounded request keeps the synchronous chat latency predictable; FAQ retrieval is capped at 200 rows.
-                List<float[]> vectors = embeddingProvider.embed(batch);
-                if (vectors == null || vectors.size() != batch.size()) throw new IllegalStateException("embedding_count_mismatch");
-                int vectorIndex = 0;
-                if (queryMissing) { queryVector = vectors.get(vectorIndex++); cacheEmbedding(queryKey, queryVector); }
-                for (Map<String, Object> candidate : batchCandidates) {
-                    String text = String.valueOf(candidate.get("rankTitle")) + "\n" + String.valueOf(candidate.get("content"));
-                    float[] vector = vectors.get(vectorIndex++);
-                    cacheEmbedding(embeddingKey(text), vector);
-                    candidateVectors.put(candidate, vector);
-                }
+                persistEmbeddings(toPersist);
             }
-            for (Map.Entry<Map<String, Object>, float[]> entry : candidateVectors.entrySet()) {
-                scores.put(entry.getKey(), cosine(queryVector, entry.getValue()));
+            queryVector = vectors.get(queryKey);
+            for (Map.Entry<Map<String, Object>, String> entry : candidateKeys.entrySet()) {
+                scores.put(entry.getKey(), cosine(queryVector, vectors.get(entry.getValue())));
             }
         } catch (Exception ex) {
             // Retrieval must remain available when the optional embedding service is down.
@@ -375,16 +392,62 @@ public class GogoAssistantService {
         }
         return scores;
     }
+
+    private void loadPersistedEmbeddings(Collection<String> keys, Map<String, float[]> target) {
+        if (embeddingCacheRepository == null || keys == null || keys.isEmpty()) return;
+        try {
+            for (AIEmbeddingCacheEntry entry : embeddingCacheRepository.findByCacheKeyIn(keys)) {
+                if (entry == null || entry.getVectorJson() == null || entry.getVectorJson().length() > 100000) continue;
+                float[] vector = mapper.readValue(entry.getVectorJson(), float[].class);
+                if (vector.length == 0 || (entry.getDimensions() != null && vector.length != entry.getDimensions())) continue;
+                boolean finite = true;
+                for (float value : vector) if (!Float.isFinite(value)) { finite = false; break; }
+                if (!finite) continue;
+                target.put(entry.getCacheKey(), vector);
+                cacheEmbedding(entry.getCacheKey(), vector);
+            }
+        } catch (Exception ex) { log.debug("读取持久向量缓存失败，使用运行时生成：{}", ex.getClass().getSimpleName()); }
+    }
+
+    private AIEmbeddingCacheEntry embeddingEntry(String cacheKey, String text, float[] vector) {
+        if (embeddingCacheRepository == null) return null;
+        try {
+            AIEmbeddingCacheEntry entry = new AIEmbeddingCacheEntry();
+            entry.setCacheKey(cacheKey);
+            entry.setModelKey(embeddingProvider.cacheNamespace());
+            entry.setContentHash(contentHash(text));
+            entry.setVectorJson(mapper.writeValueAsString(vector));
+            entry.setDimensions(vector.length);
+            entry.setUpdatedAt(java.time.LocalDateTime.now());
+            return entry;
+        } catch (Exception ex) { return null; }
+    }
+
+    private void persistEmbeddings(List<AIEmbeddingCacheEntry> entries) {
+        if (embeddingCacheRepository == null || entries == null || entries.isEmpty()) return;
+        try { embeddingCacheRepository.saveAll(entries); }
+        catch (Exception ex) { log.debug("写入持久向量缓存失败，保留本进程缓存：{}", ex.getClass().getSimpleName()); }
+    }
+
+    private String embeddingText(Map<String, Object> candidate) {
+        Object configured = candidate.get("embeddingText");
+        return configured == null ? String.valueOf(candidate.get("rankTitle")) + "\n" + String.valueOf(candidate.get("content")) : String.valueOf(configured);
+    }
+
+    private String contentHash(String text) throws Exception {
+        byte[] digest = MessageDigest.getInstance("SHA-256").digest((text == null ? "" : text).getBytes(StandardCharsets.UTF_8));
+        StringBuilder hash = new StringBuilder(digest.length * 2);
+        for (byte value : digest) hash.append(String.format(Locale.ROOT, "%02x", value & 0xff));
+        return hash.toString();
+    }
     private float[] cachedEmbedding(String key) { synchronized (embeddingCache) { return embeddingCache.get(key); } }
     private void cacheEmbedding(String key, float[] vector) {
         if (vector == null || vector.length == 0) return;
         synchronized (embeddingCache) { embeddingCache.put(key, vector.clone()); }
     }
     private String embeddingKey(String text) throws Exception {
-        byte[] digest = MessageDigest.getInstance("SHA-256").digest((text == null ? "" : text).getBytes(StandardCharsets.UTF_8));
-        StringBuilder key = new StringBuilder(digest.length * 2);
-        for (byte value : digest) key.append(String.format(Locale.ROOT, "%02x", value & 0xff));
-        return key.toString();
+        String namespace = embeddingProvider == null ? "" : embeddingProvider.cacheNamespace();
+        return contentHash(namespace + "\n" + (text == null ? "" : text));
     }
     private double cosine(float[] left, float[] right) {
         if (left == null || right == null || left.length != right.length || left.length == 0) return 0D;

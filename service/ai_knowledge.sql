@@ -13,6 +13,19 @@ CREATE TABLE IF NOT EXISTS `frequently_asked_question` (
   KEY `idx_faq_product_priority` (`product_id`, `priority`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AI客服可维护知识库';
 
+-- Reusable document vectors only. User queries are never persisted in this cache.
+CREATE TABLE IF NOT EXISTS `ai_embedding_cache` (
+  `cache_key` CHAR(64) NOT NULL,
+  `model_key` VARCHAR(255) NOT NULL,
+  `content_hash` CHAR(64) NOT NULL,
+  `vector_json` LONGTEXT NOT NULL,
+  `dimensions` INT NOT NULL,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`cache_key`),
+  KEY `idx_ai_embedding_cache_model` (`model_key`),
+  KEY `idx_ai_embedding_cache_content` (`content_hash`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='逛逛知识向量缓存';
+
 -- Add lifecycle fields to a FAQ table created by an earlier version of this script.
 -- Each ALTER is conditional so the script can be safely re-run on supported MySQL versions.
 SET @gogo_sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'frequently_asked_question' AND column_name = 'enabled') = 0,

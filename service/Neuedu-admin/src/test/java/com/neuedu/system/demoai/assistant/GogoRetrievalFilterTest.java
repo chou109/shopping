@@ -4,7 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.neuedu.system.demoai.assistant.prompt.GogoPromptFactory;
 import com.neuedu.system.demoai.entity.Product;
 import com.neuedu.system.demoai.entity.FrequentlyAskedQuestion;
+import com.neuedu.system.demoai.entity.AIEmbeddingCacheEntry;
 import com.neuedu.system.demoai.repository.FAQRepository;
+import com.neuedu.system.demoai.repository.AIEmbeddingCacheRepository;
 import com.neuedu.system.demoai.repository.ProductRepository;
 import com.neuedu.system.service.IOrderInfoService;
 import org.junit.Test;
@@ -145,6 +147,76 @@ public class GogoRetrievalFilterTest {
         assertTrue(sources.get().isEmpty());
     }
 
+    @Test
+    public void persistsKnowledgeVectorsButKeepsUserQuestionVectorsProcessLocal() {
+        FrequentlyAskedQuestion faq = faq(63L, "配送进度如何查询", "登录订单页查看物流信息。");
+        List<AIEmbeddingCacheEntry> persisted = new ArrayList<>();
+        AIEmbeddingCacheRepository cache = proxy(AIEmbeddingCacheRepository.class, (proxy, method, args) -> {
+            if ("findByCacheKeyIn".equals(method.getName())) {
+                java.util.Collection<?> requested = (java.util.Collection<?>) args[0];
+                List<AIEmbeddingCacheEntry> matches = new ArrayList<>();
+                for (AIEmbeddingCacheEntry entry : persisted) if (requested.contains(entry.getCacheKey())) matches.add(entry);
+                return matches;
+            }
+            if ("saveAll".equals(method.getName())) {
+                for (Object entry : (Iterable<?>) args[0]) persisted.add((AIEmbeddingCacheEntry) entry);
+                return persisted;
+            }
+            return defaultValue(method.getReturnType());
+        });
+        AtomicReference<Integer> secondProviderInputs = new AtomicReference<>(0);
+        EmbeddingProvider firstProvider = embeddingProvider(text -> text.startsWith("包裹到哪") ? new float[]{1F, 0F} : new float[]{0.9F, 0.1F});
+        AtomicReference<List<Map<String, Object>>> sources = new AtomicReference<>();
+        assistant(faqRepository(faq), emptyProducts(), firstProvider, cache)
+                .answer("包裹到哪了", null, null, new ArrayList<>(), token -> { }, sources::set, handoff -> { });
+        assertEquals(1, persisted.size());
+
+        EmbeddingProvider secondProvider = new EmbeddingProvider() {
+            @Override public boolean isConfigured() { return true; }
+            @Override public String cacheNamespace() { return "test-embedding-model"; }
+            @Override public List<float[]> embed(List<String> texts) {
+                secondProviderInputs.set(texts.size());
+                List<float[]> vectors = new ArrayList<>();
+                for (String text : texts) vectors.add(text.startsWith("包裹到哪") ? new float[]{1F, 0F} : new float[]{0.9F, 0.1F});
+                return vectors;
+            }
+        };
+        assistant(faqRepository(faq), emptyProducts(), secondProvider, cache)
+                .answer("包裹到哪了", null, null, new ArrayList<>(), token -> { }, sources::set, handoff -> { });
+
+        assertEquals("second process should only embed the new query, not the cached knowledge row", Integer.valueOf(1), secondProviderInputs.get());
+        assertTrue(sources.get().stream().anyMatch(source -> Long.valueOf(63L).equals(source.get("sourceId"))));
+    }
+
+    @Test
+    public void productSemanticVectorExcludesLivePriceAndStock() {
+        Product selected = product(64L, "轻便耳机");
+        selected.setSubTitle("适合通勤");
+        selected.setPrice(new java.math.BigDecimal("129.90"));
+        selected.setStock(8);
+        ProductRepository products = proxy(ProductRepository.class, (proxy, method, args) -> {
+            if ("findByIdAndDeleteFlagAndStatus".equals(method.getName())) return selected;
+            if ("searchActiveByKeyword".equals(method.getName())) return Collections.emptyList();
+            return defaultValue(method.getReturnType());
+        });
+        List<String> embeddedTexts = new ArrayList<>();
+        EmbeddingProvider embeddings = new EmbeddingProvider() {
+            @Override public boolean isConfigured() { return true; }
+            @Override public List<float[]> embed(List<String> texts) {
+                embeddedTexts.addAll(texts);
+                List<float[]> result = new ArrayList<>();
+                for (int i = 0; i < texts.size(); i++) result.add(new float[]{1F, 0F});
+                return result;
+            }
+        };
+
+        assistant(faqRepository(), products, embeddings).answer("这款耳机是什么风格", 64L, null,
+                new ArrayList<>(), token -> { }, sources -> { }, handoff -> { });
+
+        assertTrue(embeddedTexts.stream().anyMatch(text -> text.contains("轻便耳机") && text.contains("适合通勤")));
+        assertTrue(embeddedTexts.stream().noneMatch(text -> text.contains("129.90") || text.contains("库存：8")));
+    }
+
     private GogoAssistantService assistant(ProductRepository products) {
         return assistant(faqRepository(), products);
     }
@@ -159,9 +231,17 @@ public class GogoRetrievalFilterTest {
                 new GogoPromptFactory(), embeddings);
     }
 
+    private GogoAssistantService assistant(FAQRepository faqs, ProductRepository products, EmbeddingProvider embeddings,
+                                           AIEmbeddingCacheRepository cache) {
+        return new GogoAssistantService(new ObjectMapper(), faqs, products,
+                proxy(IOrderInfoService.class, (proxy, method, args) -> defaultValue(method.getReturnType())),
+                new GogoPromptFactory(), embeddings, null, cache);
+    }
+
     private EmbeddingProvider embeddingProvider(java.util.function.Function<String, float[]> vectorFactory) {
         return new EmbeddingProvider() {
             @Override public boolean isConfigured() { return true; }
+            @Override public String cacheNamespace() { return "test-embedding-model"; }
             @Override public List<float[]> embed(List<String> texts) {
                 List<float[]> vectors = new ArrayList<>();
                 for (String text : texts) vectors.add(vectorFactory.apply(text));
