@@ -60,6 +60,23 @@
           </template>
           <div class="msg-content" :class="{ 'product-list': isProductList(msg.content) }">
             <span v-html="formatChatMessage(msg.content)"></span>
+            <section v-if="msg.toolResults?.length" class="tool-result-list" aria-label="业务查询结果">
+              <article v-for="(result, resultIndex) in msg.toolResults" :key="`${result.tool}-${resultIndex}`" class="tool-result-card">
+                <strong>{{ result.tool === 'search_products' ? '商品查询结果' : '本人订单状态' }}</strong>
+                <template v-if="result.tool === 'search_products'">
+                  <div v-for="item in result.items" :key="item.id" class="tool-product-row">
+                    <span class="tool-product-name">{{ item.name }}</span>
+                    <span class="tool-product-meta">¥{{ formatPrice(item.price) }} · 库存 {{ item.stock ?? '—' }}</span>
+                    <button type="button" class="source-product-link" @click="viewSourceProduct(item.id)">查看商品 →</button>
+                  </div>
+                </template>
+                <template v-else-if="result.tool === 'get_my_order_status'">
+                  <div v-for="(item, itemIndex) in result.items" :key="`${item.orderNoMasked}-${itemIndex}`" class="tool-order-row">
+                    <span>订单尾号 {{ item.orderNoMasked }}</span><strong>{{ item.status }}</strong>
+                  </div>
+                </template>
+              </article>
+            </section>
             <details v-if="msg.sources && msg.sources.length" class="chat-sources">
               <summary>参考资料（{{ msg.sources.length }}）</summary>
               <ul class="source-list">
@@ -157,6 +174,7 @@ const isAiTyping = ref(false);
 const showQuickReplies = ref(true);
 const currentAiMessage = ref('');
 const currentSources = ref([]);
+const currentToolResults = ref([])
 const currentHandoff = ref(false);
 const autoScrollEnabled = ref(true);
 const showWelcomeMessage = ref(true); // 控制欢迎消息显示
@@ -367,6 +385,10 @@ const initWebSocket = () => {
 
         } else if (type === 'sources') {
           currentSources.value = Array.isArray(content) ? content : [];
+        } else if (type === 'tool_result') {
+          if (content && ['search_products', 'get_my_order_status'].includes(content.tool) && Array.isArray(content.items)) {
+            currentToolResults.value.push(content)
+          }
         } else if (type === 'handoff') {
           currentHandoff.value = true;
         } else if (type === 'end') {
@@ -375,9 +397,11 @@ const initWebSocket = () => {
           const lastMsg = chatList.value[chatList.value.length - 1];
           if (lastMsg && lastMsg.type === 'ai') {
             lastMsg.sources = currentSources.value;
+            lastMsg.toolResults = currentToolResults.value.slice()
             lastMsg.handoff = currentHandoff.value;
           }
           currentSources.value = [];
+          currentToolResults.value = []
           currentHandoff.value = false;
           currentAiMessage.value = '';
 
@@ -389,6 +413,8 @@ const initWebSocket = () => {
           addErrorMessage(content);
           isRequestInFlight.value = false
           isAiTyping.value = false;
+          currentToolResults.value = []
+          currentSources.value = []
           currentAiMessage.value = '';
           forceScrollToBottom();
         }
@@ -397,6 +423,8 @@ const initWebSocket = () => {
         addErrorMessage('消息格式错误，请重试');
         isRequestInFlight.value = false
         isAiTyping.value = false;
+        currentToolResults.value = []
+        currentSources.value = []
         currentAiMessage.value = '';
         forceScrollToBottom();
       }
@@ -500,6 +528,8 @@ const toggleQuickReplies = () => {
 const clearChat = () => {
   if (confirm('确定要清空聊天记录吗？')) {
     chatList.value = [];
+    currentSources.value = []
+    currentToolResults.value = []
     addSystemMessage('聊天记录已清空');
     forceScrollToBottom();
   }
@@ -1311,6 +1341,15 @@ onUnmounted(() => {
 .send-btn:hover:not(:disabled) { background: #d96333; }
 .send-btn:disabled { background: #d8d4d0; }
 .source-product-link { margin-top: 6px; padding: 0; }
+.tool-result-list { display: grid; gap: 8px; margin-top: 12px; }
+.tool-result-card { padding: 11px 12px; border: 1px solid #efe5dc; border-radius: 12px; background: #fffdfa; }
+.tool-result-card > strong { display: block; margin-bottom: 7px; color: #69584d; font-size: 12px; }
+.tool-product-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 3px 12px; padding: 8px 0; border-top: 1px solid #f3eee9; }
+.tool-product-name { overflow: hidden; color: #3f4449; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.tool-product-meta { color: #8f8984; font-size: 11px; }
+.tool-product-row .source-product-link { grid-column: 2; grid-row: 1 / span 2; }
+.tool-order-row { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-top: 1px solid #f3eee9; color: #77736f; font-size: 12px; }
+.tool-order-row strong { color: #cf673e; font-size: 12px; }
 @media (max-width: 700px) {
   .chat-page { width: 100%; height: 100dvh; min-height: 0; margin: 0; border: 0; border-radius: 0; }
   .chat-header { min-height: 66px; padding: 10px 14px; }

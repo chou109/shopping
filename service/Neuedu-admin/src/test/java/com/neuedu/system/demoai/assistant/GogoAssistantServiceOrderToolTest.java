@@ -11,8 +11,10 @@ import org.junit.Test;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
+import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.*;
@@ -36,6 +38,12 @@ public class GogoAssistantServiceOrderToolTest {
         assertEquals(Long.valueOf(42L), queriedUser.get());
         assertTrue(response.contains("****7654"));
         assertFalse(response.contains("ORDER-PRIVATE-987654"));
+
+        GogoAssistantService.ToolResult result = assistant.executeToolResult("get_my_order_status",
+                new ObjectMapper().readTree("{\"status\":20}"), current);
+        assertEquals("get_my_order_status", result.display.get("tool"));
+        assertFalse(result.display.toString().contains("ORDER-PRIVATE-987654"));
+        assertTrue(result.display.toString().contains("****7654"));
     }
 
     @Test
@@ -78,9 +86,40 @@ public class GogoAssistantServiceOrderToolTest {
         GogoAssistantService assistant = new GogoAssistantService(new ObjectMapper(), proxy(FAQRepository.class, emptyProxy()),
                 products, proxy(IOrderInfoService.class, emptyProxy()), new GogoPromptFactory());
 
-        assertTrue(assistant.executeTool("search_products", new ObjectMapper().readTree("{\"query\":7}"), null).contains("搜索参数无效"));
+        GogoAssistantService.ToolResult invalid = assistant.executeToolResult("search_products",
+                new ObjectMapper().readTree("{\"query\":7}"), null);
+        assertTrue(invalid.content.contains("搜索参数无效"));
+        assertFalse(invalid.success);
         assertTrue(assistant.executeTool("search_products", new ObjectMapper().readTree("{\"query\":\"手机\",\"limit\":1000}"), null).contains("搜索参数无效"));
         assertFalse(called.get());
+    }
+
+    @Test
+    public void productToolReturnsOnlySafeFieldsForTheResultCard() throws Exception {
+        ProductRepository products = proxy(ProductRepository.class, (proxy, method, args) -> {
+            if ("searchActiveByKeyword".equals(method.getName())) {
+                com.neuedu.system.demoai.entity.Product product = new com.neuedu.system.demoai.entity.Product();
+                product.setId(17L);
+                product.setName("轻便耳机");
+                product.setPrice(new BigDecimal("129.90"));
+                product.setStock(8);
+                product.setMainImage("private-storage-path.jpg");
+                return Collections.singletonList(product);
+            }
+            return defaultValue(method.getReturnType());
+        });
+        GogoAssistantService assistant = new GogoAssistantService(new ObjectMapper(), proxy(FAQRepository.class, emptyProxy()),
+                products, proxy(IOrderInfoService.class, emptyProxy()), new GogoPromptFactory());
+
+        GogoAssistantService.ToolResult result = assistant.executeToolResult("search_products",
+                new ObjectMapper().readTree("{\"query\":\"耳机\"}"), null);
+
+        assertTrue(result.success);
+        assertEquals("search_products", result.display.get("tool"));
+        assertTrue(result.content.contains("商品ID 17"));
+        assertTrue(result.display.toString().contains("129.90"));
+        assertTrue(result.display.toString().contains("库存=8") || result.display.toString().contains("stock=8"));
+        assertFalse(result.display.toString().contains("private-storage-path"));
     }
 
     private static InvocationHandler emptyProxy() { return (proxy, method, args) -> defaultValue(method.getReturnType()); }

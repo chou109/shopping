@@ -42,6 +42,7 @@ public class AIChatWebSocket {
             List<ObjectNode> history = HISTORY.computeIfAbsent(session, key -> Collections.synchronizedList(new ArrayList<>()));
             assistantService.answer(question, request.getProductId(), loginUser, history,
                     text -> send(session, "stream", text), sources -> sendPayload(session, "sources", sources),
+                    result -> sendPayload(session, "tool_result", result),
                     required -> { if (required) send(session, "handoff", ""); });
             send(session, "end", "");
         } catch (Exception e) {

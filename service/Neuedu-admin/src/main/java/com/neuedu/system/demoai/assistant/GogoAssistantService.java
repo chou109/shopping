@@ -70,6 +70,12 @@ public class GogoAssistantService {
     public void answer(String question, Long productId, LoginUser loginUser, List<ObjectNode> history,
                        Consumer<String> onToken, Consumer<List<Map<String, Object>>> onSources,
                        Consumer<Boolean> onHandoff) {
+        answer(question, productId, loginUser, history, onToken, onSources, result -> { }, onHandoff);
+    }
+
+    public void answer(String question, Long productId, LoginUser loginUser, List<ObjectNode> history,
+                       Consumer<String> onToken, Consumer<List<Map<String, Object>>> onSources,
+                       Consumer<Map<String, Object>> onToolResult, Consumer<Boolean> onHandoff) {
         long started = System.currentTimeMillis();
         List<Map<String, Object>> sources = retrieve(question, productId);
         onSources.accept(sources);
@@ -120,10 +126,12 @@ public class GogoAssistantService {
                     String id = call.path("id").asText("");
                     String name = call.path("function").path("name").asText("");
                     String args = call.path("function").path("arguments").asText("{}");
-                    String toolResult;
-                    try { toolResult = executeTool(name, mapper.readTree(args), loginUser); }
-                    catch (Exception ex) { toolFailures++; toolResult = "查询失败，请稍后重试或联系人工客服。"; }
-                    ObjectNode tool = messages.addObject(); tool.put("role", "tool"); tool.put("tool_call_id", id); tool.put("content", toolResult);
+                    ToolResult execution;
+                    try { execution = executeToolResult(name, mapper.readTree(args), loginUser); }
+                    catch (Exception ex) { execution = ToolResult.failure("查询失败，请稍后重试或联系人工客服。"); }
+                    if (!execution.success) toolFailures++;
+                    if (execution.display != null) onToolResult.accept(execution.display);
+                    ObjectNode tool = messages.addObject(); tool.put("role", "tool"); tool.put("tool_call_id", id); tool.put("content", execution.content);
                 }
                 if (turn == 3) { emit.accept("查询步骤过多，请缩小问题范围或联系人工客服。"); handoff = true; }
             }
@@ -266,25 +274,45 @@ public class GogoAssistantService {
         ObjectNode tool=mapper.createObjectNode(); tool.put("type","function"); ObjectNode fn=tool.putObject("function"); fn.put("name",name); fn.put("description",description); ObjectNode params=fn.putObject("parameters"); params.put("type","object"); ObjectNode props=params.putObject("properties"); props.putObject(argName).put("type",type).put("description",name.equals("search_products")?"商品搜索关键词":"可选订单状态：10待付款、20待发货、30待收货、40待评价、50完成、60取消"); ArrayNode requiredFields=params.putArray("required"); if(required) requiredFields.add(argName); params.put("additionalProperties",false); return tool;
     }
     String executeTool(String name, JsonNode args, LoginUser loginUser) {
+        return executeToolResult(name, args, loginUser).content;
+    }
+
+    ToolResult executeToolResult(String name, JsonNode args, LoginUser loginUser) {
         if("search_products".equals(name)) {
-            if (!onlyFields(args, "query") || !args.path("query").isTextual()) return "搜索参数无效。";
-            String query=args.path("query").asText("").trim(); if(query.isEmpty() || query.length()>80) return "搜索词无效。";
+            if (!onlyFields(args, "query") || !args.path("query").isTextual()) return ToolResult.failure("搜索参数无效。");
+            String query=args.path("query").asText("").trim(); if(query.isEmpty() || query.length()>80) return ToolResult.failure("搜索词无效。");
             List<Product> found=productRepository.searchActiveByKeyword(query, PageRequest.of(0, 5)); StringBuilder b=new StringBuilder();
-            for(int i=0;i<Math.min(found.size(),5);i++){ Product p=found.get(i); b.append("商品").append(p.getName()).append("，价格").append(p.getPrice()).append("，库存").append(p.getStock()).append("；"); }
-            return b.length()==0?"没有找到在售商品。":b.toString();
+            List<Map<String, Object>> items = new ArrayList<>();
+            for(int i=0;i<Math.min(found.size(),5);i++){
+                Product p=found.get(i);
+                Map<String, Object> item = new LinkedHashMap<>();
+                item.put("id", p.getId()); item.put("name", safe(p.getName())); item.put("price", p.getPrice()); item.put("stock", p.getStock());
+                items.add(item);
+                b.append("商品ID ").append(p.getId()).append("，商品").append(safe(p.getName())).append("，价格").append(p.getPrice()).append("，库存").append(p.getStock()).append("；");
+            }
+            if (items.isEmpty()) return new ToolResult("没有找到在售商品。", null);
+            Map<String, Object> display = new LinkedHashMap<>(); display.put("tool", "search_products"); display.put("items", items);
+            return new ToolResult(b.toString(), display);
         }
         if("get_my_order_status".equals(name)) {
-            if (!onlyFields(args, "status")) return "订单查询参数无效。";
+            if (!onlyFields(args, "status")) return ToolResult.failure("订单查询参数无效。");
             if (args.has("status") && !args.get("status").isNull()
-                    && (!args.get("status").isIntegralNumber() || !args.get("status").canConvertToInt())) return "订单状态条件无效。";
-            if(loginUser==null || loginUser.getUserId()==null) return "请登录后查询订单。";
+                    && (!args.get("status").isIntegralNumber() || !args.get("status").canConvertToInt())) return ToolResult.failure("订单状态条件无效。");
+            if(loginUser==null || loginUser.getUserId()==null) return ToolResult.failure("请登录后查询订单。");
             Integer status=args.hasNonNull("status")?args.path("status").asInt():null;
-            if(status!=null && !Arrays.asList(10,20,30,40,50,60).contains(status)) return "订单状态条件无效。";
+            if(status!=null && !Arrays.asList(10,20,30,40,50,60).contains(status)) return ToolResult.failure("订单状态条件无效。");
             List<OrderInfo> orders=orderInfoService.selectOrderListByUserId(loginUser.getUserId(),status); StringBuilder b=new StringBuilder();
-            if(orders!=null) for(int i=0;i<Math.min(orders.size(),5);i++){ OrderInfo o=orders.get(i); b.append("订单尾号").append(mask(o.getOrderNo())).append("，状态").append(safe(o.getStatusDesc())).append("；"); }
-            return b.length()==0?"当前没有符合条件的订单。":b.toString();
+            List<Map<String, Object>> items = new ArrayList<>();
+            if(orders!=null) for(int i=0;i<Math.min(orders.size(),5);i++){
+                OrderInfo o=orders.get(i); String masked = mask(o.getOrderNo()); String statusDesc = safe(o.getStatusDesc());
+                b.append("订单尾号").append(masked).append("，状态").append(statusDesc).append("；");
+                Map<String, Object> item = new LinkedHashMap<>(); item.put("orderNoMasked", masked); item.put("status", statusDesc); items.add(item);
+            }
+            if (items.isEmpty()) return new ToolResult("当前没有符合条件的订单。", null);
+            Map<String, Object> display = new LinkedHashMap<>(); display.put("tool", "get_my_order_status"); display.put("items", items);
+            return new ToolResult(b.toString(), display);
         }
-        return "未授权的工具。";
+        return ToolResult.failure("未授权的工具。");
     }
     private boolean onlyFields(JsonNode args, String... allowed) {
         if (args == null || !args.isObject()) return false;
@@ -294,5 +322,15 @@ public class GogoAssistantService {
         return true;
     }
     private String mask(String orderNo) { if(orderNo==null)return "未知"; return orderNo.length()<=4?"****": "****"+orderNo.substring(orderNo.length()-4); }
+    static class ToolResult {
+        final String content;
+        final Map<String, Object> display;
+        final boolean success;
+        ToolResult(String content, Map<String, Object> display) { this(content, display, true); }
+        private ToolResult(String content, Map<String, Object> display, boolean success) {
+            this.content = content; this.display = display; this.success = success;
+        }
+        static ToolResult failure(String content) { return new ToolResult(content, null, false); }
+    }
     private static class StreamResult { final StringBuilder text=new StringBuilder(); final List<JsonNode> toolCalls=new ArrayList<>(); ArrayNode rawToolCalls; int promptTokens; int completionTokens; }
 }
