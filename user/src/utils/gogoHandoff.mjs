@@ -1,5 +1,21 @@
 export const GOGO_HANDOFF_STORAGE_KEY = 'gogo-human-handoff-v1'
 
+export function getGogoHandoffReplyStatus(messages) {
+  if (!Array.isArray(messages)) return ''
+  let handoffIndex = -1
+  for (let index = messages.length - 1; index >= 0; index--) {
+    const message = messages[index]
+    if (Number(message?.senderType) === 1
+      && typeof message.content === 'string'
+      && message.content.trim().startsWith('逛逛转人工咨询')) {
+      handoffIndex = index
+      break
+    }
+  }
+  if (handoffIndex < 0) return ''
+  return messages.slice(handoffIndex + 1).some(message => Number(message?.senderType) === 2) ? 'replied' : 'waiting'
+}
+
 export function createGogoHandoffContext(chatMessages, selectedAnswer = null) {
   if (!Array.isArray(chatMessages)) return null
   let userIndex = -1

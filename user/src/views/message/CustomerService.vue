@@ -25,6 +25,12 @@
       </div>
     </header>
 
+    <div v-if="gogoHandoffStatus" class="handoff-status" :class="`is-${gogoHandoffStatus}`" role="status" aria-live="polite">
+      <el-icon><Service /></el-icon>
+      <span v-if="gogoHandoffStatus === 'waiting'">咨询摘要已发送给平台客服，等待客服回复。您可以继续补充问题。</span>
+      <span v-else>平台客服已在此会话回复，您可以继续沟通。</span>
+    </div>
+
     <!-- 聊天容器 -->
     <div class="chat-container">
       <!-- 消息列表 -->
@@ -124,7 +130,7 @@ import { ArrowLeft, Service, Bell, Loading } from '@element-plus/icons-vue'
 import { sendMessage as sendMessageApi, getMessages, getUnreadCount, markAsRead } from '@/api/system/customerMessage'
 import { getProductImageUrl } from '@/utils/image'
 import { CustomerMessageDataError, readCustomerMessageList, readCustomerUnreadCount } from '@/utils/customerMessageData.mjs'
-import { formatGogoHandoffDraft, GOGO_HANDOFF_STORAGE_KEY } from '@/utils/gogoHandoff.mjs'
+import { formatGogoHandoffDraft, GOGO_HANDOFF_STORAGE_KEY, getGogoHandoffReplyStatus } from '@/utils/gogoHandoff.mjs'
 
 const router = useRouter()
 const store = useStore()
@@ -138,6 +144,7 @@ const sending = ref(false)
 const unreadCount = ref(0)
 const messageError = ref('')
 const gogoHandoffPrefilled = ref(false)
+const gogoHandoffStatus = ref('')
 const messageListRef = ref(null)
 const scrollAnchor = ref(null)
 let messageLoadVersion = 0
@@ -202,6 +209,7 @@ const loadMessages = async () => {
     const messageList = readCustomerMessageList(response)
     if (componentActive && requestVersion === messageLoadVersion && requestReceiverId === receiverId.value) {
       messages.value = messageList
+      if (route.query.source === 'gogo') gogoHandoffStatus.value = getGogoHandoffReplyStatus(messageList)
       await nextTick()
       if (!componentActive || requestVersion !== messageLoadVersion) return
       scrollToBottom()
@@ -262,6 +270,9 @@ const sendMessage = async () => {
   try {
     const response = await sendMessageApi(content, 1, requestReceiverId)
     if (response.code === 200) {
+      if (gogoHandoffPrefilled.value) {
+        gogoHandoffStatus.value = 'waiting'
+      }
       gogoHandoffPrefilled.value = false
       // 替换临时消息
       const index = messages.value.findIndex(m => m.id === tempMessage.id)
@@ -347,6 +358,7 @@ const startRefresh = () => {
       if (!componentActive || requestReceiverId !== receiverId.value) return
       if (response.code === 200) {
         const newMessages = readCustomerMessageList(response)
+        if (route.query.source === 'gogo') gogoHandoffStatus.value = getGogoHandoffReplyStatus(newMessages)
         const oldIds = messages.value.map(message => message.id)
         const newIds = newMessages.map(message => message.id)
         if (oldIds.length !== newIds.length || oldIds.some((id, index) => id !== newIds[index])) {
@@ -389,6 +401,7 @@ onMounted(() => {
 watch(receiverId, () => {
   messages.value = []
   messageError.value = ''
+  gogoHandoffStatus.value = ''
   loadMessages()
 })
 
@@ -409,6 +422,9 @@ onUnmounted(() => {
 }
 
 .handoff-context-note { padding: 8px 12px; color: #7a5b21; background: #fff7e6; border: 1px solid #f5dfb2; border-radius: 8px; font-size: 12px; line-height: 1.5; }
+.handoff-status { max-width: 800px; margin: 12px auto 0; padding: 10px 14px; display: flex; align-items: center; gap: 8px; border-radius: 10px; font-size: 13px; line-height: 1.5; }
+.handoff-status.is-waiting { color: #785b1f; background: #fff8e8; border: 1px solid #f3dfb1; }
+.handoff-status.is-replied { color: #28734a; background: #eef9f1; border: 1px solid #cdebd5; }
 
 /* 顶部导航 */
 .cs-header {
