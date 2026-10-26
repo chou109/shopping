@@ -5,9 +5,28 @@ CREATE TABLE IF NOT EXISTS `frequently_asked_question` (
   `answer` TEXT NOT NULL,
   `product_id` BIGINT DEFAULT NULL COMMENT 'NULL means general store knowledge',
   `priority` INT NOT NULL DEFAULT 0,
+  `enabled` TINYINT NOT NULL DEFAULT 1 COMMENT '1=enabled, 0=disabled',
+  `source_type` VARCHAR(32) NOT NULL DEFAULT 'FAQ' COMMENT 'FAQ, POLICY, PRODUCT',
+  `version` INT NOT NULL DEFAULT 1,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_faq_product_priority` (`product_id`, `priority`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AI客服可维护知识库';
+
+-- Add lifecycle fields to a FAQ table created by an earlier version of this script.
+-- Each ALTER is conditional so the script can be safely re-run on supported MySQL versions.
+SET @gogo_sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'frequently_asked_question' AND column_name = 'enabled') = 0,
+  'ALTER TABLE `frequently_asked_question` ADD COLUMN `enabled` TINYINT NOT NULL DEFAULT 1 COMMENT ''1=enabled, 0=disabled''', 'SELECT 1');
+PREPARE gogo_stmt FROM @gogo_sql; EXECUTE gogo_stmt; DEALLOCATE PREPARE gogo_stmt;
+SET @gogo_sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'frequently_asked_question' AND column_name = 'source_type') = 0,
+  'ALTER TABLE `frequently_asked_question` ADD COLUMN `source_type` VARCHAR(32) NOT NULL DEFAULT ''FAQ'' COMMENT ''FAQ, POLICY, PRODUCT''', 'SELECT 1');
+PREPARE gogo_stmt FROM @gogo_sql; EXECUTE gogo_stmt; DEALLOCATE PREPARE gogo_stmt;
+SET @gogo_sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'frequently_asked_question' AND column_name = 'version') = 0,
+  'ALTER TABLE `frequently_asked_question` ADD COLUMN `version` INT NOT NULL DEFAULT 1', 'SELECT 1');
+PREPARE gogo_stmt FROM @gogo_sql; EXECUTE gogo_stmt; DEALLOCATE PREPARE gogo_stmt;
+SET @gogo_sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'frequently_asked_question' AND column_name = 'updated_at') = 0,
+  'ALTER TABLE `frequently_asked_question` ADD COLUMN `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP', 'SELECT 1');
+PREPARE gogo_stmt FROM @gogo_sql; EXECUTE gogo_stmt; DEALLOCATE PREPARE gogo_stmt;
 
 INSERT INTO `frequently_asked_question` (`question`, `answer`, `product_id`, `priority`)
 SELECT '目前支持哪些支付方式？', '当前结算页提供的支付选项为准；若账户余额支付可用，可使用余额完成支付。其他支付方式以结算页实际显示为准。', NULL, 100

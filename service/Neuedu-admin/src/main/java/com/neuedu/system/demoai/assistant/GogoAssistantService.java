@@ -173,11 +173,15 @@ public class GogoAssistantService {
             for (FrequentlyAskedQuestion faq : faqs) {
                 String text = safe(faq.getQuestion()) + " " + safe(faq.getAnswer());
                 int score = score(terms, text);
-                if (score > 0) docs.add(doc("FAQ #" + faq.getId() + "：" + safe(faq.getQuestion()), safe(faq.getAnswer()), score, "faq", faq.getId()));
+                if (score > 0) {
+                    String sourceType = safe(faq.getSourceType()).isEmpty() ? "FAQ" : faq.getSourceType().toLowerCase(Locale.ROOT);
+                    docs.add(doc(sourceType.toUpperCase(Locale.ROOT) + " #" + faq.getId() + "：" + safe(faq.getQuestion()),
+                            safe(faq.getAnswer()), score, sourceType, faq.getId()));
+                }
             }
         } catch (Exception ex) { log.debug("FAQ retrieval unavailable: {}", ex.getClass().getSimpleName()); }
         try {
-            List<Product> products = terms.isEmpty() ? new ArrayList<>() : productRepository.searchActiveByKeyword(question, PageRequest.of(0, 5));
+            List<Product> products = terms.isEmpty() ? new ArrayList<>() : new ArrayList<>(productRepository.searchActiveByKeyword(question, PageRequest.of(0, 5)));
             if (productId != null) {
                 Product selected = productRepository.findByIdAndDeleteFlagAndStatus(productId, 0, 1);
                 if (selected != null && products.stream().noneMatch(p -> Objects.equals(p.getId(), selected.getId()))) products.add(selected);

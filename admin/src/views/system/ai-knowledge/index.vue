@@ -41,7 +41,20 @@
             <span v-else>商品 #{{ row.productId }}</span>
           </template>
         </el-table-column>
+        <el-table-column label="资料类型" width="110" align="center">
+          <template #default="{ row }">{{ sourceLabel(row.sourceType) }}</template>
+        </el-table-column>
         <el-table-column prop="priority" label="优先级" width="100" align="center" />
+        <el-table-column label="状态" width="100" align="center">
+          <template #default="{ row }">
+            <el-tag :type="row.enabled === 0 ? 'info' : 'success'" size="small" class="status-tag">{{ row.enabled === 0 ? '停用' : '启用' }}</el-tag>
+            <el-switch v-hasPermi="['system:ai:knowledge:edit']" :model-value="row.enabled !== 0" :loading="statusUpdatingId === row.id"
+              active-text="启用" inactive-text="停用" inline-prompt @change="value => changeStatus(row, value)" />
+          </template>
+        </el-table-column>
+        <el-table-column label="版本 / 更新" min-width="160">
+          <template #default="{ row }"><span>v{{ row.version || 1 }} · {{ formatUpdatedAt(row.updatedAt) }}</span></template>
+        </el-table-column>
         <el-table-column label="操作" width="150" fixed="right" align="center">
           <template #default="{ row }">
             <el-button v-hasPermi="['system:ai:knowledge:edit']" link type="primary" @click="openEdit(row)">编辑</el-button>
@@ -49,13 +62,20 @@
           </template>
         </el-table-column>
       </el-table>
-      <div class="table-footnote">当前 FAQ 表没有启停/版本字段；更新会立即影响后续检索。每次检索最多向模型提供 5 条资料。</div>
+      <div class="table-footnote">停用资料会立即退出后续检索；编辑或切换状态都会递增版本号。每次检索最多向模型提供 5 条资料。</div>
     </el-card>
 
     <el-dialog v-model="dialogVisible" :title="form.id ? '编辑知识' : '新增知识'" width="min(680px, calc(100vw - 32px))" destroy-on-close>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="问题 / 标题" prop="question">
           <el-input v-model="form.question" maxlength="255" show-word-limit placeholder="例如：如何申请退款？" />
+        </el-form-item>
+        <el-form-item label="资料类型" prop="sourceType">
+          <el-select v-model="form.sourceType" class="product-select">
+            <el-option label="常见问题" value="FAQ" />
+            <el-option label="商城政策" value="POLICY" />
+            <el-option label="商品说明" value="PRODUCT" />
+          </el-select>
         </el-form-item>
         <el-form-item label="回答 / 内容" prop="answer">
           <el-input v-model="form.answer" type="textarea" :rows="8" maxlength="10000" show-word-limit placeholder="填写已核实的商城规则或商品说明。不要写入密钥、用户隐私或临时库存价格。" />
@@ -87,7 +107,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Refresh, Search } from '@element-plus/icons-vue'
-import { addAiKnowledge, deleteAiKnowledge, getAiKnowledgeMetrics, listAiKnowledge, updateAiKnowledge } from '@/api/system/aiKnowledge'
+import { addAiKnowledge, deleteAiKnowledge, getAiKnowledgeMetrics, listAiKnowledge, updateAiKnowledge, updateAiKnowledgeStatus } from '@/api/system/aiKnowledge'
 import { listProduct } from '@/api/system/product'
 
 const loading = ref(false)
@@ -101,9 +121,10 @@ const productOptions = ref([])
 const formRef = ref()
 const isGlobal = ref(true)
 const loadingProducts = ref(false)
+const statusUpdatingId = ref(null)
 let productSearchRequestId = 0
 const metrics = reactive({})
-const form = reactive({ id: null, question: '', answer: '', productId: null, priority: 0 })
+const form = reactive({ id: null, question: '', answer: '', productId: null, priority: 0, sourceType: 'FAQ' })
 const rules = {
   question: [{ required: true, message: '请填写问题或标题', trigger: 'blur' }, { max: 255, message: '最多 255 个字符', trigger: 'blur' }],
   answer: [{ required: true, message: '请填写回答或内容', trigger: 'blur' }, { max: 10000, message: '最多 10000 个字符', trigger: 'blur' }]
@@ -117,6 +138,14 @@ const filteredRows = computed(() => {
 
 function percent(value) {
   return `${Math.round((Number(value) || 0) * 100)}%`
+}
+
+function sourceLabel(type) {
+  return ({ FAQ: '常见问题', POLICY: '商城政策', PRODUCT: '商品说明' })[type] || '常见问题'
+}
+
+function formatUpdatedAt(value) {
+  return value ? String(value).replace('T', ' ').slice(0, 16) : '—'
 }
 
 async function loadKnowledge() {
@@ -152,6 +181,7 @@ function resetForm(row = null) {
   form.answer = row?.answer ?? ''
   form.productId = row?.productId ?? null
   form.priority = row?.priority ?? 0
+  form.sourceType = row?.sourceType ?? 'FAQ'
   isGlobal.value = row?.productId == null
   productOptions.value = row?.productId == null ? [] : [{ id: row.productId, name: `商品 #${row.productId}` }]
   formRef.value?.clearValidate()
@@ -204,7 +234,8 @@ async function saveKnowledge() {
     question: form.question.trim(),
     answer: form.answer.trim(),
     productId: isGlobal.value ? null : Number(form.productId),
-    priority: Number(form.priority) || 0
+    priority: Number(form.priority) || 0,
+    sourceType: form.sourceType
   }
   saving.value = true
   try {
@@ -217,6 +248,20 @@ async function saveKnowledge() {
     ElMessage.error(error?.message || '保存失败，请稍后重试')
   } finally {
     saving.value = false
+  }
+}
+
+async function changeStatus(row, enabled) {
+  statusUpdatingId.value = row.id
+  try {
+    const response = await updateAiKnowledgeStatus(row.id, enabled ? 1 : 0)
+    if (response?.code !== 200) throw new Error(response?.msg || '状态更新失败')
+    ElMessage.success(enabled ? '知识已启用' : '知识已停用')
+    await loadKnowledge()
+  } catch (error) {
+    ElMessage.error(error?.message || '状态更新失败，请稍后重试')
+  } finally {
+    statusUpdatingId.value = null
   }
 }
 

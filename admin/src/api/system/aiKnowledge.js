@@ -12,6 +12,10 @@ export function updateAiKnowledge(data) {
   return request({ url: '/system/ai/knowledge', method: 'put', data })
 }
 
+export function updateAiKnowledgeStatus(id, enabled) {
+  return request({ url: `/system/ai/knowledge/${id}/status`, method: 'put', params: { enabled } })
+}
+
 export function deleteAiKnowledge(id) {
   return request({ url: `/system/ai/knowledge/${id}`, method: 'delete' })
 }
