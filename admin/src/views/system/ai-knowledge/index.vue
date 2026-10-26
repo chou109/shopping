@@ -67,6 +67,45 @@
       <div class="table-footnote">停用资料会立即退出后续检索；编辑或切换状态都会递增版本号。每次检索最多向模型提供 5 条资料。</div>
     </el-card>
 
+    <el-card shadow="never" class="knowledge-card">
+      <div class="toolbar">
+        <div>
+          <h3 class="section-title">长文档知识</h3>
+          <div class="field-hint">粘贴商城政策、配送说明或商品手册；逛逛检索时会按段落切片，来源仍指向原文档。</div>
+        </div>
+        <div class="toolbar-actions">
+          <el-button :icon="Refresh" :loading="loadingDocuments" @click="loadDocuments">刷新</el-button>
+          <el-button v-hasPermi="['system:ai:knowledge:edit']" type="primary" :icon="Plus" @click="openDocumentCreate">新增文档</el-button>
+        </div>
+      </div>
+      <el-alert v-if="documentError" :title="documentError" type="error" show-icon :closable="false" class="error-alert">
+        <template #default><el-button link type="primary" :disabled="loadingDocuments" @click="loadDocuments">重试</el-button></template>
+      </el-alert>
+      <el-table v-loading="loadingDocuments" :data="documentRows" row-key="id" empty-text="暂无长文档">
+        <el-table-column prop="title" label="文档标题" min-width="220" show-overflow-tooltip />
+        <el-table-column label="内容预览" min-width="320">
+          <template #default="{ row }"><div class="answer-cell">{{ row.content }}</div></template>
+        </el-table-column>
+        <el-table-column label="适用范围" width="140">
+          <template #default="{ row }"><el-tag v-if="row.productId == null" type="success" effect="light">通用知识</el-tag><span v-else>商品 #{{ row.productId }}</span></template>
+        </el-table-column>
+        <el-table-column label="资料类型" width="110" align="center"><template #default="{ row }">{{ sourceLabel(row.sourceType) }}</template></el-table-column>
+        <el-table-column label="状态" width="100" align="center">
+          <template #default="{ row }">
+            <el-tag :type="row.enabled === 0 ? 'info' : 'success'" size="small">{{ row.enabled === 0 ? '停用' : '启用' }}</el-tag>
+            <el-switch v-hasPermi="['system:ai:knowledge:edit']" :model-value="row.enabled !== 0" :loading="documentStatusUpdatingId === row.id" inline-prompt @change="value => changeDocumentStatus(row, value)" />
+          </template>
+        </el-table-column>
+        <el-table-column label="版本 / 更新" min-width="150"><template #default="{ row }">v{{ row.version || 1 }} · {{ formatUpdatedAt(row.updatedAt) }}</template></el-table-column>
+        <el-table-column label="操作" width="130" fixed="right" align="center">
+          <template #default="{ row }">
+            <el-button v-hasPermi="['system:ai:knowledge:edit']" link type="primary" @click="openDocumentEdit(row)">编辑</el-button>
+            <el-button v-hasPermi="['system:ai:knowledge:edit']" link type="danger" @click="removeDocument(row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-card>
+
     <el-dialog v-model="dialogVisible" :title="form.id ? '编辑知识' : '新增知识'" width="min(680px, calc(100vw - 32px))" destroy-on-close>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="问题 / 标题" prop="question">
@@ -102,6 +141,23 @@
         <el-button type="primary" :loading="saving" @click="saveKnowledge">保存</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="documentDialogVisible" :title="documentForm.id ? '编辑知识文档' : '新增知识文档'" width="min(760px, calc(100vw - 32px))" destroy-on-close>
+      <el-form ref="documentFormRef" :model="documentForm" :rules="documentRules" label-width="100px">
+        <el-form-item label="文档标题" prop="title"><el-input v-model="documentForm.title" maxlength="200" show-word-limit placeholder="例如：退换货与售后政策" /></el-form-item>
+        <el-form-item label="资料类型"><el-select v-model="documentForm.sourceType" class="product-select"><el-option label="商城政策" value="POLICY" /><el-option label="商品说明" value="PRODUCT" /><el-option label="常见问题" value="FAQ" /></el-select></el-form-item>
+        <el-form-item label="文档正文" prop="content"><el-input v-model="documentForm.content" type="textarea" :rows="14" maxlength="30000" show-word-limit placeholder="粘贴已核实的政策或说明。建议按主题分段，不要写入密钥、用户隐私或临时库存价格。" /></el-form-item>
+        <el-form-item label="关联商品">
+          <div class="scope-control">
+            <el-checkbox v-model="documentIsGlobal" @change="toggleDocumentGlobal">通用知识</el-checkbox>
+            <el-select v-model="documentForm.productId" filterable remote clearable reserve-keyword :remote-method="searchProducts" :loading="loadingProducts" :disabled="documentIsGlobal" placeholder="搜索并选择商品" class="product-select">
+              <el-option v-for="product in productOptions" :key="product.id" :label="`${product.name}（#${product.id}）`" :value="product.id" />
+            </el-select>
+          </div>
+        </el-form-item>
+      </el-form>
+      <template #footer><el-button @click="documentDialogVisible = false">取消</el-button><el-button type="primary" :loading="savingDocument" @click="saveDocument">保存文档</el-button></template>
+    </el-dialog>
   </div>
 </template>
 
@@ -109,27 +165,40 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Refresh, Search } from '@element-plus/icons-vue'
-import { addAiKnowledge, deleteAiKnowledge, getAiKnowledgeMetrics, listAiKnowledge, updateAiKnowledge, updateAiKnowledgeStatus } from '@/api/system/aiKnowledge'
+import { addAiKnowledge, addAiKnowledgeDocument, deleteAiKnowledge, deleteAiKnowledgeDocument, getAiKnowledgeMetrics, listAiKnowledge, listAiKnowledgeDocuments, updateAiKnowledge, updateAiKnowledgeDocument, updateAiKnowledgeDocumentStatus, updateAiKnowledgeStatus } from '@/api/system/aiKnowledge'
 import { listProduct } from '@/api/system/product'
 
 const loading = ref(false)
 const loadingMetrics = ref(false)
 const saving = ref(false)
+const savingDocument = ref(false)
 const dialogVisible = ref(false)
+const documentDialogVisible = ref(false)
 const errorMessage = ref('')
 const keyword = ref('')
 const knowledgeRows = ref([])
+const documentRows = ref([])
+const loadingDocuments = ref(false)
+const documentError = ref('')
+const documentStatusUpdatingId = ref(null)
 const productOptions = ref([])
 const formRef = ref()
+const documentFormRef = ref()
 const isGlobal = ref(true)
+const documentIsGlobal = ref(true)
 const loadingProducts = ref(false)
 const statusUpdatingId = ref(null)
 let productSearchRequestId = 0
 const metrics = reactive({})
 const form = reactive({ id: null, question: '', answer: '', productId: null, priority: 0, sourceType: 'FAQ' })
+const documentForm = reactive({ id: null, title: '', content: '', productId: null, sourceType: 'POLICY' })
 const rules = {
   question: [{ required: true, message: '请填写问题或标题', trigger: 'blur' }, { max: 255, message: '最多 255 个字符', trigger: 'blur' }],
   answer: [{ required: true, message: '请填写回答或内容', trigger: 'blur' }, { max: 10000, message: '最多 10000 个字符', trigger: 'blur' }]
+}
+const documentRules = {
+  title: [{ required: true, message: '请填写文档标题', trigger: 'blur' }, { max: 200, message: '最多 200 个字符', trigger: 'blur' }],
+  content: [{ required: true, message: '请填写文档正文', trigger: 'blur' }, { max: 30000, message: '最多 30000 个字符', trigger: 'blur' }]
 }
 
 const filteredRows = computed(() => {
@@ -177,6 +246,77 @@ async function loadMetrics() {
   }
 }
 
+async function loadDocuments() {
+  loadingDocuments.value = true
+  documentError.value = ''
+  try {
+    const response = await listAiKnowledgeDocuments()
+    if (response?.code !== 200 || !Array.isArray(response.data)) throw new Error(response?.msg || '文档列表返回格式异常')
+    documentRows.value = response.data
+  } catch (error) {
+    documentError.value = error?.message || '文档列表加载失败，请先确认已执行 service/ai_knowledge.sql'
+  } finally {
+    loadingDocuments.value = false
+  }
+}
+
+function resetDocumentForm(row = null) {
+  documentForm.id = row?.id ?? null
+  documentForm.title = row?.title ?? ''
+  documentForm.content = row?.content ?? ''
+  documentForm.productId = row?.productId ?? null
+  documentForm.sourceType = row?.sourceType ?? 'POLICY'
+  documentIsGlobal.value = row?.productId == null
+  productOptions.value = row?.productId == null ? [] : [{ id: row.productId, name: `商品 #${row.productId}` }]
+  documentFormRef.value?.clearValidate()
+}
+
+function openDocumentCreate() { resetDocumentForm(); documentDialogVisible.value = true }
+function openDocumentEdit(row) { resetDocumentForm(row); documentDialogVisible.value = true }
+function toggleDocumentGlobal(value) { if (value) { documentForm.productId = null; productOptions.value = [] } }
+
+async function saveDocument() {
+  const valid = await documentFormRef.value?.validate().catch(() => false)
+  if (!valid) return
+  if (!documentIsGlobal.value && (!Number.isInteger(Number(documentForm.productId)) || Number(documentForm.productId) < 1)) {
+    ElMessage.warning('请选择有效的商品，或切换为通用知识')
+    return
+  }
+  const payload = { ...(documentForm.id == null ? {} : { id: documentForm.id }), title: documentForm.title.trim(), content: documentForm.content.trim(), sourceType: documentForm.sourceType, productId: documentIsGlobal.value ? null : Number(documentForm.productId) }
+  savingDocument.value = true
+  try {
+    const response = documentForm.id == null ? await addAiKnowledgeDocument(payload) : await updateAiKnowledgeDocument(payload)
+    if (response?.code !== 200) throw new Error(response?.msg || '保存文档失败')
+    ElMessage.success('知识文档已保存，检索切片将按新内容生成')
+    documentDialogVisible.value = false
+    await loadDocuments()
+  } catch (error) { ElMessage.error(error?.message || '保存文档失败') }
+  finally { savingDocument.value = false }
+}
+
+async function changeDocumentStatus(row, enabled) {
+  documentStatusUpdatingId.value = row.id
+  try {
+    const response = await updateAiKnowledgeDocumentStatus(row.id, enabled ? 1 : 0)
+    if (response?.code !== 200) throw new Error(response?.msg || '状态更新失败')
+    await loadDocuments()
+  } catch (error) { ElMessage.error(error?.message || '状态更新失败') }
+  finally { documentStatusUpdatingId.value = null }
+}
+
+async function removeDocument(row) {
+  try {
+    await ElMessageBox.confirm(`确定删除“${row.title}”吗？该文档会立即退出检索。`, '删除知识文档', { type: 'warning' })
+    const response = await deleteAiKnowledgeDocument(row.id)
+    if (response?.code !== 200) throw new Error(response?.msg || '删除文档失败')
+    ElMessage.success('知识文档已删除')
+    await loadDocuments()
+  } catch (error) {
+    if (error === 'cancel' || error === 'close') return
+    ElMessage.error(error?.message || '删除文档失败')
+  }
+}
+
 function resetForm(row = null) {
   form.id = row?.id ?? null
   form.question = row?.question ?? ''
@@ -213,7 +353,8 @@ async function searchProducts(query = '') {
     const response = await listProduct({ pageNum: 1, pageSize: 30, status: 1, name: query.trim() })
     if (requestId !== productSearchRequestId) return
     if (response?.code !== 200 || !Array.isArray(response.rows)) throw new Error(response?.msg || '商品列表返回格式异常')
-    const selected = productOptions.value.filter(product => product.id === form.productId)
+    const selectedProductId = documentDialogVisible.value ? documentForm.productId : form.productId
+    const selected = productOptions.value.filter(product => product.id === selectedProductId)
     const matches = response.rows.map(product => ({ id: product.id, name: product.name || `商品 #${product.id}` }))
     productOptions.value = [...new Map([...selected, ...matches].map(product => [product.id, product])).values()]
   } catch (error) {
@@ -282,6 +423,7 @@ async function removeRow(row) {
 
 onMounted(() => {
   loadKnowledge()
+  loadDocuments()
   loadMetrics()
 })
 </script>
@@ -292,6 +434,7 @@ onMounted(() => {
 .intro-heading, .toolbar, .toolbar-actions, .metrics-row, .scope-control { display: flex; align-items: center; }
 .intro-heading, .toolbar { justify-content: space-between; gap: 16px; }
 .intro-heading h2 { margin: 0; font-size: 18px; color: var(--el-text-color-primary); }
+.section-title { margin: 0 0 4px; font-size: 16px; color: var(--el-text-color-primary); }
 .intro-heading p { margin: 7px 0 0; color: var(--el-text-color-secondary); font-size: 13px; line-height: 1.6; }
 .metrics-row { gap: 12px; margin-top: 18px; }
 .metric { display: flex; flex: 1; flex-direction: column; gap: 6px; min-width: 120px; padding: 12px 14px; border-radius: 8px; background: var(--el-fill-color-light); }

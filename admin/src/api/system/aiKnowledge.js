@@ -23,3 +23,23 @@ export function deleteAiKnowledge(id) {
 export function getAiKnowledgeMetrics() {
   return request({ url: '/system/ai/knowledge/metrics', method: 'get' })
 }
+
+export function listAiKnowledgeDocuments() {
+  return request({ url: '/system/ai/knowledge/documents', method: 'get' })
+}
+
+export function addAiKnowledgeDocument(data) {
+  return request({ url: '/system/ai/knowledge/documents', method: 'post', data })
+}
+
+export function updateAiKnowledgeDocument(data) {
+  return request({ url: '/system/ai/knowledge/documents', method: 'put', data })
+}
+
+export function updateAiKnowledgeDocumentStatus(id, enabled) {
+  return request({ url: `/system/ai/knowledge/documents/${id}/status`, method: 'put', params: { enabled } })
+}
+
+export function deleteAiKnowledgeDocument(id) {
+  return request({ url: `/system/ai/knowledge/documents/${id}`, method: 'delete' })
+}

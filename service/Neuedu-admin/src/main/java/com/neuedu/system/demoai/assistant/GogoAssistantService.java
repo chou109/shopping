@@ -7,10 +7,12 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.neuedu.common.core.domain.model.LoginUser;
 import com.neuedu.system.demoai.entity.FrequentlyAskedQuestion;
 import com.neuedu.system.demoai.entity.AIEmbeddingCacheEntry;
+import com.neuedu.system.demoai.entity.AIKnowledgeDocument;
 import com.neuedu.system.demoai.entity.Product;
 import com.neuedu.system.demoai.repository.FAQRepository;
 import com.neuedu.system.demoai.repository.AIChatMetricEventRepository;
 import com.neuedu.system.demoai.repository.AIEmbeddingCacheRepository;
+import com.neuedu.system.demoai.repository.AIKnowledgeDocumentRepository;
 import com.neuedu.system.demoai.entity.AIChatMetricEvent;
 import com.neuedu.system.demoai.repository.ProductRepository;
 import com.neuedu.system.domain.OrderInfo;
@@ -41,6 +43,7 @@ import java.util.concurrent.atomic.AtomicLong;
 @Slf4j
 @Service
 public class GogoAssistantService {
+    private static final int MAX_KNOWLEDGE_CHUNKS = 100;
     private static final int MAX_TOOL_CALLS_PER_RESPONSE = 5;
     private static final int MAX_TOOL_CALLS_PER_REQUEST = 8;
     private final ObjectMapper mapper;
@@ -51,6 +54,7 @@ public class GogoAssistantService {
     private final EmbeddingProvider embeddingProvider;
     private final AIChatMetricEventRepository metricEventRepository;
     private final AIEmbeddingCacheRepository embeddingCacheRepository;
+    private final AIKnowledgeDocumentRepository knowledgeDocumentRepository;
     private final AtomicLong lastMetricCleanupAt = new AtomicLong();
     private final Map<String, float[]> embeddingCache = Collections.synchronizedMap(new LinkedHashMap<String, float[]>(128, 0.75f, true) {
         @Override protected boolean removeEldestEntry(Map.Entry<String, float[]> eldest) { return size() > 512; }
@@ -77,7 +81,8 @@ public class GogoAssistantService {
     @Autowired
     public GogoAssistantService(ObjectMapper mapper, FAQRepository faqRepository, ProductRepository productRepository,
                               IOrderInfoService orderInfoService, GogoPromptFactory promptFactory, EmbeddingProvider embeddingProvider,
-                              AIChatMetricEventRepository metricEventRepository, AIEmbeddingCacheRepository embeddingCacheRepository) {
+                              AIChatMetricEventRepository metricEventRepository, AIEmbeddingCacheRepository embeddingCacheRepository,
+                              AIKnowledgeDocumentRepository knowledgeDocumentRepository) {
         this.mapper = mapper;
         this.faqRepository = faqRepository;
         this.productRepository = productRepository;
@@ -86,6 +91,14 @@ public class GogoAssistantService {
         this.embeddingProvider = embeddingProvider;
         this.metricEventRepository = metricEventRepository;
         this.embeddingCacheRepository = embeddingCacheRepository;
+        this.knowledgeDocumentRepository = knowledgeDocumentRepository;
+    }
+
+    public GogoAssistantService(ObjectMapper mapper, FAQRepository faqRepository, ProductRepository productRepository,
+                              IOrderInfoService orderInfoService, GogoPromptFactory promptFactory, EmbeddingProvider embeddingProvider,
+                              AIChatMetricEventRepository metricEventRepository, AIEmbeddingCacheRepository embeddingCacheRepository) {
+        this(mapper, faqRepository, productRepository, orderInfoService, promptFactory, embeddingProvider,
+                metricEventRepository, embeddingCacheRepository, null);
     }
 
     public GogoAssistantService(ObjectMapper mapper, FAQRepository faqRepository, ProductRepository productRepository,
@@ -276,6 +289,27 @@ public class GogoAssistantService {
                 candidates.add(candidate);
             }
         } catch (Exception ex) { log.debug("FAQ retrieval unavailable: {}", ex.getClass().getSimpleName()); }
+        if (knowledgeDocumentRepository != null) {
+            try {
+                List<AIKnowledgeDocument> documents = knowledgeDocumentRepository.findEnabledForProduct(productId, PageRequest.of(0, 50));
+                int addedChunks = 0;
+                for (AIKnowledgeDocument document : documents) {
+                    List<String> chunks = KnowledgeChunker.split(document.getContent());
+                    for (int i = 0; i < chunks.size(); i++) {
+                        if (addedChunks >= MAX_KNOWLEDGE_CHUNKS) break;
+                        String title = safe(document.getTitle()) + " · 片段 " + (i + 1);
+                        String content = chunks.get(i);
+                        Map<String, Object> candidate = doc(title, content, 0D, "document", document.getId());
+                        candidate.put("rankTitle", safe(document.getTitle()));
+                        candidate.put("embeddingText", safe(document.getTitle()) + "\n" + content);
+                        candidate.put("priority", 0);
+                        candidates.add(candidate);
+                        addedChunks++;
+                    }
+                    if (addedChunks >= MAX_KNOWLEDGE_CHUNKS) break;
+                }
+            } catch (Exception ex) { log.debug("Knowledge document retrieval unavailable: {}", ex.getClass().getSimpleName()); }
+        }
         try {
             List<Product> products = queryTerms.isEmpty() ? new ArrayList<>() : new ArrayList<>(productRepository.searchActiveByKeyword(question, PageRequest.of(0, 5)));
             if (productId != null) {

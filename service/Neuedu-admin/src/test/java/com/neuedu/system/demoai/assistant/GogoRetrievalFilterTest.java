@@ -5,8 +5,10 @@ import com.neuedu.system.demoai.assistant.prompt.GogoPromptFactory;
 import com.neuedu.system.demoai.entity.Product;
 import com.neuedu.system.demoai.entity.FrequentlyAskedQuestion;
 import com.neuedu.system.demoai.entity.AIEmbeddingCacheEntry;
+import com.neuedu.system.demoai.entity.AIKnowledgeDocument;
 import com.neuedu.system.demoai.repository.FAQRepository;
 import com.neuedu.system.demoai.repository.AIEmbeddingCacheRepository;
+import com.neuedu.system.demoai.repository.AIKnowledgeDocumentRepository;
 import com.neuedu.system.demoai.repository.ProductRepository;
 import com.neuedu.system.service.IOrderInfoService;
 import org.junit.Test;
@@ -215,6 +217,34 @@ public class GogoRetrievalFilterTest {
 
         assertTrue(embeddedTexts.stream().anyMatch(text -> text.contains("轻便耳机") && text.contains("适合通勤")));
         assertTrue(embeddedTexts.stream().noneMatch(text -> text.contains("129.90") || text.contains("库存：8")));
+    }
+
+    @Test
+    public void longDocumentIsChunkedAndReturnedWithStableDocumentSource() {
+        AIKnowledgeDocument document = new AIKnowledgeDocument();
+        document.setId(71L);
+        document.setTitle("退换货政策");
+        document.setContent("申请退货时请先登录账号并打开我的订单。\n\n提交后由商家审核，审核结果会在订单页面展示。");
+        document.setSourceType("POLICY");
+        AtomicReference<Long> requestedProduct = new AtomicReference<>();
+        AIKnowledgeDocumentRepository documents = proxy(AIKnowledgeDocumentRepository.class, (proxy, method, args) -> {
+            if ("findEnabledForProduct".equals(method.getName())) {
+                requestedProduct.set((Long) args[0]);
+                return Collections.singletonList(document);
+            }
+            return defaultValue(method.getReturnType());
+        });
+        AtomicReference<List<Map<String, Object>>> sources = new AtomicReference<>();
+        GogoAssistantService assistant = new GogoAssistantService(new ObjectMapper(), faqRepository(), emptyProducts(),
+                proxy(IOrderInfoService.class, (proxy, method, args) -> defaultValue(method.getReturnType())),
+                new GogoPromptFactory(), null, null, null, documents);
+
+        assistant.answer("退货审核结果在哪里查看", 88L, null, new ArrayList<>(), token -> { }, sources::set, handoff -> { });
+
+        assertEquals(Long.valueOf(88L), requestedProduct.get());
+        assertTrue(sources.get().stream().anyMatch(source -> "document".equals(source.get("sourceType"))
+                && Long.valueOf(71L).equals(source.get("sourceId"))
+                && String.valueOf(source.get("title")).contains("退换货政策 · 片段 1")));
     }
 
     private GogoAssistantService assistant(ProductRepository products) {

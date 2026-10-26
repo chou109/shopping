@@ -3,7 +3,9 @@ package com.neuedu.system.demoai;
 import com.neuedu.common.core.controller.BaseController;
 import com.neuedu.common.core.domain.AjaxResult;
 import com.neuedu.system.demoai.entity.FrequentlyAskedQuestion;
+import com.neuedu.system.demoai.entity.AIKnowledgeDocument;
 import com.neuedu.system.demoai.repository.FAQRepository;
+import com.neuedu.system.demoai.repository.AIKnowledgeDocumentRepository;
 import com.neuedu.system.demoai.repository.ProductRepository;
 import com.neuedu.system.demoai.assistant.GogoAssistantService;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -19,8 +21,11 @@ public class AIKnowledgeController extends BaseController {
     private final FAQRepository repository;
     private final ProductRepository productRepository;
     private final GogoAssistantService assistantService;
-    public AIKnowledgeController(FAQRepository repository, ProductRepository productRepository, GogoAssistantService assistantService) {
+    private final AIKnowledgeDocumentRepository documentRepository;
+    public AIKnowledgeController(FAQRepository repository, ProductRepository productRepository, GogoAssistantService assistantService,
+                                 AIKnowledgeDocumentRepository documentRepository) {
         this.repository = repository; this.productRepository = productRepository; this.assistantService = assistantService;
+        this.documentRepository = documentRepository;
     }
 
     @PreAuthorize("@ss.hasPermi('system:ai:knowledge:list') or @ss.hasRole('admin')")
@@ -30,6 +35,63 @@ public class AIKnowledgeController extends BaseController {
     @PreAuthorize("@ss.hasPermi('system:ai:knowledge:list') or @ss.hasRole('admin')")
     @GetMapping("/list")
     public AjaxResult list() { return success(repository.findAll()); }
+
+    @PreAuthorize("@ss.hasPermi('system:ai:knowledge:list') or @ss.hasRole('admin')")
+    @GetMapping("/documents")
+    public AjaxResult documents() { return success(documentRepository.findAll()); }
+
+    @PreAuthorize("@ss.hasPermi('system:ai:knowledge:edit') or @ss.hasRole('admin')")
+    @PostMapping("/documents")
+    public AjaxResult createDocument(@RequestBody AIKnowledgeDocument document) {
+        String validationError = documentValidationError(document);
+        if (validationError != null) return error(validationError);
+        document.setId(null);
+        document.setTitle(document.getTitle().trim());
+        document.setContent(document.getContent().trim());
+        document.setSourceType(normalizeDocumentSourceType(document.getSourceType()));
+        document.setEnabled(document.getEnabled() == null ? 1 : document.getEnabled());
+        document.setVersion(1);
+        document.setUpdatedAt(LocalDateTime.now());
+        return success(documentRepository.save(document));
+    }
+
+    @PreAuthorize("@ss.hasPermi('system:ai:knowledge:edit') or @ss.hasRole('admin')")
+    @PutMapping("/documents")
+    public AjaxResult updateDocument(@RequestBody AIKnowledgeDocument document) {
+        if (document == null || document.getId() == null) return error("知识文档不存在");
+        AIKnowledgeDocument current = documentRepository.findById(document.getId()).orElse(null);
+        if (current == null) return error("知识文档不存在");
+        String validationError = documentValidationError(document);
+        if (validationError != null) return error(validationError);
+        current.setTitle(document.getTitle().trim());
+        current.setContent(document.getContent().trim());
+        current.setProductId(document.getProductId());
+        current.setSourceType(normalizeDocumentSourceType(document.getSourceType()));
+        if (document.getEnabled() != null) current.setEnabled(document.getEnabled());
+        current.setVersion((current.getVersion() == null ? 0 : current.getVersion()) + 1);
+        current.setUpdatedAt(LocalDateTime.now());
+        return success(documentRepository.save(current));
+    }
+
+    @PreAuthorize("@ss.hasPermi('system:ai:knowledge:edit') or @ss.hasRole('admin')")
+    @PutMapping("/documents/{id}/status")
+    public AjaxResult updateDocumentStatus(@PathVariable Long id, @RequestParam Integer enabled) {
+        if (enabled == null || (enabled != 0 && enabled != 1)) return error("启用状态只能为 0 或 1");
+        AIKnowledgeDocument document = documentRepository.findById(id).orElse(null);
+        if (document == null) return error("知识文档不存在");
+        document.setEnabled(enabled);
+        document.setVersion((document.getVersion() == null ? 0 : document.getVersion()) + 1);
+        document.setUpdatedAt(LocalDateTime.now());
+        return success(documentRepository.save(document));
+    }
+
+    @PreAuthorize("@ss.hasPermi('system:ai:knowledge:edit') or @ss.hasRole('admin')")
+    @DeleteMapping("/documents/{id}")
+    public AjaxResult deleteDocument(@PathVariable Long id) {
+        if (!documentRepository.existsById(id)) return error("知识文档不存在");
+        documentRepository.deleteById(id);
+        return success();
+    }
 
     @PreAuthorize("@ss.hasPermi('system:ai:knowledge:edit') or @ss.hasRole('admin')")
     @PostMapping
@@ -106,5 +168,28 @@ public class AIKnowledgeController extends BaseController {
     private String normalizeSourceType(String sourceType) {
         if (sourceType == null || sourceType.trim().isEmpty()) return "FAQ";
         return sourceType.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private String documentValidationError(AIKnowledgeDocument document) {
+        if (document == null || document.getTitle() == null || document.getTitle().trim().isEmpty()
+                || document.getTitle().trim().length() > 200 || document.getContent() == null
+                || document.getContent().trim().isEmpty() || document.getContent().trim().length() > 30000) {
+            return "文档标题不能为空且最多 200 字，正文不能为空且最多 30000 字";
+        }
+        if (document.getSourceType() != null && !Arrays.asList("FAQ", "POLICY", "PRODUCT").contains(document.getSourceType().trim().toUpperCase(Locale.ROOT))) {
+            return "资料来源类型不受支持";
+        }
+        if (document.getEnabled() != null && document.getEnabled() != 0 && document.getEnabled() != 1) return "启用状态只能为 0 或 1";
+        if (document.getProductId() != null && (document.getProductId() < 1
+                || productRepository.findByIdAndDeleteFlagAndStatus(document.getProductId(), 0, 1) == null)) {
+            return "关联商品不存在或当前不可用";
+        }
+        return null;
+    }
+
+    private String normalizeDocumentSourceType(String sourceType) {
+        if (sourceType == null || sourceType.trim().isEmpty()) return "POLICY";
+        String normalized = sourceType.trim().toUpperCase(Locale.ROOT);
+        return Arrays.asList("POLICY", "PRODUCT", "FAQ").contains(normalized) ? normalized : "POLICY";
     }
 }

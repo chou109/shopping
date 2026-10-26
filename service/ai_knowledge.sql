@@ -26,6 +26,20 @@ CREATE TABLE IF NOT EXISTS `ai_embedding_cache` (
   KEY `idx_ai_embedding_cache_content` (`content_hash`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='逛逛知识向量缓存';
 
+-- Long-form administrator-authored documents; passages are derived at retrieval time.
+CREATE TABLE IF NOT EXISTS `ai_knowledge_document` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `title` VARCHAR(200) NOT NULL,
+  `source_type` VARCHAR(32) NOT NULL DEFAULT 'POLICY',
+  `product_id` BIGINT DEFAULT NULL COMMENT 'NULL means general store knowledge',
+  `content` LONGTEXT NOT NULL,
+  `enabled` TINYINT NOT NULL DEFAULT 1,
+  `version` INT NOT NULL DEFAULT 1,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_ai_knowledge_document_scope` (`enabled`, `product_id`, `updated_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='逛逛长文档知识库';
+
 -- Add lifecycle fields to a FAQ table created by an earlier version of this script.
 -- Each ALTER is conditional so the script can be safely re-run on supported MySQL versions.
 SET @gogo_sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'frequently_asked_question' AND column_name = 'enabled') = 0,

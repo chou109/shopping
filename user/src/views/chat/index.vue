@@ -246,7 +246,7 @@ const formatPrice = (value) => {
   return Number.isFinite(price) ? price.toFixed(2) : '暂无报价'
 }
 
-const sourceTypeLabel = (type) => ({ faq: '常见问题', policy: '商城政策', product: '商品资料' })[type] || '商城资料'
+const sourceTypeLabel = (type) => ({ faq: '常见问题', policy: '商城政策', product: '商品资料', document: '知识文档' })[type] || '商城资料'
 
 const loadProductContext = async (rawId) => {
   const requestId = ++productContextRequestId
