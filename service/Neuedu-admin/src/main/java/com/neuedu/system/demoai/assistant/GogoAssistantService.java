@@ -181,45 +181,133 @@ public class GogoAssistantService {
     }
 
     private List<Map<String, Object>> retrieve(String question, Long productId) {
-        List<Map<String, Object>> docs = new ArrayList<>();
-        Set<String> terms = terms(question);
+        List<Map<String, Object>> candidates = new ArrayList<>();
+        Set<String> queryTerms = queryTerms(question);
         try {
             List<FrequentlyAskedQuestion> faqs = faqRepository.findForAssistant(productId, PageRequest.of(0, 200));
             for (FrequentlyAskedQuestion faq : faqs) {
-                String text = safe(faq.getQuestion()) + " " + safe(faq.getAnswer());
-                int score = score(terms, text);
-                if (relevant(terms, score)) {
-                    String sourceType = safe(faq.getSourceType()).isEmpty() ? "FAQ" : faq.getSourceType().toLowerCase(Locale.ROOT);
-                    docs.add(doc(sourceType.toUpperCase(Locale.ROOT) + " #" + faq.getId() + "：" + safe(faq.getQuestion()),
-                            safe(faq.getAnswer()), score, sourceType, faq.getId()));
-                }
+                String sourceType = safe(faq.getSourceType()).isEmpty() ? "FAQ" : faq.getSourceType().toLowerCase(Locale.ROOT);
+                Map<String, Object> candidate = doc(sourceType.toUpperCase(Locale.ROOT) + " #" + faq.getId() + "：" + safe(faq.getQuestion()),
+                        safe(faq.getAnswer()), 0D, sourceType, faq.getId());
+                candidate.put("rankTitle", safe(faq.getQuestion()));
+                candidate.put("priority", faq.getPriority() == null ? 0 : faq.getPriority());
+                candidates.add(candidate);
             }
         } catch (Exception ex) { log.debug("FAQ retrieval unavailable: {}", ex.getClass().getSimpleName()); }
         try {
-            List<Product> products = terms.isEmpty() ? new ArrayList<>() : new ArrayList<>(productRepository.searchActiveByKeyword(question, PageRequest.of(0, 5)));
+            List<Product> products = queryTerms.isEmpty() ? new ArrayList<>() : new ArrayList<>(productRepository.searchActiveByKeyword(question, PageRequest.of(0, 5)));
             if (productId != null) {
                 Product selected = productRepository.findByIdAndDeleteFlagAndStatus(productId, 0, 1);
                 if (selected != null && products.stream().noneMatch(p -> Objects.equals(p.getId(), selected.getId()))) products.add(selected);
             }
             for (Product p : products) {
-                String content = "商品：" + p.getName() + "；简介：" + p.getSubTitle() + "；价格：" + p.getPrice() + "；库存：" + p.getStock();
-                int relevance = score(terms, content);
+                String title = "商品 #" + p.getId() + "：" + safe(p.getName());
+                String content = "商品：" + safe(p.getName()) + "；简介：" + safe(p.getSubTitle()) + "；价格：" + p.getPrice() + "；库存：" + p.getStock();
                 boolean explicitlySelected = productId != null && Objects.equals(productId, p.getId());
-                if (relevant(terms, relevance) || explicitlySelected) docs.add(doc("商品 #" + p.getId() + "：" + p.getName(), content, relevance, "product", p.getId()));
+                Map<String, Object> candidate = doc(title, content, 0D, "product", p.getId());
+                candidate.put("rankTitle", safe(p.getName()));
+                candidate.put("selected", explicitlySelected);
+                candidates.add(candidate);
             }
         } catch (Exception ex) { log.debug("Product retrieval unavailable: {}", ex.getClass().getSimpleName()); }
-        docs.sort((a,b) -> Integer.compare((Integer)b.get("score"), (Integer)a.get("score")));
-        if (docs.size() > 5) docs = new ArrayList<>(docs.subList(0, 5));
-        for (Map<String,Object> doc : docs) doc.remove("score");
-        return docs;
+
+        if (candidates.isEmpty()) return candidates;
+        Map<Map<String, Object>, List<String>> tokenized = new IdentityHashMap<>();
+        Map<String, Integer> documentFrequency = new HashMap<>();
+        int totalLength = 0;
+        for (Map<String, Object> candidate : candidates) {
+            List<String> tokens = tokens(candidate.get("rankTitle") + " " + candidate.get("content"));
+            tokenized.put(candidate, tokens);
+            totalLength += tokens.size();
+            for (String term : new HashSet<>(tokens)) documentFrequency.merge(term, 1, Integer::sum);
+        }
+        double averageLength = candidates.isEmpty() ? 1D : Math.max(1D, (double) totalLength / candidates.size());
+        List<Map<String, Object>> ranked = new ArrayList<>();
+        for (Map<String, Object> candidate : candidates) {
+            boolean selected = Boolean.TRUE.equals(candidate.get("selected"));
+            String title = String.valueOf(candidate.get("rankTitle"));
+            String content = String.valueOf(candidate.get("content"));
+            List<String> documentTokens = tokenized.get(candidate);
+            Set<String> present = new HashSet<>(documentTokens);
+            int matchedTerms = 0;
+            Set<String> titleTerms = new HashSet<>(tokens(title));
+            int matchedTitleTerms = 0;
+            for (String term : queryTerms) if (present.contains(term)) matchedTerms++;
+            for (String term : queryTerms) if (titleTerms.contains(term)) matchedTitleTerms++;
+            if (!selected && !relevant(queryTerms, matchedTerms, matchedTitleTerms)) continue;
+
+            List<String> titleTokens = tokens(title);
+            List<String> bodyTokens = tokens(content);
+            double relevance = selected ? 100D : bm25Score(queryTerms, titleTokens, bodyTokens, documentFrequency, candidates.size(), averageLength);
+            int priority = candidate.get("priority") instanceof Number ? ((Number) candidate.get("priority")).intValue() : 0;
+            relevance += Math.log1p(Math.max(0, Math.min(100, priority))) * 0.05D;
+            String normalizedQuestion = normalize(question);
+            if (normalizedQuestion.length() >= 4 && normalize(title).contains(normalizedQuestion)) relevance += 1.5D;
+            relevance += queryTerms.isEmpty() ? 0D : 0.35D * matchedTerms / queryTerms.size();
+            candidate.put("score", relevance);
+            ranked.add(candidate);
+        }
+        ranked.sort((a, b) -> Double.compare((Double) b.get("score"), (Double) a.get("score")));
+        if (ranked.size() > 5) ranked = new ArrayList<>(ranked.subList(0, 5));
+        for (Map<String, Object> doc : ranked) {
+            doc.remove("score"); doc.remove("priority"); doc.remove("selected"); doc.remove("rankTitle");
+        }
+        return ranked;
     }
-    private Map<String,Object> doc(String title, String content, int score, String sourceType, Long sourceId) { Map<String,Object> d = new LinkedHashMap<>(); d.put("title",title); d.put("content",content); d.put("sourceType",sourceType); d.put("sourceId",sourceId); d.put("score",score); return d; }
-    private Set<String> terms(String text) { Set<String> out = new LinkedHashSet<>(); if (text == null) return out; for (String w : text.toLowerCase(Locale.ROOT).split("[^\\p{IsHan}a-z0-9]+")) if (w.length()>1) out.add(w); for (int i=0;i+1<text.length();i++) if (Character.UnicodeScript.of(text.charAt(i))==Character.UnicodeScript.HAN && Character.UnicodeScript.of(text.charAt(i+1))==Character.UnicodeScript.HAN) out.add(text.substring(i,i+2)); return out; }
-    private int score(Set<String> terms, String text) { int n=0; String lower=text.toLowerCase(Locale.ROOT); for(String term:terms) if(lower.contains(term)) n++; return n; }
-    private boolean relevant(Set<String> terms, int matchedTerms) {
+    private Map<String,Object> doc(String title, String content, double score, String sourceType, Long sourceId) { Map<String,Object> d = new LinkedHashMap<>(); d.put("title",title); d.put("content",content); d.put("sourceType",sourceType); d.put("sourceId",sourceId); d.put("score",score); return d; }
+    private Set<String> queryTerms(String text) {
+        String cleaned = text == null ? "" : text.replaceAll("请问|麻烦|帮我|想问一下|一下|可以吗|怎么样|怎么|如何|什么时候|现在|商品|商城|这个|这件|东西", " ");
+        Set<String> terms = new LinkedHashSet<>(tokens(cleaned));
+        terms.removeAll(Arrays.asList("请问", "麻烦", "商品", "商城", "东西", "现在", "如何", "怎么", "时候"));
+        List<Set<String>> synonymGroups = Arrays.asList(
+                new HashSet<>(Arrays.asList("退货", "退款", "退钱", "退换", "售后")),
+                new HashSet<>(Arrays.asList("配送", "发货", "物流", "快递")),
+                new HashSet<>(Arrays.asList("有货", "库存", "现货", "补货")));
+        for (Set<String> group : synonymGroups) {
+            if (!Collections.disjoint(terms, group)) terms.addAll(group);
+        }
+        return terms;
+    }
+    private List<String> tokens(String text) {
+        List<String> out = new ArrayList<>();
+        if (text == null) return out;
+        String lower = text.toLowerCase(Locale.ROOT);
+        for (String word : lower.split("[^\\p{IsHan}a-z0-9]+")) if (word.length() > 1) out.add(word);
+        for (int i = 0; i + 1 < lower.length(); i++) {
+            if (Character.UnicodeScript.of(lower.charAt(i)) == Character.UnicodeScript.HAN
+                    && Character.UnicodeScript.of(lower.charAt(i + 1)) == Character.UnicodeScript.HAN) {
+                out.add(lower.substring(i, i + 2));
+            }
+        }
+        return out;
+    }
+    private double bm25Score(Set<String> terms, List<String> title, List<String> body,
+                             Map<String, Integer> documentFrequency, int documentCount, double averageLength) {
+        double score = 0D;
+        double bodyLength = Math.max(1D, body.size());
+        for (String term : terms) {
+            int titleFrequency = Collections.frequency(title, term);
+            int bodyFrequency = Collections.frequency(body, term);
+            if (titleFrequency + bodyFrequency == 0) continue;
+            int frequency = documentFrequency.getOrDefault(term, 0);
+            double idf = Math.log(1D + (documentCount - frequency + 0.5D) / (frequency + 0.5D));
+            score += idf * bm25TermFrequency(bodyFrequency, bodyLength, averageLength);
+            score += idf * 2.2D * bm25TermFrequency(titleFrequency, Math.max(1D, title.size()), Math.max(1D, averageLength * 0.2D));
+        }
+        return score;
+    }
+    private double bm25TermFrequency(int frequency, double length, double averageLength) {
+        if (frequency == 0) return 0D;
+        double k1 = 1.2D;
+        double normalizedLength = 1D - 0.75D + 0.75D * length / averageLength;
+        return frequency * (k1 + 1D) / (frequency + k1 * normalizedLength);
+    }
+    private String normalize(String text) { return text == null ? "" : text.toLowerCase(Locale.ROOT).replaceAll("[^\\p{IsHan}a-z0-9]", ""); }
+    private boolean relevant(Set<String> terms, int matchedTerms, int matchedTitleTerms) {
         if (terms.isEmpty() || matchedTerms == 0) return false;
         int minimumMatches = Math.min(2, terms.size());
-        return matchedTerms >= minimumMatches;
+        if (matchedTerms < minimumMatches) return false;
+        return matchedTerms > minimumMatches || matchedTitleTerms >= minimumMatches;
     }
     private String safe(String value) { return value == null ? "" : value; }
 

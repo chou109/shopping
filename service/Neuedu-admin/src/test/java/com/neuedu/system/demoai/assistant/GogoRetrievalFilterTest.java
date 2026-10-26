@@ -79,6 +79,46 @@ public class GogoRetrievalFilterTest {
         assertEquals("policy", sources.get().get(0).get("sourceType"));
     }
 
+    @Test
+    public void offlineRewriteCasesRecallAfterSaleAndShippingFaqs() {
+        FrequentlyAskedQuestion afterSale = faq(31L, "售后：退货与退款", "订单中可提交退货退款申请。");
+        FrequentlyAskedQuestion delivery = faq(32L, "配送：付款后多久发货", "订单发货后可以查看物流和快递进度。");
+        AtomicReference<List<Map<String, Object>>> sources = new AtomicReference<>();
+        GogoAssistantService assistant = assistant(faqRepository(afterSale, delivery), emptyProducts());
+
+        assistant.answer("请问怎么退换货品", null, null, new ArrayList<>(), token -> { }, sources::set, handoff -> { });
+        assertTrue("paraphrased return question should cite its FAQ", sources.get().stream()
+                .anyMatch(source -> Long.valueOf(31L).equals(source.get("sourceId"))));
+
+        assistant.answer("付款后什么时候能查快递", null, null, new ArrayList<>(), token -> { }, sources::set, handoff -> { });
+        assertTrue("paraphrased shipping question should cite its FAQ", sources.get().stream()
+                .anyMatch(source -> Long.valueOf(32L).equals(source.get("sourceId"))));
+    }
+
+    @Test
+    public void titleMatchRanksTheDirectAnswerAboveBroadPolicyMatches() {
+        FrequentlyAskedQuestion direct = faq(41L, "如何申请退款", "请在订单页提交退款申请。");
+        FrequentlyAskedQuestion broad = faq(42L, "售后服务说明", "如有问题请联系售后客服处理退款。");
+        AtomicReference<List<Map<String, Object>>> sources = new AtomicReference<>();
+
+        assistant(faqRepository(direct, broad), emptyProducts()).answer("如何申请退款", null, null,
+                new ArrayList<>(), token -> { }, sources::set, handoff -> { });
+
+        assertEquals(Long.valueOf(41L), sources.get().get(0).get("sourceId"));
+    }
+
+    @Test
+    public void retrievalCapsPromptSourcesAtFiveRankedItems() {
+        FrequentlyAskedQuestion[] rows = new FrequentlyAskedQuestion[8];
+        for (int i = 0; i < rows.length; i++) rows[i] = faq(50L + i, "如何申请退款 " + i, "请在订单页提交退款申请。");
+        AtomicReference<List<Map<String, Object>>> sources = new AtomicReference<>();
+
+        assistant(faqRepository(rows), emptyProducts()).answer("如何申请退款", null, null,
+                new ArrayList<>(), token -> { }, sources::set, handoff -> { });
+
+        assertEquals(5, sources.get().size());
+    }
+
     private GogoAssistantService assistant(ProductRepository products) {
         return assistant(faqRepository(), products);
     }
