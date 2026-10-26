@@ -171,8 +171,11 @@ public class GogoAssistantService {
                 }
                 if (result.toolCalls.size() > MAX_TOOL_CALLS_PER_RESPONSE
                         || toolCount + result.toolCalls.size() > MAX_TOOL_CALLS_PER_REQUEST) {
+                    toolCount += result.toolCalls.size();
+                    toolFailures += result.toolCalls.size();
                     throw new IllegalStateException("model_tool_call_limit_exceeded");
                 }
+                toolCount += result.toolCalls.size();
                 Set<String> responseIds = new HashSet<>();
                 Set<String> responseSignatures = new HashSet<>();
                 for (JsonNode call : result.toolCalls) {
@@ -188,12 +191,12 @@ public class GogoAssistantService {
                             || parsedArgs == null || !parsedArgs.isObject()
                             || !responseIds.add(id) || seenToolCallIds.contains(id)
                             || !responseSignatures.add(signature) || executedToolSignatures.contains(signature)) {
+                        toolFailures += result.toolCalls.size();
                         throw new IllegalStateException("model_tool_call_invalid_or_repeated");
                     }
                 }
                 seenToolCallIds.addAll(responseIds);
                 executedToolSignatures.addAll(responseSignatures);
-                toolCount += result.toolCalls.size();
                 ObjectNode assistantCall = mapper.createObjectNode(); assistantCall.put("role", "assistant");
                 assistantCall.set("tool_calls", result.rawToolCalls);
                 messages.add(assistantCall);

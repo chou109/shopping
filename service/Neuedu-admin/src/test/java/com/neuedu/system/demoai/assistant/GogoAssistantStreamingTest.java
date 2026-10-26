@@ -135,6 +135,8 @@ public class GogoAssistantStreamingTest {
             assertEquals("only the normal retrieval query may run", 1, productQueries.get());
             assertTrue(handoff.get());
             assertTrue(tokens.stream().anyMatch(token -> token.contains("联系人工客服")));
+            assertEquals(1L, ((Number) assistant.metricsSnapshot().get("toolCalls")).longValue());
+            assertEquals(0D, (Double) assistant.metricsSnapshot().get("toolSuccessRate"), 0D);
         } finally { server.stop(0); }
     }
 
